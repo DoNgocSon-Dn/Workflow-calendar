@@ -1,0 +1,49 @@
+<div class="calendar-page">
+  <app-calendar-header />
+
+  <div class="body">
+    @if (store.sidebarOpen()) {
+      <app-calendar-sidebar (createClicked)="openCreateBlank()" />
+    }
+
+    <main class="view-area">
+      @switch (store.viewMode()) {
+        @case ('month') {
+          <app-month-view
+            (createRequested)="openCreate($event)"
+            (editRequested)="openEdit($event)"
+          />
+        }
+        @case ('week') {
+          <app-time-grid-view
+            [days]="weekDays()"
+            (createRequested)="openCreate($event)"
+            (editRequested)="openEdit($event)"
+          />
+        }
+        @case ('day') {
+          <app-time-grid-view
+            [days]="dayViewDays()"
+            (createRequested)="openCreate($event)"
+            (editRequested)="openEdit($event)"
+          />
+        }
+      }
+    </main>
+  </div>
+</div>
+
+@if (modalState(); as ms) {
+  <app-event-form-modal
+    [event]="ms.event"
+    [defaultStart]="ms.defaultStart"
+    [defaultEnd]="ms.defaultEnd"
+    [defaultAllDay]="ms.defaultAllDay"
+    [defaultTitle]="ms.defaultTitle"
+    (closed)="closeModal()"
+  />
+}
+
+<app-notification-popup (viewDetail)="onViewDetail($event)" />
+<app-notes-widget />
+<app-ai-chat-widget (openManualForm)="openManualFormFromAi($event)" />

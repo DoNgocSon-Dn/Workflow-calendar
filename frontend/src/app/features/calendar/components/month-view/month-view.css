@@ -1,0 +1,158 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+.month-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.weekday-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.weekday-cell {
+  text-align: center;
+  padding: 0.4rem 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.month-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  min-height: 0;
+}
+
+.day-cell {
+  position: relative;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  cursor: pointer;
+  overflow: hidden;
+  min-height: 5.5rem;
+}
+
+.day-cell:hover {
+  background: var(--color-surface-hover-strong);
+}
+
+.day-cell.outside .day-number {
+  color: var(--color-text-disabled);
+}
+
+.day-number {
+  align-self: flex-start;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.day-number.today {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-weight: 700;
+}
+
+.chip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.event-chip {
+  --chip-color: #1a73e8;
+  border: none;
+  background: color-mix(in srgb, var(--chip-color) 15%, var(--chip-tint-bg));
+  color: color-mix(in srgb, var(--chip-color) 85%, var(--chip-tint-text));
+  border-left: 3px solid var(--chip-color);
+  border-radius: 0.2rem;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.68rem;
+  text-align: left;
+  cursor: grab;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-chip.all-day {
+  background: var(--chip-color);
+  color: #fff;
+  border-left: none;
+}
+
+.more-btn {
+  border: none;
+  background: none;
+  color: var(--color-text-tertiary);
+  font-size: 0.68rem;
+  text-align: left;
+  padding: 0.1rem 0.35rem;
+  cursor: pointer;
+}
+
+.more-btn:hover {
+  background: var(--color-surface-hover);
+  border-radius: 0.2rem;
+}
+
+.day-popover {
+  position: absolute;
+  top: 0.25rem;
+  left: 0.25rem;
+  width: 220px;
+  background: var(--color-surface);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-popover);
+  padding: 0.5rem;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  cursor: default;
+}
+
+.popover-header {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.popover-chip {
+  white-space: normal;
+}
+
+@media (max-width: 720px) {
+  .day-cell {
+    min-height: 3.5rem;
+  }
+  .chip-list {
+    display: none;
+  }
+}

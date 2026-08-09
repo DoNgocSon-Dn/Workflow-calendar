@@ -1,0 +1,67 @@
+@if (expandedDayKey()) {
+  <div class="overlay" (click)="closeExpanded()"></div>
+}
+
+<div class="month-view">
+  <div class="weekday-row">
+    @for (wd of weekdayHeaders; track wd) {
+      <span class="weekday-cell">{{ wd }}</span>
+    }
+  </div>
+
+  <div class="month-grid">
+    @for (day of days(); track day.getTime()) {
+      <div
+        class="day-cell"
+        [class.outside]="!isCurrentMonth(day)"
+        (click)="onCellClick(day)"
+        (dragover)="onDragOver($event)"
+        (drop)="onDrop($event, day)"
+      >
+        <span class="day-number" [class.today]="isToday(day)">{{ day.getDate() }}</span>
+
+        <div class="chip-list">
+          @for (evt of visibleEventsFor(day); track evt.id) {
+            <button
+              type="button"
+              class="event-chip"
+              [class.all-day]="evt.allDay"
+              [style.--chip-color]="colorHex[store.calendarColor().get(evt.calendarId) ?? 'blue']"
+              draggable="true"
+              (dragstart)="onDragStart($event, evt)"
+              (click)="onChipClick(evt, $event)"
+            >
+              {{ eventLabel(evt) }}
+            </button>
+          }
+          @if (hiddenCountFor(day) > 0) {
+            <button
+              type="button"
+              class="more-btn"
+              (click)="toggleExpanded(day, $event)"
+            >
+              +{{ hiddenCountFor(day) }} khác
+            </button>
+          }
+        </div>
+
+        @if (isExpanded(day)) {
+          <div class="day-popover" (click)="$event.stopPropagation()">
+            <header class="popover-header">{{ day.getDate() }}/{{ day.getMonth() + 1 }}</header>
+            @for (evt of eventsFor(day); track evt.id) {
+              <button
+                type="button"
+                class="event-chip popover-chip"
+                [class.all-day]="evt.allDay"
+                [style.--chip-color]="colorHex[store.calendarColor().get(evt.calendarId) ?? 'blue']"
+                (click)="onChipClick(evt, $event)"
+              >
+                {{ eventLabel(evt) }}
+              </button>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

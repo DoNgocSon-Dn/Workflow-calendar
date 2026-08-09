@@ -1,0 +1,29 @@
+<aside class="sidebar">
+  <button type="button" class="create-btn" (click)="createClicked.emit()">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+      <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z" />
+    </svg>
+    Tạo
+  </button>
+
+  <app-mini-calendar
+    [focusedDate]="store.focusedDate()"
+    [today]="store.today()"
+    (dateSelected)="onDateSelected($event)"
+  />
+
+  <div class="calendar-list">
+    <h2 class="calendar-list-title">Lịch của tôi</h2>
+    @for (cal of store.calendars(); track cal.id) {
+      <label class="calendar-item">
+        <input
+          type="checkbox"
+          [checked]="isVisible(cal.id)"
+          (change)="store.toggleCalendarVisibility(cal.id)"
+        />
+        <span class="color-dot" [style.background]="colorHex[cal.color]"></span>
+        {{ cal.name }}
+      </label>
+    }
+  </div>
+</aside>

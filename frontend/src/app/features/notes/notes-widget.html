@@ -1,0 +1,67 @@
+<div class="notes-widget">
+  @if (open()) {
+    <div class="panel" role="dialog" aria-label="Ghi chú cá nhân">
+      <header class="panel-header">
+        <h2>Ghi chú của tôi</h2>
+        <button type="button" class="icon-btn" aria-label="Đóng" (click)="toggle()">×</button>
+      </header>
+
+      <div class="add-row">
+        <textarea
+          class="note-input"
+          rows="2"
+          [ngModel]="newNoteContent()"
+          (ngModelChange)="newNoteContent.set($event)"
+          placeholder="Viết ghi chú mới…"
+        ></textarea>
+        <div class="color-row">
+          @for (c of noteColors; track c) {
+            <button
+              type="button"
+              class="color-dot"
+              [class]="'color-' + c"
+              [class.selected]="newNoteColor() === c"
+              [attr.aria-label]="c"
+              (click)="newNoteColor.set(c)"
+            ></button>
+          }
+          <span class="spacer"></span>
+          <button type="button" class="primary-btn" [disabled]="saving()" (click)="addNote()">
+            Thêm
+          </button>
+        </div>
+      </div>
+
+      <ul class="note-list">
+        @for (note of notes(); track note.id) {
+          <li class="note-card" [class]="'color-' + note.color">
+            @if (editingId() === note.id) {
+              <textarea
+                class="note-input"
+                rows="2"
+                [ngModel]="editingContent()"
+                (ngModelChange)="editingContent.set($event)"
+              ></textarea>
+              <div class="note-actions">
+                <button type="button" class="text-btn" (click)="saveEdit(note.id)">Lưu</button>
+                <button type="button" class="text-btn" (click)="cancelEdit()">Huỷ</button>
+              </div>
+            } @else {
+              <p class="note-content">{{ note.content }}</p>
+              <div class="note-actions">
+                <button type="button" class="text-btn" (click)="startEdit(note)">Sửa</button>
+                <button type="button" class="text-btn danger" (click)="remove(note.id)">
+                  Xoá
+                </button>
+              </div>
+            }
+          </li>
+        } @empty {
+          <p class="empty-hint">Chưa có ghi chú nào.</p>
+        }
+      </ul>
+    </div>
+  }
+
+  <button type="button" class="fab" aria-label="Ghi chú cá nhân" (click)="toggle()">📝</button>
+</div>

@@ -1,0 +1,19 @@
+<div class="popup-stack" aria-live="polite">
+  @for (item of notificationQueue.visible(); track item.id) {
+    <div class="popup-card" role="status">
+      <div class="popup-body">
+        <p class="popup-title">{{ item.title }}</p>
+        <p class="popup-message">{{ item.body }}</p>
+      </div>
+      <div class="popup-actions">
+        @if (item.kind !== 'deleted') {
+          <button type="button" class="text-btn" (click)="onViewDetail(item.eventId, item.id)">
+            Xem chi tiết
+          </button>
+        }
+        <button type="button" class="text-btn" (click)="snooze(item.id)">Snooze</button>
+        <button type="button" class="text-btn muted" (click)="dismiss(item.id)">Bỏ qua</button>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,128 @@
+<button
+  type="button"
+  class="trigger"
+  [attr.aria-expanded]="open()"
+  [attr.aria-label]="ariaLabel()"
+  (click)="toggleOpen()"
+>
+  <span>{{ displayLabel() }}</span>
+  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+    <path d="M7 10l5 5 5-5z" fill="currentColor" />
+  </svg>
+</button>
+
+@if (open()) {
+  <div class="panel" role="dialog" [attr.aria-label]="ariaLabel()">
+    <div class="tabs" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        [class.active]="tab() === 'list'"
+        (click)="selectTab('list')"
+      >
+        Danh sách
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        [class.active]="tab() === 'clock'"
+        (click)="selectTab('clock')"
+      >
+        Đồng hồ
+      </button>
+    </div>
+
+    @if (tab() === 'list') {
+      <ul class="list" role="listbox">
+        @for (option of listOptions; track option) {
+          <li>
+            <button
+              type="button"
+              role="option"
+              class="list-option"
+              [class.selected]="option === currentValue()"
+              [attr.aria-selected]="option === currentValue()"
+              (click)="selectListOption(option)"
+            >
+              {{ option }}
+            </button>
+          </li>
+        }
+      </ul>
+    } @else {
+      <div class="clock-tab">
+        <div class="ampm">
+          <button
+            type="button"
+            class="ampm-btn"
+            [class.active]="!isPm()"
+            (click)="setAmPm(false)"
+          >
+            SA
+          </button>
+          <button
+            type="button"
+            class="ampm-btn"
+            [class.active]="isPm()"
+            (click)="setAmPm(true)"
+          >
+            CH
+          </button>
+          <span class="clock-step-hint">
+            {{ clockStep() === 'hour' ? 'Chọn giờ' : 'Chọn phút' }}
+          </span>
+        </div>
+
+        <svg viewBox="0 0 200 200" width="200" height="200" class="clock-face">
+          <circle cx="100" cy="100" r="94" class="clock-bg" />
+          @if (clockStep() === 'hour') {
+            <line
+              x1="100"
+              y1="100"
+              [attr.x2]="hourMarks[selectedHourMark() === 12 ? 0 : selectedHourMark()].x"
+              [attr.y2]="hourMarks[selectedHourMark() === 12 ? 0 : selectedHourMark()].y"
+              class="clock-hand"
+            />
+            @for (mark of hourMarks; track mark.value) {
+              <g
+                class="clock-mark"
+                [class.selected]="mark.value === selectedHourMark()"
+                (click)="selectHour(mark.value)"
+              >
+                <circle [attr.cx]="mark.x" [attr.cy]="mark.y" r="15" />
+                <text [attr.x]="mark.x" [attr.y]="mark.y + 5">{{ mark.value }}</text>
+              </g>
+            }
+          } @else {
+            <line
+              x1="100"
+              y1="100"
+              [attr.x2]="minuteMarks[selectedMinuteMark() / 5].x"
+              [attr.y2]="minuteMarks[selectedMinuteMark() / 5].y"
+              class="clock-hand"
+            />
+            @for (mark of minuteMarks; track mark.value) {
+              <g
+                class="clock-mark"
+                [class.selected]="mark.value === selectedMinuteMark()"
+                (click)="selectMinute(mark.value)"
+              >
+                <circle [attr.cx]="mark.x" [attr.cy]="mark.y" r="15" />
+                <text [attr.x]="mark.x" [attr.y]="mark.y + 5">{{ mark.value }}</text>
+              </g>
+            }
+          }
+          <circle cx="100" cy="100" r="4" class="clock-center" />
+        </svg>
+
+        @if (clockStep() === 'minute') {
+          <button type="button" class="back-btn" (click)="clockStep.set('hour')">
+            ← Đổi giờ
+          </button>
+        }
+      </div>
+    }
+  </div>
+}

@@ -1,0 +1,81 @@
+/* You can add global styles to this file, and also import other style files */
+
+@import 'tailwindcss';
+
+:root {
+  --color-bg: #f8f9fa;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f1f3f4;
+  --color-surface-hover-strong: #f8f9fa;
+  --color-border: #e8eaed;
+  --color-border-strong: #dadce0;
+  --color-text: #202124;
+  --color-text-secondary: #3c4043;
+  --color-text-tertiary: #5f6368;
+  --color-text-muted: #70757a;
+  --color-text-faint: #80868b;
+  --color-text-disabled: #bdc1c6;
+  --color-accent: #1a73e8;
+  --color-accent-hover: #1765cc;
+  --color-accent-soft: #e8f0fe;
+  --color-accent-disabled: #a8c7fa;
+  --color-accent-contrast: #ffffff;
+  --color-danger: #d93025;
+  --color-live: #ea4335;
+  --color-success: #188038;
+  --shadow-sm: 0 1px 3px rgba(60, 64, 67, 0.3), 0 4px 8px rgba(60, 64, 67, 0.15);
+  --shadow-sm-hover: 0 1px 3px rgba(60, 64, 67, 0.3), 0 6px 10px rgba(60, 64, 67, 0.2);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.2);
+  --shadow-popup: 0 4px 16px rgba(0, 0, 0, 0.18);
+  --shadow-modal: 0 8px 28px rgba(0, 0, 0, 0.3);
+  --overlay-backdrop: rgba(32, 33, 36, 0.5);
+  --chip-tint-bg: white;
+  --chip-tint-text: black;
+  color-scheme: light;
+}
+
+:root.dark {
+  --color-bg: #202124;
+  --color-surface: #292a2d;
+  --color-surface-hover: #35363a;
+  --color-surface-hover-strong: #3c4043;
+  --color-border: #3c4043;
+  --color-border-strong: #5f6368;
+  --color-text: #e8eaed;
+  --color-text-secondary: #e8eaed;
+  --color-text-tertiary: #9aa0a6;
+  --color-text-muted: #9aa0a6;
+  --color-text-faint: #9aa0a6;
+  --color-text-disabled: #5f6368;
+  --color-accent: #8ab4f8;
+  --color-accent-hover: #aecbfa;
+  --color-accent-soft: #2d3f5c;
+  --color-accent-disabled: #3c4043;
+  --color-accent-contrast: #202124;
+  --color-danger: #f28b82;
+  --color-live: #f28b82;
+  --color-success: #81c995;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --shadow-sm-hover: 0 1px 3px rgba(0, 0, 0, 0.4), 0 6px 10px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-popup: 0 4px 16px rgba(0, 0, 0, 0.45);
+  --shadow-modal: 0 8px 28px rgba(0, 0, 0, 0.6);
+  --overlay-backdrop: rgba(0, 0, 0, 0.6);
+  --chip-tint-bg: black;
+  --chip-tint-text: white;
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+* {
+  box-sizing: border-box;
+}

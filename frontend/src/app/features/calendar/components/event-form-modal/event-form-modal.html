@@ -1,0 +1,262 @@
+<div class="backdrop" (click)="onBackdropClick($event)">
+  <form
+    class="modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="event-modal-title"
+    [formGroup]="form"
+    (ngSubmit)="save()"
+  >
+    <header class="modal-header">
+      <input
+        id="event-modal-title"
+        class="title-input"
+        type="text"
+        formControlName="title"
+        placeholder="Thêm tiêu đề"
+        autofocus
+      />
+      <button type="button" class="icon-btn" aria-label="Đóng" (click)="cancel()">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path
+            fill="currentColor"
+            d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+          />
+        </svg>
+      </button>
+    </header>
+
+    @if (!calendarsLoading() && calendars().length === 0) {
+      <p class="field-error">Bạn chưa có lịch nào để lưu sự kiện. Vui lòng tải lại trang.</p>
+    }
+    @if (form.controls.title.invalid && form.controls.title.touched) {
+      <p class="field-error">Vui lòng nhập tiêu đề sự kiện.</p>
+    }
+    @if (saveError()) {
+      <p class="field-error">{{ saveError() }}</p>
+    }
+
+    <div class="modal-body">
+      <label class="row checkbox-row">
+        <input type="checkbox" formControlName="allDay" />
+        Cả ngày
+      </label>
+
+      <div class="row date-row">
+        <input class="date-input" type="date" formControlName="startDate" />
+        @if (!form.controls.allDay.value) {
+          <app-time-picker formControlName="startTime" ariaLabel="Giờ bắt đầu" />
+        }
+        <span class="to-label">đến</span>
+        <input class="date-input" type="date" formControlName="endDate" />
+        @if (!form.controls.allDay.value) {
+          <app-time-picker formControlName="endTime" ariaLabel="Giờ kết thúc" />
+        }
+      </div>
+
+      @if (rangeError()) {
+        <p class="field-error">Thời gian kết thúc phải sau thời gian bắt đầu.</p>
+      }
+
+      @if (checkingConflicts()) {
+        <p class="hint-text">Đang kiểm tra trùng lịch…</p>
+      }
+      @if (conflicts(); as list) {
+        @if (list.length > 0) {
+          <div class="conflict-warning">
+            <p class="conflict-warning-title">⚠️ Trùng lịch với:</p>
+            <ul>
+              @for (c of list; track c.id) {
+                <li>{{ conflictLabel(c) }}</li>
+              }
+            </ul>
+          </div>
+        }
+      }
+
+      @if (!form.controls.allDay.value) {
+        <div class="row presets-row">
+          <span class="presets-label">Thời lượng nhanh:</span>
+          @for (preset of durationPresets; track preset.label) {
+            <button
+              type="button"
+              class="preset-chip"
+              (click)="applyDuration(preset.minutes)"
+            >
+              {{ preset.label }}
+            </button>
+          }
+        </div>
+      }
+
+      <div class="row">
+        <input
+          class="text-input"
+          type="text"
+          formControlName="location"
+          placeholder="Thêm địa điểm"
+        />
+      </div>
+
+      <div class="row">
+        <textarea
+          class="text-input"
+          rows="3"
+          formControlName="description"
+          placeholder="Thêm mô tả"
+        ></textarea>
+      </div>
+
+      @if (event()) {
+        <div class="attendees-section">
+          <span class="presets-label">Người tham gia:</span>
+
+          <div class="row">
+            <input
+              class="text-input"
+              type="email"
+              [formControl]="inviteEmailControl"
+              placeholder="Mời qua email"
+              (keydown.enter)="$event.preventDefault(); invite()"
+            />
+            <button
+              type="button"
+              class="text-btn"
+              [disabled]="inviting()"
+              (click)="invite()"
+            >
+              Mời
+            </button>
+          </div>
+          @if (inviteEmailControl.invalid && inviteEmailControl.touched) {
+            <p class="field-error">Vui lòng nhập email hợp lệ.</p>
+          }
+          @if (inviteError()) {
+            <p class="field-error">{{ inviteError() }}</p>
+          }
+
+          @if (attendees().length > 0) {
+            <ul class="attendee-list">
+              @for (a of attendees(); track a.id) {
+                <li class="attendee-item">
+                  <span>{{ a.email }}</span>
+                  <span class="attendee-status" [class]="'status-' + a.status">
+                    {{ statusLabel(a.status) }}
+                  </span>
+                </li>
+              }
+            </ul>
+          }
+
+          @if (myAttendee(); as mine) {
+            @if (mine.status === 'pending') {
+              <div class="row">
+                <span class="presets-label">Bạn được mời tham gia:</span>
+                <button type="button" class="primary-btn" (click)="respond('accepted')">
+                  Đồng ý
+                </button>
+                <button type="button" class="text-btn" (click)="respond('declined')">
+                  Từ chối
+                </button>
+              </div>
+            }
+          }
+        </div>
+      }
+
+      <div class="attendees-section">
+        <span class="presets-label">Nhắc lịch:</span>
+        <div class="reminder-list">
+          @for (preset of reminderPresets; track preset.offsetMinutes) {
+            <label class="reminder-row">
+              <input
+                type="checkbox"
+                [checked]="reminderSelections().has(preset.offsetMinutes)"
+                (change)="toggleReminder(preset.offsetMinutes)"
+              />
+              {{ preset.label }}
+              @if (reminderSelections().has(preset.offsetMinutes)) {
+                <select
+                  class="reminder-type-select"
+                  [value]="reminderSelections().get(preset.offsetMinutes)"
+                  (change)="setReminderType(preset.offsetMinutes, $any($event.target).value)"
+                >
+                  <option value="popup">Thông báo</option>
+                  <option value="email">Email</option>
+                </select>
+              }
+            </label>
+          }
+          @for (entry of customReminderEntries(); track entry[0]) {
+            <label class="reminder-row">
+              <input type="checkbox" checked (change)="toggleReminder(entry[0])" />
+              {{ entry[0] }} phút trước
+              <select
+                class="reminder-type-select"
+                [value]="entry[1]"
+                (change)="setReminderType(entry[0], $any($event.target).value)"
+              >
+                <option value="popup">Thông báo</option>
+                <option value="email">Email</option>
+              </select>
+            </label>
+          }
+          <div class="row">
+            <input
+              class="text-input reminder-custom-input"
+              type="number"
+              min="1"
+              [formControl]="customReminderMinutes"
+              placeholder="Số phút trước (tuỳ chỉnh)"
+            />
+            <button type="button" class="text-btn" (click)="addCustomReminder()">Thêm</button>
+          </div>
+        </div>
+      </div>
+
+      @if (event(); as evt) {
+        <app-comments-section [eventId]="evt.id" />
+      }
+
+      <div class="row calendar-row">
+        <span class="presets-label">Lịch:</span>
+        @if (calendarsLoading() && calendars().length === 0) {
+          <div class="calendar-swatches" aria-hidden="true">
+            <span class="swatch-skeleton"></span>
+            <span class="swatch-skeleton"></span>
+          </div>
+        } @else {
+          <div class="calendar-swatches">
+            @for (cal of calendars(); track cal.id) {
+              <label class="swatch-option">
+                <input
+                  type="radio"
+                  formControlName="calendarId"
+                  [value]="cal.id"
+                />
+                <span
+                  class="swatch-dot"
+                  [style.background]="colorHex[cal.color]"
+                ></span>
+                {{ cal.name }}
+              </label>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <footer class="modal-footer">
+      @if (event()) {
+        <button type="button" class="text-btn danger" (click)="remove()">
+          Xoá
+        </button>
+      }
+      <span class="spacer"></span>
+      <button type="button" class="text-btn" (click)="cancel()">Huỷ</button>
+      <button type="submit" class="primary-btn" [disabled]="saving() || calendarsLoading()">
+        {{ saving() ? 'Đang lưu…' : 'Lưu' }}
+      </button>
+    </footer>
+  </form>
+</div>

@@ -1,0 +1,86 @@
+<div class="time-grid">
+  <div class="day-header-row">
+    <div class="gutter-spacer"></div>
+    @for (day of days(); track day.getTime()) {
+      <div class="day-header-cell">
+        <span class="wd">{{ weekdayShort(day) }}</span>
+        <span class="dn" [class.today]="isToday(day)">{{ day.getDate() }}</span>
+      </div>
+    }
+  </div>
+
+  <div class="all-day-row">
+    <div class="gutter-spacer">Cả ngày</div>
+    @for (day of days(); track day.getTime()) {
+      <div class="all-day-cell" (click)="onAllDayCellClick(day)">
+        @for (evt of allDayEventsFor(day); track evt.id) {
+          <button
+            type="button"
+            class="event-chip"
+            [style.--chip-color]="colorFor(evt)"
+            (click)="onChipClick(evt, $event)"
+          >
+            {{ evt.title }}
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="scroll-area" #scrollContainer>
+    <div class="grid-body" [style.height.px]="DAY_HEIGHT">
+      <div class="gutter">
+        @for (h of hours; track h) {
+          <span class="hour-label" [style.top.px]="h * HOUR_HEIGHT">{{ formatHourLabel(h) }}</span>
+        }
+      </div>
+
+      <div class="columns">
+        @for (day of days(); track day.getTime()) {
+          <div class="day-col" (mousedown)="onGridMouseDown($event, day)">
+            @for (h of hours; track h) {
+              <div class="hour-line" [style.top.px]="h * HOUR_HEIGHT"></div>
+            }
+
+            @if (isToday(day)) {
+              <div class="now-line" [style.top.px]="nowTop()">
+                <span class="now-dot"></span>
+              </div>
+            }
+
+            @if (dragCreate(); as dc) {
+              @if (dc.dayKey === dayKey(day)) {
+                <div
+                  class="drag-preview"
+                  [style.top.px]="(dc.startMin / 60) * HOUR_HEIGHT"
+                  [style.height.px]="((dc.endMin - dc.startMin) / 60) * HOUR_HEIGHT"
+                ></div>
+              }
+            }
+
+            @for (pe of eventsFor(day); track pe.event.id) {
+              <div
+                class="event-block"
+                [style.top.px]="blockTop(pe)"
+                [style.height.px]="blockHeight(pe)"
+                [style.left.%]="pe.leftPct"
+                [style.width.%]="pe.widthPct"
+                [style.--chip-color]="colorFor(pe.event)"
+                (mousedown)="onBlockMouseDown($event, pe)"
+              >
+                <div class="block-content">
+                  <span class="block-title">{{ pe.event.title }}</span>
+                  <span class="block-time">{{ formatTimeLabel(pe.event.start) }}</span>
+                </div>
+                <div
+                  class="resize-handle"
+                  (mousedown)="onResizeMouseDown($event, pe)"
+                ></div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>

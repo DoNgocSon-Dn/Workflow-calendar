@@ -1,0 +1,228 @@
+DANH SACH SKILLS DA CAI (GLOBAL) - ~/.agents/skills
+Cap nhat: 2026-07-11
+Tong so: 85 skills
+
+================================================================
+NHOM 1: DESIGN WEBSITE / APP (UU TIEN CAO NHAT)
+================================================================
+
+--- 1a. Design cua Google (uu tien hang dau) ---
+
+1. design-md
+   Nguon: google-labs-code/stitch-skills (chinh thuc Google Labs, plugin "utilities")
+   Chu thich: Phan tich du an Stitch / source code frontend va tong hop thanh
+   file DESIGN.md (he thong thiet ke dang ngon ngu ngu nghia). 53.7K luot cai.
+
+2. taste-design
+   Nguon: google-labs-code/stitch-skills (chinh thuc Google Labs, plugin "utilities")
+   Chu thich: Tao DESIGN.md theo chuan "premium, anti-generic UI" - typography
+   nghiem ngat, mau sac hieu chinh, layout bat doi xung, micro-motion,
+   hardware-accelerated performance. 13.5K luot cai.
+
+3. stitch-generate-design
+   Nguon: google-labs-code/stitch-skills (chinh thuc Google Labs, plugin "design", qua MCP)
+   Chu thich: Tao man hinh moi tu text/hinh anh, sua man hinh co san, tao cac
+   bien the thiet ke bang Stitch MCP (co pipeline enhance prompt, design token,
+   thuat ngu UI/UX chuyen nghiep). 4.5K luot cai.
+
+4. stitch-extract-design-md
+   Nguon: google-labs-code/stitch-skills (chinh thuc Google Labs, plugin "design")
+   Chu thich: Trich xuat DESIGN.md truc tiep tu source code frontend (React, Vue,
+   Svelte, Angular, HTML/CSS...) de tai lieu hoa he thong thiet ke. 4.3K luot cai.
+
+5. stitch-manage-design-system
+   Nguon: google-labs-code/stitch-skills (chinh thuc Google Labs, plugin "design", qua MCP)
+   Chu thich: Quan ly he thong thiet ke trong Stitch (tai len DESIGN.md, ap dung
+   theme cho man hinh) bang MCP tools. 4.2K luot cai.
+
+   GHI CHU: repo google-labs-code/stitch-skills con 9 skill khac chua cai (vi
+   ngoai pham vi "design chinh"): code-to-design, extract-static-html,
+   upload-to-stitch (plugin design), react-components, react-native, remotion,
+   shadcn-ui (plugin build), enhance-prompt, stitch-loop (plugin utilities).
+   Cai them bang: npx skills add google-labs-code/stitch-skills -g -y -s "<ten-skill>"
+
+--- 1b. Design khac (khong phai Google, giu lai theo yeu cau truoc) ---
+
+6. frontend-design
+   Nguon: anthropics/skills
+   Chu thich: Huong dan thiet ke visual UI moi hoac lam moi UI cu, giup chon
+   huong tham my, typography va tranh cac lua chon "template mac dinh nham chan".
+
+7. web-design-guidelines
+   Nguon: vercel-labs/agent-skills
+   Chu thich: Review code UI theo bo "Web Interface Guidelines" cua Vercel -
+   dung khi can kiem tra accessibility, UX, hoac audit thiet ke website.
+
+8. apple-design
+   Nguon: emilkowalski/skills
+   Chu thich: Trien khai phong cach thiet ke cua Apple (chuyen dong vat ly,
+   spring animation, gesture, translucent material, typography) ap dung cho web.
+
+9. mobile-app-ui-design
+   Nguon: ceorkm/mobile-app-ui-design
+   Chu thich: Thiet ke man hinh/luong UI/UX cho mobile app (mockup, onboarding,
+   navigation, React Native/Flutter/SwiftUI).
+
+10. ui-ux-pro-max
+    Nguon: nextlevelbuilder/ui-ux-pro-max-skill
+    CANH BAO: Gen security scanner danh gia "High Risk" (khac voi cac skill con
+    lai la Safe/Low). Nen doc SKILL.md truoc khi dung cho viec nhay cam.
+    Chu thich: Bo "tri thuc" UI/UX cho web va mobile - 50+ style thiet ke, 161
+    bang mau, 57 cap font, 161 loai san pham, 99 UX guideline, 25 loai chart,
+    ho tro 10 stack (React, Next.js, Vue, Svelte, SwiftUI, React Native,
+    Flutter, Tailwind, shadcn/ui, HTML/CSS).
+
+================================================================
+NHOM 2: TIEN ICH CHUNG (co san / khong lien quan Google Cloud)
+================================================================
+
+11. docx
+    Chu thich: Tao/doc/sua file Word (.docx) - bao cao, memo, letterhead, TOC...
+
+12. find-skills
+    Chu thich: Giup tim va cai them cac skill khac khi nguoi dung hoi "co skill
+    nao lam duoc X khong".
+
+13. seo-content-writer
+    Chu thich: Viet noi dung SEO (bai viet, landing page) co keyword, header,
+    snippet. Khong dung cho GEO scoring hay refresh noi dung cu.
+
+================================================================
+NHOM 3: GOOGLE CLOUD / ADS / FIREBASE / GKE (72 skill, tu google/skills)
+Khong lien quan thiet ke website/app - liet ke de tham khao/quan ly
+================================================================
+
+--- Agent Platform (Vertex AI / Gemini Enterprise) ---
+14. agent-platform-alert-configuration - Cau hinh alert cho agent tren Agent Runtime (latency, error rate, chat luong).
+15. agent-platform-deploy - Deploy model tu Model Garden len Agent Platform endpoint.
+16. agent-platform-endpoint-management - Tao/sua/xoa serving endpoint tren Agent Platform.
+17. agent-platform-eval-flywheel - Danh gia chat luong agent/model (eval dataset, LLM-as-judge).
+18. agent-platform-inference - Goi inference toi Gemini/OpenMaaS model qua Agent Platform.
+19. agent-platform-migrate-from-ai-studio - Huong dan chuyen tu Google AI Studio sang Agent Platform.
+20. agent-platform-model-registry - Quan ly model va version trong Model Registry.
+21. agent-platform-prompt-management - Quan ly prompt (tao/liet ke/version/xoa) trong Agent Platform.
+22. agent-platform-rag-engine-management - Quan ly va truy van RAG Engine Corpora.
+23. agent-platform-skill-registry - Dang ky va tim kiem skill trong Skill Registry cua Agent Platform.
+24. agent-platform-tuning - Fine-tune model (open model hoac Gemini) tren Agent Platform.
+25. agent-platform-tuning-management - Quan ly (list/get/cancel) cac tuning job dang chay.
+
+--- Cloud Data & Database ---
+26. alloydb-basics - Quan ly cluster/instance/backup cho AlloyDB (PostgreSQL).
+27. bigquery-ai-ml - Viet SQL cho ML/GenAI trong BigQuery (forecast, outlier, key driver).
+28. bigquery-basics - Quan ly dataset/table/job va truy van SQL trong BigQuery.
+29. bigquery-bigframes - Viet code Python kieu pandas/scikit-learn tren BigQuery (BigFrames).
+30. bigtable-basics - Thiet ke schema, row key, provisioning cho Bigtable.
+31. cloud-sql-basics - Tao/giai thich resource Cloud SQL (MySQL/PostgreSQL/SQL Server).
+32. datalineage-bigquery-asset-impact-analysis - Phan tich anh huong (blast radius) khi 1 bang/view BigQuery bi loi hoac thay doi.
+33. workload-manager-basics - Quan ly evaluation/rule cua Workload Manager (best practice, SAP, SQL Server).
+
+--- Cloud Run / Compute ---
+34. cloud-run-basics - Deploy Cloud Run services/jobs/worker pools.
+
+--- Data Manager API (quang cao / audience) ---
+35. data-manager-api-audience-ingestion - Upload audience member (Customer Match, device ID...) qua Data Manager API.
+36. data-manager-api-event-ingestion - Upload event/conversion (offline conversion, GA event...) qua Data Manager API.
+37. data-manager-api-setup - Cai dat client library va xac thuc cho Data Manager API.
+
+--- Google Ads ---
+38. google-ads-api-mcp-setup - Cai dat Google Ads MCP Server de ket noi AI assistant voi tai khoan Ads.
+39. google-ads-api-quickstart - Huong dan bat dau voi Google Ads API (credential, script mau, loi thuong gap).
+
+--- Google Analytics ---
+40. google-analytics-admin-api-basics - Quan ly account/property GA (data stream, custom dimension, conversion event).
+41. google-analytics-data-api-basics - Truy van bao cao GA (metric, dimension) qua Data API v1beta.
+
+--- Google Mobile Ads (GMA SDK) ---
+42. google-mobile-ads-android-migrate-to-next-gen - Migrate Android app tu GMA SDK cu sang Next-Gen SDK.
+43. google-mobile-ads-banner - Trien khai banner ads (Android/iOS).
+44. google-mobile-ads-get-started - Cai dat/tich hop GMA SDK ban dau (AdMob/Ad Manager).
+45. google-mobile-ads-interstitial - Trien khai interstitial ads.
+46. google-mobile-ads-rewarded - Trien khai rewarded ads.
+47. ima-sdk-basics - Chen video ads client-side (VAST/VMAP) bang IMA SDK.
+
+--- Gemini API / Agent CLI ---
+48. gemini-agents-api - Tao/quan ly Agent resource tren Gemini Enterprise Agent Platform.
+49. gemini-api - Huong dan dung Gemini API qua Google Gen AI SDK (multimodal, tool, cache...).
+50. gemini-interactions-api - Dung Interactions API cho hoi thoai nhieu luot, streaming, function calling.
+51. google-agents-cli-onboarding - Diem bat dau cho agents-cli (tao/chay/debug/deploy agent bang ADK).
+
+--- GKE (Google Kubernetes Engine) - 16 skill ---
+52. gke-app-onboarding - Onboard/containerize app len GKE lan dau.
+53. gke-backup-dr - Cau hinh backup plan va disaster recovery cho GKE.
+54. gke-basics - Diem trung tam, dieu huong toi cac skill GKE chuyen sau.
+55. gke-batch-hpc - Chay batch/HPC workload tren GKE (job queue, xu ly song song).
+56. gke-cluster-autoscaler - Cau hinh/toi uu cluster autoscaler, xu ly loi khong scale duoc.
+57. gke-cluster-creation - Len ke hoach va tao cluster GKE, audit production readiness.
+58. gke-compute-classes - Cau hinh ComputeClass (Spot VM, GPU/TPU, machine family).
+59. gke-cost - Toi uu chi phi GKE (rightsizing, Spot VM, CUD).
+60. gke-golden-path - Cung cap cau hinh mac dinh chuan (golden path) va checklist production.
+61. gke-inference - Deploy workload AI/ML inference tren GKE (GPU/TPU, model server).
+62. gke-multitenancy - Thiet ke multi-tenancy (namespace, RBAC, quota, network isolation).
+63. gke-networking - Thiet ke networking cho GKE (private cluster, Gateway API, DNS, IP planning).
+64. gke-observability - Cau hinh logging/monitoring/Prometheus cho GKE.
+65. gke-reliability - Tang do tin cay workload (PDB, health probe, topology spread).
+66. gke-scaling - Cau hinh autoscaling (HPA, VPA, Node Auto-Provisioning).
+67. gke-security - Bao mat GKE (Workload Identity, RBAC, Binary Authorization, Network Policy).
+68. gke-storage - Quan ly storage GKE (PVC, PersistentVolume, Filestore, GCS FUSE).
+69. gke-upgrades - Len ke hoach va thuc hien nang cap version GKE.
+
+--- Google Cloud (chung / kien truc / WAF) ---
+70. gcloud - Dung gcloud CLI an toan (validation, guardrail, denylist).
+71. google-cloud-networking-observability - Dieu tra su co networking (VPC Flow Log, NAT, firewall, Connectivity Test).
+72. google-cloud-recipe-auth - Huong dan xac thuc/uy quyen len Google Cloud (ADC, service identity).
+73. google-cloud-recipe-foundation-builder - Trien khai landing zone/foundation bao mat cho to chuc GCP moi.
+74. google-cloud-recipe-onboarding - Huong dan buoc dau cho developer moi tren Google Cloud.
+75. google-cloud-solution-agentic-ai-bidirectional-streaming - Thiet ke giai phap AI streaming 2 chieu real-time tren GCP.
+76. google-cloud-solution-architecture - Kham pha yeu cau va de xuat kien truc giai phap GCP tong the.
+77. google-cloud-waf-cost-optimization - Huong dan toi uu chi phi theo Well-Architected Framework (WAF).
+78. google-cloud-waf-operational-excellence - Huong dan van hanh theo WAF (deploy, monitoring, incident).
+79. google-cloud-waf-performance-optimization - Huong dan toi uu hieu nang theo WAF.
+80. google-cloud-waf-reliability - Huong dan do tin cay theo WAF.
+81. google-cloud-waf-security - Huong dan bao mat theo WAF (IAM, network, data protection).
+82. google-cloud-waf-sustainability - Huong dan giam tac dong moi truong theo WAF.
+
+--- Bao mat / IAM / SecOps ---
+83. detection-engineering-coverage-evaluation - Tu dong hoa quy trinh detection engineering trong Google SecOps (YARA-L rule).
+84. iam-recommendations-fetcher - Lay khuyen nghi bao mat IAM cho Org/Folder/Project.
+
+--- Khac ---
+85. firebase-basics - Ho tro du an dung Firebase (mobile/web app).
+
+================================================================
+NHAT KY THAY DOI (moi nhat tren cung)
+================================================================
+
+[2026-07-11] Cai them 5 skill Google Stitch Design (Nhom 1a):
+  design-md, taste-design, stitch-generate-design, stitch-extract-design-md,
+  stitch-manage-design-system - tu google-labs-code/stitch-skills (chinh thuc
+  Google Labs). Cai bang: npx skills add google-labs-code/stitch-skills -g -y
+  -s "<ten-skill>". Ly do: nguoi dung yeu cau uu tien skill design cua Google,
+  nhom design cu (frontend-design, apple-design...) khong co skill nao chinh
+  chu Google. 3 skill "stitch::..." can dung flag -s thay vi cu phap @skill vi
+  CLI khong parse dung dau ":" trong ten skill sau @.
+
+[2026-07-11] Phat hien va sua loi dong bo: 3 skill (docx, find-skills,
+  seo-content-writer) da co trong ~/.agents/skills (nguon cai) nhung CHUA duoc
+  lien ket sang ~/.claude/skills (noi Claude Code doc skill) -> Claude Code
+  khong thay duoc du file txt nay ghi la "da cai". Da tao lien ket Junction
+  (PowerShell New-Item -ItemType Junction) cho dung voi cach cac skill khac
+  trong thu muc dang duoc lien ket (khong dung "ln -s" trong Git Bash vi no
+  am tham COPY file thay vi tao symlink/junction that do thieu quyen tren
+  Windows - se khong nhan cap nhat tu nguon sau nay).
+
+================================================================
+GHI CHU
+================================================================
+- Vi tri cai dat: ~/.agents/skills/<ten-skill>/SKILL.md, duoc lien ket
+  (Junction/symlink) sang ~/.claude/skills/<ten-skill> de Claude Code doc duoc.
+  Tren Windows + Git Bash, PHAI dung PowerShell "New-Item -ItemType Junction"
+  de tao lien ket that; "ln -s" cua Git Bash se am tham copy file neu thieu
+  quyen tao symlink.
+- 72 skill trong Nhom 3 duoc cai tu lenh "npx skills add google/skills" (khong
+  loc --skill nen cai toan bo repo). Giu lai theo lua chon cua nguoi dung du
+  khong lien quan toi thiet ke website/app.
+- Cac skill trong Nhom 1a (Google Stitch Design) uu tien dung truoc cac skill
+  design khac trong Nhom 1b khi lam viec ve UI/UX, theo yeu cau cua nguoi dung
+  la "uu tien design cua Google".
+- Cac skill con lai trong Nhom 1b la ket qua tim kiem rieng cho yeu cau "design
+  website va app" (qua "npx skills find").

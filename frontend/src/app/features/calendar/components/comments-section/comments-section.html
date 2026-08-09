@@ -1,0 +1,37 @@
+<div class="comments-section">
+  <span class="presets-label">Bình luận:</span>
+
+  @if (comments().length > 0) {
+    <ul class="comment-list">
+      @for (c of comments(); track c.id) {
+        <li class="comment-item">
+          <span class="comment-content">{{ c.content }}</span>
+          @if (c.userId === myUserId()) {
+            <button
+              type="button"
+              class="comment-delete-btn"
+              aria-label="Xoá bình luận"
+              (click)="remove(c.id)"
+            >
+              ×
+            </button>
+          }
+        </li>
+      }
+    </ul>
+  }
+
+  <div class="row">
+    <input
+      class="text-input"
+      type="text"
+      [ngModel]="newComment()"
+      (ngModelChange)="newComment.set($event)"
+      placeholder="Viết bình luận…"
+      (keydown.enter)="$event.preventDefault(); send()"
+    />
+    <button type="button" class="text-btn" [disabled]="sending()" (click)="send()">
+      Gửi
+    </button>
+  </div>
+</div>
