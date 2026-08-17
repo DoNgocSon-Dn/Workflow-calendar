@@ -21,6 +21,7 @@
   --color-accent-disabled: #a8c7fa;
   --color-accent-contrast: #ffffff;
   --color-danger: #d93025;
+  --color-warning: #f9ab00;
   --color-live: #ea4335;
   --color-success: #188038;
   --shadow-sm: 0 1px 3px rgba(60, 64, 67, 0.3), 0 4px 8px rgba(60, 64, 67, 0.15);
@@ -29,10 +30,40 @@
   --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.2);
   --shadow-popup: 0 4px 16px rgba(0, 0, 0, 0.18);
   --shadow-modal: 0 8px 28px rgba(0, 0, 0, 0.3);
+  --shadow-drawer: 4px 0 12px rgba(0, 0, 0, 0.15);
   --overlay-backdrop: rgba(32, 33, 36, 0.5);
   --chip-tint-bg: white;
   --chip-tint-text: black;
   color-scheme: light;
+
+  /* Shape scale — every border-radius in the app should reference one of
+     these instead of a one-off value, so corner rounding reads as one
+     consistent system rather than per-component guesses. */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.4rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-full: 999px;
+
+  /* Spacing scale — 4px base grid, mirrors the radius scale's intent. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  /* "Hình thức" (density) — Cài đặt cho phép chuyển giữa Thoải mái/Gọn;
+     xem DensityService. Chỉ ảnh hưởng các chỗ tham chiếu 2 biến này. */
+  --month-row-min-height: 5.5rem;
+  --chip-padding-block: 0.1rem;
+}
+
+:root.density-compact {
+  --month-row-min-height: 3.75rem;
+  --chip-padding-block: 0.02rem;
 }
 
 :root.dark {
@@ -54,6 +85,7 @@
   --color-accent-disabled: #3c4043;
   --color-accent-contrast: #202124;
   --color-danger: #f28b82;
+  --color-warning: #fdd663;
   --color-live: #f28b82;
   --color-success: #81c995;
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.3);
@@ -62,6 +94,7 @@
   --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.5);
   --shadow-popup: 0 4px 16px rgba(0, 0, 0, 0.45);
   --shadow-modal: 0 8px 28px rgba(0, 0, 0, 0.6);
+  --shadow-drawer: 4px 0 12px rgba(0, 0, 0, 0.4);
   --overlay-backdrop: rgba(0, 0, 0, 0.6);
   --chip-tint-bg: black;
   --chip-tint-text: white;
@@ -78,4 +111,30 @@ body {
 
 * {
   box-sizing: border-box;
+}
+
+/* In lịch (nút "In" trong menu cài đặt) — chỉ giữ lại phần lưới lịch, ẩn
+   sidebar/thanh công cụ/widget nổi và cho nội dung tràn hết trang thay vì
+   bị cắt theo chiều cao viewport. */
+@media print {
+  app-calendar-sidebar,
+  app-notes-widget,
+  app-ai-chat-widget,
+  app-notification-popup,
+  .backdrop,
+  .topbar .right,
+  .topbar .icon-btn {
+    display: none !important;
+  }
+
+  html,
+  body,
+  .calendar-page,
+  .body,
+  .view-area,
+  .time-grid .scroll-area,
+  .time-grid .grid-body {
+    height: auto !important;
+    overflow: visible !important;
+  }
 }

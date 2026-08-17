@@ -1,256 +1,282 @@
 <div class="backdrop" (click)="onBackdropClick($event)">
-  <form
-    class="modal"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="event-modal-title"
-    [formGroup]="form"
-    (ngSubmit)="save()"
-  >
+  <form class="modal" role="dialog" aria-modal="true" aria-labelledby="event-modal-title" [formGroup]="form"
+    (ngSubmit)="save()">
     <header class="modal-header">
-      <input
-        id="event-modal-title"
-        class="title-input"
-        type="text"
-        formControlName="title"
-        placeholder="Thêm tiêu đề"
-        autofocus
-      />
+      <input id="event-modal-title" class="title-input" type="text" formControlName="title" placeholder="Thêm tiêu đề"
+        autofocus />
       <button type="button" class="icon-btn" aria-label="Đóng" (click)="cancel()">
         <svg viewBox="0 0 24 24" width="20" height="20">
-          <path
-            fill="currentColor"
-            d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
-          />
+          <path fill="currentColor"
+            d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
         </svg>
       </button>
     </header>
 
     @if (!calendarsLoading() && calendars().length === 0) {
-      <p class="field-error">Bạn chưa có lịch nào để lưu sự kiện. Vui lòng tải lại trang.</p>
+    <p class="hint-text hint-inset">Đang tự động khởi tạo lịch mặc định…</p>
     }
     @if (form.controls.title.invalid && form.controls.title.touched) {
-      <p class="field-error">Vui lòng nhập tiêu đề sự kiện.</p>
+    <p class="field-error hint-inset">Vui lòng nhập tiêu đề sự kiện.</p>
     }
-    @if (saveError()) {
-      <p class="field-error">{{ saveError() }}</p>
+    @if (saveError() && calendars().length > 0) {
+    <p class="field-error hint-inset">{{ saveError() }}</p>
     }
 
     <div class="modal-body">
-      <label class="row checkbox-row">
-        <input type="checkbox" formControlName="allDay" />
-        Cả ngày
-      </label>
+      <!-- Thời gian -->
+      <div class="field-row">
+        <svg class="field-icon" viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor"
+            d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
+        </svg>
+        <div class="field-content">
+          <label class="all-day-toggle">
+            <input type="checkbox" formControlName="allDay" />
+            Cả ngày
+          </label>
 
-      <div class="row date-row">
-        <input class="date-input" type="date" formControlName="startDate" />
-        @if (!form.controls.allDay.value) {
-          <app-time-picker formControlName="startTime" ariaLabel="Giờ bắt đầu" />
-        }
-        <span class="to-label">đến</span>
-        <input class="date-input" type="date" formControlName="endDate" />
-        @if (!form.controls.allDay.value) {
-          <app-time-picker formControlName="endTime" ariaLabel="Giờ kết thúc" />
-        }
-      </div>
+          <div class="row date-row">
+            <input class="date-input" type="date" formControlName="startDate" />
+            @if (!form.controls.allDay.value) {
+            <app-time-picker formControlName="startTime" ariaLabel="Giờ bắt đầu" />
+            }
+            <span class="to-label">đến</span>
+            <input class="date-input" type="date" formControlName="endDate" />
+            @if (!form.controls.allDay.value) {
+            <app-time-picker formControlName="endTime" ariaLabel="Giờ kết thúc" />
+            }
+          </div>
 
-      @if (rangeError()) {
-        <p class="field-error">Thời gian kết thúc phải sau thời gian bắt đầu.</p>
-      }
-
-      @if (checkingConflicts()) {
-        <p class="hint-text">Đang kiểm tra trùng lịch…</p>
-      }
-      @if (conflicts(); as list) {
-        @if (list.length > 0) {
+          @if (rangeError()) {
+          <p class="field-error">Thời gian kết thúc phải sau thời gian bắt đầu.</p>
+          }
+          @if (checkingConflicts()) {
+          <p class="hint-text">Đang kiểm tra trùng lịch…</p>
+          }
+          @if (conflicts(); as list) {
+          @if (list.length > 0) {
           <div class="conflict-warning">
             <p class="conflict-warning-title">⚠️ Trùng lịch với:</p>
             <ul>
               @for (c of list; track c.id) {
-                <li>{{ conflictLabel(c) }}</li>
+              <li>{{ conflictLabel(c) }}</li>
               }
             </ul>
           </div>
-        }
-      }
+          }
+          }
 
-      @if (!form.controls.allDay.value) {
-        <div class="row presets-row">
-          <span class="presets-label">Thời lượng nhanh:</span>
-          @for (preset of durationPresets; track preset.label) {
-            <button
-              type="button"
-              class="preset-chip"
-              (click)="applyDuration(preset.minutes)"
-            >
+          @if (!form.controls.allDay.value) {
+          <div class="row presets-row">
+            <span class="presets-label">Thời lượng nhanh:</span>
+            @for (preset of durationPresets; track preset.label) {
+            <button type="button" class="preset-chip" (click)="applyDuration(preset.minutes)">
               {{ preset.label }}
             </button>
+            }
+          </div>
           }
         </div>
-      }
-
-      <div class="row">
-        <input
-          class="text-input"
-          type="text"
-          formControlName="location"
-          placeholder="Thêm địa điểm"
-        />
       </div>
 
-      <div class="row">
-        <textarea
-          class="text-input"
-          rows="3"
-          formControlName="description"
-          placeholder="Thêm mô tả"
-        ></textarea>
+      <!-- Vị trí / link họp -->
+      <div class="field-row">
+        <svg class="field-icon" viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor"
+            d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" />
+        </svg>
+        @if (locationOpen()) {
+        <div class="field-content">
+          <input class="text-input" type="text" formControlName="location"
+            placeholder="Thêm địa điểm hoặc link cuộc họp" />
+          <button type="button" class="text-btn compact" (click)="generateVideoCallLink()">
+            Tạo link họp nhanh
+          </button>
+        </div>
+        } @else {
+        <button type="button" class="field-toggle" [class.has-value]="!!form.controls.location.value"
+          (click)="toggleField('location')">
+          {{ form.controls.location.value || 'Thêm địa điểm hoặc link cuộc họp' }}
+        </button>
+        }
       </div>
 
+      <!-- Mô tả -->
+      <div class="field-row">
+        <svg class="field-icon" viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor"
+            d="M4 4h16v2H4zm0 5h16v2H4zm0 5h10v2H4z" />
+        </svg>
+        @if (descriptionOpen()) {
+        <div class="field-content">
+          <textarea class="text-input" rows="3" formControlName="description" placeholder="Thêm mô tả"></textarea>
+        </div>
+        } @else {
+        <button type="button" class="field-toggle" [class.has-value]="!!form.controls.description.value"
+          (click)="toggleField('description')">
+          {{ form.controls.description.value || 'Thêm mô tả' }}
+        </button>
+        }
+      </div>
+
+      <!-- Khách mời (chỉ khi sửa sự kiện đã có) -->
       @if (event()) {
-        <div class="attendees-section">
-          <span class="presets-label">Người tham gia:</span>
-
+      <div class="field-row">
+        <svg class="field-icon" viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor"
+            d="M15 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-6-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 2c-2.67 0-8 1.34-8 4v2h9.29A5.98 5.98 0 0 1 9 16c0-1.48.65-2.8 1.68-3.72A11.7 11.7 0 0 0 9 12zm6 0c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+        </svg>
+        @if (attendeesOpen()) {
+        <div class="field-content">
           <div class="row">
-            <input
-              class="text-input"
-              type="email"
-              [formControl]="inviteEmailControl"
-              placeholder="Mời qua email"
-              (keydown.enter)="$event.preventDefault(); invite()"
-            />
-            <button
-              type="button"
-              class="text-btn"
-              [disabled]="inviting()"
-              (click)="invite()"
-            >
+            <input class="text-input" type="email" [formControl]="inviteEmailControl" placeholder="Mời qua email"
+              (keydown.enter)="$event.preventDefault(); invite()" />
+            <button type="button" class="text-btn compact" [disabled]="inviting()" (click)="invite()">
               Mời
             </button>
           </div>
           @if (inviteEmailControl.invalid && inviteEmailControl.touched) {
-            <p class="field-error">Vui lòng nhập email hợp lệ.</p>
+          <p class="field-error">Vui lòng nhập email hợp lệ.</p>
           }
           @if (inviteError()) {
-            <p class="field-error">{{ inviteError() }}</p>
+          <p class="field-error">{{ inviteError() }}</p>
           }
 
           @if (attendees().length > 0) {
-            <ul class="attendee-list">
-              @for (a of attendees(); track a.id) {
-                <li class="attendee-item">
-                  <span>{{ a.email }}</span>
-                  <span class="attendee-status" [class]="'status-' + a.status">
-                    {{ statusLabel(a.status) }}
-                  </span>
-                </li>
-              }
-            </ul>
+          <ul class="attendee-list">
+            @for (a of attendees(); track a.id) {
+            <li class="attendee-item">
+              <span>{{ a.email }}</span>
+              <span class="attendee-status" [class]="'status-' + a.status">
+                {{ statusLabel(a.status) }}
+              </span>
+            </li>
+            }
+          </ul>
           }
 
           @if (myAttendee(); as mine) {
-            @if (mine.status === 'pending') {
-              <div class="row">
-                <span class="presets-label">Bạn được mời tham gia:</span>
-                <button type="button" class="primary-btn" (click)="respond('accepted')">
-                  Đồng ý
-                </button>
-                <button type="button" class="text-btn" (click)="respond('declined')">
-                  Từ chối
-                </button>
-              </div>
-            }
+          @if (mine.status === 'pending') {
+          <div class="row">
+            <span class="presets-label">Bạn được mời tham gia:</span>
+            <button type="button" class="primary-btn" (click)="respond('accepted')">
+              Đồng ý
+            </button>
+            <button type="button" class="text-btn" (click)="respond('declined')">
+              Từ chối
+            </button>
+          </div>
+          }
           }
         </div>
+        } @else {
+        <button type="button" class="field-toggle" [class.has-value]="attendees().length > 0"
+          (click)="toggleField('attendees')">
+          {{ attendees().length > 0 ? attendees().length + ' khách' : 'Thêm khách' }}
+        </button>
+        }
+      </div>
       }
 
-      <div class="attendees-section">
-        <span class="presets-label">Nhắc lịch:</span>
-        <div class="reminder-list">
-          @for (preset of reminderPresets; track preset.offsetMinutes) {
+      <!-- Nhắc lịch -->
+      <div class="field-row">
+        <svg class="field-icon" viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor"
+            d="M12 22a2.2 2.2 0 0 0 2.2-2.2h-4.4A2.2 2.2 0 0 0 12 22zm6.6-6.6V11c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C8.24 5.36 6.6 7.92 6.6 11v4.4L4.4 17.6v1.1h15.2v-1.1z" />
+        </svg>
+        @if (remindersOpen()) {
+        <div class="field-content">
+          <div class="reminder-list">
+            @for (preset of reminderPresets; track preset.offsetMinutes) {
             <label class="reminder-row">
-              <input
-                type="checkbox"
-                [checked]="reminderSelections().has(preset.offsetMinutes)"
-                (change)="toggleReminder(preset.offsetMinutes)"
-              />
+              <input type="checkbox" [checked]="reminderSelections().has(preset.offsetMinutes)"
+                (change)="toggleReminder(preset.offsetMinutes)" />
               {{ preset.label }}
               @if (reminderSelections().has(preset.offsetMinutes)) {
-                <select
-                  class="reminder-type-select"
-                  [value]="reminderSelections().get(preset.offsetMinutes)"
-                  (change)="setReminderType(preset.offsetMinutes, $any($event.target).value)"
-                >
-                  <option value="popup">Thông báo</option>
-                  <option value="email">Email</option>
-                </select>
+              <select class="reminder-type-select" [value]="reminderSelections().get(preset.offsetMinutes)"
+                (change)="setReminderType(preset.offsetMinutes, $any($event.target).value)">
+                <option value="popup">Thông báo</option>
+                <option value="email">Email</option>
+              </select>
               }
             </label>
-          }
-          @for (entry of customReminderEntries(); track entry[0]) {
+            }
+            @for (entry of customReminderEntries(); track entry[0]) {
             <label class="reminder-row">
               <input type="checkbox" checked (change)="toggleReminder(entry[0])" />
               {{ entry[0] }} phút trước
-              <select
-                class="reminder-type-select"
-                [value]="entry[1]"
-                (change)="setReminderType(entry[0], $any($event.target).value)"
-              >
+              <select class="reminder-type-select" [value]="entry[1]"
+                (change)="setReminderType(entry[0], $any($event.target).value)">
                 <option value="popup">Thông báo</option>
                 <option value="email">Email</option>
               </select>
             </label>
-          }
-          <div class="row">
-            <input
-              class="text-input reminder-custom-input"
-              type="number"
-              min="1"
-              [formControl]="customReminderMinutes"
-              placeholder="Số phút trước (tuỳ chỉnh)"
-            />
-            <button type="button" class="text-btn" (click)="addCustomReminder()">Thêm</button>
+            }
+            <div class="row">
+              <input class="text-input reminder-custom-input" type="number" min="1"
+                [formControl]="customReminderMinutes" placeholder="Số phút trước (tuỳ chỉnh)" />
+              <button type="button" class="text-btn compact" (click)="addCustomReminder()">Thêm</button>
+            </div>
           </div>
         </div>
+        } @else {
+        <button type="button" class="field-toggle" [class.has-value]="reminderSelections().size > 0"
+          (click)="toggleField('reminders')">
+          {{ reminderSelections().size > 0 ? reminderSelections().size + ' lời nhắc' : 'Thêm thông báo' }}
+        </button>
+        }
       </div>
 
+      <!-- Bình luận (chỉ khi sửa sự kiện đã có) -->
       @if (event(); as evt) {
-        <app-comments-section [eventId]="evt.id" />
+      <div class="field-row">
+        <svg class="field-icon" viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor" d="M4 4h16v12H7l-3 3z" />
+        </svg>
+        @if (commentsOpen()) {
+        <div class="field-content">
+          <app-comments-section [eventId]="evt.id" />
+        </div>
+        } @else {
+        <button type="button" class="field-toggle" (click)="toggleField('comments')">
+          Bình luận
+        </button>
+        }
+      </div>
       }
 
-      <div class="row calendar-row">
-        <span class="presets-label">Lịch:</span>
-        @if (calendarsLoading() && calendars().length === 0) {
+      <!-- Lịch -->
+      <div class="field-row">
+        <svg class="field-icon" viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor"
+            d="M7 2v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2zm12 8v10H5V10z" />
+        </svg>
+        <div class="field-content">
+          @if (calendarsLoading() && calendars().length === 0) {
           <div class="calendar-swatches" aria-hidden="true">
             <span class="swatch-skeleton"></span>
             <span class="swatch-skeleton"></span>
           </div>
-        } @else {
+          } @else {
           <div class="calendar-swatches">
             @for (cal of calendars(); track cal.id) {
-              <label class="swatch-option">
-                <input
-                  type="radio"
-                  formControlName="calendarId"
-                  [value]="cal.id"
-                />
-                <span
-                  class="swatch-dot"
-                  [style.background]="colorHex[cal.color]"
-                ></span>
-                {{ cal.name }}
-              </label>
+            <label class="swatch-option">
+              <input type="radio" formControlName="calendarId" [value]="cal.id" />
+              <span class="swatch-dot" [style.background]="colorHex[cal.color]"></span>
+              {{ cal.name }}
+            </label>
             }
           </div>
-        }
+          }
+        </div>
       </div>
     </div>
 
     <footer class="modal-footer">
       @if (event()) {
-        <button type="button" class="text-btn danger" (click)="remove()">
-          Xoá
-        </button>
+      <button type="button" class="text-btn danger" (click)="remove()">
+        Xoá
+      </button>
       }
       <span class="spacer"></span>
       <button type="button" class="text-btn" (click)="cancel()">Huỷ</button>

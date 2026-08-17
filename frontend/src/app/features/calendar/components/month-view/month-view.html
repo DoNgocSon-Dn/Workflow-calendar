@@ -14,7 +14,9 @@
       <div
         class="day-cell"
         [class.outside]="!isCurrentMonth(day)"
-        (click)="onCellClick(day)"
+        [class.drag-selecting]="isInDragRange(day)"
+        (mousedown)="onCellMouseDown(day, $event)"
+        (mouseenter)="onCellMouseEnter(day)"
         (dragover)="onDragOver($event)"
         (drop)="onDrop($event, day)"
       >
@@ -26,10 +28,13 @@
               type="button"
               class="event-chip"
               [class.all-day]="evt.allDay"
+              [class.conflict]="store.conflictingEventIds().has(evt.id)"
               [style.--chip-color]="colorHex[store.calendarColor().get(evt.calendarId) ?? 'blue']"
               draggable="true"
+              (mousedown)="$event.stopPropagation()"
               (dragstart)="onDragStart($event, evt)"
               (click)="onChipClick(evt, $event)"
+              [title]="store.conflictingEventIds().has(evt.id) ? 'Trùng giờ với sự kiện khác' : ''"
             >
               {{ eventLabel(evt) }}
             </button>
@@ -38,6 +43,7 @@
             <button
               type="button"
               class="more-btn"
+              (mousedown)="$event.stopPropagation()"
               (click)="toggleExpanded(day, $event)"
             >
               +{{ hiddenCountFor(day) }} khác
@@ -46,13 +52,18 @@
         </div>
 
         @if (isExpanded(day)) {
-          <div class="day-popover" (click)="$event.stopPropagation()">
+          <div
+            class="day-popover"
+            (click)="$event.stopPropagation()"
+            (mousedown)="$event.stopPropagation()"
+          >
             <header class="popover-header">{{ day.getDate() }}/{{ day.getMonth() + 1 }}</header>
             @for (evt of eventsFor(day); track evt.id) {
               <button
                 type="button"
                 class="event-chip popover-chip"
                 [class.all-day]="evt.allDay"
+                [class.conflict]="store.conflictingEventIds().has(evt.id)"
                 [style.--chip-color]="colorHex[store.calendarColor().get(evt.calendarId) ?? 'blue']"
                 (click)="onChipClick(evt, $event)"
               >

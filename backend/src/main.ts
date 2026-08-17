@@ -16,10 +16,10 @@ async function bootstrap() {
     }),
   );
   app.enableCors({
-    origin: configService.get('corsOrigin', { infer: true }),
+    origin: true,
     credentials: true,
   });
 
-  await app.listen(configService.get('port', { infer: true }));
+  await app.listen(configService.get('port', { infer: true }), '0.0.0.0');
 }
 void bootstrap();

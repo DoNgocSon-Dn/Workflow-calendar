@@ -1,0 +1,69 @@
+<div class="backdrop" (click)="onBackdropClick($event)">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+    <header class="modal-header">
+      <h2 id="settings-modal-title">Cài đặt</h2>
+      <button type="button" class="icon-btn" aria-label="Đóng" (click)="cancel()">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor"
+            d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="modal-body">
+      <section class="setting-row">
+        <div class="setting-label">
+          <span class="setting-title">Giao diện</span>
+          <span class="setting-desc">Màu nền sáng hoặc tối cho toàn bộ ứng dụng.</span>
+        </div>
+        <div class="segmented" role="radiogroup" aria-label="Giao diện">
+          <button
+            type="button"
+            role="radio"
+            [attr.aria-checked]="themeService.theme() === 'light'"
+            [class.active]="themeService.theme() === 'light'"
+            (click)="setTheme('light')"
+          >
+            Sáng
+          </button>
+          <button
+            type="button"
+            role="radio"
+            [attr.aria-checked]="themeService.theme() === 'dark'"
+            [class.active]="themeService.theme() === 'dark'"
+            (click)="setTheme('dark')"
+          >
+            Tối
+          </button>
+        </div>
+      </section>
+
+      <section class="setting-row">
+        <div class="setting-label">
+          <span class="setting-title">Hình thức</span>
+          <span class="setting-desc">Độ giãn dòng của lịch tháng — gọn hơn để thấy nhiều sự kiện hơn.</span>
+        </div>
+        <div class="segmented" role="radiogroup" aria-label="Hình thức">
+          <button
+            type="button"
+            role="radio"
+            [attr.aria-checked]="densityService.density() === 'comfortable'"
+            [class.active]="densityService.density() === 'comfortable'"
+            (click)="setDensity('comfortable')"
+          >
+            Thoải mái
+          </button>
+          <button
+            type="button"
+            role="radio"
+            [attr.aria-checked]="densityService.density() === 'compact'"
+            [class.active]="densityService.density() === 'compact'"
+            (click)="setDensity('compact')"
+          >
+            Gọn
+          </button>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>

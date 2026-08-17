@@ -41,26 +41,107 @@
   </div>
 
   <div class="right">
-    <div class="view-switch" role="tablist">
-      @for (v of viewModes; track v.mode) {
-        <button
-          type="button"
-          role="tab"
-          class="view-btn"
-          [class.active]="store.viewMode() === v.mode"
-          [attr.aria-selected]="store.viewMode() === v.mode"
-          (click)="setViewMode(v.mode)"
-        >
-          {{ v.label }}
-        </button>
+    <div class="search-box">
+      <input
+        type="text"
+        class="search-input"
+        placeholder="🔍 Tìm kiếm sự kiện..."
+        [value]="store.searchQuery()"
+        (input)="store.setSearchQuery($any($event.target).value)"
+      />
+    </div>
+
+    <button type="button" class="today-btn import-btn" (click)="openImport.emit()">
+      📥 Import File
+    </button>
+
+    <div class="gear-menu">
+      <button
+        type="button"
+        class="icon-btn"
+        aria-label="Cài đặt"
+        aria-haspopup="true"
+        [attr.aria-expanded]="gearMenuOpen()"
+        (click)="toggleGearMenu()"
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path
+            fill="currentColor"
+            d="m19.14 12.94.04-.94-.04-.94 2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.6.24-1.15.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.67 8.84a.5.5 0 0 0 .12.64L4.82 11l-.04.94.04.94-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.14.24.4.32.6.22l2.39-.96c.47.38 1.02.7 1.62.94l.36 2.54c.05.24.26.42.5.42h3.84c.24 0 .45-.18.5-.42l.36-2.54c.6-.24 1.15-.56 1.62-.94l2.39.96c.22.08.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7"
+          />
+        </svg>
+      </button>
+      @if (gearMenuOpen()) {
+        <div class="menu-backdrop" (click)="closeGearMenu()"></div>
+        <div class="gear-dropdown" role="menu">
+          <button type="button" role="menuitem" class="dropdown-item" (click)="openSettingsFromMenu()">
+            Cài đặt
+          </button>
+          <button type="button" role="menuitem" class="dropdown-item" (click)="openTrashFromMenu()">
+            Thùng rác
+          </button>
+          <div class="dropdown-divider"></div>
+          <button type="button" role="menuitem" class="dropdown-item" (click)="print()">In</button>
+        </div>
+      }
+    </div>
+
+    <div class="view-menu">
+      <button
+        type="button"
+        class="view-dropdown-btn"
+        aria-haspopup="true"
+        [attr.aria-expanded]="viewMenuOpen()"
+        (click)="toggleViewMenu()"
+      >
+        {{ currentViewLabel() }}
+        <svg viewBox="0 0 24 24" width="18" height="18">
+          <path fill="currentColor" d="M7 10l5 5 5-5z" />
+        </svg>
+      </button>
+      @if (viewMenuOpen()) {
+        <div class="menu-backdrop" (click)="closeViewMenu()"></div>
+        <div class="view-dropdown" role="menu">
+          @for (v of viewModes; track v.mode) {
+            <button
+              type="button"
+              role="menuitemradio"
+              class="view-dropdown-item"
+              [class.active]="store.viewMode() === v.mode"
+              [attr.aria-checked]="store.viewMode() === v.mode"
+              (click)="setViewMode(v.mode)"
+            >
+              {{ v.label }}
+            </button>
+          }
+        </div>
       }
     </div>
 
     <app-theme-toggle />
 
     @if (userEmail()) {
-      <span class="user-email">{{ userEmail() }}</span>
+      <div class="user-menu">
+        <button
+          type="button"
+          class="avatar-btn"
+          aria-haspopup="true"
+          [attr.aria-expanded]="userMenuOpen()"
+          [attr.aria-label]="userEmail()"
+          (click)="toggleUserMenu()"
+        >
+          {{ userInitial() }}
+        </button>
+        @if (userMenuOpen()) {
+          <div class="menu-backdrop" (click)="closeUserMenu()"></div>
+          <div class="user-dropdown" role="menu">
+            <p class="user-dropdown-email">{{ userEmail() }}</p>
+            <button type="button" class="dropdown-item" role="menuitem" (click)="logout()">
+              Đăng xuất
+            </button>
+          </div>
+        }
+      </div>
     }
-    <button type="button" class="today-btn" (click)="logout()">Đăng xuất</button>
   </div>
 </header>

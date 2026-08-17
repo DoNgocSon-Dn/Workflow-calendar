@@ -1,15 +1,96 @@
 <div class="auth-page">
-  <app-theme-toggle class="theme-toggle-corner" />
-  <form class="auth-card" [formGroup]="form" (ngSubmit)="submit()">
+  <aside class="brand-panel">
+    <svg class="brand-watermark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="17" rx="3" stroke="#fff" stroke-width="1" />
+      <path d="M3 9h18" stroke="#fff" stroke-width="1" />
+      <path d="M8 2v4M16 2v4" stroke="#fff" stroke-width="1" stroke-linecap="round" />
+    </svg>
+
+    <div class="event-card event-card--a" aria-hidden="true">
+      <span class="event-dot" style="background: #34a853"></span>
+      <div>
+        <p class="event-title">Họp nhóm thiết kế</p>
+        <p class="event-time">09:00 – 09:45</p>
+      </div>
+    </div>
+    <div class="event-card event-card--b" aria-hidden="true">
+      <span class="event-dot" style="background: #fbbc04"></span>
+      <div>
+        <p class="event-title">Nhắc nhở: nộp báo cáo</p>
+        <p class="event-time">Hôm nay, 17:00</p>
+      </div>
+    </div>
+    <div class="event-card event-card--c" aria-hidden="true">
+      <span class="event-dot" style="background: #ea4335"></span>
+      <div>
+        <p class="event-title">Sinh nhật Minh Anh</p>
+        <p class="event-time">Cả ngày</p>
+      </div>
+    </div>
+
+    <div class="brand-panel-content">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="17" rx="3" stroke="#fff" stroke-width="1.6" />
+          <path d="M3 9h18" stroke="#fff" stroke-width="1.6" />
+          <path d="M8 2v4M16 2v4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+      </div>
+      <h2 class="brand-name">Lịch</h2>
+      <p class="brand-tagline">
+        Sắp xếp lịch trình, ghi chú và nhắc nhở — tất cả trong một nơi.
+      </p>
+      <ul class="brand-features">
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+          Đồng bộ nhiều lịch cùng lúc
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+          Nhắc nhở &amp; ghi chú thông minh
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+          Giao diện sáng/tối tuỳ chọn
+        </li>
+      </ul>
+    </div>
+  </aside>
+
+  <div class="form-panel">
+    <app-theme-toggle class="theme-toggle-corner" />
+    <form class="auth-card" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="auth-card-mark">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="17" rx="3" stroke="var(--color-accent-contrast)" stroke-width="1.8" />
+        <path d="M3 9h18" stroke="var(--color-accent-contrast)" stroke-width="1.8" />
+        <path d="M8 2v4M16 2v4" stroke="var(--color-accent-contrast)" stroke-width="1.8" stroke-linecap="round" />
+      </svg>
+    </div>
     <h1 class="auth-title">Đăng nhập</h1>
 
+    @if (successMessage()) {
+      <p class="field-success">{{ successMessage() }}</p>
+    }
     @if (errorMessage()) {
       <p class="field-error">{{ errorMessage() }}</p>
     }
 
     <label class="field">
       <span class="field-label">Email</span>
-      <input class="text-input" type="email" formControlName="email" autocomplete="email" />
+      <div class="input-with-icon">
+        <svg class="input-leading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="14" rx="2" />
+          <path d="m3 7 9 6 9-6" />
+        </svg>
+        <input class="text-input" type="email" formControlName="email" autocomplete="email" />
+      </div>
       @if (form.controls.email.invalid && form.controls.email.touched) {
         <span class="field-error">Vui lòng nhập email hợp lệ.</span>
       }
@@ -17,23 +98,75 @@
 
     <label class="field">
       <span class="field-label">Mật khẩu</span>
-      <input
-        class="text-input"
-        type="password"
-        formControlName="password"
-        autocomplete="current-password"
-      />
+      <div class="password-field input-with-icon">
+        <svg class="input-leading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="5" y="11" width="14" height="10" rx="2" />
+          <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+        </svg>
+        <input
+          class="text-input"
+          [type]="showPassword() ? 'text' : 'password'"
+          formControlName="password"
+          autocomplete="current-password"
+        />
+        <button
+          type="button"
+          class="toggle-password-btn"
+          (click)="togglePasswordVisibility()"
+          [attr.aria-label]="showPassword() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
+          [attr.aria-pressed]="showPassword()"
+        >
+          @if (showPassword()) {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.6 21.6 0 0 1 5.06-6.06M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.6 21.6 0 0 1-3.22 4.44M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+              <line x1="1" y1="1" x2="23" y2="23" />
+            </svg>
+          } @else {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          }
+        </button>
+      </div>
       @if (form.controls.password.invalid && form.controls.password.touched) {
         <span class="field-error">Vui lòng nhập mật khẩu.</span>
       }
     </label>
 
+    <a class="forgot-password-link" routerLink="/forgot-password">Quên mật khẩu?</a>
+
     <button type="submit" class="primary-btn" [disabled]="submitting()">
       {{ submitting() ? 'Đang đăng nhập…' : 'Đăng nhập' }}
+    </button>
+
+    <div class="auth-divider"><span>hoặc</span></div>
+
+    <button type="button" class="google-btn" (click)="signInWithGoogle()">
+      <svg class="google-icon" viewBox="0 0 18 18" aria-hidden="true">
+        <path
+          fill="#4285F4"
+          d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.88 2.7-6.62Z"
+        />
+        <path
+          fill="#34A853"
+          d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.83.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.98v2.33A9 9 0 0 0 9 18Z"
+        />
+        <path
+          fill="#FBBC05"
+          d="M3.95 10.7A5.4 5.4 0 0 1 3.66 9c0-.59.1-1.17.29-1.7V4.97H.98A9 9 0 0 0 0 9c0 1.45.35 2.83.98 4.03l2.97-2.33Z"
+        />
+        <path
+          fill="#EA4335"
+          d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .98 4.97l2.97 2.33C4.66 5.17 6.65 3.58 9 3.58Z"
+        />
+      </svg>
+      Đăng nhập bằng Google
     </button>
 
     <p class="auth-footer">
       Chưa có tài khoản? <a routerLink="/register">Đăng ký</a>
     </p>
   </form>
+  </div>
 </div>

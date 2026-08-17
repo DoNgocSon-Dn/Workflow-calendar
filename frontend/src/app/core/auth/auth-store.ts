@@ -33,8 +33,28 @@ export class AuthStore {
     return error;
   }
 
+  async signInWithGoogle(): Promise<AuthError | null> {
+    const { error } = await this.supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/calendar` },
+    });
+    return error;
+  }
+
   async signUpWithPassword(email: string, password: string): Promise<AuthError | null> {
     const { error } = await this.supabase.auth.signUp({ email, password });
+    return error;
+  }
+
+  async sendPasswordResetEmail(email: string): Promise<AuthError | null> {
+    const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    return error;
+  }
+
+  async updatePassword(newPassword: string): Promise<AuthError | null> {
+    const { error } = await this.supabase.auth.updateUser({ password: newPassword });
     return error;
   }
 

@@ -33,6 +33,14 @@ export class EventsController {
     return this.eventsService.findAll(supabase, calendarId);
   }
 
+  @Get('trash')
+  listTrash(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @Query('calendarId') calendarId?: string,
+  ) {
+    return this.eventsService.listTrash(supabase, calendarId);
+  }
+
   @Post()
   create(
     @CurrentSupabase() supabase: SupabaseClient,
@@ -89,5 +97,18 @@ export class EventsController {
   @Delete(':id')
   remove(@CurrentSupabase() supabase: SupabaseClient, @Param('id') id: string) {
     return this.eventsService.remove(supabase, id);
+  }
+
+  @Post(':id/restore')
+  restore(@CurrentSupabase() supabase: SupabaseClient, @Param('id') id: string) {
+    return this.eventsService.restore(supabase, id);
+  }
+
+  @Delete(':id/permanent')
+  permanentDelete(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @Param('id') id: string,
+  ) {
+    return this.eventsService.permanentDelete(supabase, id);
   }
 }

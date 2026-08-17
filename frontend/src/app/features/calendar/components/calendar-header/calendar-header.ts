@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  output,
+  signal,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthStore } from '../../../../core/auth/auth-store';
 import { ThemeToggle } from '../../../../core/theme/theme-toggle/theme-toggle';
@@ -26,13 +33,26 @@ export class CalendarHeader {
   private readonly authStore = inject(AuthStore);
   private readonly router = inject(Router);
 
+  readonly openImport = output<void>();
+  readonly openSettings = output<void>();
+  readonly openTrash = output<void>();
+
   protected readonly userEmail = computed(() => this.authStore.user()?.email ?? '');
+  protected readonly userInitial = computed(() => this.userEmail().charAt(0).toUpperCase() || '?');
+  protected readonly userMenuOpen = signal(false);
+  protected readonly viewMenuOpen = signal(false);
+  protected readonly gearMenuOpen = signal(false);
 
   readonly viewModes: { mode: CalendarViewMode; label: string }[] = [
     { mode: 'day', label: 'Ngày' },
     { mode: 'week', label: 'Tuần' },
     { mode: 'month', label: 'Tháng' },
+    { mode: 'agenda', label: 'Agenda' },
   ];
+
+  readonly currentViewLabel = computed(
+    () => this.viewModes.find((v) => v.mode === this.store.viewMode())?.label ?? '',
+  );
 
   readonly periodLabel = computed(() => {
     const mode = this.store.viewMode();
@@ -47,9 +67,50 @@ export class CalendarHeader {
 
   setViewMode(mode: CalendarViewMode): void {
     this.store.setViewMode(mode);
+    this.viewMenuOpen.set(false);
+  }
+
+  toggleViewMenu(): void {
+    this.viewMenuOpen.update((open) => !open);
+  }
+
+  closeViewMenu(): void {
+    this.viewMenuOpen.set(false);
+  }
+
+  toggleGearMenu(): void {
+    this.gearMenuOpen.update((open) => !open);
+  }
+
+  closeGearMenu(): void {
+    this.gearMenuOpen.set(false);
+  }
+
+  openSettingsFromMenu(): void {
+    this.gearMenuOpen.set(false);
+    this.openSettings.emit();
+  }
+
+  openTrashFromMenu(): void {
+    this.gearMenuOpen.set(false);
+    this.openTrash.emit();
+  }
+
+  print(): void {
+    this.gearMenuOpen.set(false);
+    window.print();
+  }
+
+  toggleUserMenu(): void {
+    this.userMenuOpen.update((open) => !open);
+  }
+
+  closeUserMenu(): void {
+    this.userMenuOpen.set(false);
   }
 
   async logout(): Promise<void> {
+    this.closeUserMenu();
     await this.authStore.signOut();
     await this.router.navigate(['/login']);
   }

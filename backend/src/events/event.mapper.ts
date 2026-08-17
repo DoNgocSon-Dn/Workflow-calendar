@@ -13,6 +13,7 @@ export interface EventRow {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  deleted_at: string | null;
 }
 
 export interface EventDto {
@@ -24,6 +25,7 @@ export interface EventDto {
   start: string;
   end: string;
   allDay: boolean;
+  deletedAt?: string;
 }
 
 export function toEventDto(row: EventRow): EventDto {
@@ -36,6 +38,7 @@ export function toEventDto(row: EventRow): EventDto {
     start: row.start_at,
     end: row.end_at,
     allDay: row.all_day,
+    deletedAt: row.deleted_at ?? undefined,
   };
 }
 

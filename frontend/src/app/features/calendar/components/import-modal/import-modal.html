@@ -1,0 +1,138 @@
+<div class="backdrop" (click)="onBackdropClick($event)">
+  <div class="modal" role="dialog" aria-modal="true">
+    <header class="modal-header">
+      <h2>📥 Import Lịch từ File</h2>
+      <button type="button" class="icon-btn" (click)="cancel()">✕</button>
+    </header>
+
+    @if (importSuccess()) {
+      <div class="success-banner">
+        ✅ Đã nhập thành công {{ eventsPreview().length }} sự kiện vào lịch của bạn!
+      </div>
+    } @else {
+      <div class="modal-body">
+        <div class="mode-tabs">
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="mode() === 'standard'"
+            (click)="setMode('standard')"
+          >
+            📄 Import Chuẩn (.ics, .csv)
+          </button>
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="mode() === 'smart'"
+            (click)="setMode('smart')"
+          >
+            ✨ Smart Import AI (.xlsx, .docx, .pdf)
+          </button>
+        </div>
+
+        <div class="upload-section">
+          <label class="dropzone">
+            <input
+              type="file"
+              class="file-input"
+              [accept]="mode() === 'standard' ? '.ics,.csv' : '.xlsx,.xls,.docx,.doc,.pdf,.txt'"
+              (change)="onFileSelected($event)"
+            />
+            <span class="upload-icon">📁</span>
+            @if (selectedFile(); as f) {
+              <span class="file-name">{{ f.name }} ({{ (f.size / 1024).toFixed(1) }} KB)</span>
+            } @else {
+              <span class="upload-text">
+                Nhấn để chọn file {{ mode() === 'standard' ? '.ics hoặc .csv' : '.xlsx, .docx hoặc .pdf' }}
+              </span>
+            }
+          </label>
+
+          <button
+            type="button"
+            class="btn-primary parse-btn"
+            [disabled]="!selectedFile() || parsing()"
+            (click)="parseFile()"
+          >
+            {{ parsing() ? 'Đang đọc & xử lý file...' : 'Đọc file sự kiện' }}
+          </button>
+        </div>
+
+        @if (parseError()) {
+          <p class="field-error">{{ parseError() }}</p>
+        }
+
+        @if (eventsPreview().length > 0) {
+          <div class="preview-section">
+            <div class="preview-header">
+              <h3>Xem trước danh sách ({{ eventsPreview().length }} sự kiện)</h3>
+              <div class="calendar-select-box">
+                <label>Lưu vào Lịch:</label>
+                <select [(ngModel)]="selectedCalendarId" class="select-input">
+                  @for (c of store.calendars(); track c.id) {
+                    <option [value]="c.id">{{ c.name }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            @if (conflicts().length > 0) {
+              <div class="conflict-alert">
+                ⚠️ Phát hiện {{ conflicts().length }} sự kiện có thể bị trùng giờ trong lịch của bạn.
+              </div>
+            }
+
+            <div class="preview-table-container">
+              <table class="preview-table">
+                <thead>
+                  <tr>
+                    <th>Tiêu đề</th>
+                    <th>Thời gian bắt đầu</th>
+                    <th>Thời gian kết thúc</th>
+                    <th>Địa điểm</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of eventsPreview(); track $index) {
+                    <tr [class.warning-row]="item.needsReview">
+                      <td>
+                        <input type="text" [(ngModel)]="item.title" class="table-input title-input" placeholder="Tiêu đề sự kiện" />
+                      </td>
+                      <td>
+                        <input type="datetime-local" [(ngModel)]="item.startLocal" class="table-input datetime-input" />
+                      </td>
+                      <td>
+                        <input type="datetime-local" [(ngModel)]="item.endLocal" class="table-input datetime-input" />
+                      </td>
+                      <td>
+                        <input type="text" [(ngModel)]="item.location" class="table-input location-input" placeholder="Địa điểm / ghi chú" />
+                      </td>
+                      <td>
+                        <button type="button" class="danger-btn" (click)="removeEvent($index)">Xóa</button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </div>
+
+      <footer class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="cancel()">Hủy</button>
+        @if (eventsPreview().length > 0) {
+          <button
+            type="button"
+            class="btn-primary"
+            [disabled]="importing()"
+            (click)="confirmImport()"
+          >
+            {{ importing() ? 'Đang lưu...' : 'Xác nhận Lưu vào Lịch' }}
+          </button>
+        }
+      </footer>
+    }
+  </div>
+</div>

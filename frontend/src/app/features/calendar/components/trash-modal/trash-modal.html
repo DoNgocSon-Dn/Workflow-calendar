@@ -1,0 +1,56 @@
+<div class="backdrop" (click)="onBackdropClick($event)">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="trash-modal-title">
+    <header class="modal-header">
+      <h2 id="trash-modal-title">Thùng rác</h2>
+      <button type="button" class="icon-btn" aria-label="Đóng" (click)="cancel()">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor"
+            d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="modal-body">
+      @if (error()) {
+        <p class="error-text">{{ error() }}</p>
+      }
+
+      @if (loading()) {
+        <p class="hint-text">Đang tải…</p>
+      } @else if (items().length === 0) {
+        <p class="empty-hint">Thùng rác trống.</p>
+      } @else {
+        <ul class="trash-list">
+          @for (evt of items(); track evt.id) {
+            <li class="trash-item">
+              <div class="trash-info">
+                <span class="trash-title">{{ evt.title }}</span>
+                <span class="trash-meta">
+                  {{ eventRange(evt) }} · Đã xoá lúc {{ deletedAtLabel(evt) }}
+                </span>
+              </div>
+              <div class="trash-actions">
+                <button
+                  type="button"
+                  class="text-btn"
+                  [disabled]="busyId() === evt.id"
+                  (click)="restore(evt.id)"
+                >
+                  Khôi phục
+                </button>
+                <button
+                  type="button"
+                  class="text-btn danger"
+                  [disabled]="busyId() === evt.id"
+                  (click)="requestPermanentDelete(evt.id)"
+                >
+                  {{ confirmingId() === evt.id ? 'Bấm lần nữa để xoá hẳn' : 'Xoá vĩnh viễn' }}
+                </button>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </div>
+</div>

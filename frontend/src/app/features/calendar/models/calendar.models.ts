@@ -1,4 +1,4 @@
-export type CalendarViewMode = 'month' | 'week' | 'day';
+export type CalendarViewMode = 'month' | 'week' | 'day' | 'agenda';
 
 export type CalendarColor =
   | 'blue'
@@ -32,6 +32,7 @@ export interface CalendarEvent {
   start: Date;
   end: Date;
   allDay: boolean;
+  deletedAt?: Date;
 }
 
 export type CalendarEventDraft = Omit<CalendarEvent, 'id'>;

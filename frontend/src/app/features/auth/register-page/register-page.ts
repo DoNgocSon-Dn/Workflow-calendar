@@ -34,6 +34,8 @@ export class RegisterPage {
   readonly submitting = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
+  readonly showPassword = signal(false);
+  readonly showConfirmPassword = signal(false);
 
   readonly form = this.fb.nonNullable.group(
     {
@@ -43,6 +45,14 @@ export class RegisterPage {
     },
     { validators: passwordsMatchValidator() },
   );
+
+  togglePasswordVisibility(): void {
+    this.showPassword.update((value) => !value);
+  }
+
+  toggleConfirmPasswordVisibility(): void {
+    this.showConfirmPassword.update((value) => !value);
+  }
 
   async submit(): Promise<void> {
     if (this.form.invalid) {
@@ -66,6 +76,11 @@ export class RegisterPage {
       await this.router.navigate(['/calendar']);
       return;
     }
-    this.successMessage.set('Đăng ký thành công! Kiểm tra email để xác nhận tài khoản.');
+
+    const message = 'Đăng ký thành công! Kiểm tra email để xác nhận tài khoản.';
+    this.successMessage.set(message);
+    setTimeout(() => {
+      void this.router.navigate(['/login'], { queryParams: { message } });
+    }, 2000);
   }
 }

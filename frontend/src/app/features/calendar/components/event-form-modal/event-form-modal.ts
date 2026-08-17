@@ -22,6 +22,7 @@ import {
   ReminderType,
 } from '../../models/calendar.models';
 import {
+  addDays,
   addMinutes,
   formatTimeLabel,
   fromDateInputValue,
@@ -87,6 +88,12 @@ export class EventFormModal {
   readonly saving = signal(false);
   readonly saveError = signal<string | null>(null);
 
+  readonly locationOpen = signal(false);
+  readonly descriptionOpen = signal(false);
+  readonly attendeesOpen = signal(false);
+  readonly remindersOpen = signal(false);
+  readonly commentsOpen = signal(false);
+
   readonly attendees = signal<Attendee[]>([]);
   readonly inviteEmailControl = new FormControl('', {
     nonNullable: true,
@@ -141,19 +148,27 @@ export class EventFormModal {
       this.inviteError.set(null);
       this.reminderSelections.set(new Map());
       this.customReminderMinutes.reset(null);
+      this.attendeesOpen.set(false);
+      this.remindersOpen.set(false);
+      this.commentsOpen.set(false);
       if (evt) {
         void this.loadAttendees(evt.id);
         void this.loadReminders(evt.id, evt.start);
       }
 
       if (evt) {
+        this.locationOpen.set(!!evt.location);
+        this.descriptionOpen.set(!!evt.description);
+        // Stored allDay end is exclusive (day after the last day); the date
+        // input shows/edits it inclusively, and save() adds the day back.
+        const displayEnd = evt.allDay ? addDays(evt.end, -1) : evt.end;
         this.form.reset({
           title: evt.title,
           calendarId: evt.calendarId,
           allDay: evt.allDay,
           startDate: toDateInputValue(evt.start),
           startTime: hhmm(evt.start),
-          endDate: toDateInputValue(evt.end),
+          endDate: toDateInputValue(displayEnd),
           endTime: hhmm(evt.end),
           location: evt.location ?? '',
           description: evt.description ?? '',
@@ -161,6 +176,8 @@ export class EventFormModal {
         return;
       }
 
+      this.locationOpen.set(false);
+      this.descriptionOpen.set(false);
       const start = defStart ?? this.store.today();
       const end = defEnd ?? addMinutes(start, 60);
       this.form.reset({
@@ -174,6 +191,17 @@ export class EventFormModal {
         location: '',
         description: '',
       });
+    });
+
+    effect(() => {
+      const cals = this.calendars();
+      if (cals.length > 0) {
+        if (!this.form.controls.calendarId.value) {
+          this.form.patchValue({ calendarId: cals[0].id });
+        }
+      } else if (!this.calendarsLoading()) {
+        void this.store.ensureCalendarExists();
+      }
     });
 
     this.form.valueChanges
@@ -237,7 +265,9 @@ export class EventFormModal {
 
   private async loadAttendees(eventId: string): Promise<void> {
     try {
-      this.attendees.set(await this.store.listAttendees(eventId));
+      const list = await this.store.listAttendees(eventId);
+      this.attendees.set(list);
+      if (list.length > 0) this.attendeesOpen.set(true);
     } catch {
       this.attendees.set([]);
     }
@@ -254,9 +284,21 @@ export class EventFormModal {
         map.set(offsetMinutes, r.type);
       }
       this.reminderSelections.set(map);
+      if (map.size > 0) this.remindersOpen.set(true);
     } catch {
       this.reminderSelections.set(new Map());
     }
+  }
+
+  toggleField(field: 'location' | 'description' | 'attendees' | 'reminders' | 'comments'): void {
+    const signals = {
+      location: this.locationOpen,
+      description: this.descriptionOpen,
+      attendees: this.attendeesOpen,
+      reminders: this.remindersOpen,
+      comments: this.commentsOpen,
+    } as const;
+    signals[field].update((open) => !open);
   }
 
   toggleReminder(offsetMinutes: number): void {
@@ -309,16 +351,31 @@ export class EventFormModal {
     });
   }
 
+  generateVideoCallLink(): void {
+    const roomName = 'Meet-' + Math.random().toString(36).substring(2, 9);
+    const link = `https://meet.jit.si/${roomName}`;
+    const currentLoc = this.form.controls.location.value;
+    const newLoc = currentLoc ? `${currentLoc} | ${link}` : link;
+    this.form.patchValue({ location: newLoc });
+  }
+
   async save(): Promise<void> {
     this.saveError.set(null);
+
+    const currentCalId = this.form.controls.calendarId.value;
+    if (!currentCalId || this.calendars().length === 0) {
+      try {
+        const cal = await this.store.ensureCalendarExists();
+        this.form.patchValue({ calendarId: cal.id });
+      } catch (err) {
+        console.warn('Không thể khởi tạo lịch:', err);
+      }
+    }
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       if (this.calendarsLoading()) {
         this.saveError.set('Đang tải danh sách lịch, vui lòng đợi trong giây lát.');
-      } else if (this.calendars().length === 0) {
-        this.saveError.set(
-          'Bạn chưa có lịch nào để lưu sự kiện. Vui lòng tải lại trang.',
-        );
       } else if (this.form.controls.title.invalid) {
         this.saveError.set('Vui lòng nhập tiêu đề sự kiện.');
       } else {
@@ -327,6 +384,7 @@ export class EventFormModal {
       return;
     }
     const v = this.form.getRawValue();
+
     const start = v.allDay
       ? startOfDay(fromDateInputValue(v.startDate))
       : parseTime24(v.startTime, fromDateInputValue(v.startDate));

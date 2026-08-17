@@ -26,4 +26,19 @@
       </label>
     }
   </div>
+
+  <div class="calendar-list">
+    <h2 class="calendar-list-title">Lịch khác</h2>
+    @for (cal of store.otherCalendars; track cal.id) {
+      <label class="calendar-item">
+        <input
+          type="checkbox"
+          [checked]="isVisible(cal.id)"
+          (change)="store.toggleCalendarVisibility(cal.id)"
+        />
+        <span class="color-dot" [style.background]="colorHex[cal.color]"></span>
+        {{ cal.name }}
+      </label>
+    }
+  </div>
 </aside>

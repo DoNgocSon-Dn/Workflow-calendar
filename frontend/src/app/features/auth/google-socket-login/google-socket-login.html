@@ -1,0 +1,23 @@
+<div class="google-socket-login">
+  <h2>Đăng nhập bằng Google (qua Socket.io)</h2>
+  <p class="hint">
+    Kênh xác thực riêng qua Socket.io (google-auth-server) — độc lập với đăng nhập Supabase.
+  </p>
+
+  <asl-google-signin-button type="standard" size="large" />
+
+  @switch (status()) {
+    @case ('connecting') {
+      <p class="status-msg">Đang xác thực với máy chủ…</p>
+    }
+    @case ('error') {
+      <p class="status-msg error">{{ errorMessage() }}</p>
+    }
+    @case ('success') {
+      <div class="status-msg success">
+        <p>Xin chào, {{ socketUser()?.name }} ({{ socketUser()?.email }})</p>
+        <p class="jwt-preview">JWT: {{ appJwt() }}</p>
+      </div>
+    }
+  }
+</div>

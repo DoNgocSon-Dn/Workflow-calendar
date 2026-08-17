@@ -23,6 +23,9 @@
 .day-header-row {
   display: flex;
   border-bottom: 1px solid var(--color-border);
+  /* padding-right is set inline from the measured scrollbar width (see
+     TimeGridView.measureScrollbarWidth) so the day columns line up with the
+     scrollable grid underneath, regardless of browser/OS scrollbar size. */
 }
 
 .day-header-cell {
@@ -31,6 +34,7 @@
   flex-direction: column;
   align-items: center;
   padding: 0.35rem 0;
+  border-left: 1px solid var(--color-border);
 }
 
 .wd {
@@ -67,14 +71,32 @@
   flex-direction: column;
   gap: 2px;
   padding: 0.15rem 0.25rem;
-  border-left: 1px solid var(--color-surface-hover);
+  border-left: 1px solid var(--color-border);
   cursor: pointer;
 }
 
 .scroll-area {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: scroll;
+  scrollbar-width: thin;
   position: relative;
+}
+
+.scroll-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-area::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 3px;
+}
+
+.scroll-area::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
 }
 
 .grid-body {
@@ -106,7 +128,7 @@
 .day-col {
   flex: 1;
   position: relative;
-  border-left: 1px solid var(--color-surface-hover);
+  border-left: 1px solid var(--color-border);
   cursor: crosshair;
 }
 
@@ -144,7 +166,7 @@
   right: 2px;
   background: color-mix(in srgb, var(--color-accent) 25%, transparent);
   border: 1px dashed var(--color-accent);
-  border-radius: 0.25rem;
+  border-radius: var(--radius-xs);
   z-index: 15;
   pointer-events: none;
 }
@@ -154,7 +176,7 @@
   position: absolute;
   background: color-mix(in srgb, var(--chip-color) 88%, white);
   border-left: 3px solid var(--chip-color);
-  border-radius: 0.3rem;
+  border-radius: var(--radius-sm);
   padding: 0.15rem 0.4rem;
   color: #fff;
   overflow: hidden;
@@ -165,6 +187,19 @@
 
 .event-block:active {
   cursor: grabbing;
+}
+
+.event-block.conflict {
+  border-left-color: var(--color-danger);
+  outline: 1px dashed var(--color-danger);
+  outline-offset: -1px;
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--chip-color) 88%, white),
+    color-mix(in srgb, var(--chip-color) 88%, white) 6px,
+    color-mix(in srgb, var(--color-danger) 60%, var(--chip-color)) 6px,
+    color-mix(in srgb, var(--color-danger) 60%, var(--chip-color)) 12px
+  );
 }
 
 .block-content {
@@ -203,7 +238,7 @@
   border: none;
   background: var(--chip-color);
   color: #fff;
-  border-radius: 0.2rem;
+  border-radius: var(--radius-xs);
   padding: 0.1rem 0.35rem;
   font-size: 0.68rem;
   text-align: left;

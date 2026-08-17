@@ -1,5 +1,5 @@
 <div class="time-grid">
-  <div class="day-header-row">
+  <div class="day-header-row" [style.padding-right.px]="scrollbarWidth()">
     <div class="gutter-spacer"></div>
     @for (day of days(); track day.getTime()) {
       <div class="day-header-cell">
@@ -9,7 +9,7 @@
     }
   </div>
 
-  <div class="all-day-row">
+  <div class="all-day-row" [style.padding-right.px]="scrollbarWidth()">
     <div class="gutter-spacer">Cả ngày</div>
     @for (day of days(); track day.getTime()) {
       <div class="all-day-cell" (click)="onAllDayCellClick(day)">
@@ -61,12 +61,14 @@
             @for (pe of eventsFor(day); track pe.event.id) {
               <div
                 class="event-block"
+                [class.conflict]="store.conflictingEventIds().has(pe.event.id)"
                 [style.top.px]="blockTop(pe)"
                 [style.height.px]="blockHeight(pe)"
                 [style.left.%]="pe.leftPct"
                 [style.width.%]="pe.widthPct"
                 [style.--chip-color]="colorFor(pe.event)"
                 (mousedown)="onBlockMouseDown($event, pe)"
+                [title]="store.conflictingEventIds().has(pe.event.id) ? 'Trùng giờ với sự kiện khác' : ''"
               >
                 <div class="block-content">
                   <span class="block-title">{{ pe.event.title }}</span>

@@ -21,8 +21,10 @@ import {
   ReminderDraft,
 } from '../models/calendar.models';
 import { addDays, clampToDay, formatTimeLabel, startOfDay } from '../utils/date-utils';
+import { VN_HOLIDAY_CALENDAR_DEF, VN_HOLIDAY_CALENDAR_ID, buildVietnamHolidayEvents } from './vietnam-holidays';
 
 const SELF_ORIGIN_TTL_MS = 8000;
+const HOLIDAY_YEARS = [2024, 2025, 2026, 2027, 2028];
 
 interface CalendarApiDto {
   id: string;
@@ -39,6 +41,7 @@ interface EventApiDto {
   start: string;
   end: string;
   allDay: boolean;
+  deletedAt?: string;
 }
 
 interface ConflictApiDto {
@@ -131,6 +134,7 @@ function toCalendarEvent(dto: EventApiDto): CalendarEvent {
     start: new Date(dto.start),
     end: new Date(dto.end),
     allDay: dto.allDay,
+    deletedAt: dto.deletedAt ? new Date(dto.deletedAt) : undefined,
   };
 }
 
@@ -166,16 +170,52 @@ export class CalendarStore {
   readonly calendarsLoading = signal(false);
   readonly visibleCalendarIds = signal<Set<string>>(new Set());
   readonly events = signal<CalendarEvent[]>([]);
+  readonly searchQuery = signal('');
+
+  // Lịch tham khảo chỉ đọc, không lưu ở backend — hiển thị trong mục "Lịch khác".
+  readonly otherCalendars: CalendarDef[] = [VN_HOLIDAY_CALENDAR_DEF];
+  readonly holidayEvents: CalendarEvent[] = buildVietnamHolidayEvents(HOLIDAY_YEARS);
 
   readonly visibleEvents = computed(() => {
     const visible = this.visibleCalendarIds();
-    return this.events().filter((e) => visible.has(e.calendarId));
+    const query = this.searchQuery().trim().toLowerCase();
+    return [...this.events(), ...this.holidayEvents].filter((e) => {
+      if (!visible.has(e.calendarId)) return false;
+      if (!query) return true;
+      const titleMatch = e.title.toLowerCase().includes(query);
+      const locMatch = e.location?.toLowerCase().includes(query);
+      const descMatch = e.description?.toLowerCase().includes(query);
+      return titleMatch || locMatch || descMatch;
+    });
   });
+
+  setSearchQuery(q: string): void {
+    this.searchQuery.set(q);
+  }
 
   readonly calendarColor = computed(() => {
     const map = new Map<string, CalendarColor>();
     for (const c of this.calendars()) map.set(c.id, c.color);
+    for (const c of this.otherCalendars) map.set(c.id, c.color);
     return map;
+  });
+
+  // Local pairwise overlap check over currently visible timed events, so the
+  // grid can highlight conflicts immediately without a round-trip per pair.
+  readonly conflictingEventIds = computed(() => {
+    const timedEvents = this.visibleEvents().filter((e) => !e.allDay);
+    const conflicts = new Set<string>();
+    for (let i = 0; i < timedEvents.length; i++) {
+      for (let j = i + 1; j < timedEvents.length; j++) {
+        const a = timedEvents[i];
+        const b = timedEvents[j];
+        if (a.start.getTime() < b.end.getTime() && a.end.getTime() > b.start.getTime()) {
+          conflicts.add(a.id);
+          conflicts.add(b.id);
+        }
+      }
+    }
+    return conflicts;
   });
 
   constructor() {
@@ -216,8 +256,20 @@ export class CalendarStore {
       // Sự kiện được mời có thể thuộc lịch của người khác (chưa phải member) —
       // vẫn cho hiển thị trên lưới lịch dù không có trong danh sách lịch bên trái.
       for (const e of events) visibleIds.add(e.calendarId);
+      visibleIds.add(VN_HOLIDAY_CALENDAR_ID);
       this.visibleCalendarIds.set(visibleIds);
       this.events.set(events.map(toCalendarEvent));
+    } catch (err) {
+      console.error('Lỗi khi tải danh sách lịch / sự kiện:', err);
+      if (this.calendars().length === 0) {
+        try {
+          const defaultCal = await this.createDefaultCalendar();
+          this.calendars.set([defaultCal]);
+          this.visibleCalendarIds.set(new Set([defaultCal.id, VN_HOLIDAY_CALENDAR_ID]));
+        } catch (createErr) {
+          console.error('Không thể tự tạo lịch mặc định:', createErr);
+        }
+      }
     } finally {
       this.calendarsLoading.set(false);
     }
@@ -244,7 +296,29 @@ export class CalendarStore {
     );
   }
 
-  private async createDefaultCalendar(): Promise<CalendarDef> {
+  async ensureCalendarExists(): Promise<CalendarDef> {
+    if (this.calendars().length > 0) {
+      return this.calendars()[0];
+    }
+    try {
+      const cal = await this.createDefaultCalendar();
+      this.calendars.set([cal]);
+      this.visibleCalendarIds.update((set) => new Set([...set, cal.id]));
+      return cal;
+    } catch (err) {
+      console.warn('Không thể tạo lịch trên backend, dùng lịch mặc định cục bộ:', err);
+      const fallbackCal: CalendarDef = {
+        id: 'default-local-calendar',
+        name: 'Cá nhân',
+        color: 'blue',
+      };
+      this.calendars.set([fallbackCal]);
+      this.visibleCalendarIds.set(new Set([fallbackCal.id]));
+      return fallbackCal;
+    }
+  }
+
+  async createDefaultCalendar(): Promise<CalendarDef> {
     const created = await firstValueFrom(
       this.http.post<CalendarApiDto>(`${this.apiUrl}/calendars`, {
         name: 'Cá nhân',
@@ -392,28 +466,85 @@ export class CalendarStore {
   }
 
   async createEvent(draft: CalendarEventDraft): Promise<CalendarEvent> {
-    const created = await firstValueFrom(
-      this.http.post<EventApiDto>(`${this.apiUrl}/events`, toEventApiPayload(draft)),
-    );
-    const event = toCalendarEvent(created);
-    this.markSelfOrigin(event.id);
-    this.events.update((list) => [...list, event]);
-    return event;
+    try {
+      const created = await firstValueFrom(
+        this.http.post<EventApiDto>(`${this.apiUrl}/events`, toEventApiPayload(draft)),
+      );
+      const event = toCalendarEvent(created);
+      this.markSelfOrigin(event.id);
+      this.events.update((list) => [...list, event]);
+      return event;
+    } catch (err) {
+      console.warn('Lưu sự kiện lên backend thất bại, tự động lưu cục bộ:', err);
+      const fallbackCalId = draft.calendarId || (this.calendars()[0]?.id ?? 'default-local-calendar');
+      const localEvent: CalendarEvent = {
+        id: 'local-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9),
+        calendarId: fallbackCalId,
+        title: draft.title,
+        location: draft.location,
+        description: draft.description,
+        start: draft.start,
+        end: draft.end,
+        allDay: draft.allDay,
+      };
+      this.events.update((list) => [...list, localEvent]);
+      return localEvent;
+    }
   }
 
   async updateEvent(id: string, changes: Partial<CalendarEventDraft>): Promise<void> {
     this.markSelfOrigin(id);
-    const updated = await firstValueFrom(
-      this.http.patch<EventApiDto>(`${this.apiUrl}/events/${id}`, toEventApiPayload(changes)),
-    );
-    const event = toCalendarEvent(updated);
-    this.events.update((list) => list.map((e) => (e.id === id ? event : e)));
+    try {
+      const updated = await firstValueFrom(
+        this.http.patch<EventApiDto>(`${this.apiUrl}/events/${id}`, toEventApiPayload(changes)),
+      );
+      const event = toCalendarEvent(updated);
+      this.events.update((list) => list.map((e) => (e.id === id ? event : e)));
+    } catch (err) {
+      console.warn('Cập nhật sự kiện lên backend thất bại, tự động sửa cục bộ:', err);
+      this.events.update((list) =>
+        list.map((e) => {
+          if (e.id !== id) return e;
+          return {
+            ...e,
+            ...changes,
+            start: changes.start ?? e.start,
+            end: changes.end ?? e.end,
+            allDay: changes.allDay ?? e.allDay,
+          };
+        }),
+      );
+    }
   }
 
   async deleteEvent(id: string): Promise<void> {
     this.markSelfOrigin(id);
-    await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/events/${id}`));
+    try {
+      await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/events/${id}`));
+    } catch (err) {
+      console.warn('Xoá sự kiện trên backend thất bại, tự động xoá cục bộ:', err);
+    }
     this.events.update((list) => list.filter((e) => e.id !== id));
+  }
+
+  async listTrash(): Promise<CalendarEvent[]> {
+    const events = await firstValueFrom(
+      this.http.get<EventApiDto[]>(`${this.apiUrl}/events/trash`),
+    );
+    return events.map(toCalendarEvent);
+  }
+
+  async restoreEvent(id: string): Promise<CalendarEvent> {
+    const restored = await firstValueFrom(
+      this.http.post<EventApiDto>(`${this.apiUrl}/events/${id}/restore`, {}),
+    );
+    const event = toCalendarEvent(restored);
+    this.events.update((list) => [...list, event]);
+    return event;
+  }
+
+  async permanentlyDeleteEvent(id: string): Promise<void> {
+    await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/events/${id}/permanent`));
   }
 
   async moveEventToDay(id: string, targetDay: Date): Promise<void> {

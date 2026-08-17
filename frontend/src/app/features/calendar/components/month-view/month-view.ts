@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
+import { DensityService } from '../../../../core/density/density-service';
 import { CalendarStore } from '../../data/calendar-store';
 import { CALENDAR_COLOR_HEX, CalendarEvent } from '../../models/calendar.models';
 import {
@@ -7,12 +8,17 @@ import {
   formatTimeLabel,
   isSameDay,
   isSameMonth,
+  startOfDay,
   toDateInputValue,
 } from '../../utils/date-utils';
 import { isEventOnDay } from '../../utils/event-utils';
 
+interface DragSelectRange {
+  start: Date;
+  end: Date;
+}
+
 const WEEKDAY_HEADERS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-const MAX_VISIBLE_PER_DAY = 3;
 
 export interface CreateRequest {
   start: Date;
@@ -28,8 +34,15 @@ export interface CreateRequest {
 })
 export class MonthView {
   protected readonly store = inject(CalendarStore);
+  private readonly densityService = inject(DensityService);
   protected readonly colorHex = CALENDAR_COLOR_HEX;
   protected readonly weekdayHeaders = WEEKDAY_HEADERS;
+
+  // Chế độ "Gọn" (Cài đặt > Hình thức) hiện nhiều sự kiện hơn mỗi ngày vì
+  // mỗi dòng chiếm ít chỗ hơn — xem density-service.ts.
+  private readonly maxVisiblePerDay = computed(() =>
+    this.densityService.density() === 'compact' ? 5 : 3,
+  );
 
   readonly createRequested = output<CreateRequest>();
   readonly editRequested = output<CalendarEvent>();
@@ -37,6 +50,10 @@ export class MonthView {
   readonly days = computed(() => buildMonthGrid(this.store.focusedDate()));
   readonly expandedDayKey = signal<string | null>(null);
   private draggingEventId: string | null = null;
+
+  private isSelecting = false;
+  private selectAnchor: Date | null = null;
+  readonly dragSelectRange = signal<DragSelectRange | null>(null);
 
   private readonly eventsByDay = computed(() => {
     const map = new Map<string, CalendarEvent[]>();
@@ -57,11 +74,11 @@ export class MonthView {
   }
 
   visibleEventsFor(day: Date): CalendarEvent[] {
-    return this.eventsFor(day).slice(0, MAX_VISIBLE_PER_DAY);
+    return this.eventsFor(day).slice(0, this.maxVisiblePerDay());
   }
 
   hiddenCountFor(day: Date): number {
-    return Math.max(0, this.eventsFor(day).length - MAX_VISIBLE_PER_DAY);
+    return Math.max(0, this.eventsFor(day).length - this.maxVisiblePerDay());
   }
 
   eventLabel(event: CalendarEvent): string {
@@ -94,10 +111,51 @@ export class MonthView {
     this.expandedDayKey.set(null);
   }
 
-  onCellClick(day: Date): void {
-    const start = new Date(day);
-    start.setHours(9, 0, 0, 0);
-    this.createRequested.emit({ start, end: addMinutes(start, 60), allDay: false });
+  isInDragRange(day: Date): boolean {
+    const range = this.dragSelectRange();
+    if (!range) return false;
+    return day.getTime() >= range.start.getTime() && day.getTime() <= range.end.getTime();
+  }
+
+  onCellMouseDown(day: Date, mouseEvent: MouseEvent): void {
+    if (mouseEvent.button !== 0) return;
+    mouseEvent.preventDefault();
+    this.closeExpanded();
+    this.isSelecting = true;
+    this.selectAnchor = day;
+    this.dragSelectRange.set({ start: day, end: day });
+
+    const onUp = () => {
+      document.removeEventListener('mouseup', onUp);
+      this.isSelecting = false;
+      this.selectAnchor = null;
+      const range = this.dragSelectRange();
+      this.dragSelectRange.set(null);
+      if (!range) return;
+
+      if (isSameDay(range.start, range.end)) {
+        const start = new Date(range.start);
+        start.setHours(9, 0, 0, 0);
+        this.createRequested.emit({ start, end: addMinutes(start, 60), allDay: false });
+      } else {
+        // end stays the inclusive last day here — the form shows/edits dates
+        // inclusively and save() is the one place that adds the +1 day to
+        // get the exclusive storage end (see event-form-modal.ts).
+        this.createRequested.emit({
+          start: range.start,
+          end: range.end,
+          allDay: true,
+        });
+      }
+    };
+    document.addEventListener('mouseup', onUp);
+  }
+
+  onCellMouseEnter(day: Date): void {
+    if (!this.isSelecting || !this.selectAnchor) return;
+    const anchor = this.selectAnchor;
+    const [start, end] = anchor.getTime() <= day.getTime() ? [anchor, day] : [day, anchor];
+    this.dragSelectRange.set({ start: startOfDay(start), end: startOfDay(end) });
   }
 
   onChipClick(event: CalendarEvent, domEvent: MouseEvent): void {

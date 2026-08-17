@@ -1,5 +1,9 @@
 <div class="calendar-page">
-  <app-calendar-header />
+  <app-calendar-header
+    (openImport)="importModalOpen.set(true)"
+    (openTrash)="trashModalOpen.set(true)"
+    (openSettings)="settingsModalOpen.set(true)"
+  />
 
   <div class="body">
     @if (store.sidebarOpen()) {
@@ -28,6 +32,9 @@
             (editRequested)="openEdit($event)"
           />
         }
+        @case ('agenda') {
+          <app-agenda-view (selectEvent)="onViewDetail($event)" />
+        }
       }
     </main>
   </div>
@@ -42,6 +49,18 @@
     [defaultTitle]="ms.defaultTitle"
     (closed)="closeModal()"
   />
+}
+
+@if (importModalOpen()) {
+  <app-import-modal (closed)="importModalOpen.set(false)" />
+}
+
+@if (trashModalOpen()) {
+  <app-trash-modal (closed)="trashModalOpen.set(false)" />
+}
+
+@if (settingsModalOpen()) {
+  <app-settings-modal (closed)="settingsModalOpen.set(false)" />
 }
 
 <app-notification-popup (viewDetail)="onViewDetail($event)" />

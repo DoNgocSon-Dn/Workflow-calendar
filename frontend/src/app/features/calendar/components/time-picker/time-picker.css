@@ -9,7 +9,7 @@
   gap: 0.25rem;
   padding: 0.4rem 0.6rem;
   border: 1px solid var(--color-border-strong);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   color: var(--color-text-secondary);
   font-size: 0.875rem;
@@ -33,7 +33,7 @@
   left: 0;
   width: 240px;
   background: var(--color-surface);
-  border-radius: 0.75rem;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-popover);
   overflow: hidden;
 }
@@ -106,7 +106,7 @@
 
 .ampm-btn {
   padding: 0.25rem 0.5rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   border: 1px solid var(--color-border-strong);
   background: var(--color-surface);
   font-size: 0.7rem;

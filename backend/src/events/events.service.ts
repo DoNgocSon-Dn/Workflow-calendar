@@ -53,6 +53,7 @@ export class EventsService {
     let query = supabase
       .from('events')
       .select('*')
+      .is('deleted_at', null)
       .order('start_at', { ascending: true });
     if (calendarId) {
       query = query.eq('calendar_id', calendarId);
@@ -85,6 +86,27 @@ export class EventsService {
     return eventDto;
   }
 
+  async bulkCreate(
+    supabase: SupabaseClient,
+    dtos: CreateEventDto[],
+    createdBy: string,
+  ): Promise<EventDto[]> {
+    if (dtos.length === 0) return [];
+    const rows = dtos.map((dto) => toEventInsertRow(dto, createdBy));
+    const { data, error } = await supabase
+      .from('events')
+      .insert(rows)
+      .select('*')
+      .returns<EventRow[]>();
+
+    if (error) throw new InternalServerErrorException(error.message);
+    const eventDtos = (data ?? []).map(toEventDto);
+    for (const dto of eventDtos) {
+      this.realtimeGateway.emitToCalendar(dto.calendarId, 'event:created', dto);
+    }
+    return eventDtos;
+  }
+
   async update(
     supabase: SupabaseClient,
     id: string,
@@ -113,10 +135,12 @@ export class EventsService {
     return eventDto;
   }
 
+  // Xoá "mềm" — chuyển sự kiện vào thùng rác thay vì xoá hẳn, cho phép
+  // khôi phục. Xoá hẳn nằm ở permanentDelete().
   async remove(supabase: SupabaseClient, id: string): Promise<void> {
     const { data, error } = await supabase
       .from('events')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
       .select('id, calendar_id')
       .returns<{ id: string; calendar_id: string }[]>();
@@ -132,6 +156,64 @@ export class EventsService {
     });
   }
 
+  async listTrash(
+    supabase: SupabaseClient,
+    calendarId?: string,
+  ): Promise<EventDto[]> {
+    let query = supabase
+      .from('events')
+      .select('*')
+      .not('deleted_at', 'is', null)
+      .order('deleted_at', { ascending: false });
+    if (calendarId) {
+      query = query.eq('calendar_id', calendarId);
+    }
+
+    const { data, error } = await query;
+    if (error) throw new InternalServerErrorException(error.message);
+    return (data as EventRow[]).map(toEventDto);
+  }
+
+  async restore(supabase: SupabaseClient, id: string): Promise<EventDto> {
+    const { data, error } = await supabase
+      .from('events')
+      .update({ deleted_at: null })
+      .eq('id', id)
+      .select('*')
+      .returns<EventRow[]>();
+
+    if (error) throw new InternalServerErrorException(error.message);
+    if (data.length === 0) {
+      throw new NotFoundException(
+        'Event not found or you do not have permission to restore it',
+      );
+    }
+    const eventDto = toEventDto(data[0]);
+    this.realtimeGateway.emitToCalendar(
+      eventDto.calendarId,
+      'event:created',
+      eventDto,
+    );
+    return eventDto;
+  }
+
+  async permanentDelete(supabase: SupabaseClient, id: string): Promise<void> {
+    const { data, error } = await supabase
+      .from('events')
+      .delete()
+      .eq('id', id)
+      .not('deleted_at', 'is', null)
+      .select('id')
+      .returns<{ id: string }[]>();
+
+    if (error) throw new InternalServerErrorException(error.message);
+    if (data.length === 0) {
+      throw new NotFoundException(
+        'Event not found in trash or you do not have permission to delete it',
+      );
+    }
+  }
+
   async checkConflicts(
     supabase: SupabaseClient,
     dto: CheckConflictsDto,
@@ -139,6 +221,7 @@ export class EventsService {
     let query = supabase
       .from('events')
       .select('*')
+      .is('deleted_at', null)
       .lt('start_at', dto.end)
       .gt('end_at', dto.start);
     if (dto.excludeEventId) {

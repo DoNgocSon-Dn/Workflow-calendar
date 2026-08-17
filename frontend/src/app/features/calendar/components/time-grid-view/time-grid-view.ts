@@ -74,6 +74,8 @@ export class TimeGridView {
 
   private readonly scrollContainer = viewChild<ElementRef<HTMLElement>>('scrollContainer');
 
+  protected readonly scrollbarWidth = signal(6);
+
   protected readonly now = signal(this.clock.now());
   protected readonly nowTop = computed(() => (minutesSinceMidnight(this.now()) / 60) * HOUR_HEIGHT);
 
@@ -109,7 +111,21 @@ export class TimeGridView {
 
     afterNextRender(() => {
       this.scrollContainer()?.nativeElement.scrollTo({ top: 7 * HOUR_HEIGHT - 32 });
+      this.measureScrollbarWidth();
     });
+
+    const onResize = () => this.measureScrollbarWidth();
+    window.addEventListener('resize', onResize);
+    this.destroyRef.onDestroy(() => window.removeEventListener('resize', onResize));
+  }
+
+  // Chrome/Edge có thể bỏ qua width khai báo ở ::-webkit-scrollbar tuỳ theo
+  // scrollbar-width; đo trực tiếp offsetWidth - clientWidth để header và
+  // hàng "Cả ngày" luôn thẳng cột với lưới giờ bên dưới, bất kể trình duyệt/hệ điều hành.
+  private measureScrollbarWidth(): void {
+    const el = this.scrollContainer()?.nativeElement;
+    if (!el) return;
+    this.scrollbarWidth.set(el.offsetWidth - el.clientWidth);
   }
 
   dayKey(day: Date): string {
@@ -154,9 +170,11 @@ export class TimeGridView {
   }
 
   onAllDayCellClick(day: Date): void {
+    // end is the inclusive last day here — save() in event-form-modal adds
+    // the +1 day itself to get the exclusive storage end.
     this.createRequested.emit({
       start: startOfDay(day),
-      end: addMinutesDays(startOfDay(day), 1),
+      end: startOfDay(day),
       allDay: true,
     });
   }
@@ -259,10 +277,4 @@ function minutesToDate(day: Date, totalMinutes: number): Date {
     new Date(2000, 0, 1, Math.floor(totalMinutes / 60), totalMinutes % 60),
     day,
   );
-}
-
-function addMinutesDays(date: Date, days: number): Date {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d;
 }

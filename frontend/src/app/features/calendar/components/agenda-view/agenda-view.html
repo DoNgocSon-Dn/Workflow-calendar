@@ -1,0 +1,42 @@
+<div class="agenda-container">
+  @if (groupedDays().length === 0) {
+    <div class="empty-state">
+      📋 Không có sự kiện nào trong khoảng thời gian này.
+    </div>
+  } @else {
+    <div class="agenda-list">
+      @for (dayGroup of groupedDays(); track dayGroup.dateLabel) {
+        <div class="day-group">
+          <div class="day-header">
+            <span class="day-title">{{ dayGroup.dateLabel }}</span>
+            <span class="badge">{{ dayGroup.events.length }} sự kiện</span>
+          </div>
+
+          <div class="events-list">
+            @for (event of dayGroup.events; track event.id) {
+              <div
+                class="event-card"
+                (click)="selectEvent.emit(event.id)"
+              >
+                <div class="color-bar" [style.background]="colorFor(event)"></div>
+                <div class="event-details">
+                  <div class="event-title">{{ event.title }}</div>
+                  <div class="event-time">
+                    @if (event.allDay) {
+                      <span>Cả ngày</span>
+                    } @else {
+                      <span>{{ event.start | date:'HH:mm' }} - {{ event.end | date:'HH:mm' }}</span>
+                    }
+                    @if (event.location) {
+                      <span class="event-location">📍 {{ event.location }}</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
