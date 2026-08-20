@@ -1,0 +1,65 @@
+<div class="modal-backdrop" (click)="onBackdropClick($event)" role="dialog" aria-modal="true" aria-labelledby="create-group-modal-title">
+  <div class="modal-card">
+    <header class="modal-header">
+      <h2 id="create-group-modal-title">Tạo Nhóm Mới (Group Workspace)</h2>
+      <button type="button" class="btn-close" (click)="cancel()" aria-label="Đóng">✕</button>
+    </header>
+
+    <div class="modal-body">
+      <label class="field-label" for="group-name-input">Tên Nhóm làm việc</label>
+      <input
+        id="group-name-input"
+        type="text"
+        class="text-input"
+        placeholder="Ví dụ: Nhóm Dự Án Web 357"
+        [value]="name()"
+        (input)="name.set($any($event.target).value)"
+        (keydown.enter)="create()"
+        autofocus
+      />
+
+      <label class="field-label" for="group-desc-input">Mô tả nhóm (không bắt buộc)</label>
+      <textarea
+        id="group-desc-input"
+        class="text-area"
+        placeholder="Mô tả mục tiêu hoặc phạm vi làm việc của nhóm..."
+        [value]="description()"
+        (input)="description.set($any($event.target).value)"
+        rows="2"
+      ></textarea>
+
+      <label class="field-label">Màu nhận diện</label>
+      <div class="color-palette" role="radiogroup">
+        @for (c of colors; track c) {
+          <button
+            type="button"
+            class="color-dot"
+            [class.selected]="color() === c"
+            [style.background-color]="colorHex[c]"
+            (click)="setColor(c)"
+          ></button>
+        }
+      </div>
+
+      @if (error(); as err) {
+        <p class="error-msg" role="alert">{{ err }}</p>
+      }
+    </div>
+
+    <footer class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="cancel()">Hủy</button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="!name().trim() || creating()"
+        (click)="create()"
+      >
+        @if (creating()) {
+          Đang tạo nhóm...
+        } @else {
+          Tạo Nhóm
+        }
+      </button>
+    </footer>
+  </div>
+</div>

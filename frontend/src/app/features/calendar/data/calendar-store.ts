@@ -13,6 +13,9 @@ import {
   CalendarDef,
   CalendarEvent,
   CalendarEventDraft,
+  CalendarInvite,
+  CalendarInviteStatus,
+  CalendarMemberRole,
   CalendarViewMode,
   ConflictEvent,
   EventComment,
@@ -57,6 +60,17 @@ interface AttendeeApiDto {
   userId: string;
   email: string;
   status: AttendeeStatus;
+}
+
+interface CalendarInviteApiDto {
+  id: string;
+  calendarId: string;
+  calendarName: string;
+  calendarColor: string;
+  role: CalendarMemberRole;
+  status: CalendarInviteStatus;
+  createdAt: string;
+  inviterEmail: string | null;
 }
 
 interface ReminderApiDto {
@@ -124,6 +138,19 @@ function toCalendarDef(dto: CalendarApiDto): CalendarDef {
   return { id: dto.id, name: dto.name, color: dto.color as CalendarColor };
 }
 
+function toCalendarInvite(dto: CalendarInviteApiDto): CalendarInvite {
+  return {
+    id: dto.id,
+    calendarId: dto.calendarId,
+    calendarName: dto.calendarName,
+    calendarColor: dto.calendarColor as CalendarColor,
+    role: dto.role,
+    status: dto.status,
+    createdAt: new Date(dto.createdAt),
+    inviterEmail: dto.inviterEmail,
+  };
+}
+
 function toCalendarEvent(dto: EventApiDto): CalendarEvent {
   return {
     id: dto.id,
@@ -171,6 +198,7 @@ export class CalendarStore {
   readonly visibleCalendarIds = signal<Set<string>>(new Set());
   readonly events = signal<CalendarEvent[]>([]);
   readonly searchQuery = signal('');
+  readonly pendingInvites = signal<CalendarInvite[]>([]);
 
   // Lịch tham khảo chỉ đọc, không lưu ở backend — hiển thị trong mục "Lịch khác".
   readonly otherCalendars: CalendarDef[] = [VN_HOLIDAY_CALENDAR_DEF];
@@ -230,6 +258,7 @@ export class CalendarStore {
         this.calendars.set([]);
         this.events.set([]);
         this.visibleCalendarIds.set(new Set());
+        this.pendingInvites.set([]);
         this.realtime.disconnect();
       }
     });
@@ -274,6 +303,8 @@ export class CalendarStore {
       this.calendarsLoading.set(false);
     }
 
+    void this.refreshPendingInvites();
+
     this.realtime.connect();
     this.realtime.onConnect(() => this.joinAllCalendarRooms());
     this.joinAllCalendarRooms();
@@ -293,6 +324,13 @@ export class CalendarStore {
     this.realtime.on<{ reminderId: string; eventId: string; title: string; startAt: string }>(
       'reminder:fire',
       (payload) => this.handleReminderFire(payload),
+    );
+    this.realtime.on<{ invite: CalendarInviteApiDto }>('calendar:invited', (payload) =>
+      this.handleCalendarInvited(payload),
+    );
+    this.realtime.on<{ calendarId: string; member: { userId: string; role: CalendarMemberRole } }>(
+      'calendar:memberJoined',
+      (payload) => this.handleCalendarMemberJoined(payload),
     );
   }
 
@@ -326,6 +364,17 @@ export class CalendarStore {
       }),
     );
     return toCalendarDef(created);
+  }
+
+  async createCalendar(name: string, color: CalendarColor): Promise<CalendarDef> {
+    const created = await firstValueFrom(
+      this.http.post<CalendarApiDto>(`${this.apiUrl}/calendars`, { name, color }),
+    );
+    const calendar = toCalendarDef(created);
+    this.calendars.update((list) => [...list, calendar]);
+    this.visibleCalendarIds.update((set) => new Set([...set, calendar.id]));
+    this.realtime.joinCalendar(calendar.id);
+    return calendar;
   }
 
   private joinAllCalendarRooms(): void {
@@ -398,6 +447,32 @@ export class CalendarStore {
       title: `Một người tham gia ${label}`,
       body: '',
       kind: 'updated',
+    });
+  }
+
+  private handleCalendarInvited(payload: { invite: CalendarInviteApiDto }): void {
+    const invite = toCalendarInvite(payload.invite);
+    this.pendingInvites.update((list) => [invite, ...list.filter((i) => i.id !== invite.id)]);
+    this.notificationQueue.push({
+      title: 'Bạn được mời tham gia một lịch',
+      body: invite.inviterEmail
+        ? `${invite.inviterEmail} mời bạn vào "${invite.calendarName}"`
+        : `Mời bạn vào "${invite.calendarName}"`,
+      kind: 'invite',
+    });
+  }
+
+  private handleCalendarMemberJoined(payload: {
+    calendarId: string;
+    member: { userId: string; role: CalendarMemberRole };
+  }): void {
+    if (payload.member.userId === this.authStore.user()?.id) return;
+    const calendar = this.calendars().find((c) => c.id === payload.calendarId);
+    if (!calendar) return;
+    this.notificationQueue.push({
+      title: 'Có thành viên mới',
+      body: `Một người vừa tham gia lịch "${calendar.name}"`,
+      kind: 'invite',
     });
   }
 
@@ -596,6 +671,58 @@ export class CalendarStore {
       this.http.post<AttendeeApiDto>(`${this.apiUrl}/events/${eventId}/respond`, { status }),
     );
     return toAttendee(result);
+  }
+
+  async refreshPendingInvites(): Promise<void> {
+    const result = await firstValueFrom(
+      this.http.get<CalendarInviteApiDto[]>(`${this.apiUrl}/calendars/invites/mine`),
+    );
+    this.pendingInvites.set(
+      result.filter((dto) => dto.status === 'pending').map(toCalendarInvite),
+    );
+  }
+
+  async inviteToCalendar(
+    calendarId: string,
+    email: string,
+    role: CalendarMemberRole = 'viewer',
+  ): Promise<CalendarInvite> {
+    const result = await firstValueFrom(
+      this.http.post<CalendarInviteApiDto>(`${this.apiUrl}/calendars/${calendarId}/invites`, {
+        email,
+        role,
+      }),
+    );
+    return toCalendarInvite(result);
+  }
+
+  async respondToCalendarInvite(
+    inviteId: string,
+    status: Exclude<CalendarInviteStatus, 'pending'>,
+  ): Promise<CalendarInvite> {
+    const result = await firstValueFrom(
+      this.http.post<CalendarInviteApiDto>(
+        `${this.apiUrl}/calendars/invites/${inviteId}/respond`,
+        { status },
+      ),
+    );
+    const invite = toCalendarInvite(result);
+    this.pendingInvites.update((list) => list.filter((i) => i.id !== inviteId));
+
+    if (status === 'accepted') {
+      const alreadyKnown = this.calendars().some((c) => c.id === invite.calendarId);
+      if (!alreadyKnown) {
+        this.calendars.update((list) => [
+          ...list,
+          { id: invite.calendarId, name: invite.calendarName, color: invite.calendarColor },
+        ]);
+      }
+      this.visibleCalendarIds.update((set) => new Set([...set, invite.calendarId]));
+      this.realtime.joinCalendar(invite.calendarId);
+      await this.refreshEvents();
+    }
+
+    return invite;
   }
 
   async listReminders(eventId: string): Promise<Reminder[]> {

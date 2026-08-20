@@ -12,6 +12,7 @@ import { CommentsModule } from './comments/comments.module';
 import configuration from './config/configuration';
 import { validate } from './config/env.validation';
 import { EventsModule } from './events/events.module';
+import { GroupsModule } from './groups/groups.module';
 import { ImportModule } from './import/import.module';
 import { MailModule } from './mail/mail.module';
 import { NotesModule } from './notes/notes.module';
@@ -39,6 +40,7 @@ import { SupabaseModule } from './supabase/supabase.module';
     CommentsModule,
     AiModule,
     ImportModule,
+    GroupsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

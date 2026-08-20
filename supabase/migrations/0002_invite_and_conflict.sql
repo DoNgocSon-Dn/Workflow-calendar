@@ -50,13 +50,16 @@ $$;
 -- 3. RLS bổ sung: người được mời (chưa chắc đã là calendar_member) vẫn cần
 --    thấy chính lời mời của mình, thấy được event đó, và tự đổi status.
 -- ============================================================
+drop policy if exists event_attendees_select_self on public.event_attendees;
 create policy event_attendees_select_self on public.event_attendees
   for select using (user_id = auth.uid());
 
+drop policy if exists event_attendees_respond_self on public.event_attendees;
 create policy event_attendees_respond_self on public.event_attendees
   for update using (user_id = auth.uid())
   with check (user_id = auth.uid());
 
+drop policy if exists events_select_invited on public.events;
 create policy events_select_invited on public.events
   for select using (
     exists (select 1 from public.event_attendees ea

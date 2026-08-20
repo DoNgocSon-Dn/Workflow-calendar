@@ -103,6 +103,14 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .menu-backdrop {
@@ -127,8 +135,16 @@
   gap: 0.25rem;
 }
 
+.user-dropdown-name {
+  margin: 0.25rem 0.5rem 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow-wrap: break-word;
+}
+
 .user-dropdown-email {
-  margin: 0.25rem 0.5rem 0.5rem;
+  margin: 0.1rem 0.5rem 0.5rem;
   font-size: 0.8rem;
   color: var(--color-text-tertiary);
   overflow-wrap: break-word;
@@ -175,6 +191,108 @@
 
 .import-btn.import-btn:hover {
   background: var(--color-accent-hover);
+}
+
+.invites-menu {
+  position: relative;
+}
+
+.invites-menu .icon-btn {
+  position: relative;
+}
+
+.invite-badge {
+  position: absolute;
+  top: 0.1rem;
+  right: 0.1rem;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.1rem;
+  text-align: center;
+}
+
+.invites-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 100;
+  width: 20rem;
+  max-width: min(20rem, 90vw);
+  max-height: 22rem;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-modal);
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.invites-dropdown-title {
+  margin: 0.15rem 0.25rem 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.invites-empty {
+  margin: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--color-text-tertiary);
+}
+
+.invite-item {
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-hover);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.invite-text {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  overflow-wrap: break-word;
+}
+
+.invite-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.text-btn {
+  border: none;
+  background: none;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.text-btn:hover {
+  background: var(--color-surface);
+}
+
+.text-btn.muted {
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+}
+
+.text-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .gear-menu {

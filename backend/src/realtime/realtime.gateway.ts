@@ -67,13 +67,28 @@ export class RealtimeGateway implements OnGatewayConnection {
     @ConnectedSocket() client: AppSocket,
     @MessageBody() payload: { calendarId: string },
   ): Promise<{ ok: boolean; error?: string }> {
-    const { data } = await client.data.supabase
+    if (!payload?.calendarId) return { ok: false, error: 'invalid_id' };
+
+    const supabase = client.data?.supabase ?? this.supabaseService.getAnonClient();
+
+    const { data: cal } = await supabase
       .from('calendars')
       .select('id')
       .eq('id', payload.calendarId)
       .maybeSingle();
 
-    if (!data) {
+    let isAuthorized = !!cal;
+
+    if (!isAuthorized) {
+      const { data: grp } = await supabase
+        .from('groups')
+        .select('id')
+        .eq('id', payload.calendarId)
+        .maybeSingle();
+      isAuthorized = !!grp;
+    }
+
+    if (!isAuthorized) {
       return { ok: false, error: 'forbidden' };
     }
 

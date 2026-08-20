@@ -1,4 +1,78 @@
 <div class="auth-page">
+  <aside class="brand-panel">
+    <svg class="brand-watermark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="17" rx="3" stroke="#fff" stroke-width="1" />
+      <path d="M3 9h18" stroke="#fff" stroke-width="1" />
+      <path d="M8 2v4M16 2v4" stroke="#fff" stroke-width="1" stroke-linecap="round" />
+    </svg>
+
+    <div class="preview-panel" aria-hidden="true">
+      <div class="preview-panel-header">
+        <span class="preview-panel-title">Hôm nay</span>
+        <span class="preview-panel-date">Thứ Hai, 17 Th8</span>
+      </div>
+      <ul class="preview-timeline">
+        <li>
+          <span class="preview-dot" style="background: #34a853"></span>
+          <div>
+            <p class="preview-item-title">Họp nhóm thiết kế</p>
+            <p class="preview-item-time">09:00 – 09:45</p>
+          </div>
+        </li>
+        <li>
+          <span class="preview-dot" style="background: var(--auth-brand-glow)"></span>
+          <div>
+            <p class="preview-item-title">Nhắc nhở: nộp báo cáo</p>
+            <p class="preview-item-time">17:00</p>
+          </div>
+        </li>
+        <li>
+          <span class="preview-dot" style="background: #ea4335"></span>
+          <div>
+            <p class="preview-item-title">Sinh nhật bạn bè</p>
+            <p class="preview-item-time">Cả ngày</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="brand-panel-content">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="17" rx="3" stroke="#fff" stroke-width="1.6" />
+          <path d="M3 9h18" stroke="#fff" stroke-width="1.6" />
+          <path d="M8 2v4M16 2v4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+      </div>
+      <span class="brand-kicker">Không gian làm việc</span>
+      <h2 class="brand-name">Workflow</h2>
+      <p class="brand-tagline">
+        Sắp xếp lịch trình, ghi chú và nhắc nhở — tất cả trong một nơi.
+      </p>
+      <ul class="brand-features">
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+          Đồng bộ nhiều lịch cùng lúc
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+          Nhắc nhở &amp; ghi chú thông minh
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+          Giao diện sáng/tối tuỳ chọn
+        </li>
+      </ul>
+    </div>
+  </aside>
+
+  <div class="form-panel">
   <app-theme-toggle class="theme-toggle-corner" />
   <form class="auth-card" [formGroup]="form" (ngSubmit)="submit()">
     <h1 class="auth-title">Đăng ký</h1>
@@ -94,4 +168,5 @@
       Đã có tài khoản? <a routerLink="/login">Đăng nhập</a>
     </p>
   </form>
+  </div>
 </div>

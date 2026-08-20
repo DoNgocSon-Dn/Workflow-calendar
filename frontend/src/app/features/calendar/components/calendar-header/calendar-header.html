@@ -21,7 +21,7 @@
           {{ store.today().getDate() }}
         </text>
       </svg>
-      Lịch
+      Workflow
     </span>
   </div>
 
@@ -118,6 +118,65 @@
       }
     </div>
 
+    <div class="invites-menu">
+      <button
+        type="button"
+        class="icon-btn"
+        aria-label="Lời mời tham gia lịch"
+        aria-haspopup="true"
+        [attr.aria-expanded]="invitesMenuOpen()"
+        (click)="toggleInvitesMenu()"
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor"
+            d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5z" />
+        </svg>
+        @if (pendingInvites().length > 0) {
+          <span class="invite-badge">{{ pendingInvites().length }}</span>
+        }
+      </button>
+      @if (invitesMenuOpen()) {
+        <div class="menu-backdrop" (click)="closeInvitesMenu()"></div>
+        <div class="invites-dropdown" role="menu">
+          <p class="invites-dropdown-title">Lời mời tham gia lịch</p>
+          @if (pendingInvites().length === 0) {
+            <p class="invites-empty">Không có lời mời nào.</p>
+          } @else {
+            @for (invite of pendingInvites(); track invite.id) {
+              <div class="invite-item">
+                <p class="invite-text">
+                  @if (invite.inviterEmail) {
+                    <strong>{{ invite.inviterEmail }}</strong> mời bạn vào
+                  } @else {
+                    Bạn được mời vào
+                  }
+                  "{{ invite.calendarName }}" ({{ invite.role === 'editor' ? 'chỉnh sửa' : 'chỉ xem' }})
+                </p>
+                <div class="invite-actions">
+                  <button
+                    type="button"
+                    class="text-btn"
+                    [disabled]="respondingInviteId() === invite.id"
+                    (click)="respondInvite(invite.id, 'accepted')"
+                  >
+                    Đồng ý
+                  </button>
+                  <button
+                    type="button"
+                    class="text-btn muted"
+                    [disabled]="respondingInviteId() === invite.id"
+                    (click)="respondInvite(invite.id, 'declined')"
+                  >
+                    Từ chối
+                  </button>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      }
+    </div>
+
     <app-theme-toggle />
 
     @if (userEmail()) {
@@ -127,15 +186,25 @@
           class="avatar-btn"
           aria-haspopup="true"
           [attr.aria-expanded]="userMenuOpen()"
-          [attr.aria-label]="userEmail()"
+          [attr.aria-label]="displayName()"
           (click)="toggleUserMenu()"
         >
-          {{ userInitial() }}
+          @if (avatarUrl(); as avatar) {
+            <img [src]="avatar" alt="" class="avatar-img" />
+          } @else {
+            {{ userInitial() }}
+          }
         </button>
         @if (userMenuOpen()) {
           <div class="menu-backdrop" (click)="closeUserMenu()"></div>
           <div class="user-dropdown" role="menu">
-            <p class="user-dropdown-email">{{ userEmail() }}</p>
+            <p class="user-dropdown-name">{{ displayName() }}</p>
+            @if (authStore.displayName()) {
+              <p class="user-dropdown-email">{{ userEmail() }}</p>
+            }
+            <button type="button" class="dropdown-item" role="menuitem" (click)="openProfileFromMenu()">
+              Chỉnh sửa hồ sơ
+            </button>
             <button type="button" class="dropdown-item" role="menuitem" (click)="logout()">
               Đăng xuất
             </button>

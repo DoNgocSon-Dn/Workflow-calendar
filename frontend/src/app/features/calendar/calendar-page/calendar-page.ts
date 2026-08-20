@@ -5,7 +5,9 @@ import { AiChatWidget } from '../../ai-assistant/ai-chat-widget';
 import { NotesWidget } from '../../notes/notes-widget';
 import { CalendarHeader } from '../components/calendar-header/calendar-header';
 import { CalendarSidebar } from '../components/calendar-sidebar/calendar-sidebar';
+import { CreateCalendarModal } from '../components/create-calendar-modal/create-calendar-modal';
 import { EventFormModal } from '../components/event-form-modal/event-form-modal';
+import { InviteModal } from '../components/invite-modal/invite-modal';
 import { CreateRequest, MonthView } from '../components/month-view/month-view';
 import { NotificationPopup } from '../components/notification-popup/notification-popup';
 import { TimeGridView } from '../components/time-grid-view/time-grid-view';
@@ -17,6 +19,9 @@ import { CalendarStore } from '../data/calendar-store';
 import { VN_HOLIDAY_CALENDAR_ID } from '../data/vietnam-holidays';
 import { CalendarEvent } from '../models/calendar.models';
 import { addMinutes, buildWeekDays } from '../utils/date-utils';
+import { CreateGroupModal } from '../../groups/components/create-group-modal/create-group-modal';
+import { GroupWorkspaceModal } from '../../groups/components/group-workspace-modal/group-workspace-modal';
+import { GroupStore } from '../../groups/data/group-store';
 
 interface ModalState {
   event: CalendarEvent | null;
@@ -41,6 +46,10 @@ interface ModalState {
     TrashModal,
     SettingsModal,
     EventFormModal,
+    InviteModal,
+    CreateCalendarModal,
+    CreateGroupModal,
+    GroupWorkspaceModal,
     NotificationPopup,
     NotesWidget,
     AiChatWidget,
@@ -48,10 +57,8 @@ interface ModalState {
 })
 export class CalendarPage {
   protected readonly store = inject(CalendarStore);
+  protected readonly groupStore = inject(GroupStore);
   private readonly notificationQueue = inject(NotificationQueue);
-  // Instantiated ở đây (không dùng trực tiếp trong component) để hiệu ứng
-  // áp class density-compact lên <html> chạy ngay khi vào trang, không cần
-  // đợi tới lúc mở Cài đặt.
   private readonly densityService = inject(DensityService);
 
   protected readonly weekDays = computed(() => buildWeekDays(this.store.focusedDate()));
@@ -61,6 +68,11 @@ export class CalendarPage {
   protected readonly importModalOpen = signal(false);
   protected readonly trashModalOpen = signal(false);
   protected readonly settingsModalOpen = signal(false);
+  protected readonly inviteModalTarget = signal<{ calendarId: string; calendarName: string } | null>(
+    null,
+  );
+  protected readonly createCalendarModalOpen = signal(false);
+  protected readonly createGroupModalOpen = signal(false);
 
   constructor() {
     this.notificationQueue.requestPermission();
@@ -94,7 +106,6 @@ export class CalendarPage {
   }
 
   openEdit(event: CalendarEvent): void {
-    // Ngày lễ Việt Nam chỉ để tham khảo, không sửa/xoá được như event thật.
     if (event.calendarId === VN_HOLIDAY_CALENDAR_ID) return;
     this.modalState.set({
       event,
@@ -119,5 +130,22 @@ export class CalendarPage {
 
   closeModal(): void {
     this.modalState.set(null);
+  }
+
+  openInvite(target: { calendarId: string; calendarName: string }): void {
+    this.inviteModalTarget.set(target);
+  }
+
+  closeInviteModal(): void {
+    this.inviteModalTarget.set(null);
+  }
+
+  onCalendarCreated(target: { calendarId: string; calendarName: string }): void {
+    this.createCalendarModalOpen.set(false);
+    this.inviteModalTarget.set(target);
+  }
+
+  onGroupCreated(target: { groupId: string; groupName: string }): void {
+    this.createGroupModalOpen.set(false);
   }
 }

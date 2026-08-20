@@ -80,3 +80,17 @@ export interface Note {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export type CalendarMemberRole = 'editor' | 'viewer';
+export type CalendarInviteStatus = 'pending' | 'accepted' | 'declined';
+
+export interface CalendarInvite {
+  id: string;
+  calendarId: string;
+  calendarName: string;
+  calendarColor: CalendarColor;
+  role: CalendarMemberRole;
+  status: CalendarInviteStatus;
+  createdAt: Date;
+  inviterEmail: string | null;
+}

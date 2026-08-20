@@ -1,0 +1,67 @@
+<div class="backdrop" (click)="onBackdropClick($event)">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="invite-modal-title">
+    <header class="modal-header">
+      <h2 id="invite-modal-title">Mời bạn bè vào "{{ calendarName() }}"</h2>
+      <button type="button" class="icon-btn" aria-label="Đóng" (click)="cancel()">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor"
+            d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="modal-body">
+      <label class="field">
+        <span class="field-label">Email bạn bè</span>
+        <input
+          type="email"
+          class="field-input"
+          placeholder="ban@example.com"
+          [value]="email()"
+          (input)="email.set($any($event.target).value)"
+          (keydown.enter)="send()"
+        />
+      </label>
+
+      <div class="field">
+        <span class="field-label">Quyền</span>
+        <div class="segmented" role="radiogroup" aria-label="Quyền">
+          <button
+            type="button"
+            role="radio"
+            [attr.aria-checked]="role() === 'viewer'"
+            [class.active]="role() === 'viewer'"
+            (click)="setRole('viewer')"
+          >
+            Chỉ xem
+          </button>
+          <button
+            type="button"
+            role="radio"
+            [attr.aria-checked]="role() === 'editor'"
+            [class.active]="role() === 'editor'"
+            (click)="setRole('editor')"
+          >
+            Chỉnh sửa
+          </button>
+        </div>
+      </div>
+
+      @if (error()) {
+        <p class="error-text">{{ error() }}</p>
+      }
+      @if (successEmail(); as sentTo) {
+        <p class="success-text">Đã gửi lời mời tới {{ sentTo }}.</p>
+      }
+
+      <button
+        type="button"
+        class="send-btn"
+        [disabled]="sending() || !email().trim()"
+        (click)="send()"
+      >
+        {{ sending() ? 'Đang gửi...' : 'Gửi lời mời' }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,11 +1,44 @@
 <div class="agenda-container">
-  @if (groupedDays().length === 0) {
+  <!-- Filter Controls Bar -->
+  <div class="agenda-header-bar">
+    <div class="filter-title">
+      <h3>📅 Lịch biểu {{ currentMonthLabel() }}</h3>
+    </div>
+    <div class="filter-pills" role="radiogroup">
+      <button
+        type="button"
+        class="filter-pill"
+        [class.active]="filterMode() === 'month'"
+        (click)="setFilterMode('month')"
+      >
+        Tháng này
+      </button>
+      <button
+        type="button"
+        class="filter-pill"
+        [class.active]="filterMode() === 'next30'"
+        (click)="setFilterMode('next30')"
+      >
+        30 ngày tới
+      </button>
+      <button
+        type="button"
+        class="filter-pill"
+        [class.active]="filterMode() === 'all'"
+        (click)="setFilterMode('all')"
+      >
+        Tất cả
+      </button>
+    </div>
+  </div>
+
+  @if (visibleGroupedDays().length === 0) {
     <div class="empty-state">
-      📋 Không có sự kiện nào trong khoảng thời gian này.
+      📋 Không có sự kiện nào trong khoảng thời gian được chọn.
     </div>
   } @else {
     <div class="agenda-list">
-      @for (dayGroup of groupedDays(); track dayGroup.dateLabel) {
+      @for (dayGroup of visibleGroupedDays(); track dayGroup.dateLabel) {
         <div class="day-group">
           <div class="day-header">
             <span class="day-title">{{ dayGroup.dateLabel }}</span>
@@ -23,9 +56,9 @@
                   <div class="event-title">{{ event.title }}</div>
                   <div class="event-time">
                     @if (event.allDay) {
-                      <span>Cả ngày</span>
+                      <span class="time-tag all-day">Cả ngày</span>
                     } @else {
-                      <span>{{ event.start | date:'HH:mm' }} - {{ event.end | date:'HH:mm' }}</span>
+                      <span class="time-tag">{{ event.start | date:'HH:mm' }} - {{ event.end | date:'HH:mm' }}</span>
                     }
                     @if (event.location) {
                       <span class="event-location">📍 {{ event.location }}</span>
@@ -35,6 +68,14 @@
               </div>
             }
           </div>
+        </div>
+      }
+
+      @if (hasMore()) {
+        <div class="load-more-box">
+          <button type="button" class="btn-load-more" (click)="loadMore()">
+            ▼ Xem thêm các ngày tiếp theo
+          </button>
         </div>
       }
     </div>

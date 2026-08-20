@@ -30,7 +30,7 @@ const FULL_DATE = new Intl.DateTimeFormat('vi-VN', {
 })
 export class CalendarHeader {
   protected readonly store = inject(CalendarStore);
-  private readonly authStore = inject(AuthStore);
+  protected readonly authStore = inject(AuthStore);
   private readonly router = inject(Router);
 
   readonly openImport = output<void>();
@@ -38,10 +38,16 @@ export class CalendarHeader {
   readonly openTrash = output<void>();
 
   protected readonly userEmail = computed(() => this.authStore.user()?.email ?? '');
-  protected readonly userInitial = computed(() => this.userEmail().charAt(0).toUpperCase() || '?');
+  protected readonly displayName = computed(() => this.authStore.displayName() ?? this.userEmail());
+  protected readonly avatarUrl = computed(() => this.authStore.avatarUrl());
+  protected readonly userInitial = computed(() => this.displayName().charAt(0).toUpperCase() || '?');
   protected readonly userMenuOpen = signal(false);
   protected readonly viewMenuOpen = signal(false);
   protected readonly gearMenuOpen = signal(false);
+  protected readonly invitesMenuOpen = signal(false);
+  protected readonly respondingInviteId = signal<string | null>(null);
+
+  protected readonly pendingInvites = computed(() => this.store.pendingInvites());
 
   readonly viewModes: { mode: CalendarViewMode; label: string }[] = [
     { mode: 'day', label: 'Ngày' },
@@ -107,6 +113,31 @@ export class CalendarHeader {
 
   closeUserMenu(): void {
     this.userMenuOpen.set(false);
+  }
+
+  openProfileFromMenu(): void {
+    this.closeUserMenu();
+    this.openSettings.emit();
+  }
+
+  toggleInvitesMenu(): void {
+    this.invitesMenuOpen.update((open) => !open);
+  }
+
+  closeInvitesMenu(): void {
+    this.invitesMenuOpen.set(false);
+  }
+
+  async respondInvite(inviteId: string, status: 'accepted' | 'declined'): Promise<void> {
+    if (this.respondingInviteId()) return;
+    this.respondingInviteId.set(inviteId);
+    try {
+      await this.store.respondToCalendarInvite(inviteId, status);
+    } catch {
+      // Lỗi mạng — invite vẫn còn trong danh sách, người dùng có thể thử lại.
+    } finally {
+      this.respondingInviteId.set(null);
+    }
   }
 
   async logout(): Promise<void> {

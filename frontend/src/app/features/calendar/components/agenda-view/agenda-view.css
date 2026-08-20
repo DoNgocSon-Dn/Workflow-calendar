@@ -1,16 +1,75 @@
-.agenda-container {
-  padding: var(--space-5);
-  max-width: 900px;
-  margin: 0 auto;
-  overflow-y: auto;
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   height: 100%;
+  overflow: hidden;
+}
+
+.agenda-container {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-5);
+  max-width: 850px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.agenda-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.filter-title h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-transform: capitalize;
+}
+
+.filter-pills {
+  display: flex;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: 3px;
+  gap: 2px;
+}
+
+.filter-pill {
+  background: none;
+  border: none;
+  color: var(--color-text-tertiary);
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filter-pill:hover {
+  color: var(--color-text);
+}
+
+.filter-pill.active {
+  background: #3b82f6;
+  color: #ffffff;
 }
 
 .empty-state {
   text-align: center;
   padding: var(--space-8);
   color: var(--color-text-tertiary);
-  font-size: 1rem;
+  font-size: 0.95rem;
   background: var(--color-surface);
   border-radius: var(--radius-lg);
   border: 1px dashed var(--color-border-strong);
@@ -19,7 +78,8 @@
 .agenda-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-5);
+  padding-bottom: 2rem;
 }
 
 .day-group {
@@ -37,9 +97,9 @@
 }
 
 .day-title {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  color: var(--color-accent);
+  color: #3b82f6;
   text-transform: capitalize;
 }
 
@@ -98,6 +158,41 @@
   align-items: center;
 }
 
+.time-tag {
+  color: var(--color-text-secondary);
+}
+
+.time-tag.all-day {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
 .event-location {
   color: var(--color-text-muted);
+}
+
+.load-more-box {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0;
+}
+
+.btn-load-more {
+  background: var(--color-surface-hover);
+  color: #3b82f6;
+  border: 1px solid #3b82f6;
+  border-radius: var(--radius-full);
+  padding: 8px 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-load-more:hover {
+  background: #3b82f6;
+  color: #ffffff;
 }

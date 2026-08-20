@@ -11,6 +11,60 @@
     </header>
 
     <div class="modal-body">
+      <section class="profile-section">
+        <div class="avatar-preview">
+          @if (authStore.avatarUrl(); as avatarUrl) {
+            <img [src]="avatarUrl" alt="" class="avatar-img" />
+          } @else {
+            <span class="avatar-fallback">{{ (authStore.displayName() ?? authStore.user()?.email ?? '?').charAt(0).toUpperCase() }}</span>
+          }
+        </div>
+
+        <div class="profile-fields">
+          <label class="avatar-upload-btn">
+            {{ uploadingAvatar() ? 'Đang tải lên...' : 'Đổi ảnh đại diện' }}
+            <input
+              type="file"
+              accept="image/*"
+              class="sr-only"
+              [disabled]="uploadingAvatar()"
+              (change)="onAvatarSelected($event)"
+            />
+          </label>
+
+          <div class="name-field">
+            <label for="display-name-input" class="setting-title">Tên hiển thị</label>
+            <div class="name-input-row">
+              <input
+                id="display-name-input"
+                type="text"
+                class="name-input"
+                placeholder="Nhập tên của bạn"
+                [value]="nameDraft()"
+                (input)="onNameInput($any($event.target).value)"
+              />
+              <button
+                type="button"
+                class="save-name-btn"
+                [disabled]="savingName() || !nameDraft().trim()"
+                (click)="saveName()"
+              >
+                {{ savingName() ? 'Đang lưu...' : 'Lưu' }}
+              </button>
+            </div>
+            @if (nameSaved()) {
+              <span class="profile-success">Đã lưu tên hiển thị.</span>
+            }
+          </div>
+
+          @if (profileError(); as err) {
+            <span class="profile-error">{{ err }}</span>
+          }
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
       <section class="setting-row">
         <div class="setting-label">
           <span class="setting-title">Giao diện</span>

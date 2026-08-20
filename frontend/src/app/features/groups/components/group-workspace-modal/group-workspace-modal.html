@@ -1,0 +1,327 @@
+<div class="modal-backdrop" (click)="onBackdropClick($event)" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    @if (store.activeGroup(); as group) {
+      <header class="modal-header">
+        <div class="header-title-box">
+          <span class="group-avatar" [style.background-color]="group.color">{{ groupInitial() }}</span>
+          <div>
+            <h2>{{ group.name }}</h2>
+            <p class="group-desc">{{ group.description || 'Không gian làm việc nhóm' }}</p>
+          </div>
+        </div>
+        <button type="button" class="btn-close" (click)="close()" aria-label="Đóng">✕</button>
+      </header>
+
+      <!-- Workspace Navigation Tabs -->
+      <nav class="workspace-tabs">
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab() === 'tasks'"
+          (click)="setTab('tasks')"
+        >
+          <span class="tab-icon">✅</span> Quản lý Task
+          <span class="tab-badge">{{ store.tasks().length }}</span>
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab() === 'members'"
+          (click)="setTab('members')"
+        >
+          <span class="tab-icon">👥</span> Thành viên
+          <span class="tab-badge">{{ store.members().length }}</span>
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab() === 'chat'"
+          (click)="setTab('chat')"
+        >
+          <span class="tab-icon">💬</span> Trò chuyện
+          <span class="tab-badge">{{ store.messages().length }}</span>
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab() === 'calendar'"
+          (click)="setTab('calendar')"
+        >
+          <span class="tab-icon">📅</span> Lịch Nhóm
+        </button>
+      </nav>
+
+      <div class="modal-body">
+        <!-- TAB 1: TASKS -->
+        @if (activeTab() === 'tasks') {
+          <div class="tasks-section">
+            <div class="create-task-card">
+              <h3>Tạo Task mới cho nhóm</h3>
+              <div class="task-form-grid">
+                <input
+                  type="text"
+                  class="text-input"
+                  placeholder="Tiêu đề task (VD: Viết tài liệu API)..."
+                  [value]="taskTitle()"
+                  (input)="taskTitle.set($any($event.target).value)"
+                />
+                <input
+                  type="text"
+                  class="text-input"
+                  placeholder="Mô tả công việc..."
+                  [value]="taskDescription()"
+                  (input)="taskDescription.set($any($event.target).value)"
+                />
+                <div class="form-row">
+                  <select
+                    class="select-input"
+                    [value]="taskAssignedTo()"
+                    (change)="taskAssignedTo.set($any($event.target).value)"
+                  >
+                    <option value="">-- Chọn thành viên phụ trách --</option>
+                    @for (m of store.members(); track m.id) {
+                      <option [value]="m.userId">{{ m.email || m.userId }}</option>
+                    }
+                  </select>
+                  <input
+                    type="date"
+                    class="text-input"
+                    [value]="taskDueDate()"
+                    (input)="taskDueDate.set($any($event.target).value)"
+                  />
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  [disabled]="!taskTitle().trim() || creatingTask()"
+                  (click)="createTask()"
+                >
+                  + Thêm Task
+                </button>
+              </div>
+            </div>
+
+            <div class="kanban-board">
+              <!-- Todo Column -->
+              <div class="kanban-col">
+                <h4 class="col-title todo">Cần làm (Todo) <span class="col-count">{{ todoTasks().length }}</span></h4>
+                <div class="kanban-col-body">
+                  @for (t of todoTasks(); track t.id) {
+                    <div class="task-item">
+                      <div class="task-item-header">
+                        <strong>{{ t.title }}</strong>
+                      </div>
+                      @if (t.description) {
+                        <p class="task-desc">{{ t.description }}</p>
+                      }
+                      <div class="task-actions">
+                        <button
+                          type="button"
+                          class="action-badge in-progress"
+                          (click)="setTaskStatus(t, 'in_progress')"
+                        >
+                          → Đang làm
+                        </button>
+                        <button
+                          type="button"
+                          class="action-badge done"
+                          (click)="setTaskStatus(t, 'done')"
+                        >
+                          ✓ Xong
+                        </button>
+                      </div>
+                    </div>
+                  } @empty {
+                    <p class="col-empty">Chưa có task nào</p>
+                  }
+                </div>
+              </div>
+
+              <!-- In Progress Column -->
+              <div class="kanban-col">
+                <h4 class="col-title in-progress">Đang thực hiện <span class="col-count">{{ inProgressTasks().length }}</span></h4>
+                <div class="kanban-col-body">
+                  @for (t of inProgressTasks(); track t.id) {
+                    <div class="task-item">
+                      <div class="task-item-header">
+                        <strong>{{ t.title }}</strong>
+                      </div>
+                      @if (t.description) {
+                        <p class="task-desc">{{ t.description }}</p>
+                      }
+                      <div class="task-actions">
+                        <button
+                          type="button"
+                          class="action-badge todo"
+                          (click)="setTaskStatus(t, 'todo')"
+                        >
+                          ← Cần làm
+                        </button>
+                        <button
+                          type="button"
+                          class="action-badge done"
+                          (click)="setTaskStatus(t, 'done')"
+                        >
+                          ✓ Xong
+                        </button>
+                      </div>
+                    </div>
+                  } @empty {
+                    <p class="col-empty">Chưa có task nào</p>
+                  }
+                </div>
+              </div>
+
+              <!-- Done Column -->
+              <div class="kanban-col">
+                <h4 class="col-title done">Đã hoàn thành <span class="col-count">{{ doneTasks().length }}</span></h4>
+                <div class="kanban-col-body">
+                  @for (t of doneTasks(); track t.id) {
+                    <div class="task-item task-done">
+                      <div class="task-item-header">
+                        <strong>{{ t.title }}</strong>
+                      </div>
+                      <div class="task-actions">
+                        <button
+                          type="button"
+                          class="action-badge todo"
+                          (click)="setTaskStatus(t, 'todo')"
+                        >
+                          Mở lại
+                        </button>
+                      </div>
+                    </div>
+                  } @empty {
+                    <p class="col-empty">Chưa có task nào</p>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- TAB 2: MEMBERS -->
+        @if (activeTab() === 'members') {
+          <div class="members-section">
+            <div class="invite-card">
+              <h3>Mời thành viên mới vào nhóm</h3>
+              <div class="invite-form-row">
+                <input
+                  type="email"
+                  class="text-input"
+                  placeholder="Email người muốn mời..."
+                  [value]="inviteEmail()"
+                  (input)="inviteEmail.set($any($event.target).value)"
+                />
+                <select
+                  class="select-input"
+                  [value]="inviteRole()"
+                  (change)="inviteRole.set($any($event.target).value)"
+                >
+                  <option value="admin">Quản trị viên (Admin)</option>
+                  <option value="member">Thành viên (Member)</option>
+                  <option value="guest">Khách (Guest)</option>
+                </select>
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  [disabled]="!inviteEmail().trim() || inviting()"
+                  (click)="invite()"
+                >
+                  Mời vào nhóm
+                </button>
+              </div>
+              @if (inviteError(); as err) {
+                <p class="error-msg">{{ err }}</p>
+              }
+            </div>
+
+            <h3 class="section-subtitle">Danh sách thành viên ({{ store.members().length }})</h3>
+            <div class="members-list">
+              @for (m of store.members(); track m.id) {
+                <div class="member-row">
+                  <div class="member-info">
+                    <span class="user-avatar">👤</span>
+                    <div>
+                      <strong>{{ m.email || m.userId }}</strong>
+                      @if (isOwner() && m.role !== 'owner') {
+                        <select
+                          class="role-select"
+                          [class]="m.role"
+                          [value]="m.role"
+                          [disabled]="updatingRoleUserId() === m.userId"
+                          (change)="changeRole(m, $any($event.target).value)"
+                        >
+                          <option value="admin">Quản trị viên (Admin)</option>
+                          <option value="member">Thành viên (Member)</option>
+                          <option value="guest">Khách (Guest)</option>
+                        </select>
+                      } @else {
+                        <span class="role-pill" [class]="m.role">{{ m.role }}</span>
+                      }
+                    </div>
+                  </div>
+                  @if (m.role !== 'owner') {
+                    <button
+                      type="button"
+                      class="btn-danger-sm"
+                      (click)="removeMember(m)"
+                    >
+                      Xóa
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- TAB 3: CHAT -->
+        @if (activeTab() === 'chat') {
+          <div class="chat-section">
+            <div class="chat-messages">
+              @for (msg of store.messages(); track msg.id) {
+                <div class="chat-msg-row">
+                  <span class="chat-sender">{{ msg.senderEmail || 'Thành viên' }}:</span>
+                  <span class="chat-text">{{ msg.message }}</span>
+                  <span class="chat-time">{{ msg.createdAt | date: 'HH:mm dd/MM' }}</span>
+                </div>
+              } @empty {
+                <p class="empty-text">Chưa có tin nhắn nào trong nhóm. Hãy gửi tin nhắn đầu tiên!</p>
+              }
+            </div>
+            <div class="chat-input-bar">
+              <input
+                type="text"
+                class="text-input"
+                placeholder="Nhập tin nhắn..."
+                [value]="chatMessage()"
+                (input)="chatMessage.set($any($event.target).value)"
+                (keydown.enter)="sendChat()"
+              />
+              <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="!chatMessage().trim() || sendingChat()"
+                (click)="sendChat()"
+              >
+                Gửi
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- TAB 4: CALENDAR INFO -->
+        @if (activeTab() === 'calendar') {
+          <div class="calendar-section">
+            <div class="info-card">
+              <h3>📅 Lịch riêng của Nhóm</h3>
+              <p>Mỗi nhóm làm việc tự động tích hợp 1 <strong>Lịch Nhóm</strong> tương ứng. Tất cả thành viên trong nhóm đều có quyền theo dõi và tạo sự kiện chung.</p>
+              <p class="cal-id">ID Lịch: <code>{{ group.calendarId }}</code></p>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

@@ -1,10 +1,10 @@
 import { Injectable, computed, signal } from '@angular/core';
 
-export type NotificationKind = 'created' | 'updated' | 'deleted' | 'reminder';
+export type NotificationKind = 'created' | 'updated' | 'deleted' | 'reminder' | 'invite';
 
 export interface NotificationItem {
   id: string;
-  eventId: string;
+  eventId?: string;
   title: string;
   body: string;
   kind: NotificationKind;

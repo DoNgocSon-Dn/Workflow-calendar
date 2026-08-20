@@ -7,7 +7,12 @@
 
   <div class="body">
     @if (store.sidebarOpen()) {
-      <app-calendar-sidebar (createClicked)="openCreateBlank()" />
+      <app-calendar-sidebar
+        (createClicked)="openCreateBlank()"
+        (inviteClicked)="openInvite($event)"
+        (createCalendarClicked)="createCalendarModalOpen.set(true)"
+        (createGroupClicked)="createGroupModalOpen.set(true)"
+      />
     }
 
     <main class="view-area">
@@ -61,6 +66,32 @@
 
 @if (settingsModalOpen()) {
   <app-settings-modal (closed)="settingsModalOpen.set(false)" />
+}
+
+@if (inviteModalTarget(); as target) {
+  <app-invite-modal
+    [calendarId]="target.calendarId"
+    [calendarName]="target.calendarName"
+    (closed)="closeInviteModal()"
+  />
+}
+
+@if (createCalendarModalOpen()) {
+  <app-create-calendar-modal
+    (created)="onCalendarCreated($event)"
+    (closed)="createCalendarModalOpen.set(false)"
+  />
+}
+
+@if (createGroupModalOpen()) {
+  <app-create-group-modal
+    (created)="onGroupCreated($event)"
+    (closed)="createGroupModalOpen.set(false)"
+  />
+}
+
+@if (groupStore.activeWorkspaceModalOpen()) {
+  <app-group-workspace-modal (closed)="groupStore.closeWorkspaceModal()" />
 }
 
 <app-notification-popup (viewDetail)="onViewDetail($event)" />
