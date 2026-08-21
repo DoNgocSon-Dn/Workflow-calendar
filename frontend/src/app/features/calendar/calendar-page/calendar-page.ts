@@ -16,12 +16,14 @@ import { ImportModalComponent } from '../components/import-modal/import-modal';
 import { SettingsModal } from '../components/settings-modal/settings-modal';
 import { TrashModal } from '../components/trash-modal/trash-modal';
 import { CalendarStore } from '../data/calendar-store';
-import { VN_HOLIDAY_CALENDAR_ID } from '../data/vietnam-holidays';
+import { VN_HOLIDAY_CALENDAR_ID, resolveHolidayThemeId } from '../data/vietnam-holidays';
 import { CalendarEvent } from '../models/calendar.models';
 import { addMinutes, buildWeekDays } from '../utils/date-utils';
 import { CreateGroupModal } from '../../groups/components/create-group-modal/create-group-modal';
 import { GroupWorkspaceModal } from '../../groups/components/group-workspace-modal/group-workspace-modal';
 import { GroupStore } from '../../groups/data/group-store';
+import { HolidayPopup } from '../../../shared/components/holiday-popup/holiday-popup';
+import { HolidayPopupService } from '../../../core/services/holiday-popup.service';
 
 interface ModalState {
   event: CalendarEvent | null;
@@ -51,6 +53,7 @@ interface ModalState {
     CreateGroupModal,
     GroupWorkspaceModal,
     NotificationPopup,
+    HolidayPopup,
     NotesWidget,
     AiChatWidget,
   ],
@@ -60,6 +63,7 @@ export class CalendarPage {
   protected readonly groupStore = inject(GroupStore);
   private readonly notificationQueue = inject(NotificationQueue);
   private readonly densityService = inject(DensityService);
+  private readonly holidayPopupService = inject(HolidayPopupService);
 
   protected readonly weekDays = computed(() => buildWeekDays(this.store.focusedDate()));
   protected readonly dayViewDays = computed(() => [this.store.focusedDate()]);
@@ -106,7 +110,13 @@ export class CalendarPage {
   }
 
   openEdit(event: CalendarEvent): void {
-    if (event.calendarId === VN_HOLIDAY_CALENDAR_ID) return;
+    // Ngày lễ Việt Nam chỉ để tham khảo, không sửa/xoá được như event thật —
+    // bấm vào thì mở popup theme ngày lễ tương ứng thay vì form chỉnh sửa.
+    if (event.calendarId === VN_HOLIDAY_CALENDAR_ID) {
+      const themeId = resolveHolidayThemeId(event);
+      if (themeId) this.holidayPopupService.showHoliday(themeId);
+      return;
+    }
     this.modalState.set({
       event,
       defaultStart: null,
