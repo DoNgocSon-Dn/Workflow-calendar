@@ -16,9 +16,11 @@ interface FixedHoliday {
 
 const FIXED_HOLIDAYS: FixedHoliday[] = [
   { month: 1, day: 1, title: 'Tết Dương lịch' },
+  { month: 3, day: 8, title: 'Ngày Quốc tế Phụ nữ' },
   { month: 4, day: 30, title: 'Ngày Giải phóng miền Nam' },
   { month: 5, day: 1, title: 'Ngày Quốc tế Lao động' },
   { month: 9, day: 2, title: 'Quốc khánh' },
+  { month: 11, day: 20, title: 'Ngày Nhà giáo Việt Nam' },
 ];
 
 // Ngày âm lịch quy đổi sẵn sang dương lịch — lịch âm không tính được bằng công
@@ -81,4 +83,23 @@ export function buildVietnamHolidayEvents(years: number[]): CalendarEvent[] {
   }
 
   return events;
+}
+
+// Ánh xạ tiêu đề sự kiện ngày lễ (sinh ra ở trên) sang id theme trong
+// holidays.data.ts, để bấm vào sự kiện trên lịch có thể mở đúng popup ngày
+// lễ tương ứng. Ngày lễ không có theme trả về null.
+const HOLIDAY_EVENT_TITLE_TO_THEME_ID: Readonly<Record<string, string>> = {
+  'Tết Dương lịch': 'new-year-solar',
+  'Ngày Quốc tế Phụ nữ': 'womens-day',
+  'Ngày Giải phóng miền Nam': 'liberation-day',
+  'Ngày Quốc tế Lao động': 'labor-day',
+  'Quốc khánh': 'national-day',
+  'Ngày Nhà giáo Việt Nam': 'teachers-day',
+  'Giỗ Tổ Hùng Vương': 'hung-kings-day',
+};
+
+export function resolveHolidayThemeId(event: CalendarEvent): string | null {
+  if (event.calendarId !== VN_HOLIDAY_CALENDAR_ID) return null;
+  if (event.title.startsWith('Tết Nguyên Đán')) return 'tet-nguyen-dan';
+  return HOLIDAY_EVENT_TITLE_TO_THEME_ID[event.title] ?? null;
 }
