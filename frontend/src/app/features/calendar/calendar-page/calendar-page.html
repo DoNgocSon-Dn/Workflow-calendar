@@ -15,30 +15,47 @@
       />
     }
 
-    <main class="view-area">
-      @switch (store.viewMode()) {
-        @case ('month') {
-          <app-month-view
-            (createRequested)="openCreate($event)"
-            (editRequested)="openEdit($event)"
-          />
-        }
-        @case ('week') {
-          <app-time-grid-view
-            [days]="weekDays()"
-            (createRequested)="openCreate($event)"
-            (editRequested)="openEdit($event)"
-          />
-        }
-        @case ('day') {
-          <app-time-grid-view
-            [days]="dayViewDays()"
-            (createRequested)="openCreate($event)"
-            (editRequested)="openEdit($event)"
-          />
-        }
-        @case ('agenda') {
-          <app-agenda-view (selectEvent)="onViewDetail($event)" />
+    <main
+      class="view-area"
+      [class.nav-next]="store.navDirection() === 'next'"
+      [class.nav-prev]="store.navDirection() === 'prev'"
+    >
+      @if (store.calendarsLoading()) {
+        <div class="view-skeleton" aria-hidden="true">
+          @for (col of [0, 1, 2, 3, 4, 5, 6]; track col) {
+            <div class="skeleton-col">
+              <div class="skeleton-bar skeleton-day"></div>
+              <div class="skeleton-bar" style="width: 82%; animation-delay: 0.05s"></div>
+              <div class="skeleton-bar" style="width: 55%; animation-delay: 0.1s"></div>
+              <div class="skeleton-bar" style="width: 68%; animation-delay: 0.15s"></div>
+            </div>
+          }
+        </div>
+      } @else {
+        @switch (store.viewMode()) {
+          @case ('month') {
+            <app-month-view
+              (createRequested)="openCreate($event)"
+              (editRequested)="openEdit($event)"
+            />
+          }
+          @case ('week') {
+            <app-time-grid-view
+              [days]="weekDays()"
+              (createRequested)="openCreate($event)"
+              (editRequested)="openEdit($event)"
+            />
+          }
+          @case ('day') {
+            <app-time-grid-view
+              [days]="dayViewDays()"
+              (createRequested)="openCreate($event)"
+              (editRequested)="openEdit($event)"
+            />
+          }
+          @case ('agenda') {
+            <app-agenda-view (selectEvent)="onViewDetail($event)" />
+          }
         }
       }
     </main>
@@ -149,4 +166,3 @@
 <app-holiday-popup />
 <app-notes-widget />
 <app-ai-chat-widget (openManualForm)="openManualFormFromAi($event)" />
-<app-holiday-popup />

@@ -9,7 +9,6 @@ import {
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth-store';
-import { ThemeToggle } from '../../../core/theme/theme-toggle/theme-toggle';
 
 function passwordsMatchValidator(): ValidatorFn {
   return (group: AbstractControl): ValidationErrors | null => {
@@ -24,7 +23,7 @@ function passwordsMatchValidator(): ValidatorFn {
   templateUrl: './register-page.html',
   styleUrl: './register-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, ThemeToggle],
+  imports: [ReactiveFormsModule, RouterLink],
 })
 export class RegisterPage {
   private readonly fb = inject(FormBuilder);

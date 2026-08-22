@@ -521,6 +521,9 @@ export class CalendarStore {
     this.focusedDate.set(startOfDay(date));
   }
 
+  readonly navDirection = signal<'prev' | 'next' | null>(null);
+  private navResetTimer: ReturnType<typeof setTimeout> | null = null;
+
   step(amount: number): void {
     const mode = this.viewMode();
     const unit = mode === 'month' ? 'month' : mode === 'week' ? 'week' : 'day';
@@ -532,6 +535,16 @@ export class CalendarStore {
       }
       if (unit === 'week') return addDays(d, amount * 7);
       return addDays(d, amount);
+    });
+
+    // Clear then re-set on the next frame so consecutive clicks in the same
+    // direction still replay the slide animation (a same-value signal write
+    // wouldn't re-trigger the CSS class toggle the animation depends on).
+    if (this.navResetTimer) clearTimeout(this.navResetTimer);
+    this.navDirection.set(null);
+    requestAnimationFrame(() => {
+      this.navDirection.set(amount > 0 ? 'next' : 'prev');
+      this.navResetTimer = setTimeout(() => this.navDirection.set(null), 280);
     });
   }
 

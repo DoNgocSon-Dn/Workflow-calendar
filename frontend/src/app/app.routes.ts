@@ -4,7 +4,12 @@ import { authGuard } from './core/auth/auth.guard';
 import { environment } from '../environments/environment';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'calendar' },
+  { path: '', pathMatch: 'full', redirectTo: 'landing' },
+  {
+    path: 'landing',
+    loadComponent: () =>
+      import('./features/landing/landing-page/landing-page').then((m) => m.LandingPage),
+  },
   {
     path: 'login',
     loadComponent: () =>

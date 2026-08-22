@@ -9,9 +9,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth-store';
-import { ThemeToggle } from '../../../core/theme/theme-toggle/theme-toggle';
 
 interface AmbientParticle {
   x: number;
@@ -27,7 +26,7 @@ interface AmbientParticle {
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, ThemeToggle],
+  imports: [ReactiveFormsModule, RouterLink],
   host: {
     '(mousemove)': 'onMouseMove($event)',
   },
@@ -186,7 +185,7 @@ export class LoginPage implements AfterViewInit {
 
         ctx.beginPath();
         ctx.arc(p.x - driftX, p.y - driftY, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+        ctx.fillStyle = `rgba(8, 102, 255, ${p.alpha})`;
         ctx.fill();
       }
       this.particleAnimationId = requestAnimationFrame(draw);

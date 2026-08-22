@@ -1,8 +1,31 @@
+/* Fixed white/blue brand identity ("giống Meta") — same treatment as the
+   landing page: overrides the shared app tokens locally so this page looks
+   the same regardless of the app's dark-mode toggle or selected brand
+   theme. That's why there's no theme-toggle button here anymore. */
 .auth-page {
-  --auth-brand-start: #0b0f19;
-  --auth-brand-mid: #1e1b4b;
-  --auth-brand-end: #0f172a;
-  --auth-brand-glow: #6366f1;
+  --auth-brand-start: #eef5ff;
+  --auth-brand-mid: #ffffff;
+  --auth-brand-end: #eaf2ff;
+
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f5f6f7;
+  --color-surface-hover-strong: #e4e6eb;
+  --color-border: #e4e6eb;
+  --color-border-strong: #d3d6db;
+
+  --color-text: #050505;
+  --color-text-secondary: #1c1e21;
+  --color-text-tertiary: #65676b;
+  --color-text-faint: #8a8d91;
+
+  --color-accent: #0866ff;
+  --color-accent-hover: #0055d4;
+  --color-accent-soft: #e7f0ff;
+  --color-accent-contrast: #ffffff;
+
+  --shadow-sm: 0 1px 2px rgba(5, 5, 5, 0.06);
+  --shadow-modal: 0 24px 56px -12px rgba(8, 102, 255, 0.2);
 
   min-height: 100vh;
   display: grid;
@@ -21,11 +44,11 @@
   position: relative;
   overflow: hidden;
   padding: 4rem 3.5rem;
-  color: #ffffff;
+  color: var(--color-text);
   background-color: var(--auth-brand-start);
   background-image:
-    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.35) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.25) 0px, transparent 50%),
+    radial-gradient(at 0% 0%, rgba(8, 102, 255, 0.14) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(0, 194, 255, 0.14) 0px, transparent 50%),
     linear-gradient(160deg, var(--auth-brand-start) 0%, var(--auth-brand-mid) 50%, var(--auth-brand-end) 100%);
 }
 
@@ -49,7 +72,7 @@
   height: 350px;
   top: -10%;
   left: -10%;
-  background: rgba(99, 102, 241, 0.3);
+  background: rgba(8, 102, 255, 0.16);
   animation: orbFloat 10s ease-in-out infinite alternate;
 }
 
@@ -58,7 +81,7 @@
   height: 400px;
   bottom: -15%;
   right: -10%;
-  background: rgba(168, 85, 247, 0.25);
+  background: rgba(0, 194, 255, 0.16);
   animation: orbFloat 12s ease-in-out infinite alternate-reverse;
 }
 
@@ -102,8 +125,8 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.45);
+  background: linear-gradient(135deg, #0866ff 0%, #00c2ff 100%);
+  box-shadow: 0 8px 24px rgba(8, 102, 255, 0.4);
 }
 
 .brand-kicker {
@@ -112,7 +135,7 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-accent);
 }
 
 .brand-name {
@@ -121,7 +144,7 @@
   font-size: 2.75rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+  background: linear-gradient(100deg, var(--color-text) 0%, var(--color-accent) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -130,7 +153,7 @@
   margin: 0;
   font-size: 1.05rem;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--color-text-secondary);
 }
 
 .brand-features {
@@ -147,7 +170,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--color-text-secondary);
   font-weight: 500;
 }
 
@@ -155,9 +178,9 @@
   width: 1.5rem;
   height: 1.5rem;
   border-radius: var(--radius-full);
-  background: rgba(99, 102, 241, 0.25);
-  border: 1px solid rgba(99, 102, 241, 0.4);
-  color: #818cf8;
+  background: var(--color-accent-soft);
+  border: 1px solid rgba(8, 102, 255, 0.3);
+  color: var(--color-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -176,9 +199,9 @@
   max-width: 380px;
   padding: 1.25rem 1.4rem;
   border-radius: var(--radius-xl);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-modal);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   animation: panelFloat 8s ease-in-out infinite alternate;
@@ -196,7 +219,7 @@
   gap: 0.5rem;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .preview-header-left {
@@ -217,12 +240,12 @@
   font-family: var(--font-heading);
   font-size: 0.875rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 .preview-panel-date {
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-tertiary);
 }
 
 .preview-timeline {
@@ -252,14 +275,14 @@
   margin: 0;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--color-text);
   line-height: 1.3;
 }
 
 .preview-item-time {
   margin: 0.15rem 0 0;
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-tertiary);
 }
 
 .form-panel {
@@ -271,11 +294,30 @@
   background: var(--color-bg);
 }
 
-.theme-toggle-corner {
+.back-to-landing {
   position: absolute;
   top: 1.5rem;
-  right: 1.5rem;
+  left: 1.5rem;
   z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.85rem 0.5rem 0.65rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.825rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.back-to-landing:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background: var(--color-surface-hover);
+  transform: translateX(-2px);
 }
 
 .auth-card {
@@ -292,10 +334,6 @@
   flex-direction: column;
   gap: 1.2rem;
   animation: cardFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-:host-context(.dark) .auth-card {
-  background: rgba(17, 24, 39, 0.85);
 }
 
 @keyframes cardFadeIn {
@@ -442,22 +480,22 @@
 
 .primary-btn {
   border: none;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
+  color: var(--color-accent-contrast);
   font-family: var(--font-heading);
   font-weight: 700;
   font-size: 0.95rem;
   padding: 0.8rem 1.25rem;
   border-radius: var(--radius-md);
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 16px rgba(8, 102, 255, 0.35);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   letter-spacing: -0.01em;
 }
 
 .primary-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 22px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 6px 22px rgba(8, 102, 255, 0.5);
   filter: brightness(1.05);
 }
 

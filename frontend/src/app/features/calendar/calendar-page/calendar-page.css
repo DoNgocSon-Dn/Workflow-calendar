@@ -27,6 +27,113 @@
   -webkit-backdrop-filter: var(--glass-blur);
 }
 
+/* Directional slide when stepping week/month/day — targets the switched
+   view component's host element directly (transform/opacity only, no
+   reflow) so prev/next feels continuous instead of an instant hard cut. */
+.view-area.nav-next > app-month-view,
+.view-area.nav-next > app-time-grid-view,
+.view-area.nav-next > app-agenda-view {
+  animation: viewSlideFromRight 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.view-area.nav-prev > app-month-view,
+.view-area.nav-prev > app-time-grid-view,
+.view-area.nav-prev > app-agenda-view {
+  animation: viewSlideFromLeft 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes viewSlideFromRight {
+  from {
+    transform: translateX(14px);
+    opacity: 0.55;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes viewSlideFromLeft {
+  from {
+    transform: translateX(-14px);
+    opacity: 0.55;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view-area.nav-next > app-month-view,
+  .view-area.nav-next > app-time-grid-view,
+  .view-area.nav-next > app-agenda-view,
+  .view-area.nav-prev > app-month-view,
+  .view-area.nav-prev > app-time-grid-view,
+  .view-area.nav-prev > app-agenda-view {
+    animation: none;
+  }
+}
+
+/* Skeleton loading — replaces a hard spinner while calendars/events are
+   first fetched. Shimmer runs on background-position only (paint, not
+   layout), so it stays cheap even left running for a couple seconds. */
+.view-skeleton {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1.25rem;
+  padding: 1.75rem 1.5rem;
+  min-height: 0;
+}
+
+.skeleton-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.skeleton-bar {
+  height: 0.8rem;
+  border-radius: var(--radius-xs);
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-hover) 25%,
+    var(--color-surface-hover-strong) 50%,
+    var(--color-surface-hover) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.6s ease-in-out infinite;
+}
+
+.skeleton-bar.skeleton-day {
+  width: 60%;
+  height: 1.4rem;
+  margin-bottom: 0.35rem;
+}
+
+@keyframes skeletonShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-bar {
+    animation: none;
+    opacity: 0.65;
+  }
+}
+
+@media (max-width: 720px) {
+  .view-skeleton {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 @media (max-width: 720px) {
   app-calendar-sidebar {
     position: fixed;
