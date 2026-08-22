@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -13,6 +14,7 @@ import { UpdateGroupMemberRoleDto } from './dto/update-group-member-role.dto';
 import { CreateGroupTaskDto } from './dto/create-group-task.dto';
 import { UpdateGroupTaskDto } from './dto/update-group-task.dto';
 import { SendGroupMessageDto } from './dto/send-group-message.dto';
+import { UpdateGroupMessageDto } from './dto/update-group-message.dto';
 
 export interface GroupDto {
   id: string;
@@ -49,14 +51,75 @@ export interface GroupMessageDto {
   id: string;
   groupId: string;
   senderId: string;
-  message: string;
+  message: string | null;
   createdAt: string;
+  editedAt?: string;
+  deletedAt?: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
+  attachmentType?: string;
+  attachmentSize?: number;
   senderEmail?: string;
 }
 
 @Injectable()
 export class GroupsService {
   constructor(private readonly realtimeGateway: RealtimeGateway) {}
+
+  // Phát realtime cho cả room theo groupId lẫn room theo lịch nhóm
+  // (group_workspace_modal join cả 2, còn view lịch chỉ join theo calendar).
+  private async emitToGroupRooms(
+    supabase: SupabaseClient,
+    groupId: string,
+    event: string,
+    payload: unknown,
+  ): Promise<void> {
+    this.realtimeGateway.emitToCalendar(groupId, event, payload);
+
+    const { data: group } = await supabase
+      .from('groups')
+      .select('calendar_id')
+      .eq('id', groupId)
+      .maybeSingle<{ calendar_id: string | null }>();
+
+    if (group?.calendar_id) {
+      this.realtimeGateway.emitToCalendar(group.calendar_id, event, payload);
+    }
+  }
+
+  private mapMessageRow(row: any): GroupMessageDto {
+    return {
+      id: row.id,
+      groupId: row.group_id,
+      senderId: row.sender_id,
+      message: row.message,
+      createdAt: row.created_at,
+      editedAt: row.edited_at ?? undefined,
+      deletedAt: row.deleted_at ?? undefined,
+      attachmentUrl: row.attachment_url ?? undefined,
+      attachmentName: row.attachment_name ?? undefined,
+      attachmentType: row.attachment_type ?? undefined,
+      attachmentSize: row.attachment_size ?? undefined,
+      senderEmail: row.sender_email,
+    };
+  }
+
+  private mapMessageRpcError(error: { message?: string } | null | undefined): Error {
+    const msg = error?.message || '';
+    if (msg.includes('not authorized')) {
+      return new ForbiddenException('Bạn không có quyền thực hiện thao tác này');
+    }
+    if (msg.includes('not found')) {
+      return new NotFoundException('Không tìm thấy tin nhắn');
+    }
+    if (msg.includes('already deleted')) {
+      return new ConflictException('Tin nhắn đã bị xoá');
+    }
+    if (msg.includes('must not be empty')) {
+      return new BadRequestException('Nội dung tin nhắn không được để trống');
+    }
+    return new InternalServerErrorException(msg || 'Không thể xử lý tin nhắn');
+  }
 
   async createGroup(
     supabase: SupabaseClient,
@@ -403,7 +466,7 @@ export class GroupsService {
       throw new InternalServerErrorException(error?.message || 'Không thể tạo task');
     }
 
-    return {
+    const taskDto: GroupTaskDto = {
       id: data.id,
       groupId: data.group_id,
       title: data.title,
@@ -414,6 +477,13 @@ export class GroupsService {
       createdBy: data.created_by,
       createdAt: data.created_at,
     };
+
+    await this.emitToGroupRooms(supabase, groupId, 'group:taskCreated', {
+      groupId,
+      task: taskDto,
+    });
+
+    return taskDto;
   }
 
   async updateTask(
@@ -443,7 +513,7 @@ export class GroupsService {
       );
     }
 
-    return {
+    const taskDto: GroupTaskDto = {
       id: data.id,
       groupId: data.group_id,
       title: data.title,
@@ -454,6 +524,13 @@ export class GroupsService {
       createdBy: data.created_by,
       createdAt: data.created_at,
     };
+
+    await this.emitToGroupRooms(supabase, groupId, 'group:taskUpdated', {
+      groupId,
+      task: taskDto,
+    });
+
+    return taskDto;
   }
 
   // Realtime Group Messages
@@ -467,14 +544,7 @@ export class GroupsService {
 
     if (error) throw new InternalServerErrorException(error.message);
 
-    return (data || []).map((m) => ({
-      id: m.id,
-      groupId: m.group_id,
-      senderId: m.sender_id,
-      message: m.message,
-      createdAt: m.created_at,
-      senderEmail: m.sender_email,
-    }));
+    return (data || []).map((m) => this.mapMessageRow(m));
   }
 
   async sendMessage(
@@ -483,12 +553,21 @@ export class GroupsService {
     groupId: string,
     dto: SendGroupMessageDto,
   ): Promise<GroupMessageDto> {
+    const text = dto.message?.trim();
+    if (!text && !dto.attachmentUrl) {
+      throw new BadRequestException('Tin nhắn không được để trống');
+    }
+
     const { data, error } = await supabase
       .from('group_messages')
       .insert({
         group_id: groupId,
         sender_id: user.id,
-        message: dto.message,
+        message: text || null,
+        attachment_url: dto.attachmentUrl || null,
+        attachment_name: dto.attachmentName || null,
+        attachment_type: dto.attachmentType || null,
+        attachment_size: dto.attachmentSize ?? null,
       })
       .select('*')
       .single();
@@ -500,32 +579,62 @@ export class GroupsService {
     }
 
     const msgDto: GroupMessageDto = {
-      id: data.id,
-      groupId: data.group_id,
-      senderId: data.sender_id,
-      message: data.message,
-      createdAt: data.created_at,
+      ...this.mapMessageRow(data),
       senderEmail: user.email,
     };
 
-    // Emit to both groupId and group.calendar_id
-    this.realtimeGateway.emitToCalendar(groupId, 'group:messageSent', {
+    await this.emitToGroupRooms(supabase, groupId, 'group:messageSent', {
       groupId,
       message: msgDto,
     });
 
-    const { data: group } = await supabase
-      .from('groups')
-      .select('calendar_id')
-      .eq('id', groupId)
-      .maybeSingle<{ calendar_id: string | null }>();
+    return msgDto;
+  }
 
-    if (group?.calendar_id) {
-      this.realtimeGateway.emitToCalendar(group.calendar_id, 'group:messageSent', {
-        groupId,
-        message: msgDto,
-      });
+  async editMessage(
+    supabase: SupabaseClient,
+    groupId: string,
+    messageId: string,
+    dto: UpdateGroupMessageDto,
+  ): Promise<GroupMessageDto> {
+    const { data, error } = await supabase.rpc('edit_group_message', {
+      p_message_id: messageId,
+      p_message: dto.message,
+    });
+
+    const row = data?.[0];
+    if (error || !row) {
+      throw this.mapMessageRpcError(error);
     }
+
+    const msgDto = this.mapMessageRow(row);
+    await this.emitToGroupRooms(supabase, groupId, 'group:messageUpdated', {
+      groupId,
+      message: msgDto,
+    });
+
+    return msgDto;
+  }
+
+  async deleteMessage(
+    supabase: SupabaseClient,
+    groupId: string,
+    messageId: string,
+  ): Promise<GroupMessageDto> {
+    const { data, error } = await supabase.rpc('delete_group_message', {
+      p_message_id: messageId,
+    });
+
+    const row = data?.[0];
+    if (error || !row) {
+      throw this.mapMessageRpcError(error);
+    }
+
+    const msgDto = this.mapMessageRow(row);
+    await this.emitToGroupRooms(supabase, groupId, 'group:messageDeleted', {
+      groupId,
+      message: msgDto,
+    });
 
     return msgDto;
   }

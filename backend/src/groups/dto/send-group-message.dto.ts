@@ -1,7 +1,24 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class SendGroupMessageDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  message: string;
+  message?: string;
+
+  @IsOptional()
+  @IsString()
+  attachmentUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  attachmentName?: string;
+
+  @IsOptional()
+  @IsString()
+  attachmentType?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  attachmentSize?: number;
 }

@@ -1,52 +1,58 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global Theme System & Typography Overhaul */
 
 @import 'tailwindcss';
 
 :root {
-  --color-bg: #f8f9fa;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  --color-bg: #f8fafc;
   --color-surface: #ffffff;
-  --color-surface-hover: #f1f3f4;
-  --color-surface-hover-strong: #f8f9fa;
-  --color-border: #e8eaed;
-  --color-border-strong: #dadce0;
-  --color-text: #202124;
-  --color-text-secondary: #3c4043;
-  --color-text-tertiary: #5f6368;
-  --color-text-muted: #70757a;
-  --color-text-faint: #80868b;
-  --color-text-disabled: #bdc1c6;
-  --color-accent: #1a73e8;
-  --color-accent-hover: #1765cc;
-  --color-accent-soft: #e8f0fe;
-  --color-accent-disabled: #a8c7fa;
+  --color-surface-hover: #f1f5f9;
+  --color-surface-hover-strong: #e2e8f0;
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  
+  --color-text: #0f172a;
+  --color-text-secondary: #334155;
+  --color-text-tertiary: #64748b;
+  --color-text-muted: #94a3b8;
+  --color-text-faint: #cbd5e1;
+  --color-text-disabled: #cbd5e1;
+  
+  --color-accent: #6366f1;
+  --color-accent-hover: #4f46e5;
+  --color-accent-soft: #eef2ff;
+  --color-accent-disabled: #c7d2fe;
   --color-accent-contrast: #ffffff;
-  --color-danger: #d93025;
-  --color-warning: #f9ab00;
-  --color-live: #ea4335;
-  --color-success: #188038;
-  --shadow-sm: 0 1px 3px rgba(60, 64, 67, 0.3), 0 4px 8px rgba(60, 64, 67, 0.15);
-  --shadow-sm-hover: 0 1px 3px rgba(60, 64, 67, 0.3), 0 6px 10px rgba(60, 64, 67, 0.2);
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.2);
-  --shadow-popup: 0 4px 16px rgba(0, 0, 0, 0.18);
-  --shadow-modal: 0 8px 28px rgba(0, 0, 0, 0.3);
-  --shadow-drawer: 4px 0 12px rgba(0, 0, 0, 0.15);
-  --overlay-backdrop: rgba(32, 33, 36, 0.5);
-  --chip-tint-bg: white;
-  --chip-tint-text: black;
+  
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+  --color-live: #ec4899;
+  --color-success: #10b981;
+  
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm-hover: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 4px -1px rgba(15, 23, 42, 0.04);
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05), 0 10px 25px -5px rgba(99, 102, 241, 0.04);
+  --shadow-popover: 0 12px 32px -4px rgba(15, 23, 42, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.06);
+  --shadow-popup: 0 16px 36px -4px rgba(15, 23, 42, 0.15);
+  --shadow-modal: 0 25px 60px -12px rgba(15, 23, 42, 0.25);
+  --shadow-drawer: 8px 0 24px rgba(15, 23, 42, 0.08);
+  --overlay-backdrop: rgba(15, 23, 42, 0.4);
+  
+  --chip-tint-bg: #ffffff;
+  --chip-tint-text: #0f172a;
   color-scheme: light;
 
-  /* Shape scale — every border-radius in the app should reference one of
-     these instead of a one-off value, so corner rounding reads as one
-     consistent system rather than per-component guesses. */
-  --radius-xs: 0.25rem;
-  --radius-sm: 0.4rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  --radius-full: 999px;
+  /* Shape scale — modern rounded corners */
+  --radius-xs: 0.375rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-full: 9999px;
 
-  /* Spacing scale — 4px base grid, mirrors the radius scale's intent. */
+  /* Spacing scale */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -55,10 +61,8 @@
   --space-6: 1.5rem;
   --space-8: 2rem;
 
-  /* "Hình thức" (density) — Cài đặt cho phép chuyển giữa Thoải mái/Gọn;
-     xem DensityService. Chỉ ảnh hưởng các chỗ tham chiếu 2 biến này. */
   --month-row-min-height: 5.5rem;
-  --chip-padding-block: 0.1rem;
+  --chip-padding-block: 0.12rem;
 }
 
 :root.density-compact {
@@ -67,37 +71,42 @@
 }
 
 :root.dark {
-  --color-bg: #202124;
-  --color-surface: #292a2d;
-  --color-surface-hover: #35363a;
-  --color-surface-hover-strong: #3c4043;
-  --color-border: #3c4043;
-  --color-border-strong: #5f6368;
-  --color-text: #e8eaed;
-  --color-text-secondary: #e8eaed;
-  --color-text-tertiary: #9aa0a6;
-  --color-text-muted: #9aa0a6;
-  --color-text-faint: #9aa0a6;
-  --color-text-disabled: #5f6368;
-  --color-accent: #8ab4f8;
-  --color-accent-hover: #aecbfa;
-  --color-accent-soft: #2d3f5c;
-  --color-accent-disabled: #3c4043;
-  --color-accent-contrast: #202124;
-  --color-danger: #f28b82;
-  --color-warning: #fdd663;
-  --color-live: #f28b82;
-  --color-success: #81c995;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.3);
-  --shadow-sm-hover: 0 1px 3px rgba(0, 0, 0, 0.4), 0 6px 10px rgba(0, 0, 0, 0.35);
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.5);
-  --shadow-popup: 0 4px 16px rgba(0, 0, 0, 0.45);
-  --shadow-modal: 0 8px 28px rgba(0, 0, 0, 0.6);
-  --shadow-drawer: 4px 0 12px rgba(0, 0, 0, 0.4);
-  --overlay-backdrop: rgba(0, 0, 0, 0.6);
-  --chip-tint-bg: black;
-  --chip-tint-text: white;
+  --color-bg: #0b0f17;
+  --color-surface: #111827;
+  --color-surface-hover: #1f293d;
+  --color-surface-hover-strong: #334155;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.16);
+  
+  --color-text: #f8fafc;
+  --color-text-secondary: #cbd5e1;
+  --color-text-tertiary: #94a3b8;
+  --color-text-muted: #64748b;
+  --color-text-faint: #475569;
+  --color-text-disabled: #334155;
+  
+  --color-accent: #818cf8;
+  --color-accent-hover: #a5b4fc;
+  --color-accent-soft: rgba(99, 102, 241, 0.18);
+  --color-accent-disabled: #1e293b;
+  --color-accent-contrast: #0f172a;
+  
+  --color-danger: #f87171;
+  --color-warning: #fbbf24;
+  --color-live: #f472b6;
+  --color-success: #34d399;
+  
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-sm-hover: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.35);
+  --shadow-popover: 0 16px 40px rgba(0, 0, 0, 0.6);
+  --shadow-popup: 0 20px 48px rgba(0, 0, 0, 0.65);
+  --shadow-modal: 0 25px 65px rgba(0, 0, 0, 0.75);
+  --shadow-drawer: 8px 0 28px rgba(0, 0, 0, 0.5);
+  --overlay-backdrop: rgba(0, 0, 0, 0.7);
+  
+  --chip-tint-bg: #1e293b;
+  --chip-tint-text: #f8fafc;
   color-scheme: dark;
 }
 
@@ -105,17 +114,69 @@ html,
 body {
   height: 100%;
   margin: 0;
-  background: var(--color-bg);
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.04) 0px, transparent 50%);
+  background-attachment: fixed;
   color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root.dark body {
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(14, 165, 233, 0.08) 0px, transparent 50%);
 }
 
 * {
   box-sizing: border-box;
 }
 
-/* In lịch (nút "In" trong menu cài đặt) — chỉ giữ lại phần lưới lịch, ẩn
-   sidebar/thanh công cụ/widget nổi và cho nội dung tràn hết trang thay vì
-   bị cắt theo chiều cao viewport. */
+h1, h2, h3, h4, .font-heading {
+  font-family: var(--font-heading);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
+}
+
+/* Glassmorphism & UI Utility Classes */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid var(--color-border);
+}
+
+:root.dark .glass-panel {
+  background: rgba(17, 24, 39, 0.85);
+  border: 1px solid var(--color-border);
+}
+
+.gradient-brand {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Print Styles */
 @media print {
   app-calendar-sidebar,
   app-notes-widget,

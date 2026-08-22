@@ -11,12 +11,12 @@ async function bootstrap(): Promise<void> {
   await mongoose.connect(env.mongoUri);
 
   const app = express();
-  app.use(cors({ origin: env.corsOrigin, credentials: true }));
+  app.use(cors({ origin: true, credentials: true }));
   app.get('/health', (_req, res) => res.json({ ok: true }));
 
   const httpServer = createServer(app);
   const io = new Server(httpServer, {
-    cors: { origin: env.corsOrigin, credentials: true },
+    cors: { origin: true, credentials: true },
   });
 
   // '/' handshake: client presents a Google idToken and gets back an app JWT.
@@ -24,7 +24,7 @@ async function bootstrap(): Promise<void> {
   // '/app' handshake: client presents the app JWT for subsequent socket events.
   registerAppNamespace(io.of('/app'));
 
-  httpServer.listen(env.port, () => {
+  httpServer.listen(env.port, '0.0.0.0', () => {
     console.log(`google-auth-server listening on port ${env.port}`);
   });
 }
