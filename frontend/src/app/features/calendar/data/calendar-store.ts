@@ -189,6 +189,7 @@ export class CalendarStore {
 
   private readonly apiUrl = environment.apiUrl;
   private readonly selfOriginIds = new Set<string>();
+  private realtimeListenersBound = false;
 
   readonly today = signal(startOfDay(this.clock.now()));
   readonly focusedDate = signal(startOfDay(this.clock.now()));
@@ -314,8 +315,20 @@ export class CalendarStore {
     void this.refreshPendingInvites();
 
     this.realtime.connect();
-    this.realtime.onConnect(() => this.joinAllCalendarRooms());
     this.joinAllCalendarRooms();
+    this.bindRealtimeListenersOnce();
+  }
+
+  // loadAll() chạy lại mỗi khi authStore.user() đổi (token refresh, khôi phục
+  // phiên, ...) — nhưng RealtimeService.on()/onConnect() chỉ cộng dồn listener
+  // vào socket dùng chung, không tự gỡ listener cũ. Nếu gọi lại mỗi lần loadAll()
+  // chạy, mỗi sự kiện realtime (event:created, reminder:fire, ...) sẽ bắn trùng
+  // N lần → thông báo/nhắc lịch hiện lặp lại. Bọc guard để chỉ đăng ký 1 lần.
+  private bindRealtimeListenersOnce(): void {
+    if (this.realtimeListenersBound) return;
+    this.realtimeListenersBound = true;
+
+    this.realtime.onConnect(() => this.joinAllCalendarRooms());
     this.realtime.on<EventApiDto>('event:created', (dto) => this.handleRemoteCreated(dto));
     this.realtime.on<EventApiDto>('event:updated', (dto) => this.handleRemoteUpdated(dto));
     this.realtime.on<{ id: string }>('event:deleted', (payload) =>
@@ -810,9 +823,14 @@ export class CalendarStore {
   }
 
   async sendAiChat(message: string, calendarId: string): Promise<AiChatResult> {
-    return firstValueFrom(
+    const result = await firstValueFrom(
       this.http.post<AiChatResult>(`${this.apiUrl}/ai/chat`, { message, calendarId }),
     );
+    if (result.intent === 'create_event') {
+      this.markSelfOrigin(result.event.id);
+      this.upsertEvent(toCalendarEvent(result.event));
+    }
+    return result;
   }
 }
 

@@ -157,6 +157,40 @@
   border: 1px dashed var(--color-border-strong);
 }
 
+.suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.suggestion-chip {
+  text-align: left;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.suggestion-chip:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  transform: translateX(2px);
+}
+
+.suggestion-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .message {
   display: flex;
   flex-direction: column;
@@ -170,6 +204,7 @@
   line-height: 1.45;
   border-radius: var(--radius-md);
   padding: 0.6rem 0.85rem;
+  white-space: pre-line;
 }
 
 .message.role-user {

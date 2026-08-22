@@ -43,6 +43,7 @@ export class AiController {
           start: parsed.start_at,
           end: parsed.end_at,
           allDay: false,
+          ...(parsed.location ? { location: parsed.location } : {}),
         },
         user.id,
       );
