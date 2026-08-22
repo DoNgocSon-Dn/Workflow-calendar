@@ -25,12 +25,12 @@
   --color-accent-soft: #eef2ff;
   --color-accent-disabled: #c7d2fe;
   --color-accent-contrast: #ffffff;
-  
+
   --color-danger: #ef4444;
   --color-warning: #f59e0b;
   --color-live: #ec4899;
   --color-success: #10b981;
-  
+
   --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.04);
   --shadow-sm-hover: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 4px -1px rgba(15, 23, 42, 0.04);
   --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05), 0 10px 25px -5px rgba(99, 102, 241, 0.04);
@@ -39,7 +39,23 @@
   --shadow-modal: 0 25px 60px -12px rgba(15, 23, 42, 0.25);
   --shadow-drawer: 8px 0 24px rgba(15, 23, 42, 0.08);
   --overlay-backdrop: rgba(15, 23, 42, 0.4);
-  
+
+  /* Vivid glassmorphism accents — gradient spectrum + glow */
+  --gradient-brand: linear-gradient(135deg, #6366f1 0%, #a855f7 45%, #ec4899 100%);
+  --gradient-brand-vivid: linear-gradient(135deg, #4f46e5 0%, #9333ea 35%, #ec4899 70%, #fb923c 100%);
+  --gradient-mesh:
+    radial-gradient(at 8% 10%, rgba(99, 102, 241, 0.50) 0px, transparent 55%),
+    radial-gradient(at 92% 12%, rgba(236, 72, 153, 0.42) 0px, transparent 55%),
+    radial-gradient(at 85% 88%, rgba(56, 189, 248, 0.40) 0px, transparent 55%),
+    radial-gradient(at 12% 92%, rgba(168, 85, 247, 0.38) 0px, transparent 55%),
+    radial-gradient(at 50% 50%, rgba(251, 146, 60, 0.14) 0px, transparent 60%);
+  --glow-accent: 0 0 0 1px rgba(99, 102, 241, 0.15), 0 8px 30px -6px rgba(99, 102, 241, 0.35);
+  --glow-accent-strong: 0 0 0 1px rgba(147, 51, 234, 0.25), 0 12px 40px -6px rgba(236, 72, 153, 0.45);
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-bg-strong: rgba(255, 255, 255, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-blur: blur(20px) saturate(180%);
+
   --chip-tint-bg: #ffffff;
   --chip-tint-text: #0f172a;
   color-scheme: light;
@@ -104,10 +120,152 @@
   --shadow-modal: 0 25px 65px rgba(0, 0, 0, 0.75);
   --shadow-drawer: 8px 0 28px rgba(0, 0, 0, 0.5);
   --overlay-backdrop: rgba(0, 0, 0, 0.7);
-  
+
+  --gradient-brand: linear-gradient(135deg, #818cf8 0%, #c084fc 45%, #f472b6 100%);
+  --gradient-brand-vivid: linear-gradient(135deg, #818cf8 0%, #c084fc 35%, #f472b6 70%, #fb923c 100%);
+  --gradient-mesh:
+    radial-gradient(at 8% 10%, rgba(99, 102, 241, 0.16) 0px, transparent 45%),
+    radial-gradient(at 92% 12%, rgba(236, 72, 153, 0.13) 0px, transparent 45%),
+    radial-gradient(at 85% 88%, rgba(14, 165, 233, 0.13) 0px, transparent 45%),
+    radial-gradient(at 12% 92%, rgba(168, 85, 247, 0.12) 0px, transparent 45%);
+  --glow-accent: 0 0 0 1px rgba(129, 140, 248, 0.25), 0 8px 30px -6px rgba(129, 140, 248, 0.45);
+  --glow-accent-strong: 0 0 0 1px rgba(192, 132, 252, 0.3), 0 12px 44px -6px rgba(244, 114, 182, 0.55);
+  --glass-bg: rgba(17, 24, 39, 0.82);
+  --glass-bg-strong: rgba(17, 24, 39, 0.94);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: blur(20px) saturate(180%);
+
   --chip-tint-bg: #1e293b;
   --chip-tint-text: #f8fafc;
   color-scheme: dark;
+}
+
+/* ==========================================================================
+   Brand themes — re-skin accent color / corner radius / elevation only.
+   Typography tokens (--font-sans, --font-heading) are never touched here.
+   Toggled via BrandThemeService, which sets [data-brand] on <html>.
+   ========================================================================== */
+
+/* Airbnb — Rausch red-pink, soft pill shapes, single diffuse shadow tier. */
+:root[data-brand='airbnb'] {
+  --color-accent: #ff385c;
+  --color-accent-hover: #e00b41;
+  --color-accent-soft: #ffe4ea;
+  --color-accent-disabled: #ffd1da;
+  --color-accent-contrast: #ffffff;
+  --color-border: #dddddd;
+  --color-border-strong: #c1c1c1;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --shadow-sm: rgba(0, 0, 0, 0.02) 0 0 0 1px, rgba(0, 0, 0, 0.04) 0 2px 6px 0;
+  --shadow-card: rgba(0, 0, 0, 0.02) 0 0 0 1px, rgba(0, 0, 0, 0.04) 0 2px 6px 0, rgba(0, 0, 0, 0.1) 0 4px 8px 0;
+  --shadow-popover: rgba(0, 0, 0, 0.02) 0 0 0 1px, rgba(0, 0, 0, 0.06) 0 4px 12px 0, rgba(0, 0, 0, 0.12) 0 8px 16px 0;
+  --shadow-modal: rgba(0, 0, 0, 0.03) 0 0 0 1px, rgba(0, 0, 0, 0.08) 0 12px 28px 0, rgba(0, 0, 0, 0.16) 0 20px 40px 0;
+  --gradient-brand-vivid: linear-gradient(135deg, #ff385c 0%, #e00b41 55%, #c2185b 100%);
+  --glow-accent: 0 0 0 1px rgba(255, 56, 92, 0.22), 0 8px 30px -6px rgba(255, 56, 92, 0.4);
+  --glow-accent-strong: 0 0 0 1px rgba(224, 11, 65, 0.28), 0 12px 44px -6px rgba(255, 56, 92, 0.5);
+}
+:root.dark[data-brand='airbnb'] {
+  --color-accent: #ff5a76;
+  --color-accent-hover: #ff7a90;
+  --color-accent-soft: rgba(255, 56, 92, 0.16);
+  --color-accent-disabled: rgba(255, 56, 92, 0.3);
+  --color-accent-contrast: #1a0508;
+}
+
+/* Mintlify — mint green accent, fully pill-shaped controls, layered shadows. */
+:root[data-brand='mintlify'] {
+  --color-accent: #00d4a4;
+  --color-accent-hover: #00b48a;
+  --color-accent-soft: #d7f9ef;
+  --color-accent-disabled: #7cebcb;
+  --color-accent-contrast: #0a0a0a;
+  --color-border: #e5e5e5;
+  --color-border-strong: #d0d0d0;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --shadow-sm: rgba(0, 0, 0, 0.04) 0px 1px 2px 0px;
+  --shadow-card: rgba(0, 0, 0, 0.08) 0px 4px 12px 0px;
+  --shadow-popover: rgba(0, 0, 0, 0.1) 0px 8px 20px 0px;
+  --shadow-modal: rgba(0, 0, 0, 0.14) 0px 20px 44px -6px;
+  --gradient-brand-vivid: linear-gradient(135deg, #00d4a4 0%, #06b6d4 50%, #00b48a 100%);
+  --glow-accent: 0 0 0 1px rgba(0, 212, 164, 0.2), 0 8px 30px -6px rgba(0, 212, 164, 0.4);
+  --glow-accent-strong: 0 0 0 1px rgba(6, 182, 212, 0.25), 0 12px 44px -6px rgba(0, 212, 164, 0.5);
+}
+:root.dark[data-brand='mintlify'] {
+  --color-accent: #22e6b8;
+  --color-accent-hover: #57f0cc;
+  --color-accent-soft: rgba(0, 212, 164, 0.16);
+  --color-accent-disabled: rgba(0, 212, 164, 0.28);
+  --color-accent-contrast: #052018;
+}
+
+/* Supabase — emerald accent with near-black text-on-accent, squared 6px
+   radius (never pill), layered elevation. */
+:root[data-brand='supabase'] {
+  --color-accent: #3ecf8e;
+  --color-accent-hover: #24b47e;
+  --color-accent-soft: #d7f7e7;
+  --color-accent-disabled: #a8ecca;
+  --color-accent-contrast: #171717;
+  --color-border: #dfdfdf;
+  --color-border-strong: #c7c7c7;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-popover: 0 12px 32px rgba(0, 0, 0, 0.1);
+  --shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.12);
+  --gradient-brand-vivid: linear-gradient(135deg, #3ecf8e 0%, #22c55e 50%, #24b47e 100%);
+  --glow-accent: 0 0 0 1px rgba(62, 207, 142, 0.2), 0 8px 30px -6px rgba(62, 207, 142, 0.4);
+  --glow-accent-strong: 0 0 0 1px rgba(34, 197, 94, 0.25), 0 12px 44px -6px rgba(62, 207, 142, 0.5);
+}
+:root.dark[data-brand='supabase'] {
+  --color-accent: #3ecf8e;
+  --color-accent-hover: #4ade80;
+  --color-accent-soft: rgba(62, 207, 142, 0.18);
+  --color-accent-disabled: rgba(62, 207, 142, 0.3);
+  --color-accent-contrast: #0a0f0c;
+}
+
+/* Vercel — ink-and-blue duet, bimodal shapes (tight squares + pills),
+   whisper-thin hairline shadows. */
+:root[data-brand='vercel'] {
+  --color-accent: #0070f3;
+  --color-accent-hover: #0761d1;
+  --color-accent-soft: #d3e5ff;
+  --color-accent-disabled: #a8cbff;
+  --color-accent-contrast: #ffffff;
+  --color-border: #ebebeb;
+  --color-border-strong: #d4d4d4;
+  --radius-xs: 0px;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 16px;
+  --shadow-sm: 0px 1px 1px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0px 2px 2px rgba(0, 0, 0, 0.04), 0px 8px 16px -4px rgba(0, 0, 0, 0.06);
+  --shadow-popover: 0px 4px 8px rgba(0, 0, 0, 0.06), 0px 12px 24px -6px rgba(0, 0, 0, 0.08);
+  --shadow-modal: 0px 8px 16px rgba(0, 0, 0, 0.08), 0px 24px 48px -8px rgba(0, 0, 0, 0.12);
+  --gradient-brand-vivid: linear-gradient(135deg, #0070f3 0%, #7928ca 50%, #0761d1 100%);
+  --glow-accent: 0 0 0 1px rgba(0, 112, 243, 0.2), 0 8px 30px -6px rgba(0, 112, 243, 0.4);
+  --glow-accent-strong: 0 0 0 1px rgba(121, 40, 202, 0.25), 0 12px 44px -6px rgba(0, 112, 243, 0.5);
+}
+:root.dark[data-brand='vercel'] {
+  --color-accent: #3391ff;
+  --color-accent-hover: #5aa5ff;
+  --color-accent-soft: rgba(0, 112, 243, 0.18);
+  --color-accent-disabled: rgba(0, 112, 243, 0.3);
+  --color-accent-contrast: #061019;
 }
 
 html,
@@ -116,19 +274,11 @@ body {
   margin: 0;
   font-family: var(--font-sans);
   background-color: var(--color-bg);
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.05) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.04) 0px, transparent 50%);
+  background-image: var(--gradient-mesh);
   background-attachment: fixed;
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-:root.dark body {
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(14, 165, 233, 0.08) 0px, transparent 50%);
 }
 
 * {
@@ -160,20 +310,46 @@ h1, h2, h3, h4, .font-heading {
 
 /* Glassmorphism & UI Utility Classes */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid var(--color-border);
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
 }
 
-:root.dark .glass-panel {
-  background: rgba(17, 24, 39, 0.85);
-  border: 1px solid var(--color-border);
+/* Higher-transparency glass with a vivid gradient glow ring — use for hero
+   surfaces (sidebar, header, modals) where the mesh background should show
+   through more strongly than the plain .glass-panel. */
+.glass-vibrant {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glow-accent);
 }
 
 .gradient-brand {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+  background: var(--gradient-brand-vivid);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.btn-gradient {
+  background: var(--gradient-brand-vivid);
+  color: #ffffff;
+  border: none;
+  box-shadow: var(--glow-accent);
+  transition: box-shadow 0.2s ease, transform 0.2s ease, filter 0.2s ease;
+}
+
+.btn-gradient:hover {
+  box-shadow: var(--glow-accent-strong);
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.btn-gradient:active {
+  transform: translateY(0);
 }
 
 /* Print Styles */

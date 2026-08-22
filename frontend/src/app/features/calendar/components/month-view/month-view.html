@@ -20,7 +20,17 @@
         (dragover)="onDragOver($event)"
         (drop)="onDrop($event, day)"
       >
-        <span class="day-number" [class.today]="isToday(day)">{{ day.getDate() }}</span>
+        <div class="day-number-header">
+          <span class="day-number" [class.today]="isToday(day)">{{ day.getDate() }}</span>
+          <span
+            class="lunar-day"
+            [class.lunar-first]="getLunarInfo(day).day === 1"
+            [class.lunar-fifteen]="getLunarInfo(day).day === 15"
+            [title]="'Ngày ' + getLunarInfo(day).day + ' tháng ' + getLunarInfo(day).month + ' Âm lịch'"
+          >
+            {{ getLunarInfo(day).displayText }}
+          </span>
+        </div>
 
         <div class="chip-list">
           @for (evt of visibleEventsFor(day); track evt.id) {

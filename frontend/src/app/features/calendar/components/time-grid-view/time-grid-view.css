@@ -43,6 +43,31 @@
   font-weight: 600;
 }
 
+.dn-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.lunar-dn {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+  opacity: 0.75;
+}
+
+.lunar-dn.lunar-first {
+  color: #ef4444;
+  font-weight: 700;
+  opacity: 1;
+}
+
+.lunar-dn.lunar-fifteen {
+  color: #f59e0b;
+  font-weight: 700;
+  opacity: 1;
+}
+
 .dn {
   font-size: 1.1rem;
   color: var(--color-text-secondary);

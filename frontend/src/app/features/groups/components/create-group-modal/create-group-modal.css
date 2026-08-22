@@ -75,8 +75,8 @@
 
 .text-input:focus, .text-area:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-soft);
 }
 
 .color-palette {
@@ -99,7 +99,7 @@
 
 .color-dot.selected {
   border-color: #ffffff;
-  box-shadow: 0 0 0 2px #3b82f6;
+  box-shadow: 0 0 0 2px var(--color-accent);
 }
 
 .error-msg {
@@ -135,11 +135,11 @@
 }
 
 .btn-primary {
-  background: #3b82f6;
-  color: #ffffff;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
 }
 .btn-primary:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--color-accent-hover);
 }
 .btn-primary:disabled {
   opacity: 0.5;

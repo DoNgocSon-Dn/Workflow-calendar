@@ -4,15 +4,19 @@
   gap: 1rem;
   padding: 0.65rem 1.25rem;
   border-bottom: 1px solid var(--color-border);
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(16px) saturate(180%);
   flex-wrap: wrap;
   position: relative;
   z-index: 50;
+  /* Slightly elevated above the grid so the eye reads it as a fixed strip,
+     not the same plane as the content below. */
+  box-shadow: 0 2px 12px -4px rgba(15, 23, 42, 0.1);
 }
 
-:root.dark .topbar {
-  background: rgba(17, 24, 39, 0.8);
+:host-context(.dark) .topbar {
+  background: rgba(13, 18, 28, 0.9);
+  box-shadow: 0 2px 16px -4px rgba(0, 0, 0, 0.4);
 }
 
 .left {
@@ -148,8 +152,8 @@
   height: 2.35rem;
   border-radius: var(--radius-full);
   border: 2px solid var(--color-accent-soft);
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
+  color: var(--color-accent-contrast);
   font-size: 0.9rem;
   font-weight: 700;
   font-family: var(--font-heading);
@@ -199,7 +203,7 @@
   animation: dropdownIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-:root.dark .user-dropdown {
+:host-context(.dark) .user-dropdown {
   background: rgba(17, 24, 39, 0.92);
 }
 
@@ -248,8 +252,8 @@
 }
 
 .import-btn.import-btn {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
+  color: var(--color-accent-contrast);
   border: none;
   border-radius: var(--radius-md);
   padding: 0.45rem 0.9rem;
@@ -310,7 +314,7 @@
   animation: dropdownIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-:root.dark .invites-dropdown {
+:host-context(.dark) .invites-dropdown {
   background: rgba(17, 24, 39, 0.92);
 }
 
@@ -392,7 +396,7 @@
   animation: dropdownIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-:root.dark .gear-dropdown {
+:host-context(.dark) .gear-dropdown {
   background: rgba(17, 24, 39, 0.92);
 }
 
@@ -446,7 +450,7 @@
   animation: dropdownIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-:root.dark .view-dropdown {
+:host-context(.dark) .view-dropdown {
   background: rgba(17, 24, 39, 0.92);
 }
 

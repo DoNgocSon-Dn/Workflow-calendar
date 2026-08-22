@@ -30,6 +30,8 @@ import {
 import { isEventOnDay } from '../../utils/event-utils';
 import { PositionedEvent, layoutDayEvents } from '../../utils/time-grid-layout';
 
+import { convertSolarToLunar, LunarDate } from '../../utils/lunar-calendar';
+
 const HOUR_HEIGHT = 48;
 const SNAP_MINUTES = 15;
 
@@ -58,6 +60,10 @@ export class TimeGridView {
   protected readonly store = inject(CalendarStore);
   private readonly clock = inject(Clock);
   private readonly destroyRef = inject(DestroyRef);
+
+  getLunarInfo(day: Date): LunarDate {
+    return convertSolarToLunar(day);
+  }
   protected readonly colorHex = CALENDAR_COLOR_HEX;
 
   readonly days = input.required<Date[]>();

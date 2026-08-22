@@ -13,6 +13,8 @@ import {
 } from '../../utils/date-utils';
 import { isEventOnDay } from '../../utils/event-utils';
 
+import { convertSolarToLunar, LunarDate } from '../../utils/lunar-calendar';
+
 interface DragSelectRange {
   start: Date;
   end: Date;
@@ -37,6 +39,10 @@ export class MonthView {
   private readonly densityService = inject(DensityService);
   protected readonly colorHex = CALENDAR_COLOR_HEX;
   protected readonly weekdayHeaders = WEEKDAY_HEADERS;
+
+  getLunarInfo(day: Date): LunarDate {
+    return convertSolarToLunar(day);
+  }
 
   // Chế độ "Gọn" (Cài đặt > Hình thức) hiện nhiều sự kiện hơn mỗi ngày vì
   // mỗi dòng chiếm ít chỗ hơn — xem density-service.ts.

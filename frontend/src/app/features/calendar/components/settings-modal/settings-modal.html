@@ -92,6 +92,28 @@
         </div>
       </section>
 
+      <section class="setting-row setting-row-stack">
+        <div class="setting-label">
+          <span class="setting-title">Chủ đề màu</span>
+          <span class="setting-desc">Đổi màu nhấn, bo góc và đổ bóng theo phong cách khác nhau — không đổi phông chữ.</span>
+        </div>
+        <div class="theme-swatch-row" role="radiogroup" aria-label="Chủ đề màu">
+          @for (option of brandThemeOptions; track option.value) {
+            <button
+              type="button"
+              role="radio"
+              class="theme-swatch-btn"
+              [attr.aria-checked]="brandThemeService.brandTheme() === option.value"
+              [class.active]="brandThemeService.brandTheme() === option.value"
+              (click)="setBrandTheme(option.value)"
+            >
+              <span class="theme-swatch-dot" [style.background-color]="option.swatch"></span>
+              {{ option.label }}
+            </button>
+          }
+        </div>
+      </section>
+
       <section class="setting-row">
         <div class="setting-label">
           <span class="setting-title">Hình thức</span>

@@ -6,6 +6,7 @@ import { AuthStore } from '../../../core/auth/auth-store';
 import { Clock } from '../../../core/clock';
 import { NotificationKind, NotificationQueue } from '../../../core/realtime/notification-queue';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
+import { GroupStore } from '../../groups/data/group-store';
 import {
   Attendee,
   AttendeeStatus,
@@ -184,6 +185,7 @@ export class CalendarStore {
   private readonly authStore = inject(AuthStore);
   private readonly realtime = inject(RealtimeService);
   private readonly notificationQueue = inject(NotificationQueue);
+  private readonly groupStore = inject(GroupStore);
 
   private readonly apiUrl = environment.apiUrl;
   private readonly selfOriginIds = new Set<string>();
@@ -225,6 +227,12 @@ export class CalendarStore {
     const map = new Map<string, CalendarColor>();
     for (const c of this.calendars()) map.set(c.id, c.color);
     for (const c of this.otherCalendars) map.set(c.id, c.color);
+    // Group workspace calendars aren't part of `calendars()` (they're listed
+    // separately under "Nhóm làm việc"), so without this their events fall
+    // back to the default blue instead of the group's own color.
+    for (const g of this.groupStore.groups()) {
+      if (g.calendarId) map.set(g.calendarId, g.color);
+    }
     return map;
   });
 

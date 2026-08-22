@@ -14,10 +14,13 @@
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(12px);
   box-sizing: border-box;
+  /* Subtle depth so the sidebar reads as its own layer next to the grid,
+     not the same flat tone. */
+  box-shadow: var(--shadow-drawer);
 }
 
-:root.dark .sidebar {
-  background: rgba(17, 24, 39, 0.6);
+:host-context(.dark) .sidebar {
+  background: rgba(10, 14, 23, 0.75);
 }
 
 .create-btn {
@@ -28,25 +31,25 @@
   padding: 0.7rem 1.25rem;
   border-radius: var(--radius-full);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
+  color: var(--color-accent-contrast);
   box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
   font-family: var(--font-heading);
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.25 cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, filter 0.2s ease;
   letter-spacing: -0.01em;
 }
 
 .create-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 26px rgba(99, 102, 241, 0.55);
   filter: brightness(1.05);
 }
 
 .create-btn:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
 }
 
 .create-btn svg {

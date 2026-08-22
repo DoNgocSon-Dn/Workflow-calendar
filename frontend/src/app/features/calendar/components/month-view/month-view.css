@@ -23,7 +23,7 @@
   backdrop-filter: blur(8px);
 }
 
-:root.dark .weekday-row {
+:host-context(.dark) .weekday-row {
   background: rgba(17, 24, 39, 0.4);
 }
 
@@ -76,6 +76,13 @@
   opacity: 0.5;
 }
 
+.day-number-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
 .day-number {
   align-self: flex-start;
   font-family: var(--font-heading);
@@ -92,10 +99,35 @@
 }
 
 .day-number.today {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
+  color: var(--color-accent-contrast);
   font-weight: 700;
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+}
+
+.lunar-day {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+  opacity: 0.75;
+  padding-right: 0.15rem;
+  letter-spacing: -0.02em;
+}
+
+.day-cell.outside .lunar-day {
+  opacity: 0.3;
+}
+
+.lunar-day.lunar-first {
+  color: #ef4444;
+  font-weight: 700;
+  opacity: 1;
+}
+
+.lunar-day.lunar-fifteen {
+  color: #f59e0b;
+  font-weight: 700;
+  opacity: 1;
 }
 
 .chip-list {
@@ -198,7 +230,7 @@
   animation: popoverIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-:root.dark .day-popover {
+:host-context(.dark) .day-popover {
   background: rgba(17, 24, 39, 0.95);
 }
 

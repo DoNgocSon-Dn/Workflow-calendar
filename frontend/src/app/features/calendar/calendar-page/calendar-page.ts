@@ -8,6 +8,7 @@ import { CalendarHeader } from '../components/calendar-header/calendar-header';
 import { CalendarSidebar } from '../components/calendar-sidebar/calendar-sidebar';
 import { CreateCalendarModal } from '../components/create-calendar-modal/create-calendar-modal';
 import { EventFormModal } from '../components/event-form-modal/event-form-modal';
+import { HolidayInfoModal } from '../components/holiday-info-modal/holiday-info-modal';
 import { InviteModal } from '../components/invite-modal/invite-modal';
 import { CreateRequest, MonthView } from '../components/month-view/month-view';
 import { NotificationPopup } from '../components/notification-popup/notification-popup';
@@ -23,6 +24,7 @@ import { addMinutes, buildWeekDays } from '../utils/date-utils';
 import { CreateGroupModal } from '../../groups/components/create-group-modal/create-group-modal';
 import { GroupWorkspaceModal } from '../../groups/components/group-workspace-modal/group-workspace-modal';
 import { GroupStore } from '../../groups/data/group-store';
+import { HolidayPopupComponent } from '../../../shared/components/holiday-popup/holiday-popup.component';
 
 interface ModalState {
   event: CalendarEvent | null;
@@ -54,6 +56,8 @@ interface ModalState {
     NotificationPopup,
     NotesWidget,
     AiChatWidget,
+    HolidayPopupComponent,
+    HolidayInfoModal,
   ],
 })
 export class CalendarPage {
@@ -67,6 +71,7 @@ export class CalendarPage {
   protected readonly dayViewDays = computed(() => [this.store.focusedDate()]);
 
   protected readonly modalState = signal<ModalState | null>(null);
+  protected readonly holidayInfoEvent = signal<CalendarEvent | null>(null);
   protected readonly importModalOpen = signal(false);
   protected readonly trashModalOpen = signal(false);
   protected readonly settingsModalOpen = signal(false);
@@ -102,7 +107,9 @@ export class CalendarPage {
   }
 
   onViewDetail(eventId: string): void {
-    const event = this.store.events().find((e) => e.id === eventId);
+    // Must search visibleEvents (not just events), since agenda items can be
+    // read-only holiday entries that live in a separate static list.
+    const event = this.store.visibleEvents().find((e) => e.id === eventId);
     if (event) this.openEdit(event);
   }
 
@@ -129,7 +136,10 @@ export class CalendarPage {
   }
 
   openEdit(event: CalendarEvent): void {
-    if (event.calendarId === VN_HOLIDAY_CALENDAR_ID) return;
+    if (event.calendarId === VN_HOLIDAY_CALENDAR_ID) {
+      this.holidayInfoEvent.set(event);
+      return;
+    }
     this.modalState.set({
       event,
       defaultStart: null,

@@ -45,6 +45,10 @@
   </div>
 </div>
 
+@if (holidayInfoEvent(); as holidayEvent) {
+  <app-holiday-info-modal [event]="holidayEvent" (closed)="holidayInfoEvent.set(null)" />
+}
+
 @if (modalState(); as ms) {
   <app-event-form-modal
     [event]="ms.event"
@@ -144,3 +148,4 @@
 <app-notification-popup (viewDetail)="onViewDetail($event)" />
 <app-notes-widget />
 <app-ai-chat-widget (openManualForm)="openManualFormFromAi($event)" />
+<app-holiday-popup />

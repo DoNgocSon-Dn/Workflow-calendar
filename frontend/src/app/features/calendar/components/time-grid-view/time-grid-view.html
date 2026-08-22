@@ -4,7 +4,17 @@
     @for (day of days(); track day.getTime()) {
       <div class="day-header-cell">
         <span class="wd">{{ weekdayShort(day) }}</span>
-        <span class="dn" [class.today]="isToday(day)">{{ day.getDate() }}</span>
+        <div class="dn-row">
+          <span class="dn" [class.today]="isToday(day)">{{ day.getDate() }}</span>
+          <span
+            class="lunar-dn"
+            [class.lunar-first]="getLunarInfo(day).day === 1"
+            [class.lunar-fifteen]="getLunarInfo(day).day === 15"
+            [title]="'Ngày ' + getLunarInfo(day).day + ' tháng ' + getLunarInfo(day).month + ' Âm lịch'"
+          >
+            {{ getLunarInfo(day).displayText }}
+          </span>
+        </div>
       </div>
     }
   </div>

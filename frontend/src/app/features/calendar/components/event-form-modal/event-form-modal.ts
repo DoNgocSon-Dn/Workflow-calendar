@@ -43,6 +43,8 @@ function extractErrorMessage(err: unknown): string {
   return 'Đã xảy ra lỗi, vui lòng thử lại.';
 }
 
+import { convertSolarToLunar } from '../../utils/lunar-calendar';
+
 interface DurationPreset {
   label: string;
   minutes: number;
@@ -78,6 +80,15 @@ export class EventFormModal {
   readonly closed = output<void>();
 
   readonly durationPresets = DURATION_PRESETS;
+
+  protected readonly lunarDateHint = computed(() => {
+    const startDateStr = this.form.controls.startDate.value;
+    if (!startDateStr) return '';
+    const d = new Date(startDateStr);
+    if (isNaN(d.getTime())) return '';
+    const lunar = convertSolarToLunar(d);
+    return `Ngày ${lunar.day} tháng ${lunar.month} năm ${lunar.year} (Âm lịch)`;
+  });
   readonly calendars = this.store.calendars;
   readonly calendarsLoading = this.store.calendarsLoading;
   readonly colorHex = CALENDAR_COLOR_HEX;

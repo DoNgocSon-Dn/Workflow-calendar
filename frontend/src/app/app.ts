@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { BrandThemeService } from './core/theme/brand-theme-service';
 import { ThemeService } from './core/theme/theme-service';
 
 @Component({
@@ -11,4 +12,5 @@ import { ThemeService } from './core/theme/theme-service';
 })
 export class App {
   private readonly themeService = inject(ThemeService);
+  private readonly brandThemeService = inject(BrandThemeService);
 }

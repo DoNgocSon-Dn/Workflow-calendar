@@ -4,31 +4,55 @@
     <div class="filter-title">
       <h3>📅 Lịch biểu {{ currentMonthLabel() }}</h3>
     </div>
-    <div class="filter-pills" role="radiogroup">
-      <button
-        type="button"
-        class="filter-pill"
-        [class.active]="filterMode() === 'month'"
-        (click)="setFilterMode('month')"
-      >
-        Tháng này
-      </button>
-      <button
-        type="button"
-        class="filter-pill"
-        [class.active]="filterMode() === 'next30'"
-        (click)="setFilterMode('next30')"
-      >
-        30 ngày tới
-      </button>
-      <button
-        type="button"
-        class="filter-pill"
-        [class.active]="filterMode() === 'all'"
-        (click)="setFilterMode('all')"
-      >
-        Tất cả
-      </button>
+
+    <div class="header-controls">
+      <!-- Tùy chọn Loại Lịch: Lịch Dương / Lịch Âm -->
+      <div class="calendar-type-toggle" role="radiogroup" aria-label="Loại Lịch">
+        <button
+          type="button"
+          class="type-btn"
+          [class.active]="calendarType() === 'solar'"
+          (click)="setCalendarType('solar')"
+        >
+          ☀️ Lịch Dương
+        </button>
+        <button
+          type="button"
+          class="type-btn"
+          [class.active]="calendarType() === 'lunar'"
+          (click)="setCalendarType('lunar')"
+        >
+          🌙 Lịch Âm &amp; Sự kiện Âm Lịch
+        </button>
+      </div>
+
+      <!-- Filter Pills -->
+      <div class="filter-pills" role="radiogroup">
+        <button
+          type="button"
+          class="filter-pill"
+          [class.active]="filterMode() === 'month'"
+          (click)="setFilterMode('month')"
+        >
+          Tháng này
+        </button>
+        <button
+          type="button"
+          class="filter-pill"
+          [class.active]="filterMode() === 'next30'"
+          (click)="setFilterMode('next30')"
+        >
+          30 ngày tới
+        </button>
+        <button
+          type="button"
+          class="filter-pill"
+          [class.active]="filterMode() === 'all'"
+          (click)="setFilterMode('all')"
+        >
+          Tất cả
+        </button>
+      </div>
     </div>
   </div>
 
@@ -41,7 +65,9 @@
       @for (dayGroup of visibleGroupedDays(); track dayGroup.dateLabel) {
         <div class="day-group">
           <div class="day-header">
-            <span class="day-title">{{ dayGroup.dateLabel }}</span>
+            <span class="day-title" [class.lunar-title]="calendarType() === 'lunar'">
+              {{ dayGroup.dateLabel }}
+            </span>
             <span class="badge">{{ dayGroup.events.length }} sự kiện</span>
           </div>
 
@@ -49,13 +75,21 @@
             @for (event of dayGroup.events; track event.id) {
               <div
                 class="event-card"
-                (click)="selectEvent.emit(event.id)"
+                [class.lunar-event-card]="event.isLunarEvent"
+                (click)="!event.isLunarEvent && selectEvent.emit(event.id)"
               >
                 <div class="color-bar" [style.background]="colorFor(event)"></div>
                 <div class="event-details">
-                  <div class="event-title">{{ event.title }}</div>
+                  <div class="event-title">
+                    {{ event.title }}
+                    @if (event.isLunarEvent) {
+                      <span class="lunar-badge">Âm lịch truyền thống</span>
+                    }
+                  </div>
                   <div class="event-time">
-                    @if (event.allDay) {
+                    @if (event.isLunarEvent) {
+                      <span class="time-tag lunar-tag">Sự kiện Âm lịch</span>
+                    } @else if (event.allDay) {
                       <span class="time-tag all-day">Cả ngày</span>
                     } @else {
                       <span class="time-tag">{{ event.start | date:'HH:mm' }} - {{ event.end | date:'HH:mm' }}</span>

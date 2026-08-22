@@ -35,6 +35,16 @@ export class GroupStore {
     this.realtimeInitialized = true;
     this.realtime.connect();
 
+    // Rejoin the active group's rooms after a reconnect (network blip, token
+    // refresh) — join()s aren't remembered server-side across a fresh socket
+    // handshake.
+    this.realtime.onConnect(() => {
+      const group = this.activeGroup();
+      if (!group) return;
+      this.realtime.joinCalendar(group.id);
+      if (group.calendarId) this.realtime.joinCalendar(group.calendarId);
+    });
+
     this.realtime.on<{ groupId: string; message: GroupMessage }>('group:messageSent', (payload) => {
       if (!payload?.message) return;
       if (!this.isActiveGroup(payload.groupId, payload.message.groupId)) return;

@@ -12,7 +12,7 @@
   min-height: 0;
   overflow-y: auto;
   padding: var(--space-5);
-  max-width: 850px;
+  max-width: 880px;
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
@@ -25,14 +25,57 @@
   margin-bottom: var(--space-5);
   padding-bottom: var(--space-3);
   border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .filter-title h3 {
   margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
   color: var(--color-text);
   text-transform: capitalize;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+/* Toggle Lịch Dương / Lịch Âm */
+.calendar-type-toggle {
+  display: flex;
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: 3px;
+  gap: 3px;
+}
+
+.type-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-tertiary);
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.type-btn:hover {
+  color: var(--color-text);
+}
+
+.type-btn.active {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
 }
 
 .filter-pills {
@@ -98,9 +141,13 @@
 
 .day-title {
   font-size: 0.95rem;
-  font-weight: 600;
-  color: #3b82f6;
+  font-weight: 700;
+  color: var(--color-accent);
   text-transform: capitalize;
+}
+
+.day-title.lunar-title {
+  color: #f59e0b;
 }
 
 .badge {
@@ -127,6 +174,11 @@
   transition: transform 0.15s, box-shadow 0.15s;
 }
 
+.event-card.lunar-event-card {
+  background: rgba(245, 158, 11, 0.05);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
 .event-card:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm-hover);
@@ -148,6 +200,19 @@
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lunar-badge {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .event-time {
@@ -168,6 +233,15 @@
   padding: 1px 6px;
   border-radius: 4px;
   font-size: 0.75rem;
+}
+
+.time-tag.lunar-tag {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .event-location {

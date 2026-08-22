@@ -68,6 +68,17 @@
   margin: 0;
 }
 
+.lunar-hint-badge {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+}
+
 .hint-inset {
   margin: 0.25rem 1rem 0;
 }

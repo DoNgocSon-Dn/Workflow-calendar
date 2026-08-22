@@ -47,6 +47,10 @@
             }
           </div>
 
+          @if (lunarDateHint()) {
+            <p class="lunar-hint-badge">🌕 {{ lunarDateHint() }}</p>
+          }
+
           @if (rangeError()) {
           <p class="field-error">Thời gian kết thúc phải sau thời gian bắt đầu.</p>
           }

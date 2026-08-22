@@ -1,0 +1,243 @@
+:host {
+  display: contents;
+}
+
+.holiday-popup {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 2000;
+  width: min(380px, calc(100vw - 32px));
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--holiday-bg);
+  color: var(--holiday-text);
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  animation: holidayPopupIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.holiday-popup--closing {
+  animation: holidayPopupOut 0.2s ease forwards;
+}
+
+@keyframes holidayPopupIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes holidayPopupOut {
+  to {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+}
+
+.holiday-popup__particles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.holiday-popup__particle {
+  position: absolute;
+  top: -12%;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.holiday-popup__particle--fall {
+  animation-name: holidayFall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes holidayFall {
+  0% {
+    transform: translateY(-10%) rotate(0deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(360px) rotate(50deg);
+    opacity: 0;
+  }
+}
+
+.holiday-popup__particle--float {
+  top: auto;
+  bottom: -12%;
+  animation-name: holidayFloat;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes holidayFloat {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-320px) scale(1.05);
+    opacity: 0;
+  }
+}
+
+.holiday-popup__particle--burst {
+  top: 50%;
+  animation-name: holidayBurst;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes holidayBurst {
+  0% {
+    transform: scale(0.3) translateY(0);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.6) translateY(-40px);
+    opacity: 0;
+  }
+}
+
+.holiday-popup__particle--twinkle {
+  top: 50%;
+  animation-name: holidayTwinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes holidayTwinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.holiday-popup__motif {
+  position: absolute;
+  top: -18px;
+  left: -18px;
+  width: 96px;
+  height: 96px;
+  color: var(--holiday-accent);
+  opacity: 0.32;
+  pointer-events: none;
+}
+
+.holiday-popup__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.18);
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.holiday-popup__close:hover {
+  background: rgba(255, 255, 255, 0.32);
+  transform: scale(1.06);
+}
+
+.holiday-popup__body {
+  position: relative;
+  z-index: 1;
+  padding: 28px 24px 24px;
+  text-align: center;
+}
+
+.holiday-popup__emoji {
+  display: block;
+  font-size: 2.4rem;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.25));
+}
+
+.holiday-popup__title {
+  margin: 0 0 6px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.holiday-popup__subtitle {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--holiday-subtitle);
+}
+
+@media (max-width: 520px) {
+  .holiday-popup {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .holiday-popup {
+    animation: holidayFadeInReduced 0.2s ease both;
+  }
+
+  .holiday-popup--closing {
+    animation: holidayFadeOutReduced 0.15s ease forwards;
+  }
+
+  .holiday-popup__particle {
+    animation: none !important;
+    opacity: 0.45;
+  }
+
+  .holiday-popup__close:hover {
+    transform: none;
+  }
+}
+
+@keyframes holidayFadeInReduced {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes holidayFadeOutReduced {
+  to {
+    opacity: 0;
+  }
+}
