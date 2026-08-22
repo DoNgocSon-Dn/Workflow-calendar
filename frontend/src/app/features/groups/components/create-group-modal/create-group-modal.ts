@@ -1,7 +1,21 @@
 import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { GroupStore } from '../../data/group-store';
 
 type GroupColor = 'blue' | 'green' | 'orange' | 'red' | 'purple' | 'teal';
+
+function extractErrorMessage(err: unknown): string {
+  if (err instanceof HttpErrorResponse) {
+    if (err.status === 0) {
+      return 'Không kết nối được tới server, vui lòng kiểm tra lại và thử lại.';
+    }
+    const inner = err.error as { message?: string | string[] } | undefined;
+    const msg = inner?.message;
+    if (Array.isArray(msg)) return msg.join(', ');
+    if (typeof msg === 'string') return msg;
+  }
+  return 'Không thể tạo nhóm mới. Vui lòng thử lại.';
+}
 
 const COLOR_HEX: Record<GroupColor, string> = {
   blue: '#3b82f6',
@@ -49,8 +63,8 @@ export class CreateGroupModal {
       const group = await this.groupStore.createGroup(name, this.description().trim(), this.color());
       this.created.emit({ groupId: group.id, groupName: group.name });
       this.closed.emit();
-    } catch (err: any) {
-      this.error.set(err?.error?.message || 'Không thể tạo nhóm mới. Vui lòng thử lại.');
+    } catch (err) {
+      this.error.set(extractErrorMessage(err));
     } finally {
       this.creating.set(false);
     }

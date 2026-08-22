@@ -1,8 +1,22 @@
 import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { CalendarStore } from '../../data/calendar-store';
 import { CALENDAR_COLOR_HEX, CalendarColor } from '../../models/calendar.models';
 
 const CALENDAR_COLORS = Object.keys(CALENDAR_COLOR_HEX) as CalendarColor[];
+
+function extractErrorMessage(err: unknown): string {
+  if (err instanceof HttpErrorResponse) {
+    if (err.status === 0) {
+      return 'Không kết nối được tới server, vui lòng kiểm tra lại và thử lại.';
+    }
+    const inner = err.error as { message?: string | string[] } | undefined;
+    const msg = inner?.message;
+    if (Array.isArray(msg)) return msg.join(', ');
+    if (typeof msg === 'string') return msg;
+  }
+  return 'Không thể tạo lịch nhóm. Vui lòng thử lại.';
+}
 
 @Component({
   selector: 'app-create-calendar-modal',
@@ -38,8 +52,8 @@ export class CreateCalendarModal {
       const calendar = await this.store.createCalendar(name, this.color());
       this.created.emit({ calendarId: calendar.id, calendarName: calendar.name });
       this.closed.emit();
-    } catch {
-      this.error.set('Không thể tạo lịch nhóm. Vui lòng thử lại.');
+    } catch (err) {
+      this.error.set(extractErrorMessage(err));
     } finally {
       this.creating.set(false);
     }
