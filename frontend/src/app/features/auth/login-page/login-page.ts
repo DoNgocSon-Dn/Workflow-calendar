@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth-store';
 import { ThemeToggle } from '../../../core/theme/theme-toggle/theme-toggle';
 
@@ -9,7 +9,7 @@ import { ThemeToggle } from '../../../core/theme/theme-toggle/theme-toggle';
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, ThemeToggle],
+  imports: [ReactiveFormsModule, ThemeToggle],
   host: {
     '(mousemove)': 'onMouseMove($event)',
   },
@@ -26,11 +26,9 @@ export class LoginPage {
   readonly successMessage = signal<string | null>(
     this.route.snapshot.queryParamMap.get('message'),
   );
-  readonly showPassword = signal(false);
 
   readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
-    password: ['', Validators.required],
   });
 
   async submit(): Promise<void> {
@@ -42,19 +40,19 @@ export class LoginPage {
     this.errorMessage.set(null);
     this.successMessage.set(null);
     this.submitting.set(true);
-    const { email, password } = this.form.getRawValue();
-    const error = await this.authStore.signInWithPassword(email, password);
+    const { email } = this.form.getRawValue();
+    const error = await this.authStore.signInWithEmailOnly(email);
     this.submitting.set(false);
 
     if (error) {
-      this.errorMessage.set(error.message);
+      if (error.name === 'MagicLinkSent' || error.name === 'EmailConfirmation') {
+        this.successMessage.set(error.message);
+      } else {
+        this.errorMessage.set(error.message);
+      }
       return;
     }
     await this.router.navigate(['/calendar']);
-  }
-
-  togglePasswordVisibility(): void {
-    this.showPassword.update((value) => !value);
   }
 
   /**

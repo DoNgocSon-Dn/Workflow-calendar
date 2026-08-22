@@ -1,14 +1,22 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Group, GroupMember, GroupMessage, GroupTask } from '../models/group.models';
+import {
+  Group,
+  GroupMember,
+  GroupMessage,
+  GroupMessageAttachment,
+  GroupTask,
+} from '../models/group.models';
 import { GroupApiService } from '../services/group-api.service';
 import { AuthStore } from '../../../core/auth/auth-store';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
+import { SUPABASE_CLIENT } from '../../../core/supabase-client';
 
 @Injectable({ providedIn: 'root' })
 export class GroupStore {
   private readonly api = inject(GroupApiService);
   private readonly authStore = inject(AuthStore);
   private readonly realtime = inject(RealtimeService);
+  private readonly supabase = inject(SUPABASE_CLIENT);
 
   readonly groups = signal<Group[]>([]);
   readonly activeGroup = signal<Group | null>(null);
@@ -29,14 +37,44 @@ export class GroupStore {
 
     this.realtime.on<{ groupId: string; message: GroupMessage }>('group:messageSent', (payload) => {
       if (!payload?.message) return;
-      const currentActiveId = this.activeGroupId();
-      if (payload.groupId === currentActiveId || payload.message.groupId === currentActiveId) {
-        this.messages.update((list) => {
-          if (list.some((m) => m.id === payload.message.id)) return list;
-          return [...list, payload.message];
-        });
-      }
+      if (!this.isActiveGroup(payload.groupId, payload.message.groupId)) return;
+      this.messages.update((list) => {
+        if (list.some((m) => m.id === payload.message.id)) return list;
+        return [...list, payload.message];
+      });
     });
+
+    this.realtime.on<{ groupId: string; message: GroupMessage }>('group:messageUpdated', (payload) => {
+      if (!payload?.message) return;
+      if (!this.isActiveGroup(payload.groupId, payload.message.groupId)) return;
+      this.messages.update((list) => list.map((m) => (m.id === payload.message.id ? payload.message : m)));
+    });
+
+    this.realtime.on<{ groupId: string; message: GroupMessage }>('group:messageDeleted', (payload) => {
+      if (!payload?.message) return;
+      if (!this.isActiveGroup(payload.groupId, payload.message.groupId)) return;
+      this.messages.update((list) => list.map((m) => (m.id === payload.message.id ? payload.message : m)));
+    });
+
+    this.realtime.on<{ groupId: string; task: GroupTask }>('group:taskCreated', (payload) => {
+      if (!payload?.task) return;
+      if (!this.isActiveGroup(payload.groupId, payload.task.groupId)) return;
+      this.tasks.update((list) => {
+        if (list.some((t) => t.id === payload.task.id)) return list;
+        return [payload.task, ...list];
+      });
+    });
+
+    this.realtime.on<{ groupId: string; task: GroupTask }>('group:taskUpdated', (payload) => {
+      if (!payload?.task) return;
+      if (!this.isActiveGroup(payload.groupId, payload.task.groupId)) return;
+      this.tasks.update((list) => list.map((t) => (t.id === payload.task.id ? payload.task : t)));
+    });
+  }
+
+  private isActiveGroup(groupId: string, altGroupId?: string): boolean {
+    const currentActiveId = this.activeGroupId();
+    return groupId === currentActiveId || altGroupId === currentActiveId;
   }
 
   async loadGroups(): Promise<void> {
@@ -116,13 +154,21 @@ export class GroupStore {
     dueDate?: string,
   ): Promise<GroupTask> {
     const task = await this.api.createTask(groupId, title, description, status, assignedTo, dueDate);
-    this.tasks.update((prev) => [task, ...prev]);
+    this.tasks.update((prev) => {
+      if (prev.some((t) => t.id === task.id)) return prev;
+      return [task, ...prev];
+    });
     return task;
   }
 
   async updateTaskStatus(groupId: string, taskId: string, status: 'todo' | 'in_progress' | 'done'): Promise<void> {
-    const updated = await this.api.updateTask(groupId, taskId, { status });
+    await this.updateTask(groupId, taskId, { status });
+  }
+
+  async updateTask(groupId: string, taskId: string, updates: Partial<GroupTask>): Promise<GroupTask> {
+    const updated = await this.api.updateTask(groupId, taskId, updates);
     this.tasks.update((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+    return updated;
   }
 
   async loadMessages(groupId: string): Promise<void> {
@@ -134,13 +180,43 @@ export class GroupStore {
     }
   }
 
-  async sendMessage(groupId: string, text: string): Promise<GroupMessage> {
-    const msg = await this.api.sendMessage(groupId, text);
+  async sendMessage(groupId: string, text: string, attachment?: GroupMessageAttachment): Promise<GroupMessage> {
+    const msg = await this.api.sendMessage(groupId, text, attachment);
     this.messages.update((prev) => {
       if (prev.some((m) => m.id === msg.id)) return prev;
       return [...prev, msg];
     });
     return msg;
+  }
+
+  async editMessage(groupId: string, messageId: string, text: string): Promise<GroupMessage> {
+    const msg = await this.api.editMessage(groupId, messageId, text);
+    this.messages.update((prev) => prev.map((m) => (m.id === messageId ? msg : m)));
+    return msg;
+  }
+
+  async deleteMessage(groupId: string, messageId: string): Promise<GroupMessage> {
+    const msg = await this.api.deleteMessage(groupId, messageId);
+    this.messages.update((prev) => prev.map((m) => (m.id === messageId ? msg : m)));
+    return msg;
+  }
+
+  async uploadAttachment(groupId: string, file: File): Promise<GroupMessageAttachment> {
+    const extension = file.name.split('.').pop() ?? 'bin';
+    const path = `${groupId}/${crypto.randomUUID()}.${extension}`;
+
+    const { error: uploadError } = await this.supabase.storage
+      .from('group-attachments')
+      .upload(path, file);
+    if (uploadError) throw uploadError;
+
+    const { data } = this.supabase.storage.from('group-attachments').getPublicUrl(path);
+    return {
+      url: data.publicUrl,
+      name: file.name,
+      type: file.type || 'application/octet-stream',
+      size: file.size,
+    };
   }
 
   closeWorkspaceModal(): void {

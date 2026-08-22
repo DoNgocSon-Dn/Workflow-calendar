@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { AuthStore } from '../../../core/auth/auth-store';
 import { DensityService } from '../../../core/density/density-service';
 import { NotificationQueue } from '../../../core/realtime/notification-queue';
 import { AiChatWidget } from '../../ai-assistant/ai-chat-widget';
@@ -61,6 +62,7 @@ interface ModalState {
 export class CalendarPage {
   protected readonly store = inject(CalendarStore);
   protected readonly groupStore = inject(GroupStore);
+  protected readonly authStore = inject(AuthStore);
   private readonly notificationQueue = inject(NotificationQueue);
   private readonly densityService = inject(DensityService);
   private readonly holidayPopupService = inject(HolidayPopupService);
@@ -78,8 +80,29 @@ export class CalendarPage {
   protected readonly createCalendarModalOpen = signal(false);
   protected readonly createGroupModalOpen = signal(false);
 
+  protected readonly namePromptOpen = signal(false);
+  protected readonly nameDraft = signal('');
+  protected readonly savingName = signal(false);
+
   constructor() {
     this.notificationQueue.requestPermission();
+
+    // Check if user needs to set a display name after logging in
+    const currentName = this.authStore.displayName();
+    const userEmail = this.authStore.user()?.email;
+    if (!currentName || currentName === userEmail) {
+      this.nameDraft.set(currentName ?? '');
+      this.namePromptOpen.set(true);
+    }
+  }
+
+  async saveDisplayName(): Promise<void> {
+    const name = this.nameDraft().trim();
+    if (!name) return;
+    this.savingName.set(true);
+    await this.authStore.updateDisplayName(name);
+    this.savingName.set(false);
+    this.namePromptOpen.set(false);
   }
 
   onViewDetail(eventId: string): void {

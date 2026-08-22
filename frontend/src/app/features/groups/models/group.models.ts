@@ -33,7 +33,20 @@ export interface GroupMessage {
   id: string;
   groupId: string;
   senderId: string;
-  message: string;
+  message: string | null;
   createdAt: string;
+  editedAt?: string;
+  deletedAt?: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
+  attachmentType?: string;
+  attachmentSize?: number;
   senderEmail?: string;
+}
+
+export interface GroupMessageAttachment {
+  url: string;
+  name: string;
+  type: string;
+  size: number;
 }

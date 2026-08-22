@@ -94,6 +94,53 @@
   <app-group-workspace-modal (closed)="groupStore.closeWorkspaceModal()" />
 }
 
+@if (namePromptOpen()) {
+  <div class="name-prompt-backdrop">
+    <div class="name-prompt-card" role="dialog" aria-modal="true">
+      <div class="name-prompt-icon">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      </div>
+
+      <h2 class="name-prompt-title">Chào mừng bạn đến với Workflow!</h2>
+      <p class="name-prompt-desc">
+        Vui lòng chọn <strong>Tên hiển thị</strong> của bạn. Tên này sẽ xuất hiện trên lịch và khi tham gia nhóm làm việc.
+      </p>
+
+      <div class="name-prompt-field">
+        <input
+          type="text"
+          class="name-prompt-input"
+          placeholder="Nhập tên của bạn (VD: Hoàng Cường)"
+          [value]="nameDraft()"
+          (input)="nameDraft.set($any($event.target).value)"
+          (keyup.enter)="saveDisplayName()"
+        />
+      </div>
+
+      <div class="name-prompt-actions">
+        <button
+          type="button"
+          class="name-prompt-submit-btn"
+          [disabled]="savingName() || !nameDraft().trim()"
+          (click)="saveDisplayName()"
+        >
+          {{ savingName() ? 'Đang lưu…' : 'Bắt đầu sử dụng' }}
+        </button>
+        <button
+          type="button"
+          class="name-prompt-skip-btn"
+          (click)="namePromptOpen.set(false)"
+        >
+          Bỏ qua (Đặt tên sau)
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
 <app-notification-popup (viewDetail)="onViewDetail($event)" />
 <app-holiday-popup />
 <app-notes-widget />

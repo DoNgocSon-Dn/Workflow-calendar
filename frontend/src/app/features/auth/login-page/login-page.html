@@ -1,72 +1,73 @@
 <div class="auth-page">
   <aside class="brand-panel">
+    <div class="ambient-orb orb-1"></div>
+    <div class="ambient-orb orb-2"></div>
+    
     <svg class="brand-watermark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="3" y="4" width="18" height="17" rx="3" stroke="#fff" stroke-width="1" />
-      <path d="M3 9h18" stroke="#fff" stroke-width="1" />
-      <path d="M8 2v4M16 2v4" stroke="#fff" stroke-width="1" stroke-linecap="round" />
+      <rect x="3" y="4" width="18" height="17" rx="4" stroke="#fff" stroke-width="1.2" />
+      <path d="M3 9h18" stroke="#fff" stroke-width="1.2" />
+      <path d="M8 2v4M16 2v4" stroke="#fff" stroke-width="1.2" stroke-linecap="round" />
     </svg>
 
     <div class="preview-panel" aria-hidden="true">
       <div class="preview-panel-header">
-        <span class="preview-panel-title">Hôm nay</span>
-        <span class="preview-panel-date">Thứ Hai, 17 Th8</span>
+        <div class="preview-header-left">
+          <span class="preview-status-glow"></span>
+          <span class="preview-panel-title">Lịch Trình Hôm Nay</span>
+        </div>
+        <span class="preview-panel-date">Đăng Nhập Nhanh</span>
       </div>
       <ul class="preview-timeline">
         <li>
-          <span class="preview-dot" style="background: #34a853"></span>
+          <span class="preview-dot" style="background: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);"></span>
           <div>
-            <p class="preview-item-title">Họp nhóm thiết kế</p>
-            <p class="preview-item-time">09:00 – 09:45</p>
+            <p class="preview-item-title">Không cần ghi nhớ mật khẩu</p>
+            <p class="preview-item-time">Đăng nhập tức thì chỉ với Gmail / Email</p>
           </div>
         </li>
         <li>
-          <span class="preview-dot" style="background: var(--auth-brand-glow)"></span>
+          <span class="preview-dot" style="background: #6366f1; box-shadow: 0 0 8px rgba(99, 102, 241, 0.6);"></span>
           <div>
-            <p class="preview-item-title">Nhắc nhở: nộp báo cáo</p>
-            <p class="preview-item-time">17:00</p>
-          </div>
-        </li>
-        <li>
-          <span class="preview-dot" style="background: #ea4335"></span>
-          <div>
-            <p class="preview-item-title">Sinh nhật bạn bè</p>
-            <p class="preview-item-time">Cả ngày</p>
+            <p class="preview-item-title">Tự do đổi tên hiển thị</p>
+            <p class="preview-item-time">Hệ thống sẽ hỏi tên mong muốn sau khi vào web</p>
           </div>
         </li>
       </ul>
     </div>
 
     <div class="brand-panel-content">
-      <div class="brand-mark">
-        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" aria-hidden="true">
-          <rect x="3" y="4" width="18" height="17" rx="3" stroke="#fff" stroke-width="1.6" />
-          <path d="M3 9h18" stroke="#fff" stroke-width="1.6" />
-          <path d="M8 2v4M16 2v4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" />
-        </svg>
+      <div class="brand-badge">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="17" rx="4" stroke="#fff" stroke-width="1.8" />
+            <path d="M3 9h18" stroke="#fff" stroke-width="1.8" />
+            <path d="M8 2v4M16 2v4" stroke="#fff" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+        </div>
+        <span class="brand-kicker">Nền tảng quản lý lịch thông minh</span>
       </div>
-      <span class="brand-kicker">Không gian làm việc</span>
+
       <h2 class="brand-name">Workflow</h2>
       <p class="brand-tagline">
-        Sắp xếp lịch trình, ghi chú và nhắc nhở — tất cả trong một nơi.
+        Sắp xếp thời gian, quản lý nhóm và theo dõi nhắc nhở — đơn giản hóa trải nghiệm đăng nhập không mật khẩu rườm rà.
       </p>
+
       <ul class="brand-features">
         <li>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
-          Đồng bộ nhiều lịch cùng lúc
+          <span class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          </span>
+          Đăng nhập Gmail / Email trực tiếp trong 3 giây
         </li>
         <li>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
-          Nhắc nhở &amp; ghi chú thông minh
-        </li>
-        <li>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
-          Giao diện sáng/tối tuỳ chọn
+          <span class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          </span>
+          Tùy chọn Tên hiển thị &amp; Ảnh đại diện ngay sau khi vào app
         </li>
       </ul>
     </div>
@@ -74,101 +75,71 @@
 
   <div class="form-panel">
     <app-theme-toggle class="theme-toggle-corner" />
+    
     <form class="auth-card" [formGroup]="form" (ngSubmit)="submit()">
-    <h1 class="auth-title">Đăng nhập</h1>
-
-    @if (successMessage()) {
-      <p class="field-success">{{ successMessage() }}</p>
-    }
-    @if (errorMessage()) {
-      <p class="field-error">{{ errorMessage() }}</p>
-    }
-
-    <label class="field">
-      <span class="field-label">Email</span>
-      <div class="input-with-icon">
-        <svg class="input-leading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="3" y="5" width="18" height="14" rx="2" />
-          <path d="m3 7 9 6 9-6" />
-        </svg>
-        <input class="text-input" type="email" formControlName="email" autocomplete="email" />
+      <div class="auth-header">
+        <h1 class="auth-title">Đăng nhập</h1>
+        <p class="auth-subtitle">Nhập Email của bạn để truy cập ngay lập tức</p>
       </div>
-      @if (form.controls.email.invalid && form.controls.email.touched) {
-        <span class="field-error">Vui lòng nhập email hợp lệ.</span>
-      }
-    </label>
 
-    <label class="field">
-      <span class="field-label">Mật khẩu</span>
-      <div class="password-field input-with-icon">
-        <svg class="input-leading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="5" y="11" width="14" height="10" rx="2" />
-          <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+      @if (successMessage()) {
+        <div class="alert-box success">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <span>{{ successMessage() }}</span>
+        </div>
+      }
+      @if (errorMessage()) {
+        <div class="alert-box danger">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>{{ errorMessage() }}</span>
+        </div>
+      }
+
+      <label class="field">
+        <span class="field-label">Địa chỉ Email / Gmail</span>
+        <div class="input-with-icon">
+          <svg class="input-leading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="m3 7 9 6 9-6" />
+          </svg>
+          <input class="text-input" type="email" formControlName="email" placeholder="tenbancan@gmail.com" autocomplete="email" />
+        </div>
+        @if (form.controls.email.invalid && form.controls.email.touched) {
+          <span class="field-error">Vui lòng nhập địa chỉ email hợp lệ.</span>
+        }
+      </label>
+
+      <button type="submit" class="primary-btn" [disabled]="submitting()">
+        {{ submitting() ? 'Đang truy cập…' : 'Tiếp tục bằng Email' }}
+      </button>
+
+      <div class="auth-divider"><span>hoặc</span></div>
+
+      <button type="button" class="google-btn" (click)="signInWithGoogle()">
+        <svg class="google-icon" viewBox="0 0 18 18" aria-hidden="true">
+          <path
+            fill="#4285F4"
+            d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.88 2.7-6.62Z"
+          />
+          <path
+            fill="#34A853"
+            d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.83.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.98v2.33A9 9 0 0 0 9 18Z"
+          />
+          <path
+            fill="#FBBC05"
+            d="M3.95 10.7A5.4 5.4 0 0 1 3.66 9c0-.59.1-1.17.29-1.7V4.97H.98A9 9 0 0 0 0 9c0 1.45.35 2.83.98 4.03l2.97-2.33Z"
+          />
+          <path
+            fill="#EA4335"
+            d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .98 4.97l2.97 2.33C4.66 5.17 6.65 3.58 9 3.58Z"
+          />
         </svg>
-        <input
-          class="text-input"
-          [type]="showPassword() ? 'text' : 'password'"
-          formControlName="password"
-          autocomplete="current-password"
-        />
-        <button
-          type="button"
-          class="toggle-password-btn"
-          (click)="togglePasswordVisibility()"
-          [attr.aria-label]="showPassword() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
-          [attr.aria-pressed]="showPassword()"
-        >
-          @if (showPassword()) {
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.6 21.6 0 0 1 5.06-6.06M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.6 21.6 0 0 1-3.22 4.44M14.12 14.12a3 3 0 1 1-4.24-4.24" />
-              <line x1="1" y1="1" x2="23" y2="23" />
-            </svg>
-          } @else {
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
-          }
-        </button>
+        Đăng nhập với Google
+      </button>
+
+      <div class="auth-hint">
+        <span>✨ Sau khi bấm tiếp tục, hệ thống sẽ hiện bảng để bạn chọn <strong>Tên hiển thị mong muốn</strong> khi vào Lịch.</span>
       </div>
-      @if (form.controls.password.invalid && form.controls.password.touched) {
-        <span class="field-error">Vui lòng nhập mật khẩu.</span>
-      }
-    </label>
-
-    <a class="forgot-password-link" routerLink="/forgot-password">Quên mật khẩu?</a>
-
-    <button type="submit" class="primary-btn" [disabled]="submitting()">
-      {{ submitting() ? 'Đang đăng nhập…' : 'Đăng nhập' }}
-    </button>
-
-    <div class="auth-divider"><span>hoặc</span></div>
-
-    <button type="button" class="google-btn" (click)="signInWithGoogle()">
-      <svg class="google-icon" viewBox="0 0 18 18" aria-hidden="true">
-        <path
-          fill="#4285F4"
-          d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.88 2.7-6.62Z"
-        />
-        <path
-          fill="#34A853"
-          d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.83.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.98v2.33A9 9 0 0 0 9 18Z"
-        />
-        <path
-          fill="#FBBC05"
-          d="M3.95 10.7A5.4 5.4 0 0 1 3.66 9c0-.59.1-1.17.29-1.7V4.97H.98A9 9 0 0 0 0 9c0 1.45.35 2.83.98 4.03l2.97-2.33Z"
-        />
-        <path
-          fill="#EA4335"
-          d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .98 4.97l2.97 2.33C4.66 5.17 6.65 3.58 9 3.58Z"
-        />
-      </svg>
-      Đăng nhập bằng Google
-    </button>
-
-    <p class="auth-footer">
-      Chưa có tài khoản? <a routerLink="/register">Đăng ký</a>
-    </p>
-  </form>
+    </form>
   </div>
 </div>

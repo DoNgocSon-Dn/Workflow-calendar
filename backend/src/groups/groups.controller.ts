@@ -18,6 +18,7 @@ import { UpdateGroupMemberRoleDto } from './dto/update-group-member-role.dto';
 import { CreateGroupTaskDto } from './dto/create-group-task.dto';
 import { UpdateGroupTaskDto } from './dto/update-group-task.dto';
 import { SendGroupMessageDto } from './dto/send-group-message.dto';
+import { UpdateGroupMessageDto } from './dto/update-group-message.dto';
 import { GroupsService } from './groups.service';
 
 @Controller('groups')
@@ -125,5 +126,24 @@ export class GroupsController {
     @Body() dto: SendGroupMessageDto,
   ) {
     return this.groupsService.sendMessage(supabase, user, groupId, dto);
+  }
+
+  @Patch(':id/messages/:messageId')
+  async editMessage(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @Param('id') groupId: string,
+    @Param('messageId') messageId: string,
+    @Body() dto: UpdateGroupMessageDto,
+  ) {
+    return this.groupsService.editMessage(supabase, groupId, messageId, dto);
+  }
+
+  @Delete(':id/messages/:messageId')
+  async deleteMessage(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @Param('id') groupId: string,
+    @Param('messageId') messageId: string,
+  ) {
+    return this.groupsService.deleteMessage(supabase, groupId, messageId);
   }
 }
