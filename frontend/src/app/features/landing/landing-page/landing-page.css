@@ -729,6 +729,151 @@ section {
   padding: 220px 6vw 160px;
   text-align: center;
   position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.cta-inner {
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Lưới toạ độ mờ dần về mép, gợi lại ô lịch ── */
+.cta-grid {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 68px 68px;
+  /* Mask hình elip: lưới đậm ở giữa rồi tan hẳn, nên không để lộ cạnh
+     hộp như tấm nền cũ sau cột chữ. */
+  mask-image: radial-gradient(ellipse 62% 58% at 50% 46%, #000 8%, transparent 76%);
+  -webkit-mask-image: radial-gradient(ellipse 62% 58% at 50% 46%, #000 8%, transparent 76%);
+  opacity: 0.65;
+}
+
+/* ── Quầng sáng thở nhẹ sau tiêu đề ── */
+.cta-glow {
+  position: absolute;
+  z-index: 0;
+  top: 42%;
+  left: 50%;
+  width: min(760px, 90vw);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent) 30%, transparent) 0%,
+    transparent 62%
+  );
+  filter: blur(70px);
+  animation: cta-breathe 9s ease-in-out infinite;
+}
+
+@keyframes cta-breathe {
+  0%,
+  100% {
+    opacity: 0.5;
+    scale: 1;
+  }
+  50% {
+    opacity: 0.85;
+    scale: 1.08;
+  }
+}
+
+/* ── Vệt sáng rơi chậm, mỗi vệt một làn ── */
+.cta-stars {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.cta-stars span {
+  position: absolute;
+  top: -14%;
+  left: var(--x);
+  width: 1px;
+  height: 78px;
+  border-radius: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--accent) 75%, transparent),
+    transparent
+  );
+  opacity: 0;
+  animation: cta-fall var(--t, 8s) linear var(--d, 0s) infinite;
+}
+
+@keyframes cta-fall {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.9;
+  }
+  78% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(115vh);
+    opacity: 0;
+  }
+}
+
+/* ── Nhãn nhỏ trên tiêu đề ── */
+.cta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 30px;
+  padding: 8px 17px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-2) 70%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-dim);
+}
+
+.cta-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
+  animation: cta-pulse 2.4s ease-out infinite;
+}
+
+@keyframes cta-pulse {
+  70%,
+  100% {
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+}
+
+/* Tôn trọng người tắt hiệu ứng: giữ trang trí nhưng đứng yên. */
+@media (prefers-reduced-motion: reduce) {
+  .cta-glow,
+  .cta-badge-dot {
+    animation: none;
+  }
+
+  .cta-stars {
+    display: none;
+  }
 }
 
 .cta-section h2 {
@@ -1053,31 +1198,6 @@ html.is-loading body {
   background: rgba(37, 99, 235, 0.1);
 }
 
-/* TESTIMONIAL */
-.testimonial {
-  text-align: center;
-  padding: 160px 6vw;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.testimonial blockquote {
-  font-size: clamp(24px, 3.6vw, 42px);
-  font-weight: 500;
-  line-height: 1.35;
-  letter-spacing: -0.01em;
-  font-family: var(--font-heading);
-}
-
-.testimonial cite {
-  display: block;
-  margin-top: 32px;
-  font-style: normal;
-  color: var(--ink-dim);
-  font-size: 14px;
-  letter-spacing: 0.03em;
-}
-
 /* PRELOADER STYLES */
 html.is-loading,
 html.is-loading body {
@@ -1387,13 +1507,11 @@ html.is-loading body {
    bằng bố cục, không phải bằng tween. Cách cũ (trượt runtime qua biến
    --slide đọc trong @keyframes) chỉ ăn khi timeline chạy nên lúc mới vào
    stage 0 bảng vẫn nằm giữa và đè lên chữ. */
+/* Sân khấu trải hết bề ngang; bảng được GSAP trượt sang nửa trái hoặc
+   nửa phải tuỳ stage, đối xứng với cột chữ. */
 .scrolly.is-enhanced .scrolly-stage {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  right: 0;
-  left: auto;
-  width: 56%;
+  inset: 0;
   height: 100%;
   display: flex;
   align-items: center;
@@ -1402,22 +1520,12 @@ html.is-loading body {
   perspective-origin: 50% 48%;
 }
 
-/* Cột chữ phải có nền đặc — bảng lịch trượt phía sau nó khi zoom, nền
-   trong suốt sẽ để chữ trong bảng hiện xuyên qua. */
-.scrolly.is-enhanced .scrolly-copy::before {
-  content: '';
-  position: absolute;
-  inset: -6% -13%;
-  border-radius: 40px;
-  background: radial-gradient(
-    ellipse at center,
-    var(--bg) 0%,
-    color-mix(in srgb, var(--bg) 86%, transparent) 62%,
-    color-mix(in srgb, var(--bg) 0%, transparent) 100%
-  );
-  z-index: -1;
-  pointer-events: none;
-}
+/* Cột chữ KHÔNG có nền riêng.
+   Trước đây ở đây có một ::before tô var(--bg) làm nền cho chữ — nó là
+   bảo hiểm từ hồi chữ và bảng còn chồng lên nhau. Nhưng nó là một hình
+   hộp, mà hộp thì có cạnh: mép phải của nó cắt ngang quầng sáng của
+   .stage-aura thành một đường kẻ dọc chạy suốt chiều cao, rất lộ.
+   Giờ chữ và bảng đã ở hai nửa tách bạch nên bỏ hẳn. */
 
 /* Không còn scrim: hồi thẻ nổi còn đặt đè lên bảng thì cần màn lọc để
    tách lớp, nhưng giờ chữ và bảng ở hai vùng riêng nên nó chỉ còn tác
@@ -1442,29 +1550,26 @@ html.is-loading body {
   position: relative;
   width: min(600px, 92%);
   transform-style: preserve-3d;
-  animation: board-float 9s ease-in-out infinite;
+  /* Trôi lơ lửng KHÔNG dùng CSS animation nữa: timeline cần tween `x` để
+     trượt bảng trái/phải, mà keyframes ghi cả transform thì hai bên đè
+     nhau. Chuyển sang tween vô hạn trong TS — GSAP tween `y` và `x` trên
+     cùng element thì tự gộp, không xung đột. */
+  animation: none;
 }
 
 .scrolly.is-enhanced .board-wrap {
-  width: min(560px, 86%);
-}
-
-@keyframes board-float {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(0, -14px, 0);
-  }
+  /* Chỉ được chiếm nửa màn hình, nửa kia là đất của cột chữ. */
+  width: min(560px, 44vw);
 }
 
 .board {
   position: relative;
   aspect-ratio: 16 / 11;
   transform-style: preserve-3d;
-  /* trạng thái đầu — GSAP ghi đè ngay khi timeline chạy */
-  transform: rotateX(12deg) rotateY(-16deg);
+  /* Trạng thái đầu — GSAP ghi đè ngay khi timeline chạy.
+     rotateX hạ 12° → 5°: nghiêng nhiều làm mặt bảng bị bóp hình thang,
+     trông như đặt nằm chứ không phải màn hình hướng về người xem. */
+  transform: rotateX(5deg) rotateY(-13deg);
   will-change: transform;
 }
 
@@ -1581,6 +1686,103 @@ html.is-loading body {
 
 .board-week .hot {
   color: var(--accent);
+}
+
+/* ── Ô ngày: thứ / ngày dương / ngày âm ── */
+
+.bday {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding-bottom: 6px;
+}
+
+.bday i {
+  font-style: normal;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  opacity: 0.75;
+}
+
+.bday b {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+/* Ngày âm — thứ luôn nằm sẵn dưới ngày dương, đúng như trong app */
+.bday em {
+  font-style: normal;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0;
+  opacity: 0.6;
+}
+
+.bday.hot b {
+  color: var(--accent);
+}
+
+/* Lễ dương lịch (Quốc khánh 2/9) */
+.bday.is-hol b {
+  color: #e5484d;
+}
+
+.bday.is-hol em {
+  color: #e5484d;
+  opacity: 0.85;
+}
+
+/* Lễ âm lịch (rằm tháng 7 — Vu Lan) */
+.bday.is-lunar b,
+.bday.is-lunar em {
+  color: #d98324;
+  opacity: 1;
+}
+
+/* ── Dải ngày lễ trong tuần ── */
+
+.board-holidays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 0 2px 46px;
+}
+
+.bhol {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.bhol s {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  text-decoration: none;
+  flex: none;
+  background: currentColor;
+}
+
+.bhol.solar {
+  color: #e5484d;
+  background: rgba(229, 72, 77, 0.14);
+}
+
+.bhol.lunar {
+  color: #d98324;
+  background: rgba(217, 131, 36, 0.16);
 }
 
 .board-grid {
@@ -1864,79 +2066,56 @@ html.is-loading body {
   color: #ff8b8e;
 }
 
-/* Stage 4 — đồng hồ Pomodoro */
-.pop-timer {
+/* Stage 4 — thẻ lịch âm (thay cho widget Pomodoro đã gỡ: chức năng đó
+   không tồn tại trong sản phẩm) */
+.pop-lunar {
+  text-align: left;
+}
+
+.lunar-row {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 20px 22px;
+  gap: 18px;
+  margin-top: 12px;
 }
 
-.pop-timer .timer-state {
-  margin-top: 0;
-  text-align: left;
-  justify-content: flex-start;
+.lunar-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.ring-wrap {
-  position: relative;
-  width: 118px;
-  flex: none;
-}
-
-.ring {
-  width: 100%;
-  display: block;
-  transform: rotate(-90deg);
-}
-
-.ring-bg,
-.ring-fg {
-  fill: none;
-  stroke-width: 7;
-  stroke-linecap: round;
-}
-
-.ring-bg {
-  stroke: var(--line);
-}
-
-.ring-fg {
-  stroke: var(--accent);
-  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 70%, transparent));
-  stroke-dasharray: 327;
-  stroke-dashoffset: 327;
-}
-
-.ring-time {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
+.lunar-cell b {
   font-family: var(--font-heading);
-  font-size: 26px;
+  font-size: 38px;
   font-weight: 700;
+  line-height: 1;
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
 }
 
-.timer-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 16px;
-  font-size: 11.5px;
+.lunar-cell i {
+  font-style: normal;
+  font-size: 11px;
   letter-spacing: 0.04em;
   color: var(--ink-dim);
 }
 
-.bell-off svg {
-  width: 15px;
-  height: 15px;
-  display: block;
-  color: #ff8b8e;
+.lunar-cell.is-lunar b {
+  color: var(--accent);
+}
+
+.lunar-div {
+  width: 1px;
+  align-self: stretch;
+  background: var(--line);
+}
+
+.pop-lunar .pop-sub {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
 }
 
 /* ─────────── chỉ báo stage ─────────── */
@@ -2005,25 +2184,22 @@ html.is-loading body {
     width: 100%;
   }
 
+  /* Căn giữa bằng left+right, KHÔNG dùng translate: GSAP tween `x` trên
+     chính element này, mà nó hấp thụ property translate rồi xoá mất. */
   .scrolly.is-enhanced .scrolly-copy {
-    left: 50%;
-    translate: -50% 0;
-    width: min(88%, 560px);
+    left: 6vw;
+    right: 6vw;
+    width: auto;
+    max-width: 560px;
+    margin-inline: auto;
   }
 
+  /* Hẹp thì chữ nằm đè lên bảng. Thay vì kê một tấm nền sau chữ (lại
+     sinh ra cạnh), đẩy chính bảng ra sau bằng mờ + xoá nét. */
   .scrolly.is-enhanced .board-wrap {
     width: min(520px, 82vw);
-    opacity: 0.45;
-  }
-
-  .scrolly.is-enhanced .scrolly-copy::before {
-    inset: -5% -9%;
-    background: radial-gradient(
-      ellipse at center,
-      var(--bg) 0%,
-      color-mix(in srgb, var(--bg) 94%, transparent) 70%,
-      color-mix(in srgb, var(--bg) 55%, transparent) 100%
-    );
+    opacity: 0.3;
+    filter: blur(2px);
   }
 
   .node.n1,
@@ -2055,16 +2231,12 @@ html.is-loading body {
     margin-top: 18px;
   }
 
-  .pop-timer {
+  .lunar-cell b {
+    font-size: 30px;
+  }
+
+  .lunar-row {
     gap: 14px;
-  }
-
-  .ring-wrap {
-    width: 96px;
-  }
-
-  .ring-time {
-    font-size: 22px;
   }
 }
 
@@ -2096,9 +2268,5 @@ html.is-loading body {
   .cmd-caret,
   .warn-badge {
     animation: none;
-  }
-
-  .ring-fg {
-    stroke-dashoffset: 105;
   }
 }

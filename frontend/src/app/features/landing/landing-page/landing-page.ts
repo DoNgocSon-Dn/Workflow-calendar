@@ -281,32 +281,76 @@ export class LandingPage implements OnInit, AfterViewInit {
     const popAi = q('.pop-ai');
     const popEmail = q('.pop-email');
     const popWarn = q('.pop-warn');
-    const popTimer = q('.pop-timer');
+    const popLunar = q('.pop-lunar');
     const cmdText = scrolly.querySelector('.cmd-text') as HTMLElement | null;
-    const ringFg = scrolly.querySelector('.ring-fg') as SVGCircleElement | null;
-    const ringTime = scrolly.querySelector('.ring-time') as HTMLElement | null;
+
+    const copy = scrolly.querySelector('.scrolly-copy') as HTMLElement | null;
+    const boardWrap = scrolly.querySelector('.board-wrap') as HTMLElement | null;
 
     const PHRASE = 'Họp với Hùng thứ 6 tuần sau lúc 3 giờ chiều';
-    const RING_LEN = 327;
 
     /** Mốc bắt đầu của 5 stage trên timeline — dùng cho chấm chỉ báo. */
     const STAGE_AT = [0, 2.4, 4.6, 6.6, 8.6];
 
+    /** Dưới ngưỡng này bố cục xếp chồng, không còn hai vùng trái/phải. */
+    const SPLIT_MIN_WIDTH = 1100;
+
+    /**
+     * side = -1 nửa trái, +1 nửa phải.
+     * Trả về hàm để GSAP tính lại mỗi lần refresh (invalidateOnRefresh),
+     * nhờ vậy đổi cỡ cửa sổ là vị trí tự khớp lại.
+     */
+    const copySlot = (side: -1 | 1) => () => {
+      const vw = viewport.clientWidth;
+      if (vw < SPLIT_MIN_WIDTH || !copy) return 0;
+      // CSS neo cột chữ ở left:6vw, nên nửa trái là x = 0.
+      return side === -1 ? 0 : vw - vw * 0.12 - copy.offsetWidth;
+    };
+
+    /** Bảng luôn trượt về nửa đối diện cột chữ. */
+    const boardSlot = (side: -1 | 1) => () => {
+      const vw = viewport.clientWidth;
+      if (vw < SPLIT_MIN_WIDTH || !copy) return 0;
+      // Bảng đang được flex canh giữa sân khấu; đẩy đi nửa bề rộng cột
+      // chữ cộng một khoảng hở là nó nằm gọn giữa nửa còn lại.
+      return side * (copy.offsetWidth / 2 + vw * 0.02);
+    };
+
     // ── trạng thái đầu ──
-    // Vị trí ngang của bảng và cột chữ giờ do CSS quyết định (sân khấu
-    // chiếm 56% bên phải, cột chữ nằm bên trái), nên ở đây chỉ còn lo
-    // góc camera và nội dung.
     gsap.set(steps, { opacity: 0, y: 26 });
     gsap.set(steps[0], { opacity: 1, y: 0 });
     // z: đẩy node ra trước mặt bảng theo trục Z thật, không chỉ dựa vào
     // z-index — trong preserve-3d thì vị trí Z mới là thứ quyết định.
     gsap.set(nodes, { opacity: 0, scale: 0.55, z: 60 });
-    gsap.set([popAi, popEmail, popWarn, popTimer], { opacity: 0, y: 26 });
+    gsap.set([popAi, popEmail, popWarn, popLunar], { opacity: 0, y: 26 });
     gsap.set(q('.ev-ai'), { opacity: 0, scale: 0.7 });
     gsap.set(q('.ev-clash'), { opacity: 0 });
-    gsap.set(board, { rotateX: 12, rotateY: -16, scale: 1, xPercent: 0, yPercent: 0 });
-    if (ringFg) gsap.set(ringFg, { strokeDashoffset: RING_LEN });
+    gsap.set(board, { rotateX: 5, rotateY: -13, scale: 1, xPercent: 0, yPercent: 0 });
+    if (copy) gsap.set(copy, { x: copySlot(-1) });
+    if (boardWrap) gsap.set(boardWrap, { x: boardSlot(1) });
     if (cmdText) cmdText.textContent = '';
+
+    // Trôi lơ lửng: tween riêng, vô hạn. Tách khỏi timeline cuộn nên nó
+    // chỉ đụng `y`, còn timeline chỉ đụng `x` — GSAP gộp hai cái vào cùng
+    // một transform mà không bên nào ghi đè bên nào.
+    if (boardWrap) {
+      gsap.to(boardWrap, {
+        y: -14,
+        duration: 4.5,
+        repeat: -1,
+        yoyo: true,
+        ease: 'sine.inOut',
+      });
+    }
+
+    /**
+     * Đổi bên: cột chữ sang `copySide`, bảng sang nửa đối diện, đồng thời
+     * nghiêng mặt bảng về phía cột chữ để nó luôn "quay mặt" vào nội dung.
+     */
+    const swapSides = (tl: gsap.core.Timeline, copySide: -1 | 1, at: number) => {
+      if (copy) tl.to(copy, { x: copySlot(copySide), duration: 1.1 }, at);
+      if (boardWrap) tl.to(boardWrap, { x: boardSlot(copySide === -1 ? 1 : -1), duration: 1.1 }, at);
+    };
 
     /** Đưa đúng một khối chữ vào, đẩy khối trước ra — chạy được cả hai chiều cuộn. */
     const showStep = (tl: gsap.core.Timeline, index: number, at: number) => {
@@ -343,18 +387,19 @@ export class LandingPage implements OnInit, AfterViewInit {
       },
     });
 
-    // Bảng đứng yên bên phải suốt cả 5 stage — chỉ góc nhìn đổi. Ở đây
-    // xPercent/yPercent chỉ dùng để lia camera trong phạm vi sân khấu,
-    // không còn kiêm việc đẩy bảng tránh cột chữ như trước.
+    // Bảng và cột chữ đổi bên qua từng stage. Dấu rotateY luôn ngược dấu
+    // vị trí bảng: bảng ở nửa phải thì nghiêng về trái (rotateY âm) để
+    // mặt nó hướng vào cột chữ, và ngược lại.
 
-    // ══ STAGE 0: 4 node bung ra quanh bảng ══
+    // ══ STAGE 0 — chữ TRÁI, bảng PHẢI: 4 node bung ra ══
     tl.to(nodes, { opacity: 1, scale: 1, duration: 0.7, stagger: 0.12 }, 0.15)
-      .to(board, { rotateY: -10, rotateX: 9, duration: 1.2 }, 0);
+      .to(board, { rotateY: -13, rotateX: 5, duration: 1.2 }, 0);
 
-    // ══ STAGE 1 — Trợ lý AI: lia lên thanh nhập lệnh ══
+    // ══ STAGE 1 — Trợ lý AI: chữ TRÁI, bảng PHẢI, nghiêng về trái ══
     showStep(tl, 1, 2.4);
+    swapSides(tl, -1, 2.4);
     tl.to(nodes, { opacity: 0, scale: 0.7, duration: 0.5, stagger: 0.06 }, 2.3)
-      .to(board, { rotateX: 6, rotateY: -7, scale: 1.22, xPercent: 4, yPercent: 14 }, 2.4)
+      .to(board, { rotateX: 4, rotateY: -13, scale: 1.18, xPercent: 0, yPercent: 12 }, 2.4)
       .to(popAi, { opacity: 1, y: 0, duration: 0.7 }, 2.9);
 
     // gõ chữ vào thanh lệnh — scrub được nên tua ngược vẫn xoá dần
@@ -376,63 +421,38 @@ export class LandingPage implements OnInit, AfterViewInit {
 
     tl.to(q('.ev-ai'), { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(2)' }, 3.9);
 
-    // ══ STAGE 2 — Realtime & Email: xoay bảng lộ góc nhìn khác ══
+    // ══ STAGE 2 — Realtime & Email: chữ PHẢI, bảng TRÁI, nghiêng về phải ══
     showStep(tl, 2, 4.6);
+    swapSides(tl, 1, 4.55);
     tl.to([popAi], { opacity: 0, y: -24, duration: 0.5 }, 4.5)
-      .to(board, { rotateX: 8, rotateY: 22, scale: 1.06, xPercent: 0, yPercent: 0 }, 4.6)
-      // Thẻ email bay vào từ phía bảng (bên phải) để vẫn đọc là "tách ra
-      // khỏi lịch", nhưng đích đến nằm gọn trong cột chữ.
+      .to(board, { rotateX: 5, rotateY: 14, scale: 1.06, xPercent: 0, yPercent: 0 }, 4.6)
+      // Thẻ email bay vào từ phía bảng — stage này bảng ở bên TRÁI nên
+      // thẻ vào từ trái, vẫn đọc ra là "tách khỏi lịch bay sang".
       .fromTo(
         popEmail,
-        { opacity: 0, x: 60, y: 30, rotateY: 34 },
+        { opacity: 0, x: -60, y: 30, rotateY: -34 },
         { opacity: 1, x: 0, y: 0, rotateY: 0, duration: 0.85 },
         5.05,
       )
       .to(q('.pbtn.yes'), { scale: 0.94, duration: 0.18, yoyo: true, repeat: 1 }, 5.9);
 
-    // ══ STAGE 3 — Phát hiện xung đột: lia xuống lưới giờ ══
+    // ══ STAGE 3 — Phát hiện xung đột: chữ TRÁI, bảng PHẢI, nghiêng về trái ══
     showStep(tl, 3, 6.6);
+    swapSides(tl, -1, 6.55);
     tl.to(popEmail, { opacity: 0, y: -28, duration: 0.5 }, 6.5)
-      .to(board, { rotateX: 4, rotateY: -6, scale: 1.16, xPercent: 0, yPercent: -8 }, 6.6)
+      .to(board, { rotateX: 3, rotateY: -12, scale: 1.14, xPercent: 0, yPercent: -6 }, 6.6)
       .to(q('.ev-ai'), { opacity: 0.25, duration: 0.4 }, 6.6)
       .to(q('.ev-clash'), { opacity: 1, duration: 0.5, stagger: 0.18 }, 7.1)
       .to(popWarn, { opacity: 1, y: 0, duration: 0.7 }, 7.4);
 
-    // ══ STAGE 4 — Tập trung: bảng nhoè đi như xoá nét (depth of field) ══
+    // ══ STAGE 4 — Lịch âm: chữ PHẢI, bảng TRÁI, nghiêng về phải ══
     showStep(tl, 4, 8.6);
+    swapSides(tl, 1, 8.55);
     tl.to(popWarn, { opacity: 0, y: -24, duration: 0.5 }, 8.5)
       .to(q('.ev-clash'), { opacity: 0, duration: 0.4 }, 8.5)
-      // Chỉ blur, không hạ opacity: giảm mờ đục làm bảng bạc phếch, còn
-      // blur đơn thuần đọc ra là "mất nét vì camera lấy nét chỗ khác".
-      .to(board, { rotateX: 10, rotateY: -18, scale: 0.92, xPercent: 0, yPercent: 0 }, 8.6)
-      // blur đặt trên .board-wrap chứ không phải .board: filter làm phẳng
-      // ngữ cảnh 3D của chính element mang nó, để trên .board thì 3 lớp
-      // độ dày translateZ sẽ sập chồng lên nhau.
-      .to(q('.board-wrap'), { filter: 'blur(7px)', duration: 1 }, 8.6)
-      .to(popTimer, { opacity: 1, y: 0, duration: 0.7 }, 9.0);
-
-    if (ringFg) {
-      tl.to(ringFg, { strokeDashoffset: RING_LEN * 0.32, duration: 1.4, ease: 'none' }, 9.2);
-    }
-
-    if (ringTime) {
-      const clock = { s: 1458 }; // 24:18
-      tl.to(
-        clock,
-        {
-          s: 1015, // 16:55
-          duration: 1.4,
-          ease: 'none',
-          onUpdate: () => {
-            const s = Math.round(clock.s);
-            const mm = String(Math.floor(s / 60)).padStart(2, '0');
-            const ss = String(s % 60).padStart(2, '0');
-            ringTime.textContent = `${mm}:${ss}`;
-          },
-        },
-        9.2,
-      );
-    }
+      .to(q('.ev-ai'), { opacity: 1, duration: 0.5 }, 8.6)
+      .to(board, { rotateX: 5, rotateY: 13, scale: 1.02, xPercent: 0, yPercent: 0 }, 8.6)
+      .to(popLunar, { opacity: 1, y: 0, duration: 0.7 }, 9.0);
   }
 
   private initCursorAndInteractiveEffects(): void {
