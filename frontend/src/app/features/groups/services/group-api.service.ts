@@ -9,6 +9,7 @@ import {
   GroupMessage,
   GroupMessageAttachment,
   GroupTask,
+  GroupUpdate,
 } from '../models/group.models';
 
 @Injectable({ providedIn: 'root' })
@@ -36,6 +37,32 @@ export class GroupApiService {
       this.http.post<Group>(
         `${environment.apiUrl}/groups`,
         { name, description, color },
+        { headers: this.authHeaders },
+      ),
+    );
+  }
+
+  async updateGroup(id: string, updates: GroupUpdate): Promise<Group> {
+    return firstValueFrom(
+      this.http.patch<Group>(`${environment.apiUrl}/groups/${id}`, updates, {
+        headers: this.authHeaders,
+      }),
+    );
+  }
+
+  async deleteGroup(id: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<{ message: string }>(`${environment.apiUrl}/groups/${id}`, {
+        headers: this.authHeaders,
+      }),
+    );
+  }
+
+  async setGroupHidden(id: string, hidden: boolean): Promise<{ groupId: string; hidden: boolean }> {
+    return firstValueFrom(
+      this.http.patch<{ groupId: string; hidden: boolean }>(
+        `${environment.apiUrl}/groups/${id}/visibility`,
+        { hidden },
         { headers: this.authHeaders },
       ),
     );

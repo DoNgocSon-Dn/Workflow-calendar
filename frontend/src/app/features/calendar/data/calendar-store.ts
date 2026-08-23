@@ -139,6 +139,21 @@ function toCalendarDef(dto: CalendarApiDto): CalendarDef {
   return { id: dto.id, name: dto.name, color: dto.color as CalendarColor };
 }
 
+// Một số tài khoản đang mang nhiều lịch "Cá nhân" trùng hệt nhau do lỗi tự tạo
+// lịch mặc định trước đây (xem createDefaultCalendarOnce). Gộp ngay sau khi nhận
+// từ API để mọi nơi đọc calendars() đều thấy cùng một danh sách: sidebar, bảng
+// chọn lịch trong form sự kiện và màn hình import — thay vì mỗi chỗ tự gộp một
+// kiểu. Giữ bản ghi cũ nhất (API trả theo created_at) vì đó là lịch chứa sự kiện.
+function dedupeCalendars(list: CalendarDef[]): CalendarDef[] {
+  const seen = new Set<string>();
+  return list.filter((c) => {
+    const key = `${c.name.trim().toLowerCase()}|${c.color}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function toCalendarInvite(dto: CalendarInviteApiDto): CalendarInvite {
   return {
     id: dto.id,
@@ -190,6 +205,9 @@ export class CalendarStore {
   private readonly apiUrl = environment.apiUrl;
   private readonly selfOriginIds = new Set<string>();
   private realtimeListenersBound = false;
+  // Giữ POST /calendars đang bay để hai lần loadAll() chồng nhau (effect chạy lại
+  // khi token refresh) cùng chờ MỘT request, thay vì mỗi lần đẻ một lịch mới.
+  private defaultCalendarInFlight: Promise<CalendarDef> | null = null;
 
   readonly today = signal(startOfDay(this.clock.now()));
   readonly focusedDate = signal(startOfDay(this.clock.now()));
@@ -281,12 +299,12 @@ export class CalendarStore {
         firstValueFrom(this.http.get<EventApiDto[]>(`${this.apiUrl}/events`)),
       ]);
 
-      let calendarDefs = calendars.map(toCalendarDef);
+      let calendarDefs = dedupeCalendars(calendars.map(toCalendarDef));
       if (calendarDefs.length === 0) {
         // Người dùng chưa có calendar nào (ví dụ tài khoản có trước khi trigger
         // tạo "Cá nhân" mặc định tồn tại) — tự tạo một lịch mặc định thay vì
         // để form tạo sự kiện không có gì để chọn.
-        calendarDefs = [await this.createDefaultCalendar()];
+        calendarDefs = [await this.createDefaultCalendarOnce()];
       }
 
       this.calendars.set(calendarDefs);
@@ -298,16 +316,12 @@ export class CalendarStore {
       this.visibleCalendarIds.set(visibleIds);
       this.events.set(events.map(toCalendarEvent));
     } catch (err) {
+      // Cố tình KHÔNG tạo lịch mặc định ở đây. GET /calendars hỏng (mất mạng,
+      // backend restart, 429) không có nghĩa là người dùng chưa có lịch — nó chỉ
+      // có nghĩa là ta chưa biết. Nhánh này trước đây tạo lịch mới mỗi lần lỗi,
+      // và vì effect() gọi lại loadAll() sau mỗi lần token đổi nên nó đẻ ra hàng
+      // loạt lịch "Cá nhân" rỗng. Giữ nguyên state cũ và để người dùng thử lại.
       console.error('Lỗi khi tải danh sách lịch / sự kiện:', err);
-      if (this.calendars().length === 0) {
-        try {
-          const defaultCal = await this.createDefaultCalendar();
-          this.calendars.set([defaultCal]);
-          this.visibleCalendarIds.set(new Set([defaultCal.id, VN_HOLIDAY_CALENDAR_ID]));
-        } catch (createErr) {
-          console.error('Không thể tự tạo lịch mặc định:', createErr);
-        }
-      }
     } finally {
       this.calendarsLoading.set(false);
     }
@@ -353,6 +367,24 @@ export class CalendarStore {
       'calendar:memberJoined',
       (payload) => this.handleCalendarMemberJoined(payload),
     );
+    // Xoá nhóm sẽ xoá luôn lịch nhóm ở server. GroupStore đã inject vào store
+    // này nên nó không thể gọi ngược lại — lịch nhóm được dọn ngay tại đây thay
+    // vì đi qua GroupStore, tránh vòng phụ thuộc DI.
+    this.realtime.on<{ groupId: string; calendarId: string | null }>(
+      'group:deleted',
+      (payload) => this.handleGroupCalendarRemoved(payload.calendarId),
+    );
+  }
+
+  private handleGroupCalendarRemoved(calendarId: string | null): void {
+    if (!calendarId) return;
+    this.calendars.update((list) => list.filter((c) => c.id !== calendarId));
+    this.events.update((list) => list.filter((e) => e.calendarId !== calendarId));
+    this.visibleCalendarIds.update((set) => {
+      const next = new Set(set);
+      next.delete(calendarId);
+      return next;
+    });
   }
 
   async ensureCalendarExists(): Promise<CalendarDef> {
@@ -360,7 +392,7 @@ export class CalendarStore {
       return this.calendars()[0];
     }
     try {
-      const cal = await this.createDefaultCalendar();
+      const cal = await this.createDefaultCalendarOnce();
       this.calendars.set([cal]);
       this.visibleCalendarIds.update((set) => new Set([...set, cal.id]));
       return cal;
@@ -375,6 +407,22 @@ export class CalendarStore {
       this.visibleCalendarIds.set(new Set([fallbackCal.id]));
       return fallbackCal;
     }
+  }
+
+  // Trước khi tạo, hỏi lại server một lần: giữa lúc loadAll() đọc danh sách và
+  // lúc quyết định tạo, một tab khác (hoặc lần loadAll() trước đó) có thể đã tạo
+  // rồi. Không kiểm tra lại chính là cách bộ lịch "Cá nhân" trùng lặp sinh ra.
+  private createDefaultCalendarOnce(): Promise<CalendarDef> {
+    this.defaultCalendarInFlight ??= (async () => {
+      const existing = await firstValueFrom(
+        this.http.get<CalendarApiDto[]>(`${this.apiUrl}/calendars`),
+      );
+      if (existing.length > 0) return toCalendarDef(existing[0]);
+      return this.createDefaultCalendar();
+    })().finally(() => {
+      this.defaultCalendarInFlight = null;
+    });
+    return this.defaultCalendarInFlight;
   }
 
   async createDefaultCalendar(): Promise<CalendarDef> {

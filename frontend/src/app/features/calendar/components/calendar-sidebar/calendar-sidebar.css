@@ -174,10 +174,22 @@
 
 .group-item {
   border-radius: var(--radius-md);
+  /* Gap mặc định 0.65rem là để tách chấm màu khỏi tên; icon nhóm đứng ngay
+     trước tên nên cần khoảng hẹp hơn, kẻo trông như hai nhóm rời nhau. */
+  gap: 0.45rem;
+}
+
+.group-icon {
+  font-size: 0.95rem;
+  color: var(--color-text-tertiary);
+}
+
+.group-item .color-dot {
+  margin-right: 0.2rem;
 }
 
 .group-arrow {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--color-text-tertiary);
   opacity: 0;
   transition: opacity 0.15s ease;
@@ -185,6 +197,76 @@
 
 .group-item:hover .group-arrow {
   opacity: 1;
+}
+
+/* Cùng cách ẩn/hiện như .invite-btn: chỉ lộ ra khi hover hoặc khi focus bằng
+   bàn phím, để không có nút nào bị "khoá" ngoài tầm với của người dùng phím. */
+.group-hide-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  border: none;
+  background: none;
+  color: var(--color-text-tertiary);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.2rem;
+  border-radius: var(--radius-full);
+  opacity: 0;
+  transition: all 0.15s ease;
+}
+
+.group-item:hover .group-hide-btn,
+.group-hide-btn:focus-visible {
+  opacity: 1;
+}
+
+.group-hide-btn:hover {
+  background: var(--color-surface-hover-strong, var(--color-surface-hover));
+  color: var(--color-text);
+}
+
+.group-item.is-hidden .calendar-name,
+.group-item.is-hidden .group-icon,
+.group-item.is-hidden .color-dot {
+  opacity: 0.55;
+}
+
+/* Nhóm đã ẩn luôn hiện sẵn nút gỡ ẩn — hover mới thấy thì không có lối ra. */
+.group-item.is-hidden .group-hide-btn {
+  opacity: 0.75;
+}
+
+.hidden-groups {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hidden-groups-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: all 0.15s ease;
+}
+
+.hidden-groups-toggle:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+}
+
+.hidden-groups-caret {
+  font-size: 0.85rem;
 }
 
 .empty-groups-hint {

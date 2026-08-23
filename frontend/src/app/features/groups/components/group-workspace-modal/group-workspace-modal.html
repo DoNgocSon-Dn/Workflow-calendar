@@ -8,8 +8,84 @@
             <p class="group-desc">{{ group.description || 'Không gian làm việc nhóm' }}</p>
           </div>
         </div>
-        <button type="button" class="btn-close" (click)="close()" aria-label="Đóng">✕</button>
+        <div class="header-actions">
+          <button
+            type="button"
+            class="btn-header"
+            [title]="isHidden() ? 'Hiện lại nhóm trong sidebar' : 'Ẩn nhóm khỏi sidebar của riêng bạn'"
+            (click)="toggleHidden()"
+          >
+            <app-icon [name]="isHidden() ? 'eye' : 'eye-off'" />
+            {{ isHidden() ? 'Bỏ ẩn' : 'Ẩn nhóm' }}
+          </button>
+          @if (isOwner()) {
+            <button type="button" class="btn-header" (click)="startEditGroup()">
+              <app-icon name="pencil" />
+              Sửa
+            </button>
+            <button
+              type="button"
+              class="btn-header btn-header-danger"
+              [disabled]="deletingGroup()"
+              (click)="deleteGroup()"
+            >
+              <app-icon name="trash" />
+              {{ deletingGroup() ? 'Đang xóa…' : 'Xóa nhóm' }}
+            </button>
+          }
+          <button type="button" class="btn-close" (click)="close()" aria-label="Đóng">
+            <app-icon name="close" />
+          </button>
+        </div>
       </header>
+
+      @if (editingGroup()) {
+        <div class="group-edit-panel">
+          <h3>Sửa thông tin nhóm</h3>
+          <input
+            type="text"
+            class="text-input"
+            placeholder="Tên nhóm"
+            [value]="editName()"
+            (input)="editName.set($any($event.target).value)"
+          />
+          <input
+            type="text"
+            class="text-input"
+            placeholder="Mô tả nhóm (tuỳ chọn)"
+            [value]="editDescription()"
+            (input)="editDescription.set($any($event.target).value)"
+          />
+          <div class="color-picker" role="radiogroup" aria-label="Màu nhóm">
+            @for (c of groupColors; track c) {
+              <button
+                type="button"
+                class="color-swatch"
+                role="radio"
+                [class.selected]="editColor() === c"
+                [attr.aria-checked]="editColor() === c"
+                [attr.aria-label]="'Màu ' + c"
+                [style.background]="c"
+                (click)="editColor.set(c)"
+              ></button>
+            }
+          </div>
+          @if (groupError(); as err) {
+            <p class="error-msg">{{ err }}</p>
+          }
+          <div class="group-edit-actions">
+            <button type="button" class="btn btn-ghost" (click)="cancelEditGroup()">Hủy</button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="savingGroup()"
+              (click)="saveGroup()"
+            >
+              {{ savingGroup() ? 'Đang lưu…' : 'Lưu thay đổi' }}
+            </button>
+          </div>
+        </div>
+      }
 
       <!-- Workspace Navigation Tabs -->
       <nav class="workspace-tabs">
@@ -19,7 +95,7 @@
           [class.active]="activeTab() === 'tasks'"
           (click)="setTab('tasks')"
         >
-          <span class="tab-icon">✅</span> Quản lý Task
+          <app-icon class="tab-icon" name="check-square" /> Quản lý Task
           <span class="tab-badge">{{ store.tasks().length }}</span>
         </button>
         <button
@@ -28,7 +104,7 @@
           [class.active]="activeTab() === 'members'"
           (click)="setTab('members')"
         >
-          <span class="tab-icon">👥</span> Thành viên
+          <app-icon class="tab-icon" name="users" /> Thành viên
           <span class="tab-badge">{{ store.members().length }}</span>
         </button>
         <button
@@ -37,7 +113,7 @@
           [class.active]="activeTab() === 'chat'"
           (click)="setTab('chat')"
         >
-          <span class="tab-icon">💬</span> Trò chuyện
+          <app-icon class="tab-icon" name="message" /> Trò chuyện
           <span class="tab-badge">{{ store.messages().length }}</span>
         </button>
         <button
@@ -46,7 +122,7 @@
           [class.active]="activeTab() === 'calendar'"
           (click)="setTab('calendar')"
         >
-          <span class="tab-icon">📅</span> Lịch Nhóm
+          <app-icon class="tab-icon" name="calendar" /> Lịch Nhóm
         </button>
       </nav>
 
@@ -119,9 +195,9 @@
                         [disabled]="reassigningTaskId() === t.id"
                         (change)="reassignTask(t, $any($event.target).value)"
                       >
-                        <option value="">👤 Chưa giao</option>
+                        <option value="">Chưa giao</option>
                         @for (m of store.members(); track m.id) {
-                          <option [value]="m.userId">👤 {{ m.email || m.userId }}</option>
+                          <option [value]="m.userId">{{ m.email || m.userId }}</option>
                         }
                       </select>
                       <div class="task-actions">
@@ -130,14 +206,14 @@
                           class="action-badge in-progress"
                           (click)="setTaskStatus(t, 'in_progress')"
                         >
-                          → Đang làm
+                          <app-icon name="arrow-right" /> Đang làm
                         </button>
                         <button
                           type="button"
                           class="action-badge done"
                           (click)="setTaskStatus(t, 'done')"
                         >
-                          ✓ Xong
+                          <app-icon name="check" /> Xong
                         </button>
                       </div>
                     </div>
@@ -165,9 +241,9 @@
                         [disabled]="reassigningTaskId() === t.id"
                         (change)="reassignTask(t, $any($event.target).value)"
                       >
-                        <option value="">👤 Chưa giao</option>
+                        <option value="">Chưa giao</option>
                         @for (m of store.members(); track m.id) {
-                          <option [value]="m.userId">👤 {{ m.email || m.userId }}</option>
+                          <option [value]="m.userId">{{ m.email || m.userId }}</option>
                         }
                       </select>
                       <div class="task-actions">
@@ -176,14 +252,14 @@
                           class="action-badge todo"
                           (click)="setTaskStatus(t, 'todo')"
                         >
-                          ← Cần làm
+                          <app-icon name="arrow-left" /> Cần làm
                         </button>
                         <button
                           type="button"
                           class="action-badge done"
                           (click)="setTaskStatus(t, 'done')"
                         >
-                          ✓ Xong
+                          <app-icon name="check" /> Xong
                         </button>
                       </div>
                     </div>
@@ -203,7 +279,7 @@
                         <strong>{{ t.title }}</strong>
                       </div>
                       @if (t.assignedTo) {
-                        <p class="task-desc">👤 {{ assigneeEmail(t) }}</p>
+                        <p class="task-desc"><app-icon name="user" /> {{ assigneeEmail(t) }}</p>
                       }
                       <div class="task-actions">
                         <button
@@ -265,7 +341,7 @@
               @for (m of store.members(); track m.id) {
                 <div class="member-row">
                   <div class="member-info">
-                    <span class="user-avatar">👤</span>
+                    <span class="user-avatar"><app-icon name="user" /></span>
                     <div>
                       <strong>{{ m.email || m.userId }}</strong>
                       @if (isOwner() && m.role !== 'owner') {
@@ -335,7 +411,7 @@
                             </a>
                           } @else {
                             <a [href]="msg.attachmentUrl" target="_blank" rel="noopener" class="chat-attachment-file">
-                              📎 {{ msg.attachmentName || 'Tệp đính kèm' }}
+                              <app-icon name="paperclip" /> {{ msg.attachmentName || 'Tệp đính kèm' }}
                               @if (msg.attachmentSize) {
                                 <span class="attachment-size">({{ formatFileSize(msg.attachmentSize) }})</span>
                               }
@@ -352,10 +428,14 @@
                   @if (!msg.deletedAt && editingMessageId() !== msg.id && (canEditMessage(msg) || canDeleteMessage(msg))) {
                     <div class="chat-msg-actions">
                       @if (canEditMessage(msg)) {
-                        <button type="button" class="btn-icon" (click)="startEditMessage(msg)" aria-label="Sửa tin nhắn">✏️</button>
+                        <button type="button" class="btn-icon" (click)="startEditMessage(msg)" aria-label="Sửa tin nhắn">
+                          <app-icon name="pencil" />
+                        </button>
                       }
                       @if (canDeleteMessage(msg)) {
-                        <button type="button" class="btn-icon" (click)="deleteMessage(msg)" aria-label="Xóa tin nhắn">🗑️</button>
+                        <button type="button" class="btn-icon" (click)="deleteMessage(msg)" aria-label="Xóa tin nhắn">
+                          <app-icon name="trash" />
+                        </button>
                       }
                     </div>
                   }
@@ -366,7 +446,7 @@
             </div>
             @if (attachmentFile(); as f) {
               <div class="attachment-preview">
-                📎 {{ f.name }} ({{ formatFileSize(f.size) }})
+                <app-icon name="paperclip" /> {{ f.name }} ({{ formatFileSize(f.size) }})
                 <button type="button" class="btn-mini btn-mini-ghost" (click)="clearAttachment()">Bỏ</button>
               </div>
             }
@@ -375,7 +455,7 @@
             }
             <div class="chat-input-bar">
               <label class="btn-attach" title="Đính kèm file">
-                📎
+                <app-icon name="paperclip" />
                 <input type="file" class="file-input-hidden" (change)="onAttachmentSelected($event)" />
               </label>
               <input
@@ -406,7 +486,7 @@
         @if (activeTab() === 'calendar') {
           <div class="calendar-section">
             <div class="info-card">
-              <h3>📅 Lịch riêng của Nhóm</h3>
+              <h3><app-icon name="calendar" /> Lịch riêng của Nhóm</h3>
               <p>Mỗi nhóm làm việc tự động tích hợp 1 <strong>Lịch Nhóm</strong> tương ứng. Tất cả thành viên trong nhóm đều có quyền theo dõi và tạo sự kiện chung.</p>
               <p class="cal-id">ID Lịch: <code>{{ group.calendarId }}</code></p>
             </div>

@@ -42,7 +42,8 @@ export class PublicRespondController {
 
   @Get(':id/respond-via-email')
   @Header('Content-Type', 'text/html; charset=utf-8')
-  @Throttle({ 'respond-email': { limit: 10, ttl: 60_000 } })
+  // Endpoint công khai (không cần đăng nhập) nên siết chặt hơn mức chung.
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   async respondViaEmail(
     @Param('id') eventId: string,
     @Query('token') token?: string,

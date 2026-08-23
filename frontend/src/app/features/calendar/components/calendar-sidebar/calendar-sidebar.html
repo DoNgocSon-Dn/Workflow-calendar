@@ -34,8 +34,18 @@
         @for (g of displayGroups(); track g.id) {
           <div class="calendar-item group-item" (click)="onGroupClicked(g)" [title]="g.name">
             <span class="color-dot" [style.background]="g.color"></span>
-            <span class="calendar-name">👥 {{ g.name }}</span>
-            <span class="group-arrow">➔</span>
+            <app-icon class="group-icon" name="users" />
+            <span class="calendar-name">{{ g.name }}</span>
+            <button
+              type="button"
+              class="group-hide-btn"
+              [attr.aria-label]="'Ẩn nhóm ' + g.name"
+              title="Ẩn nhóm khỏi danh sách (tin nhắn mới sẽ tự hiện lại)"
+              (click)="onToggleGroupHidden($event, g)"
+            >
+              <app-icon name="eye-off" />
+            </button>
+            <app-icon class="group-arrow" name="chevron-right" />
           </div>
         } @empty {
           <div class="empty-groups-hint" (click)="createGroupClicked.emit()">
@@ -43,6 +53,42 @@
           </div>
         }
       </div>
+
+      @if (hiddenGroups().length > 0) {
+        <div class="hidden-groups">
+          <button
+            type="button"
+            class="hidden-groups-toggle"
+            [attr.aria-expanded]="hiddenSectionOpen()"
+            (click)="toggleHiddenSection()"
+          >
+            <app-icon
+              class="hidden-groups-caret"
+              [name]="hiddenSectionOpen() ? 'chevron-down' : 'chevron-right'"
+            />
+            Nhóm đã ẩn ({{ hiddenGroups().length }})
+          </button>
+
+          @if (hiddenSectionOpen()) {
+            @for (g of hiddenGroups(); track g.id) {
+              <div class="calendar-item group-item is-hidden" (click)="onGroupClicked(g)" [title]="g.name">
+                <span class="color-dot" [style.background]="g.color"></span>
+                <app-icon class="group-icon" name="users" />
+                <span class="calendar-name">{{ g.name }}</span>
+                <button
+                  type="button"
+                  class="group-hide-btn"
+                  [attr.aria-label]="'Hiện lại nhóm ' + g.name"
+                  title="Hiện lại nhóm"
+                  (click)="onToggleGroupHidden($event, g)"
+                >
+                  <app-icon name="eye" />
+                </button>
+              </div>
+            }
+          }
+        </div>
+      }
     </div>
 
     <!-- MY CALENDARS SECTION -->

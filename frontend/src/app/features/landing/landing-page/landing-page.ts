@@ -5,33 +5,14 @@ import {
   DestroyRef,
   ElementRef,
   NgZone,
+  OnInit,
   inject,
-  signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-interface Feature {
-  icon: string;
-  title: string;
-  description: string;
-}
-
-interface Stat {
-  value: number;
-  suffix: string;
-  label: string;
-}
-
-interface FaqItem {
-  question: string;
-  answer: string;
-}
-
-interface Step {
-  number: string;
-  title: string;
-  description: string;
-}
+gsap.registerPlugin(ScrollTrigger);
 
 @Component({
   selector: 'app-landing-page',
@@ -40,312 +21,309 @@ interface Step {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
 })
-export class LandingPage implements AfterViewInit {
+export class LandingPage implements OnInit, AfterViewInit {
   private readonly host = inject(ElementRef<HTMLElement>);
   private readonly destroyRef = inject(DestroyRef);
   private readonly zone = inject(NgZone);
-  private revealObserver: IntersectionObserver | null = null;
-  private navObserver: IntersectionObserver | null = null;
-  private statsObserver: IntersectionObserver | null = null;
 
-  protected readonly navScrolled = signal(false);
-
-  protected readonly features: Feature[] = [
-    {
-      icon: '📅',
-      title: 'Lịch cá nhân & nhiều lịch',
-      description:
-        'Tạo bao nhiêu lịch tùy thích, gắn màu riêng cho từng lịch, xem theo tuần/tháng/ngày/agenda và mời bạn bè cùng chỉnh sửa.',
-    },
-    {
-      icon: '👥',
-      title: 'Nhóm làm việc (Workspaces)',
-      description:
-        'Mỗi nhóm có lịch, bảng task Kanban và khung chat real-time riêng — mời thành viên, phân quyền owner/admin/member/guest chỉ trong vài giây.',
-    },
-    {
-      icon: '✨',
-      title: 'Trợ lý AI tích hợp',
-      description:
-        'Hỏi trợ lý AI ngay trong lịch để tạo sự kiện, tóm tắt lịch trình hoặc trả lời nhanh mà không cần rời khỏi màn hình.',
-    },
-    {
-      icon: '🏮',
-      title: 'Lịch âm & ngày lễ Việt Nam',
-      description:
-        'Ngày âm lịch hiển thị song song ngày dương trên mọi lưới lịch, kèm popup giới thiệu các ngày lễ lớn trong năm.',
-    },
-    {
-      icon: '🔔',
-      title: 'Nhắc nhở & lời mời',
-      description:
-        'Nhận thông báo nhắc việc đúng lúc, quản lý lời mời tham gia lịch/nhóm và không bao giờ bỏ lỡ sự kiện quan trọng.',
-    },
-    {
-      icon: '🎨',
-      title: '3 chủ đề màu',
-      description:
-        'Chọn màu nhấn Xanh dương, Xanh ngọc hoặc Tím — cộng thêm chế độ Sáng/Tối, đổi giao diện theo đúng gu của bạn.',
-    },
-  ];
-
-  /**
-   * Every number here is something the app actually ships — the labels spell
-   * out what is being counted so the figure can be checked against the product
-   * rather than taken on faith. Animated up from 0 on first scroll into view;
-   * see initCounters.
-   */
-  protected readonly stats: Stat[] = [
-    { value: 4, suffix: '', label: 'Chế độ xem: Ngày · Tuần · Tháng · Agenda' },
-    { value: 3, suffix: '', label: 'Chủ đề màu: Xanh dương · Xanh ngọc · Tím' },
-    { value: 2, suffix: '', label: 'Hệ lịch song song: Dương & Âm' },
-    { value: 4, suffix: '', label: 'Vai trò nhóm: Owner · Admin · Member · Guest' },
-  ];
-
-  protected readonly marqueeItems: string[] = [
-    'Lịch cá nhân',
-    'Nhóm làm việc',
-    'Trợ lý AI',
-    'Lịch âm Việt Nam',
-    'Bảng task Kanban',
-    'Chat real-time',
-    'Nhắc nhở thông minh',
-    'Import file lịch',
-  ];
-
-  protected readonly steps: Step[] = [
-    {
-      number: '01',
-      title: 'Đăng nhập không mật khẩu',
-      description: 'Chỉ cần Gmail hoặc email — không cần nhớ thêm một mật khẩu nào nữa.',
-    },
-    {
-      number: '02',
-      title: 'Tạo lịch & mời nhóm',
-      description: 'Dựng lịch cá nhân hoặc mở một Nhóm làm việc, mời đồng đội tham gia ngay.',
-    },
-    {
-      number: '03',
-      title: 'Cộng tác theo thời gian thực',
-      description: 'Task, chat và sự kiện đồng bộ tức thì cho mọi thành viên trong nhóm.',
-    },
-  ];
-
-  protected readonly faqs = signal<FaqItem[]>([
-    {
-      question: 'Tôi có thể dùng chung một lịch với người khác không?',
-      answer:
-        'Được. Bạn có thể mời người khác vào từng lịch riêng lẻ, hoặc mở một Nhóm làm việc để cả nhóm dùng chung lịch, bảng task và khung chat.',
-    },
-    {
-      question: 'Tôi có cần cài đặt phần mềm gì không?',
-      answer:
-        'Không. Workflow chạy hoàn toàn trên trình duyệt, hoạt động tốt trên cả máy tính lẫn điện thoại, không cần tải ứng dụng riêng.',
-    },
-    {
-      question: 'Dữ liệu lịch của tôi có an toàn không?',
-      answer:
-        'Có. Mỗi lịch và nhóm làm việc chỉ hiển thị cho đúng người bạn mời, và bạn có thể thu hồi quyền truy cập bất kỳ lúc nào.',
-    },
-    {
-      question: 'Tôi đang dùng lịch khác, chuyển sang Workflow có mất công không?',
-      answer:
-        'Không — Workflow hỗ trợ nhập (import) file lịch sẵn có, và sự kiện xoá nhầm vẫn nằm trong Thùng rác để khôi phục lại.',
-    },
-    {
-      question: 'Trợ lý AI hoạt động như thế nào?',
-      answer:
-        'Trợ lý AI nằm ngay trong màn hình lịch — chỉ cần mô tả việc cần làm bằng ngôn ngữ tự nhiên, AI sẽ giúp bạn tạo hoặc tra cứu sự kiện.',
-    },
-  ]);
-
-  protected readonly openFaqIndex = signal<number | null>(0);
   protected readonly currentYear = new Date().getFullYear();
 
-  toggleFaq(index: number): void {
-    this.openFaqIndex.update((current) => (current === index ? null : index));
+  ngOnInit(): void {
+    const savedTheme = localStorage.getItem('workflow-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
   }
 
-  /**
-   * In-page jump for the `#section` links.
-   *
-   * A bare `href="#features"` cannot be left to the browser here: changing the
-   * fragment updates the location, the Router picks that up as a navigation and
-   * tears down / rebuilds this component, so the click reads as a page reload
-   * instead of a scroll. Cancelling the default and scrolling ourselves keeps
-   * the href intact for middle-click and "copy link address" while never
-   * touching the URL.
-   */
+  toggleTheme(event: MouseEvent): void {
+    const btn = event.currentTarget as HTMLElement;
+    const root = document.documentElement;
+    const container = this.host.nativeElement.querySelector('.landing-container');
+
+    const currentTheme = container?.getAttribute('data-theme') || root.getAttribute('data-theme') || 'dark';
+    const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+    const r = btn.getBoundingClientRect();
+    const x = `${((r.left + r.width / 2) / window.innerWidth) * 100}%`;
+    const y = `${((r.top + r.height / 2) / window.innerHeight) * 100}%`;
+    root.style.setProperty('--tx', x);
+    root.style.setProperty('--ty', y);
+
+    const applyTheme = () => {
+      root.setAttribute('data-theme', nextTheme);
+      if (container) {
+        container.setAttribute('data-theme', nextTheme);
+      }
+      localStorage.setItem('workflow-theme', nextTheme);
+    };
+
+    if ((document as any).startViewTransition) {
+      (document as any).startViewTransition(applyTheme);
+    } else {
+      applyTheme();
+    }
+  }
+
   scrollToSection(event: Event, id: string): void {
-    const target = document.getElementById(id);
+    const target = this.host.nativeElement.querySelector(`#${id}`);
     if (!target) return;
     event.preventDefault();
     target.scrollIntoView({
-      behavior: this.prefersReducedMotion() ? 'auto' : 'smooth',
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
       block: 'start',
     });
   }
 
   ngAfterViewInit(): void {
-    this.initNavState();
-    this.initScrollReveal();
-    this.initCounters();
-    this.initCardSpotlight();
-    this.destroyRef.onDestroy(() => {
-      this.revealObserver?.disconnect();
-      this.navObserver?.disconnect();
-      this.statsObserver?.disconnect();
-    });
-  }
-
-  private prefersReducedMotion(): boolean {
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  }
-
-  /**
-   * Nav elevation is driven by a 1px sentinel leaving the viewport rather than
-   * a `window:scroll` host listener. A scroll listener would run Angular change
-   * detection on every scroll event — roughly 60x/second while scrolling, which
-   * is exactly the kind of cost a low-end machine feels. The observer fires
-   * twice instead: once on the way down, once on the way back up.
-   */
-  private initNavState(): void {
-    const sentinel = this.host.nativeElement.querySelector('.nav-sentinel');
-    if (!sentinel) return;
-
-    this.navObserver = new IntersectionObserver(
-      ([entry]) => this.navScrolled.set(!entry.isIntersecting),
-      { threshold: 0 },
-    );
-    this.navObserver.observe(sentinel);
-  }
-
-  /**
-   * Scroll-triggered reveal for everything below the hero (which animates
-   * on load instead). Reduced-motion users just see every section already
-   * in place — no observer needed for them.
-   */
-  private initScrollReveal(): void {
-    if (this.prefersReducedMotion()) return;
-
-    const targets = this.host.nativeElement.querySelectorAll('[data-reveal]') as NodeListOf<HTMLElement>;
-    if (!targets.length) return;
-
-    this.revealObserver = new IntersectionObserver(
-      (entries, observer) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          entry.target.classList.add('is-revealed');
-          observer.unobserve(entry.target);
-        }
-      },
-      { threshold: 0.15, rootMargin: '0px 0px -40px 0px' },
-    );
-
-    targets.forEach((el) => this.revealObserver!.observe(el));
-  }
-
-  /**
-   * Counts each stat up from 0 the first time the band scrolls into view.
-   * Writes `textContent` directly from outside the zone: the template already
-   * renders the final value, so this is a purely decorative overlay on top of
-   * correct markup — running ~60 change-detection passes per second for a
-   * second of eye candy would be a bad trade on a slow machine.
-   */
-  private initCounters(): void {
-    if (this.prefersReducedMotion()) return;
-
-    const band = this.host.nativeElement.querySelector('.stats');
-    const values = this.host.nativeElement.querySelectorAll('.stat-value') as NodeListOf<HTMLElement>;
-    if (!band || !values.length) return;
-
-    this.statsObserver = new IntersectionObserver(
-      (entries, observer) => {
-        if (!entries[0]?.isIntersecting) return;
-        observer.disconnect();
-        this.zone.runOutsideAngular(() => values.forEach((el) => this.countUp(el)));
-      },
-      { threshold: 0.4 },
-    );
-    this.statsObserver.observe(band);
-  }
-
-  private countUp(el: HTMLElement): void {
-    const target = Number(el.dataset['target'] ?? 0);
-    const suffix = el.dataset['suffix'] ?? '';
-    const DURATION = 1100;
-    let start = 0;
-    let settled = false;
-
-    const settle = (): void => {
-      settled = true;
-      el.textContent = `${target}${suffix}`;
-    };
-
-    const step = (now: number): void => {
-      if (settled) return;
-      if (!start) start = now;
-      const progress = Math.min((now - start) / DURATION, 1);
-      if (progress >= 1) {
-        settle();
-        return;
-      }
-      // easeOutCubic — fast out of the gate, settles gently on the final number.
-      const eased = 1 - Math.pow(1 - progress, 3);
-      el.textContent = `${Math.round(target * eased)}${suffix}`;
-      requestAnimationFrame(step);
-    };
-
-    el.textContent = `0${suffix}`;
-    requestAnimationFrame(step);
-
-    // Safety net: rAF stops entirely in a hidden tab and can be starved on a
-    // busy machine, which would strand the number partway up. The timer runs
-    // on a different clock, so the correct figure always lands even if not a
-    // single animation frame is delivered. The animation is the bonus here —
-    // the right number is the requirement.
-    const guard = setTimeout(settle, DURATION + 500);
-    this.destroyRef.onDestroy(() => clearTimeout(guard));
-  }
-
-  /**
-   * Cursor-following glow on the feature cards. One delegated listener for the
-   * whole grid (not six), registered outside the zone so pointer movement never
-   * triggers change detection, and coalesced to one write per animation frame
-   * so a fast mouse can't queue up more work than the screen can show.
-   */
-  private initCardSpotlight(): void {
-    if (this.prefersReducedMotion() || !window.matchMedia('(hover: hover)').matches) return;
-
-    const grid = this.host.nativeElement.querySelector('.feature-grid') as HTMLElement | null;
-    if (!grid) return;
+    const savedTheme = localStorage.getItem('workflow-theme') || 'dark';
+    const container = this.host.nativeElement.querySelector('.landing-container');
+    if (container) {
+      container.setAttribute('data-theme', savedTheme);
+    }
 
     this.zone.runOutsideAngular(() => {
-      let pending: PointerEvent | null = null;
-      let frame = 0;
+      const ctx = gsap.context(() => {
+        this.initPreloader();
+        this.initScrollProgress();
+        this.initHeroParticles();
+        this.initScrollAnimations();
+        this.initCursorAndInteractiveEffects();
+      }, this.host.nativeElement);
 
-      const flush = (): void => {
-        frame = 0;
-        const event = pending;
-        pending = null;
-        if (!event) return;
-        const card = (event.target as HTMLElement).closest('.feature-card') as HTMLElement | null;
-        if (!card) return;
-        const rect = card.getBoundingClientRect();
-        card.style.setProperty('--mx', `${event.clientX - rect.left}px`);
-        card.style.setProperty('--my', `${event.clientY - rect.top}px`);
-      };
-
-      const onMove = (event: PointerEvent): void => {
-        pending = event;
-        if (!frame) frame = requestAnimationFrame(flush);
-      };
-
-      grid.addEventListener('pointermove', onMove, { passive: true });
       this.destroyRef.onDestroy(() => {
-        grid.removeEventListener('pointermove', onMove);
-        if (frame) cancelAnimationFrame(frame);
+        ctx.revert();
       });
     });
+  }
+
+  private initPreloader(): void {
+    const root = document.documentElement;
+    root.classList.add('is-loading');
+
+    const preloader = this.host.nativeElement.querySelector('#preloader') as HTMLElement | null;
+    const word = this.host.nativeElement.querySelector('#preloaderWord') as HTMLElement | null;
+    const mark = this.host.nativeElement.querySelector('#preloaderMark') as HTMLElement | null;
+    const panelLeft = this.host.nativeElement.querySelector('.preloader-panel.left') as HTMLElement | null;
+    const panelRight = this.host.nativeElement.querySelector('.preloader-panel.right') as HTMLElement | null;
+
+    if (!preloader || !word || !mark || !panelLeft || !panelRight) {
+      root.classList.remove('is-loading');
+      this.playHeroIntro();
+      return;
+    }
+
+    const LETTER_REVEAL_DONE = 900;
+    const WORD_HOLD = 500;
+    const MARK_HOLD = 550;
+
+    const finishPreloader = () => {
+      preloader.style.transition = 'opacity .5s ease';
+      preloader.style.opacity = '0';
+
+      setTimeout(() => {
+        panelLeft.style.transition = 'transform .9s cubic-bezier(.65,0,.35,1)';
+        panelRight.style.transition = 'transform .9s cubic-bezier(.65,0,.35,1)';
+        panelLeft.style.transform = 'translateX(-100%)';
+        panelRight.style.transform = 'translateX(100%)';
+
+        setTimeout(() => {
+          preloader.style.display = 'none';
+          panelLeft.style.display = 'none';
+          panelRight.style.display = 'none';
+          root.classList.remove('is-loading');
+          ScrollTrigger.refresh();
+          this.playHeroIntro();
+        }, 950);
+      }, 480);
+    };
+
+    setTimeout(() => {
+      word.classList.add('hide');
+      mark.classList.add('show');
+      setTimeout(finishPreloader, 550 + MARK_HOLD);
+    }, LETTER_REVEAL_DONE + WORD_HOLD);
+  }
+
+  private playHeroIntro(): void {
+    gsap
+      .timeline({ defaults: { ease: 'power3.out' } })
+      .to(this.host.nativeElement.querySelector('.hero-eyebrow'), { opacity: 1, y: 0, duration: 0.8 }, 0)
+      .to(this.host.nativeElement.querySelectorAll('.hero h1 .line span'), { y: '0%', duration: 1, stagger: 0.12 }, 0.08)
+      .to(this.host.nativeElement.querySelector('.hero-sub'), { opacity: 1, duration: 0.9 }, 0.6)
+      .to(this.host.nativeElement.querySelector('.hero-cta'), { opacity: 1, duration: 0.9 }, 0.75);
+  }
+
+  private initScrollProgress(): void {
+    const bar = this.host.nativeElement.querySelector('#scrollProgress') as HTMLElement | null;
+    if (!bar) return;
+
+    const updateProgress = () => {
+      const h = document.documentElement;
+      const scrollTop = window.scrollY || h.scrollTop;
+      const scrollHeight = h.scrollHeight - h.clientHeight;
+      const pct = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+      bar.style.width = `${pct}%`;
+    };
+
+    window.addEventListener('scroll', updateProgress, { passive: true });
+    updateProgress();
+  }
+
+  private initHeroParticles(): void {
+    const hero = this.host.nativeElement.querySelector('.hero') as HTMLElement | null;
+    if (!hero) return;
+
+    const COUNT = 16;
+    for (let i = 0; i < COUNT; i++) {
+      const p = document.createElement('span');
+      p.className = 'particle';
+      const size = 2 + Math.random() * 3;
+      p.style.width = `${size}px`;
+      p.style.height = `${size}px`;
+      p.style.left = `${Math.random() * 100}%`;
+      p.style.top = `${55 + Math.random() * 40}%`;
+      p.style.setProperty('--drift', `${Math.random() * 40 - 20}px`);
+      p.style.animationDuration = `${6 + Math.random() * 6}s`;
+      p.style.animationDelay = `${Math.random() * 6}s`;
+      hero.appendChild(p);
+    }
+  }
+
+  private initScrollAnimations(): void {
+    const orb = this.host.nativeElement.querySelector('.orb');
+    if (orb) {
+      gsap.to(orb, { scale: 1.15, duration: 6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+    }
+
+    const gridRings = this.host.nativeElement.querySelectorAll('.grid-ring');
+    if (gridRings.length) {
+      gsap.to(gridRings, { rotate: 360, duration: 40, repeat: -1, ease: 'none', transformOrigin: 'center center' });
+    }
+
+    const heroOrb = this.host.nativeElement.querySelector('.hero .orb');
+    if (heroOrb) {
+      gsap.to(heroOrb, {
+        y: 150,
+        opacity: 0,
+        scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true },
+      });
+    }
+
+    this.host.nativeElement.querySelectorAll('.reveal').forEach((el: Element) => {
+      gsap.to(el, {
+        opacity: 1,
+        y: 0,
+        duration: 1,
+        ease: 'power3.out',
+        scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none reverse' },
+      });
+    });
+
+    this.host.nativeElement.querySelectorAll('.feature-visual').forEach((el: Element) => {
+      gsap.fromTo(
+        el,
+        { scale: 0.92 },
+        {
+          scale: 1,
+          duration: 1.2,
+          ease: 'power2.out',
+          scrollTrigger: { trigger: el, start: 'top 80%', toggleActions: 'play none none reverse' },
+        }
+      );
+    });
+
+    this.host.nativeElement.querySelectorAll('.section-title').forEach((title: Element) => {
+      const original = title.innerHTML;
+      const words = original.split(/(<span[^>]*>.*?<\/span>|\s+)/).filter(Boolean);
+      title.innerHTML = words
+        .map((w: string) => {
+          if (/^\s+$/.test(w)) return w;
+          return `<span class="word-mask" style="display:inline-block; overflow:visible; vertical-align:top; padding-top:0.12em; padding-bottom:0.12em;"><span class="word-inner" style="display:inline-block; transform:translateY(115%);">${w}</span></span>`;
+        })
+        .join('');
+
+      gsap.to(title.querySelectorAll('.word-inner'), {
+        y: '0%',
+        duration: 0.9,
+        ease: 'power3.out',
+        stagger: 0.045,
+        scrollTrigger: { trigger: title, start: 'top 85%', toggleActions: 'play none none reverse' },
+      });
+    });
+
+    const marquee = this.host.nativeElement.querySelector('.marquee') as HTMLElement | null;
+    if (marquee) {
+      marquee.addEventListener('mouseenter', () => (marquee.style.animationPlayState = 'paused'));
+      marquee.addEventListener('mouseleave', () => (marquee.style.animationPlayState = 'running'));
+    }
+  }
+
+  private initCursorAndInteractiveEffects(): void {
+    if (!window.matchMedia('(pointer:fine)').matches) return;
+
+    const dot = this.host.nativeElement.querySelector('#cursorDot') as HTMLElement | null;
+    const ring = this.host.nativeElement.querySelector('#cursorRing') as HTMLElement | null;
+    if (!dot || !ring) return;
+
+    const moveDot = gsap.quickTo(dot, 'x', { duration: 0.12, ease: 'power3.out' });
+    const moveDotY = gsap.quickTo(dot, 'y', { duration: 0.12, ease: 'power3.out' });
+    const moveRing = gsap.quickTo(ring, 'x', { duration: 0.4, ease: 'power3.out' });
+    const moveRingY = gsap.quickTo(ring, 'y', { duration: 0.4, ease: 'power3.out' });
+
+    window.addEventListener('mousemove', (e: MouseEvent) => {
+      moveDot(e.clientX);
+      moveDotY(e.clientY);
+      moveRing(e.clientX);
+      moveRingY(e.clientY);
+    });
+
+    this.host.nativeElement
+      .querySelectorAll('a, button, .gallery-card, .feature-visual, .theme-toggle')
+      .forEach((el: Element) => {
+        el.addEventListener('mouseenter', () => ring.classList.add('hovered'));
+        el.addEventListener('mouseleave', () => ring.classList.remove('hovered'));
+      });
+
+    this.host.nativeElement.querySelectorAll('.btn-primary, .btn-ghost, .nav-cta').forEach((btn: Element) => {
+      btn.addEventListener('mousemove', (e: Event) => {
+        const mouseEvt = e as MouseEvent;
+        const r = (btn as HTMLElement).getBoundingClientRect();
+        const x = (mouseEvt.clientX - r.left - r.width / 2) * 0.35;
+        const y = (mouseEvt.clientY - r.top - r.height / 2) * 0.5;
+        gsap.to(btn, { x, y, duration: 0.35, ease: 'power3.out' });
+      });
+      btn.addEventListener('mouseleave', () => {
+        gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: 'elastic.out(1,0.4)' });
+      });
+    });
+
+    this.host.nativeElement.querySelectorAll('.gallery-card, .feature-visual').forEach((card: Element) => {
+      const cardEl = card as HTMLElement;
+      cardEl.style.transformStyle = 'preserve-3d';
+      cardEl.addEventListener('mousemove', (e: Event) => {
+        const mouseEvt = e as MouseEvent;
+        const r = cardEl.getBoundingClientRect();
+        const px = (mouseEvt.clientX - r.left) / r.width - 0.5;
+        const py = (mouseEvt.clientY - r.top) / r.height - 0.5;
+        gsap.to(cardEl, {
+          rotateY: px * 8,
+          rotateX: -py * 8,
+          scale: 1.015,
+          transformPerspective: 900,
+          duration: 0.5,
+          ease: 'power2.out',
+        });
+      });
+      cardEl.addEventListener('mouseleave', () => {
+        gsap.to(cardEl, { rotateY: 0, rotateX: 0, scale: 1, duration: 0.6, ease: 'power3.out' });
+      });
+    });
+
+    const heroOrb = this.host.nativeElement.querySelector('.hero .orb');
+    if (heroOrb) {
+      window.addEventListener('mousemove', (e: MouseEvent) => {
+        const cx = (e.clientX / window.innerWidth - 0.5) * 40;
+        const cy = (e.clientY / window.innerHeight - 0.5) * 40;
+        gsap.to(heroOrb, { x: cx, y: cy, duration: 1, ease: 'power2.out' });
+      });
+    }
   }
 }

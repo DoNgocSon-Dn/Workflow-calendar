@@ -1,11 +1,21 @@
+export type GroupColor = 'blue' | 'green' | 'orange' | 'red' | 'purple' | 'teal';
+
 export interface Group {
   id: string;
   name: string;
   description?: string;
-  color: 'blue' | 'green' | 'orange' | 'red' | 'purple' | 'teal';
+  color: GroupColor;
   ownerId: string;
   calendarId: string;
   createdAt: string;
+  /** Người này đã ẩn nhóm khỏi sidebar của mình — không ảnh hưởng người khác. */
+  hidden?: boolean;
+}
+
+export interface GroupUpdate {
+  name?: string;
+  description?: string;
+  color?: GroupColor;
 }
 
 export interface GroupMember {

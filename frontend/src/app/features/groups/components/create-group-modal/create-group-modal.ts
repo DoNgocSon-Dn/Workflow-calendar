@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { GroupStore } from '../../data/group-store';
+import { Icon } from '../../../../shared/components/icon/icon';
 
 type GroupColor = 'blue' | 'green' | 'orange' | 'red' | 'purple' | 'teal';
 
@@ -33,6 +34,7 @@ const COLORS: GroupColor[] = ['blue', 'green', 'orange', 'red', 'purple', 'teal'
   templateUrl: './create-group-modal.html',
   styleUrl: './create-group-modal.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [Icon],
 })
 export class CreateGroupModal {
   private readonly groupStore = inject(GroupStore);

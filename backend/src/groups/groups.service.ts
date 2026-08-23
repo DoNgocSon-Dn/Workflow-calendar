@@ -9,6 +9,8 @@ import {
 import { SupabaseClient, User } from '@supabase/supabase-js';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { CreateGroupDto } from './dto/create-group.dto';
+import { UpdateGroupDto } from './dto/update-group.dto';
+import { SetGroupHiddenDto } from './dto/set-group-hidden.dto';
 import { InviteGroupMemberDto } from './dto/invite-group-member.dto';
 import { UpdateGroupMemberRoleDto } from './dto/update-group-member-role.dto';
 import { CreateGroupTaskDto } from './dto/create-group-task.dto';
@@ -24,6 +26,8 @@ export interface GroupDto {
   ownerId: string;
   calendarId: string;
   createdAt: string;
+  /** Ẩn/hiện là trạng thái riêng của người đang gọi, không phải của cả nhóm. */
+  hidden?: boolean;
 }
 
 export interface GroupMemberDto {
@@ -87,6 +91,68 @@ export class GroupsService {
     }
   }
 
+  // Các room "calendar:" chỉ có người đang MỞ nhóm, nên không dùng được cho
+  // những thay đổi phải tới cả người chỉ đang nhìn sidebar (đổi tên, xoá nhóm,
+  // gỡ ẩn). Những sự kiện đó bắn thẳng vào room riêng của từng thành viên.
+  private async emitToGroupMembers(
+    supabase: SupabaseClient,
+    groupId: string,
+    event: string,
+    payload: unknown,
+    userIds?: string[],
+  ): Promise<void> {
+    const targets =
+      userIds ?? (await this.listMemberUserIds(supabase, groupId));
+    for (const userId of targets) {
+      this.realtimeGateway.emitToUser(userId, event, payload);
+    }
+  }
+
+  private async listMemberUserIds(
+    supabase: SupabaseClient,
+    groupId: string,
+  ): Promise<string[]> {
+    const { data } = await supabase
+      .from('group_members')
+      .select('user_id')
+      .eq('group_id', groupId);
+
+    return (data || []).map((m: { user_id: string }) => m.user_id);
+  }
+
+  private mapGroupRow(row: any, hidden?: boolean): GroupDto {
+    return {
+      id: row.id,
+      name: row.name,
+      description: row.description ?? undefined,
+      color: row.color,
+      ownerId: row.owner_id,
+      calendarId: row.calendar_id,
+      createdAt: row.created_at,
+      hidden,
+    };
+  }
+
+  private async assertOwner(
+    supabase: SupabaseClient,
+    user: User,
+    groupId: string,
+  ): Promise<{ owner_id: string; calendar_id: string | null }> {
+    const { data: group, error } = await supabase
+      .from('groups')
+      .select('owner_id, calendar_id')
+      .eq('id', groupId)
+      .maybeSingle<{ owner_id: string; calendar_id: string | null }>();
+
+    if (error || !group) throw new NotFoundException('Không tìm thấy nhóm');
+    if (group.owner_id !== user.id) {
+      throw new ForbiddenException(
+        'Chỉ người tạo nhóm mới có quyền thực hiện thao tác này',
+      );
+    }
+    return group;
+  }
+
   private mapMessageRow(row: any): GroupMessageDto {
     return {
       id: row.id,
@@ -104,10 +170,14 @@ export class GroupsService {
     };
   }
 
-  private mapMessageRpcError(error: { message?: string } | null | undefined): Error {
+  private mapMessageRpcError(
+    error: { message?: string } | null | undefined,
+  ): Error {
     const msg = error?.message || '';
     if (msg.includes('not authorized')) {
-      return new ForbiddenException('Bạn không có quyền thực hiện thao tác này');
+      return new ForbiddenException(
+        'Bạn không có quyền thực hiện thao tác này',
+      );
     }
     if (msg.includes('not found')) {
       return new NotFoundException('Không tìm thấy tin nhắn');
@@ -193,13 +263,17 @@ export class GroupsService {
     // Find group IDs where user is member
     const { data: memberships, error: memErr } = await supabase
       .from('group_members')
-      .select('group_id')
+      .select('group_id, hidden_at')
       .eq('user_id', user.id);
 
     if (memErr) throw new InternalServerErrorException(memErr.message);
 
     const groupIds = (memberships || []).map((m) => m.group_id);
     if (groupIds.length === 0) return [];
+
+    const hiddenGroupIds = new Set(
+      (memberships || []).filter((m) => m.hidden_at).map((m) => m.group_id),
+    );
 
     const { data: groups, error: groupErr } = await supabase
       .from('groups')
@@ -209,18 +283,132 @@ export class GroupsService {
 
     if (groupErr) throw new InternalServerErrorException(groupErr.message);
 
-    return (groups || []).map((g) => ({
-      id: g.id,
-      name: g.name,
-      description: g.description,
-      color: g.color,
-      ownerId: g.owner_id,
-      calendarId: g.calendar_id,
-      createdAt: g.created_at,
-    }));
+    // Nhóm đã ẩn vẫn trả về — client cần chúng để dựng mục "Nhóm đã ẩn", và để
+    // gỡ ẩn tại chỗ khi có tin nhắn mới mà không phải gọi lại API.
+    return (groups || []).map((g) =>
+      this.mapGroupRow(g, hiddenGroupIds.has(g.id)),
+    );
   }
 
-  async findOne(supabase: SupabaseClient, groupId: string): Promise<{
+  async updateGroup(
+    supabase: SupabaseClient,
+    user: User,
+    groupId: string,
+    dto: UpdateGroupDto,
+  ): Promise<GroupDto> {
+    const existing = await this.assertOwner(supabase, user, groupId);
+
+    const updateData: Record<string, unknown> = {};
+    if (dto.name !== undefined) updateData.name = dto.name.trim();
+    if (dto.description !== undefined)
+      updateData.description = dto.description.trim() || null;
+    if (dto.color !== undefined) updateData.color = dto.color;
+
+    if (Object.keys(updateData).length === 0) {
+      throw new BadRequestException('Không có thông tin nào để cập nhật');
+    }
+
+    const { data, error } = await supabase
+      .from('groups')
+      .update(updateData)
+      .eq('id', groupId)
+      .select('*')
+      .single();
+
+    if (error || !data) {
+      throw new InternalServerErrorException(
+        error?.message || 'Không thể cập nhật nhóm',
+      );
+    }
+
+    // Lịch nhóm được đặt tên theo nhóm lúc tạo, nên đổi tên/màu nhóm phải kéo
+    // theo lịch — nếu không, sidebar sẽ hiện tên nhóm mới cạnh lịch tên cũ.
+    if (
+      existing.calendar_id &&
+      (dto.name !== undefined || dto.color !== undefined)
+    ) {
+      const calendarUpdate: Record<string, unknown> = {};
+      if (dto.name !== undefined)
+        calendarUpdate.name = `${data.name} (Lịch nhóm)`;
+      if (dto.color !== undefined) calendarUpdate.color = dto.color;
+      await supabase
+        .from('calendars')
+        .update(calendarUpdate)
+        .eq('id', existing.calendar_id);
+    }
+
+    const groupDto = this.mapGroupRow(data);
+    await this.emitToGroupMembers(supabase, groupId, 'group:updated', {
+      group: groupDto,
+    });
+
+    return groupDto;
+  }
+
+  async deleteGroup(
+    supabase: SupabaseClient,
+    user: User,
+    groupId: string,
+  ): Promise<void> {
+    const group = await this.assertOwner(supabase, user, groupId);
+
+    // Lấy danh sách thành viên TRƯỚC khi xoá — group_members cascade theo nhóm
+    // nên sau lệnh delete thì không còn ai để bắn realtime tới.
+    const memberIds = await this.listMemberUserIds(supabase, groupId);
+
+    const { error } = await supabase.from('groups').delete().eq('id', groupId);
+    if (error) {
+      throw new InternalServerErrorException(
+        error.message || 'Không thể xóa nhóm',
+      );
+    }
+
+    // group_tasks/group_messages/group_members đi theo cascade của groups; lịch
+    // nhóm thì không (calendar_id là "on delete set null") nên phải xoá tay,
+    // kéo theo events + calendar_members của lịch đó qua cascade của calendars.
+    if (group.calendar_id) {
+      await supabase.from('calendars').delete().eq('id', group.calendar_id);
+    }
+
+    await this.emitToGroupMembers(
+      supabase,
+      groupId,
+      'group:deleted',
+      { groupId, calendarId: group.calendar_id },
+      memberIds,
+    );
+  }
+
+  async setHidden(
+    supabase: SupabaseClient,
+    groupId: string,
+    dto: SetGroupHiddenDto,
+  ): Promise<{ groupId: string; hidden: boolean }> {
+    const { error } = await supabase.rpc('set_group_hidden', {
+      p_group_id: groupId,
+      p_hidden: dto.hidden,
+    });
+
+    if (error) {
+      const msg = error.message || '';
+      if (msg.includes('not authorized')) {
+        throw new ForbiddenException('Bạn không phải thành viên của nhóm này');
+      }
+      if (msg.includes('not found')) {
+        throw new NotFoundException('Không tìm thấy nhóm');
+      }
+      throw new InternalServerErrorException(
+        msg || 'Không thể cập nhật trạng thái hiển thị nhóm',
+      );
+    }
+
+    return { groupId, hidden: dto.hidden };
+  }
+
+  async findOne(
+    supabase: SupabaseClient,
+    groupId: string,
+  ): Promise<{
     group: GroupDto;
     members: GroupMemberDto[];
   }> {
@@ -240,15 +428,7 @@ export class GroupsService {
     if (memErr) throw new InternalServerErrorException(memErr.message);
 
     return {
-      group: {
-        id: group.id,
-        name: group.name,
-        description: group.description,
-        color: group.color,
-        ownerId: group.owner_id,
-        calendarId: group.calendar_id,
-        createdAt: group.created_at,
-      },
+      group: this.mapGroupRow(group),
       members: (members || []).map((m) => ({
         id: m.id,
         groupId: m.group_id,
@@ -346,7 +526,9 @@ export class GroupsService {
 
     if (groupErr || !group) throw new NotFoundException('Không tìm thấy nhóm');
     if (group.owner_id !== requester.id) {
-      throw new ForbiddenException('Chỉ chủ nhóm mới có quyền phân quyền thành viên');
+      throw new ForbiddenException(
+        'Chỉ chủ nhóm mới có quyền phân quyền thành viên',
+      );
     }
     if (targetUserId === group.owner_id) {
       throw new ConflictException('Không thể đổi quyền của chủ nhóm');
@@ -362,7 +544,8 @@ export class GroupsService {
 
     if (error || !updated) {
       throw new InternalServerErrorException(
-        error?.message || 'Không thể cập nhật quyền thành viên (có thể người này chưa ở trong nhóm)',
+        error?.message ||
+          'Không thể cập nhật quyền thành viên (có thể người này chưa ở trong nhóm)',
       );
     }
 
@@ -382,10 +565,14 @@ export class GroupsService {
       createdAt: updated.created_at,
     };
 
-    this.realtimeGateway.emitToCalendar(group.calendar_id, 'group:memberRoleChanged', {
-      groupId,
-      member: memberDto,
-    });
+    this.realtimeGateway.emitToCalendar(
+      group.calendar_id,
+      'group:memberRoleChanged',
+      {
+        groupId,
+        member: memberDto,
+      },
+    );
 
     return memberDto;
   }
@@ -463,7 +650,9 @@ export class GroupsService {
       .single();
 
     if (error || !data) {
-      throw new InternalServerErrorException(error?.message || 'Không thể tạo task');
+      throw new InternalServerErrorException(
+        error?.message || 'Không thể tạo task',
+      );
     }
 
     const taskDto: GroupTaskDto = {
@@ -558,6 +747,18 @@ export class GroupsService {
       throw new BadRequestException('Tin nhắn không được để trống');
     }
 
+    // Phải đọc trước khi insert: trigger group_messages_unhide xoá sạch hidden_at
+    // ngay khi tin nhắn được ghi, nên sau đó không còn biết ai vừa được gỡ ẩn.
+    const { data: hiddenRows } = await supabase.rpc(
+      'list_group_hidden_members',
+      {
+        p_group_id: groupId,
+      },
+    );
+    const unhiddenUserIds = ((hiddenRows || []) as { user_id: string }[]).map(
+      (r) => r.user_id,
+    );
+
     const { data, error } = await supabase
       .from('group_messages')
       .insert({
@@ -587,6 +788,18 @@ export class GroupsService {
       groupId,
       message: msgDto,
     });
+
+    // Người đang ẩn nhóm không ở trong room "calendar:" (họ chưa mở nhóm), nên
+    // sự kiện gỡ ẩn phải đi thẳng vào room riêng của họ.
+    if (unhiddenUserIds.length > 0) {
+      await this.emitToGroupMembers(
+        supabase,
+        groupId,
+        'group:unhidden',
+        { groupId },
+        unhiddenUserIds,
+      );
+    }
 
     return msgDto;
   }

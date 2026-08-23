@@ -83,6 +83,9 @@
 
 .btn-close {
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   color: #94a3b8;
@@ -299,6 +302,9 @@
 }
 
 .task-desc {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 0.8rem;
   color: #94a3b8;
   margin: 4px 0 8px 0;
@@ -311,6 +317,9 @@
 }
 
 .action-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.75rem;
   padding: 3px 8px;
   border-radius: 4px;
@@ -384,6 +393,7 @@
 }
 
 .user-avatar {
+  color: #94a3b8;
   width: 30px;
   height: 30px;
   border-radius: 50%;
@@ -527,6 +537,9 @@
 }
 
 .btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   cursor: pointer;
@@ -696,6 +709,9 @@
 }
 
 .info-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0 0 10px 0;
   font-size: 1rem;
   color: #f8fafc;
@@ -765,10 +781,123 @@
   box-shadow: none;
 }
 
+.btn-ghost {
+  background: transparent;
+  border: 1px solid #334155;
+  color: #cbd5e1;
+}
+.btn-ghost:hover:not(:disabled) {
+  background: #262830;
+  color: #f1f5f9;
+}
+
 .error-msg {
   color: #ef4444;
   font-size: 0.85rem;
   margin-top: 6px;
+}
+
+/* Group manage (header actions + edit panel) */
+.header-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  font-size: 0.78rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-header:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+}
+
+.btn-header:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn-header-danger {
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.btn-header-danger:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.16);
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.6);
+}
+
+.group-edit-panel {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 24px;
+  background: rgba(0, 0, 0, 0.22);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.group-edit-panel h3 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.color-picker {
+  display: flex;
+  gap: 8px;
+}
+
+.color-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.color-swatch:hover {
+  transform: scale(1.1);
+}
+
+.color-swatch.selected {
+  border-color: #f8fafc;
+  box-shadow: 0 0 0 2px rgba(248, 250, 252, 0.25);
+}
+
+.group-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .modal-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
 
 @keyframes fadeInBackdrop {

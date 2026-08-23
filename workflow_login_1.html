@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="vi" class="is-loading">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đăng nhập — Workflow</title>
+<style>
+  :root{
+    --bg: #060608;
+    --bg-2: #0d0d10;
+    --ink: #f6f5f1;
+    --ink-dim: #8b8a86;
+    --accent: #0668E1;
+    --accent-2: #0081FB;
+    --accent-ink: #ffffff;
+    --accent-dim: rgba(6,104,225,0.2);
+    --line: rgba(246,245,241,0.13);
+    --card: #131317;
+    --danger: #ff5c5c;
+  }
+  html[data-theme="light"]{
+    --bg: #ffffff;
+    --bg-2: #f1f2f5;
+    --ink: #101216;
+    --ink-dim: #5b5f68;
+    --accent: #0668E1;
+    --accent-2: #0081FB;
+    --accent-ink: #ffffff;
+    --accent-dim: rgba(6,104,225,0.10);
+    --line: rgba(16,18,22,0.13);
+    --card: #f7f8fa;
+    --danger: #d92c2c;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{background:var(--bg);}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:-apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+    min-height:100vh; overflow-x:hidden; -webkit-font-smoothing:antialiased;
+    transition: background .4s ease, color .4s ease;
+  }
+  ::selection{background:var(--accent); color:#fff;}
+
+  .noise{
+    position:fixed; inset:0; pointer-events:none; z-index:1; opacity:.035; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ---------------- PRELOADER (vòng xoay + logo đập nhịp, mở màn kiểu iris thu nhỏ) ---------------- */
+  html.is-loading, html.is-loading body{overflow:hidden; height:100%;}
+  #preloader{
+    position:fixed; inset:0; z-index:9999; background:var(--bg);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px;
+    clip-path: circle(150% at 50% 50%);
+    transition: clip-path .85s cubic-bezier(.76,0,.24,1);
+  }
+  #preloader.exit{ clip-path: circle(0% at 50% 50%); }
+  .preloader-spinner{
+    position:relative; width:84px; height:84px; display:flex; align-items:center; justify-content:center;
+  }
+  .spinner-ring{
+    position:absolute; inset:0; border-radius:50%;
+    border:2px solid var(--line);
+    border-top-color:var(--accent);
+    border-right-color:var(--accent-2);
+    animation:spinRing .9s cubic-bezier(.5,0,.5,1) infinite;
+  }
+  @keyframes spinRing{ to{ transform:rotate(360deg); } }
+  .spinner-mark{
+    font-size:26px; font-weight:800; letter-spacing:-0.02em;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation:markPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes markPulse{ 0%,100%{ transform:scale(1); opacity:1; } 50%{ transform:scale(1.14); opacity:.75; } }
+  .preloader-caption{
+    font-size:12px; letter-spacing:.26em; text-transform:uppercase; color:var(--ink-dim);
+    opacity:0; animation: preloaderCaptionIn .6s ease .3s forwards;
+  }
+  @keyframes preloaderCaptionIn{ to{ opacity:1; } }
+
+  /* ---------------- THEME TOGGLE VIEW TRANSITION ---------------- */
+  ::view-transition-old(root){ animation:none; mix-blend-mode:normal; }
+  ::view-transition-new(root){ animation: themeCircleReveal .6s cubic-bezier(.2,.8,.2,1) forwards; mix-blend-mode:normal; }
+  @keyframes themeCircleReveal{
+    from{ clip-path: circle(0% at var(--tx,50%) var(--ty,50%)); }
+    to{ clip-path: circle(140% at var(--tx,50%) var(--ty,50%)); }
+  }
+
+  nav{
+    position:fixed; top:0; left:0; right:0; z-index:50;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:22px 6vw;
+    background: color-mix(in srgb, var(--bg) 78%, transparent);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border-bottom:1px solid var(--line);
+    transition: background .4s ease, border-color .4s ease;
+  }
+  .logo{
+    font-size:15px; font-weight:600; letter-spacing:.14em; text-transform:uppercase;
+    display:flex; align-items:center; gap:8px; text-decoration:none; color:var(--ink);
+  }
+  .logo .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);}
+  .theme-toggle{
+    width:38px; height:38px; border-radius:50%; border:1px solid var(--line);
+    background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    color:var(--ink); position:relative;
+  }
+  .theme-toggle svg{width:16px; height:16px; position:absolute; transition:opacity .3s ease, transform .4s ease;}
+  .theme-toggle .icon-moon{opacity:1; transform:rotate(0deg);}
+  .theme-toggle .icon-sun{opacity:0; transform:rotate(-60deg);}
+  html[data-theme="light"] .theme-toggle .icon-moon{opacity:0; transform:rotate(60deg);}
+  html[data-theme="light"] .theme-toggle .icon-sun{opacity:1; transform:rotate(0deg);}
+
+  /* ---------------- BACKDROP ---------------- */
+  .backdrop{position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none;}
+  .orb{
+    position:absolute; width:56vw; height:56vw; max-width:760px; max-height:760px; border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, rgba(6,104,225,0.38), rgba(0,129,251,0.02) 60%);
+    filter:blur(10px); top:50%; left:50%; transform:translate(-50%,-50%);
+    animation: orbPulse 6s ease-in-out infinite;
+  }
+  @keyframes orbPulse{ 0%,100%{transform:translate(-50%,-50%) scale(1);} 50%{transform:translate(-50%,-50%) scale(1.15);} }
+  .grid-ring{
+    position:absolute; border:1px solid var(--line); border-radius:50%; top:50%; left:50%;
+    transform:translate(-50%,-50%); animation: ringSpin 44s linear infinite;
+  }
+  @keyframes ringSpin{ to{ transform:translate(-50%,-50%) rotate(360deg); } }
+  .particle{
+    position:absolute; border-radius:50%; background:var(--accent); opacity:0;
+    animation: particleFloat linear infinite;
+  }
+  @keyframes particleFloat{
+    0%{ opacity:0; transform:translateY(0); }
+    10%{ opacity:.6; }
+    90%{ opacity:.35; }
+    100%{ opacity:0; transform:translateY(-160px); }
+  }
+
+  /* ---------------- LAYOUT ---------------- */
+  main{
+    position:relative; z-index:2; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    padding:120px 6vw 60px;
+  }
+
+  .auth-card{
+    width:100%; max-width:420px; text-align:center;
+    background: color-mix(in srgb, var(--card) 88%, transparent);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border:1px solid var(--line); border-radius:24px;
+    padding:48px 38px;
+    box-shadow: 0 40px 80px rgba(0,0,0,.35);
+    opacity:0; transform:translateY(24px);
+    transition: opacity .7s cubic-bezier(.2,.8,.2,1), transform .7s cubic-bezier(.2,.8,.2,1);
+  }
+  .auth-card.revealed{ opacity:1; transform:translateY(0); }
+
+  .auth-kicker{
+    font-size:12px; letter-spacing:.24em; text-transform:uppercase; color:var(--accent); margin-bottom:14px;
+  }
+  .auth-card h1{font-size:28px; font-weight:600; letter-spacing:-0.02em; margin-bottom:10px;}
+  .auth-card .sub{color:var(--ink-dim); font-size:14.5px; line-height:1.6; margin-bottom:34px;}
+
+  .btn-oauth{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
+    padding:15px; border-radius:12px; border:1px solid var(--line); background:transparent;
+    color:var(--ink); font-size:15px; font-weight:600; cursor:pointer;
+    transition: border-color .25s ease, transform .2s ease, background .25s ease, box-shadow .25s ease;
+  }
+  .btn-oauth:hover{ border-color:var(--accent); background:var(--accent-dim); transform:translateY(-1px); box-shadow:0 10px 24px rgba(6,104,225,.2); }
+  .btn-oauth svg{width:20px; height:20px;}
+  .btn-oauth:disabled{opacity:.7; cursor:default; transform:none;}
+
+  .auth-footer{
+    text-align:center; margin-top:26px; font-size:12.5px; color:var(--ink-dim); line-height:1.6;
+  }
+  .auth-footer a{color:var(--accent); text-decoration:none;}
+  .auth-footer a:hover{text-decoration:underline;}
+
+  @media (max-width:480px){
+    .auth-card{padding:34px 24px;}
+    main{padding:110px 5vw 50px;}
+  }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+
+<div id="preloader">
+  <div class="preloader-spinner">
+    <span class="spinner-ring"></span>
+    <span class="spinner-mark">W</span>
+  </div>
+  <div class="preloader-caption">Đang mở Workflow</div>
+</div>
+
+<div class="backdrop">
+  <div class="orb"></div>
+  <div class="grid-ring" style="width:620px;height:620px;"></div>
+  <div class="grid-ring" style="width:440px;height:440px;"></div>
+</div>
+
+<nav>
+  <a href="#" class="logo"><span class="dot"></span> Workflow</a>
+  <button class="theme-toggle" id="themeToggle" aria-label="Chuyển sáng/tối">
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+  </button>
+</nav>
+
+<main>
+  <div class="auth-card" id="authCard">
+    <div class="auth-kicker">Chào mừng trở lại</div>
+    <h1>Đăng nhập vào Workflow</h1>
+    <p class="sub">Lịch thông minh với trợ lý AI, đồng bộ real-time và bộ đếm tập trung — tiếp tục nơi bạn đã dừng lại.</p>
+
+    <button class="btn-oauth" type="button" id="googleBtn">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.66-.22-2.45H12v4.64h6.47c-.28 1.5-1.13 2.77-2.4 3.62v3h3.88c2.27-2.09 3.57-5.17 3.57-8.81z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.92l-3.88-3c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.26v3.11C3.24 21.3 7.28 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.27A7.2 7.2 0 0 1 4.89 12c0-.79.14-1.56.38-2.27V6.62H1.26A11.98 11.98 0 0 0 0 12c0 1.94.47 3.77 1.26 5.38l4.01-3.11z"/><path fill="#EA4335" d="M12 4.77c1.76 0 3.34.6 4.58 1.79l3.44-3.44C17.95 1.19 15.24 0 12 0 7.28 0 3.24 2.7 1.26 6.62l4.01 3.11C6.22 6.88 8.87 4.77 12 4.77z"/></svg>
+      <span id="googleBtnLabel">Tiếp tục với Google</span>
+    </button>
+
+    <p class="auth-footer">Bằng việc tiếp tục, bạn đồng ý với <a href="#">Điều khoản</a> và <a href="#">Chính sách bảo mật</a> của Workflow.</p>
+  </div>
+</main>
+
+<script>
+  const root = document.documentElement;
+
+  /* ---------------- PRELOADER: vòng xoay quanh logo "W" -> iris thu nhỏ mở màn ---------------- */
+  (function(){
+    const preloader = document.getElementById("preloader");
+    const authCard = document.getElementById("authCard");
+    const SPIN_HOLD = 1500; // thời gian giữ vòng xoay trước khi mở màn
+
+    setTimeout(()=>{
+      preloader.classList.add("exit");
+      authCard.classList.add("revealed");
+      setTimeout(()=>{
+        preloader.style.display = "none";
+        root.classList.remove("is-loading");
+      }, 900);
+    }, SPIN_HOLD);
+  })();
+
+  /* Theme toggle với hiệu ứng loang tròn */
+  (function(){
+    const btn = document.getElementById("themeToggle");
+    btn.addEventListener("click", ()=>{
+      const r = btn.getBoundingClientRect();
+      const x = ((r.left + r.width/2) / window.innerWidth) * 100 + "%";
+      const y = ((r.top + r.height/2) / window.innerHeight) * 100 + "%";
+      root.style.setProperty("--tx", x);
+      root.style.setProperty("--ty", y);
+      const applyTheme = ()=>{
+        const isLight = root.getAttribute("data-theme") === "light";
+        root.setAttribute("data-theme", isLight ? "dark" : "light");
+      };
+      if(document.startViewTransition){ document.startViewTransition(applyTheme); }
+      else{ applyTheme(); }
+    });
+  })();
+
+  /* Hạt sáng nổi trong nền */
+  (function(){
+    const backdrop = document.querySelector(".backdrop");
+    const COUNT = 14;
+    for(let i=0;i<COUNT;i++){
+      const p = document.createElement("span");
+      p.className = "particle";
+      const size = 2 + Math.random()*3;
+      p.style.width = size+"px";
+      p.style.height = size+"px";
+      p.style.left = (Math.random()*100)+"%";
+      p.style.top = (30 + Math.random()*55)+"%";
+      p.style.animationDuration = (6 + Math.random()*6)+"s";
+      p.style.animationDelay = (Math.random()*6)+"s";
+      backdrop.appendChild(p);
+    }
+  })();
+
+  /* Xử lý đăng nhập Google (demo giao diện — nối vào luồng Google OAuth thật, VD Supabase Auth, tại đây) */
+  (function(){
+    const googleBtn = document.getElementById("googleBtn");
+    const googleBtnLabel = document.getElementById("googleBtnLabel");
+    googleBtn.addEventListener("click", ()=>{
+      googleBtn.disabled = true;
+      googleBtnLabel.textContent = "Đang chuyển hướng đến Google...";
+      setTimeout(()=>{
+        googleBtn.disabled = false;
+        googleBtnLabel.textContent = "Tiếp tục với Google";
+      }, 1400);
+    });
+  })();
+</script>
+</body>
+</html>

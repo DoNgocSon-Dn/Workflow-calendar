@@ -1,17 +1,26 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, output, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { AuthStore } from '../../../../core/auth/auth-store';
+import { Icon } from '../../../../shared/components/icon/icon';
 import { GroupStore } from '../../data/group-store';
-import { GroupMember, GroupMessage, GroupMessageAttachment, GroupTask } from '../../models/group.models';
+import {
+  GroupColor,
+  GroupMember,
+  GroupMessage,
+  GroupMessageAttachment,
+  GroupTask,
+} from '../../models/group.models';
 
 type WorkspaceTab = 'members' | 'calendar' | 'tasks' | 'chat';
+
+const GROUP_COLORS: GroupColor[] = ['blue', 'green', 'orange', 'red', 'purple', 'teal'];
 
 @Component({
   selector: 'app-group-workspace-modal',
   templateUrl: './group-workspace-modal.html',
   styleUrl: './group-workspace-modal.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe],
+  imports: [DatePipe, Icon],
 })
 export class GroupWorkspaceModal {
   protected readonly store = inject(GroupStore);
@@ -66,6 +75,17 @@ export class GroupWorkspaceModal {
   // Task reassignment
   protected readonly reassigningTaskId = signal<string | null>(null);
 
+  // Group edit / delete / hide
+  protected readonly groupColors = GROUP_COLORS;
+  protected readonly editingGroup = signal(false);
+  protected readonly editName = signal('');
+  protected readonly editDescription = signal('');
+  protected readonly editColor = signal<GroupColor>('blue');
+  protected readonly savingGroup = signal(false);
+  protected readonly groupError = signal<string | null>(null);
+  protected readonly deletingGroup = signal(false);
+  protected readonly isHidden = computed(() => this.store.activeGroup()?.hidden === true);
+
   private static readonly MAX_ATTACHMENT_BYTES = 15 * 1024 * 1024;
 
   constructor() {
@@ -82,6 +102,79 @@ export class GroupWorkspaceModal {
 
   setTab(tab: WorkspaceTab): void {
     this.activeTab.set(tab);
+  }
+
+  startEditGroup(): void {
+    const group = this.store.activeGroup();
+    if (!group) return;
+    this.editName.set(group.name);
+    this.editDescription.set(group.description ?? '');
+    this.editColor.set(group.color);
+    this.groupError.set(null);
+    this.editingGroup.set(true);
+  }
+
+  cancelEditGroup(): void {
+    this.editingGroup.set(false);
+    this.groupError.set(null);
+  }
+
+  async saveGroup(): Promise<void> {
+    const group = this.store.activeGroup();
+    const name = this.editName().trim();
+    if (!group || this.savingGroup()) return;
+    if (!name) {
+      this.groupError.set('Tên nhóm không được để trống.');
+      return;
+    }
+
+    this.savingGroup.set(true);
+    this.groupError.set(null);
+    try {
+      await this.store.updateGroup(group.id, {
+        name,
+        description: this.editDescription().trim(),
+        color: this.editColor(),
+      });
+      this.editingGroup.set(false);
+    } catch (err: any) {
+      this.groupError.set(err?.error?.message || 'Không thể cập nhật nhóm.');
+    } finally {
+      this.savingGroup.set(false);
+    }
+  }
+
+  async deleteGroup(): Promise<void> {
+    const group = this.store.activeGroup();
+    if (!group || this.deletingGroup()) return;
+    // Xoá nhóm kéo theo task, tin nhắn và cả lịch nhóm — bắt gõ đúng tên để
+    // không ai xoá nhầm bằng một cú nhấn.
+    const typed = prompt(
+      `Xóa vĩnh viễn nhóm "${group.name}"?\n\nToàn bộ task, tin nhắn và lịch nhóm sẽ bị xóa và KHÔNG thể khôi phục.\nGõ đúng tên nhóm để xác nhận:`,
+    );
+    if (typed?.trim() !== group.name) {
+      if (typed !== null) alert('Tên nhóm không khớp — đã hủy thao tác xóa.');
+      return;
+    }
+
+    this.deletingGroup.set(true);
+    try {
+      await this.store.deleteGroup(group.id);
+    } catch (err: any) {
+      alert(err?.error?.message || 'Không thể xóa nhóm.');
+    } finally {
+      this.deletingGroup.set(false);
+    }
+  }
+
+  async toggleHidden(): Promise<void> {
+    const group = this.store.activeGroup();
+    if (!group) return;
+    try {
+      await this.store.setGroupHidden(group.id, !group.hidden);
+    } catch (err: any) {
+      alert(err?.error?.message || 'Không thể cập nhật trạng thái hiển thị nhóm.');
+    }
   }
 
   async invite(): Promise<void> {

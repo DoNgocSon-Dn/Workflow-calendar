@@ -24,11 +24,13 @@ import { SupabaseModule } from './supabase/supabase.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [configuration], validate }),
     ScheduleModule.forRoot(),
-    ThrottlerModule.forRoot([
-      { name: 'default', ttl: 60_000, limit: 120 },
-      { name: 'ai-chat', ttl: 60 * 60 * 1000, limit: 20 },
-      { name: 'respond-email', ttl: 60_000, limit: 10 },
-    ]),
+    // CHỈ khai báo một throttler ở đây. ThrottlerGuard duyệt MỌI throttler đã
+    // khai báo cho MỌI route (xem canActivate trong @nestjs/throttler), nên khai
+    // báo thêm 'ai-chat' 20 req/giờ ở đây đồng nghĩa toàn bộ API bị chặn sau 20
+    // request mỗi giờ — @Throttle ở AiController chỉ đổi hạn mức cho route đó chứ
+    // không giới hạn phạm vi áp dụng. Hạn mức riêng cho từng route được đặt bằng
+    // cách ghi đè 'default' ngay tại handler.
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 120 }]),
     SupabaseModule,
     RealtimeModule,
     AuthModule,

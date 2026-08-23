@@ -5,6 +5,7 @@ import {
   GroupMessage,
   GroupMessageAttachment,
   GroupTask,
+  GroupUpdate,
 } from '../models/group.models';
 import { GroupApiService } from '../services/group-api.service';
 import { AuthStore } from '../../../core/auth/auth-store';
@@ -29,6 +30,9 @@ export class GroupStore {
   private realtimeInitialized = false;
 
   readonly activeGroupId = computed(() => this.activeGroup()?.id ?? null);
+
+  readonly visibleGroups = computed(() => this.groups().filter((g) => !g.hidden));
+  readonly hiddenGroups = computed(() => this.groups().filter((g) => g.hidden));
 
   private initRealtime(): void {
     if (this.realtimeInitialized) return;
@@ -80,6 +84,46 @@ export class GroupStore {
       if (!this.isActiveGroup(payload.groupId, payload.task.groupId)) return;
       this.tasks.update((list) => list.map((t) => (t.id === payload.task.id ? payload.task : t)));
     });
+
+    // Ba sự kiện dưới đây đến từ room riêng của user (không phải room nhóm) nên
+    // vẫn nhận được kể cả khi chưa mở nhóm — đó là điều kiện để nhóm đang ẩn tự
+    // hiện lại lúc có tin nhắn mới.
+    this.realtime.on<{ group: Group }>('group:updated', (payload) => {
+      if (!payload?.group) return;
+      this.groups.update((list) =>
+        // `hidden` là trạng thái riêng của người nhận, còn payload phát cho cả
+        // nhóm nên không mang nó theo — giữ nguyên giá trị đang có tại client.
+        list.map((g) => (g.id === payload.group.id ? { ...payload.group, hidden: g.hidden } : g)),
+      );
+      if (this.activeGroupId() === payload.group.id) {
+        this.activeGroup.update((g) => (g ? { ...payload.group, hidden: g.hidden } : g));
+      }
+    });
+
+    this.realtime.on<{ groupId: string }>('group:deleted', (payload) => {
+      if (!payload?.groupId) return;
+      this.removeGroupLocally(payload.groupId);
+    });
+
+    this.realtime.on<{ groupId: string }>('group:unhidden', (payload) => {
+      if (!payload?.groupId) return;
+      this.setHiddenLocally(payload.groupId, false);
+    });
+  }
+
+  private setHiddenLocally(groupId: string, hidden: boolean): void {
+    this.groups.update((list) => list.map((g) => (g.id === groupId ? { ...g, hidden } : g)));
+  }
+
+  private removeGroupLocally(groupId: string): void {
+    this.groups.update((list) => list.filter((g) => g.id !== groupId));
+    if (this.activeGroupId() === groupId) {
+      this.activeGroup.set(null);
+      this.activeWorkspaceModalOpen.set(false);
+      this.members.set([]);
+      this.tasks.set([]);
+      this.messages.set([]);
+    }
   }
 
   private isActiveGroup(groupId: string, altGroupId?: string): boolean {
@@ -105,6 +149,37 @@ export class GroupStore {
     const newGroup = await this.api.createGroup(name, description, color);
     this.groups.update((prev) => [newGroup, ...prev]);
     return newGroup;
+  }
+
+  async updateGroup(groupId: string, updates: GroupUpdate): Promise<Group> {
+    const updated = await this.api.updateGroup(groupId, updates);
+    this.groups.update((list) =>
+      list.map((g) => (g.id === groupId ? { ...updated, hidden: g.hidden } : g)),
+    );
+    if (this.activeGroupId() === groupId) {
+      this.activeGroup.update((g) => (g ? { ...updated, hidden: g.hidden } : g));
+    }
+    return updated;
+  }
+
+  async deleteGroup(groupId: string): Promise<void> {
+    await this.api.deleteGroup(groupId);
+    this.removeGroupLocally(groupId);
+  }
+
+  async setGroupHidden(groupId: string, hidden: boolean): Promise<void> {
+    // Cập nhật trước rồi mới gọi API: đây là thao tác một chạm trên sidebar nên
+    // độ trễ mạng sẽ khiến nút trông như không ăn.
+    this.setHiddenLocally(groupId, hidden);
+    try {
+      await this.api.setGroupHidden(groupId, hidden);
+    } catch (err) {
+      this.setHiddenLocally(groupId, !hidden);
+      throw err;
+    }
+    if (hidden && this.activeGroupId() === groupId) {
+      this.closeWorkspaceModal();
+    }
   }
 
   async selectGroup(group: Group): Promise<void> {

@@ -1,224 +1,397 @@
-<div class="landing">
-  <!-- Scroll position, drawn by the compositor via a CSS scroll timeline —
-       no scroll listener, no JS frame work. -->
-  <div class="scroll-progress" aria-hidden="true"></div>
-  <!-- Watched by IntersectionObserver to toggle the nav's elevated state. -->
-  <div class="nav-sentinel" aria-hidden="true"></div>
+<div class="landing-container">
+  <div class="noise" aria-hidden="true"></div>
+  <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
 
-  <header class="nav" [class.scrolled]="navScrolled()">
-    <div class="nav-inner">
-      <a class="brand" routerLink="/landing">
-        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" aria-hidden="true">
-          <rect x="3" y="4" width="18" height="17" rx="4" fill="url(#navGrad)" />
-          <path d="M3 9h18" stroke="#fff" stroke-width="1.4" />
-          <path d="M8 2v4M16 2v4" stroke="#fff" stroke-width="1.4" stroke-linecap="round" />
-          <defs>
-            <linearGradient id="navGrad" x1="3" y1="4" x2="21" y2="21">
-              <stop offset="0" stop-color="#0866ff" />
-              <stop offset="1" stop-color="#00c2ff" />
-            </linearGradient>
-          </defs>
+  <!-- PRELOADER -->
+  <div id="preloader" aria-hidden="true">
+    <div class="preloader-stage">
+      <div class="preloader-word" id="preloaderWord">
+        <span class="letter" style="animation-delay: 0ms">W</span>
+        <span class="letter" style="animation-delay: 50ms">O</span>
+        <span class="letter" style="animation-delay: 100ms">R</span>
+        <span class="letter" style="animation-delay: 150ms">K</span>
+        <span class="letter" style="animation-delay: 200ms">F</span>
+        <span class="letter" style="animation-delay: 250ms">L</span>
+        <span class="letter" style="animation-delay: 300ms">O</span>
+        <span class="letter" style="animation-delay: 350ms">W</span>
+      </div>
+      <div class="preloader-mark" id="preloaderMark">W</div>
+    </div>
+  </div>
+  <div class="preloader-panel left" aria-hidden="true"></div>
+  <div class="preloader-panel right" aria-hidden="true"></div>
+
+  <!-- CUSTOM CURSOR -->
+  <div class="cursor-ring" id="cursorRing" aria-hidden="true"></div>
+  <div class="cursor-dot" id="cursorDot" aria-hidden="true"></div>
+
+  <!-- NAVIGATION -->
+  <nav class="landing-nav">
+    <div class="logo">
+      <span class="dot"></span>
+      <span>Workflow</span>
+    </div>
+
+    <div class="links">
+      <a href="#features" (click)="scrollToSection($event, 'features')">Tính năng</a>
+      <a href="#showcase" (click)="scrollToSection($event, 'showcase')">Showcase</a>
+      <a href="#process" (click)="scrollToSection($event, 'process')">Quy trình</a>
+      <a href="#trust" (click)="scrollToSection($event, 'trust')">Bảo mật</a>
+    </div>
+
+    <div class="nav-right">
+      <button class="theme-toggle" id="themeToggle" aria-label="Chuyển đổi giao diện sáng/tối" (click)="toggleTheme($event)">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </svg>
-        Workflow
-      </a>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+        </svg>
+      </button>
 
-      <nav class="nav-links">
-        <a href="#features" (click)="scrollToSection($event, 'features')">Tính năng</a>
-        <a href="#how-it-works" (click)="scrollToSection($event, 'how-it-works')">Cách hoạt động</a>
-        <a href="#faq" (click)="scrollToSection($event, 'faq')">Câu hỏi thường gặp</a>
-      </nav>
+      <a class="nav-cta" routerLink="/login">Dùng thử miễn phí</a>
+    </div>
+  </nav>
 
-      <div class="nav-actions">
-        <a class="nav-cta" routerLink="/login">Đăng nhập</a>
+  <!-- HERO SECTION -->
+  <section class="hero">
+    <div class="orb"></div>
+    <div class="grid-ring" style="width:640px;height:640px;"></div>
+    <div class="grid-ring" style="width:460px;height:460px;"></div>
+    <div class="grid-ring" style="width:280px;height:280px;"></div>
+
+    <div class="hero-eyebrow">Lịch cá nhân · thế hệ mới</div>
+    <h1>
+      <span class="line"><span>Thời gian của bạn,</span></span>
+      <span class="line"><span><em>sắp xếp lại.</em></span></span>
+    </h1>
+    <p class="hero-sub">
+      Workflow là lịch thông minh có trợ lý AI, tự phát hiện xung đột, đồng bộ real-time và bộ đếm tập trung — để bạn chỉ cần sống, không cần quản lý.
+    </p>
+
+    <div class="hero-cta">
+      <a class="btn-primary" routerLink="/login">Bắt đầu miễn phí</a>
+    </div>
+
+    <div class="scroll-hint">
+      <span>Kéo xuống</span>
+      <span class="bar"></span>
+    </div>
+  </section>
+
+  <!-- MARQUEE TICKER -->
+  <div class="marquee-wrap">
+    <div class="marquee">
+      <span><b>Trợ lý AI</b> — gõ một câu, lịch tự được tạo</span>
+      <span><b>Phát hiện xung đột</b> — cảnh báo trùng lịch ngay lập tức</span>
+      <span><b>Đồng bộ real-time</b> — cập nhật tức thì trên mọi thiết bị</span>
+      <span><b>Xác nhận qua email</b> — không cần mở app hay đăng nhập</span>
+      <span><b>Bộ đếm tập trung</b> — bảo vệ thời gian làm việc sâu</span>
+      <span><b>Trợ lý AI</b> — gõ một câu, lịch tự được tạo</span>
+      <span><b>Phát hiện xung đột</b> — cảnh báo trùng lịch ngay lập tức</span>
+      <span><b>Đồng bộ real-time</b> — cập nhật tức thì trên mọi thiết bị</span>
+      <span><b>Xác nhận qua email</b> — không cần mở app hay đăng nhập</span>
+      <span><b>Bộ đếm tập trung</b> — bảo vệ thời gian làm việc sâu</span>
+    </div>
+  </div>
+
+  <!-- CORE FEATURES SECTION -->
+  <section class="section-pad" id="features">
+    <div class="kicker reveal">Tính năng cốt lõi</div>
+    <h2 class="section-title reveal">Một chiếc lịch <span class="dim">biết suy nghĩ</span> thay bạn.</h2>
+    <p class="section-desc reveal">Bốn trụ cột đứng sau Workflow — mỗi phần đều được xây để giảm ma sát trong ngày làm việc của bạn.</p>
+  </section>
+
+  <!-- FEATURE 01 -->
+  <section class="feature-pin" id="f1">
+    <div class="feature-text">
+      <div class="feature-index reveal">01 / Trợ lý AI</div>
+      <h3 class="reveal">Gõ một câu, lịch tự được tạo</h3>
+      <p class="reveal">
+        Chỉ cần gõ "Họp với Hùng thứ 6 tuần sau lúc 3 giờ chiều" — trợ lý AI của Workflow hiểu ngôn ngữ tự nhiên tiếng Việt và tự tạo đúng sự kiện. Câu mơ hồ sẽ được chuyển sang form thủ công để bạn xác nhận, không bao giờ tạo lịch rác.
+      </p>
+      <div class="chip-row reveal">
+        <span class="chip">Hiểu tiếng Việt tự nhiên</span>
+        <span class="chip">Luôn có bước xác nhận</span>
       </div>
     </div>
-  </header>
-
-  <main>
-    <!-- HERO -->
-    <section class="hero">
-      <div class="hero-orb hero-orb-1" aria-hidden="true"></div>
-      <div class="hero-orb hero-orb-2" aria-hidden="true"></div>
-
-      <div class="hero-inner">
-        <span class="hero-kicker hero-step">✨ Nền tảng quản lý lịch &amp; công việc thông minh</span>
-        <h1 class="hero-title">
-          <span class="hero-line"><span class="hero-line-inner">Kết nối. Lên lịch.</span></span>
-          <span class="hero-line"
-            ><span class="hero-line-inner hero-title-gradient">Hoàn thành cùng nhau.</span></span
-          >
-        </h1>
-        <p class="hero-subtitle hero-step">
-          Workflow gộp lịch cá nhân, nhóm làm việc và trợ lý AI vào một nơi duy nhất — đăng nhập
-          không cần mật khẩu, cộng tác theo thời gian thực, không còn lịch trình rối rắm.
-        </p>
-
-        <div class="hero-actions hero-step">
-          <a class="btn-primary" routerLink="/login">Bắt đầu ngay</a>
-          <a class="btn-secondary" href="#features" (click)="scrollToSection($event, 'features')"
-            >Xem tính năng ↓</a
-          >
+    <div class="feature-visual reveal">
+      <div class="glow"></div>
+      <div class="cal-card" style="width:80%;">
+        <div class="cal-head">
+          <span>Trợ lý AI</span>
+          <span>Vừa tạo xong</span>
         </div>
-
-        <div class="hero-badges hero-step">
-          <span>🔒 Không cần mật khẩu</span>
-          <span>⚡ Đồng bộ real-time</span>
-          <span>🤖 AI trợ lý tích hợp</span>
-          <span>🌙 Sáng / Tối</span>
+        <div style="padding:6px 0 18px; font-size:13px; color:var(--ink-dim); line-height:1.7;">
+          "Nhắc tôi họp với Hùng thứ 6 tuần sau lúc 3 giờ chiều"
         </div>
-      </div>
-
-      <div class="hero-preview" aria-hidden="true">
-        <div class="preview-card">
-          <div class="preview-card-header">
-            <span class="preview-dot dot-red"></span>
-            <span class="preview-dot dot-yellow"></span>
-            <span class="preview-dot dot-green"></span>
-            <span class="preview-title">Lịch trình hôm nay</span>
-          </div>
-          <ul class="preview-list">
-            <li>
-              <span class="preview-chip chip-indigo"></span>
-              <div>
-                <p class="preview-item-title">Họp sync nhóm Product</p>
-                <p class="preview-item-time">09:00 – 09:30</p>
-              </div>
-            </li>
-            <li>
-              <span class="preview-chip chip-pink"></span>
-              <div>
-                <p class="preview-item-title">Review task tuần này</p>
-                <p class="preview-item-time">11:00 – 12:00</p>
-              </div>
-            </li>
-            <li>
-              <span class="preview-chip chip-teal"></span>
-              <div>
-                <p class="preview-item-title">Trợ lý AI: tóm tắt lịch tuần</p>
-                <p class="preview-item-time">16:30 – 16:45</p>
-              </div>
-            </li>
-          </ul>
+        <div class="cal-grid">
+          <div>Th 5</div>
+          <div class="active">Th 6</div>
+          <div>Th 7</div>
+          <div>CN</div>
+          <div>Th 2</div>
+          <div>Th 3</div>
+          <div>Th 4</div>
+          <div>·</div>
+          <div class="dot-mark">15:00</div>
+          <div>·</div>
+          <div>·</div>
+          <div>·</div>
+          <div>·</div>
+          <div>·</div>
         </div>
-      </div>
-    </section>
-
-    <!-- MARQUEE — decorative; the same keywords appear as real text in the
-         Features section below, so screen readers lose nothing here. -->
-    <section class="marquee" aria-hidden="true">
-      <div class="marquee-track">
-        @for (pass of [0, 1]; track pass) {
-          <div class="marquee-group">
-            @for (item of marqueeItems; track item) {
-              <span class="marquee-item">{{ item }}</span>
-              <span class="marquee-sep">✦</span>
-            }
-          </div>
-        }
-      </div>
-    </section>
-
-    <!-- STATS -->
-    <section class="stats">
-      <div class="stats-grid">
-        @for (s of stats; track s.label; let i = $index) {
-          <div class="stat" data-reveal [style.transition-delay.ms]="i * 80">
-            <span class="stat-value" [attr.data-target]="s.value" [attr.data-suffix]="s.suffix"
-              >{{ s.value }}{{ s.suffix }}</span
-            >
-            <span class="stat-label">{{ s.label }}</span>
-          </div>
-        }
-      </div>
-    </section>
-
-    <!-- FEATURES -->
-    <section class="features" id="features">
-      <div class="section-head" data-reveal>
-        <span class="section-kicker">Tính năng</span>
-        <h2>Mọi thứ bạn cần cho một lịch trình gọn gàng</h2>
-        <p>Từ lịch cá nhân đến cộng tác nhóm — Workflow xử lý hết, không cần thêm công cụ nào khác.</p>
-      </div>
-
-      <div class="feature-grid">
-        @for (f of features; track f.title; let i = $index) {
-          <article class="feature-card" data-reveal [style.transition-delay.ms]="i * 70">
-            <div class="feature-icon">{{ f.icon }}</div>
-            <h3>{{ f.title }}</h3>
-            <p>{{ f.description }}</p>
-          </article>
-        }
-      </div>
-    </section>
-
-    <!-- HOW IT WORKS -->
-    <section class="how-it-works" id="how-it-works">
-      <div class="section-head" data-reveal>
-        <span class="section-kicker">Cách hoạt động</span>
-        <h2>Ba bước để bắt đầu</h2>
-      </div>
-
-      <div class="steps">
-        @for (s of steps; track s.number; let i = $index) {
-          <div class="step" data-reveal [style.transition-delay.ms]="i * 90">
-            <span class="step-number">{{ s.number }}</span>
-            <h3>{{ s.title }}</h3>
-            <p>{{ s.description }}</p>
-          </div>
-        }
-      </div>
-    </section>
-
-    <!-- FAQ -->
-    <section class="faq" id="faq">
-      <div class="section-head" data-reveal>
-        <span class="section-kicker">Câu hỏi thường gặp</span>
-        <h2>Còn thắc mắc gì không?</h2>
-      </div>
-
-      <div class="faq-list">
-        @for (item of faqs(); track item.question; let i = $index) {
-          <div class="faq-item" data-reveal [style.transition-delay.ms]="i * 60" [class.open]="openFaqIndex() === i">
-            <button
-              type="button"
-              class="faq-question"
-              [attr.aria-expanded]="openFaqIndex() === i"
-              (click)="toggleFaq(i)"
-            >
-              {{ item.question }}
-              <span class="faq-toggle-icon">+</span>
-            </button>
-            @if (openFaqIndex() === i) {
-              <p class="faq-answer">{{ item.answer }}</p>
-            }
-          </div>
-        }
-      </div>
-    </section>
-
-    <!-- FINAL CTA -->
-    <section class="final-cta">
-      <div class="final-cta-card" data-reveal>
-        <h2>Sẵn sàng sắp xếp lại lịch trình của bạn?</h2>
-        <p>Đăng nhập bằng Gmail hoặc email trong vài giây — không cần nhớ mật khẩu.</p>
-        <a class="btn-primary" routerLink="/login">Bắt đầu ngay</a>
-      </div>
-    </section>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-      <div class="footer-brand">
-        <span class="brand">Workflow</span>
-        <p>Nền tảng quản lý lịch &amp; công việc thông minh.</p>
-      </div>
-      <div class="footer-links">
-        <a href="#features" (click)="scrollToSection($event, 'features')">Tính năng</a>
-        <a href="#how-it-works" (click)="scrollToSection($event, 'how-it-works')">Cách hoạt động</a>
-        <a href="#faq" (click)="scrollToSection($event, 'faq')">FAQ</a>
-        <a routerLink="/login">Đăng nhập</a>
       </div>
     </div>
-    <p class="footer-copyright">© {{ currentYear }} Workflow. Được tạo với ❤️ cho những người bận rộn.</p>
+  </section>
+
+  <!-- FEATURE 02 -->
+  <section class="feature-pin" id="f2">
+    <div class="feature-text">
+      <div class="feature-index reveal">02 / Realtime &amp; Email</div>
+      <h3 class="reveal">Mời người khác, không cần họ mở app</h3>
+      <p class="reveal">
+        Mọi thay đổi đồng bộ tức thì qua WebSocket trên mọi thiết bị đang mở. Người được mời nhận email có sẵn nút "Đồng ý / Từ chối" — bấm là xong, không cần tài khoản, không cần đăng nhập.
+      </p>
+      <div class="chip-row reveal">
+        <span class="chip">Đồng bộ real-time</span>
+        <span class="chip">Xác nhận ngay trong email</span>
+      </div>
+    </div>
+    <div class="feature-visual reveal">
+      <div class="glow"></div>
+      <div class="cal-card" style="width:82%;">
+        <div class="cal-head">
+          <span>Lời mời họp nhóm</span>
+          <span>Đã gửi qua email</span>
+        </div>
+        <div style="padding:8px 0 22px; font-size:13px; color:var(--ink-dim); line-height:1.7;">
+          "Họp thiết kế · Thứ 6, 15:00 — 16:00"
+        </div>
+        <div class="chip-row" style="margin-top:0;">
+          <span class="chip" style="border-color:var(--accent); color:var(--accent);">✓ Đồng ý</span>
+          <span class="chip">✕ Từ chối</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURE 03 -->
+  <section class="feature-pin" id="f3">
+    <div class="feature-text">
+      <div class="feature-index reveal">03 / Phát hiện xung đột</div>
+      <h3 class="reveal">Không bao giờ đặt trùng lịch nữa</h3>
+      <p class="reveal">
+        Workflow tự kiểm tra chồng chéo thời gian cho bạn và mọi người được mời ngay khi đang tạo sự kiện — cảnh báo hiển thị ngay trong form, kèm viền đỏ trực quan trên lịch nếu hai sự kiện trùng giờ.
+      </p>
+      <div class="chip-row reveal">
+        <span class="chip">Cảnh báo tức thì</span>
+        <span class="chip">Kiểm tra cho cả người mời</span>
+      </div>
+    </div>
+    <div class="feature-visual reveal">
+      <div class="glow"></div>
+      <div class="cal-card" style="width:74%; text-align:center;">
+        <div class="cal-head" style="justify-content:center;">
+          <span>14:00 — 15:00 · Trùng lịch</span>
+        </div>
+        <div style="padding:26px 0; color:var(--accent); font-size:13px; letter-spacing:.03em;">
+          ⚠ Sơn đã có "Họp khách hàng" từ 14:00–15:00
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURE 04 -->
+  <section class="feature-pin" id="f4">
+    <div class="feature-text">
+      <div class="feature-index reveal">04 / Đếm thời gian &amp; Tập trung</div>
+      <h3 class="reveal">Bảo vệ khối thời gian sâu của bạn</h3>
+      <p class="reveal">
+        Gắn một phiên tập trung (kiểu Pomodoro) trực tiếp vào sự kiện trên lịch: bộ đếm ngược chạy nền, tự tắt thông báo và từ chối lời mời họp không khẩn cấp trong lúc đếm giờ. Kết thúc phiên, Workflow ghi lại tổng thời gian bạn đã tập trung thật sự trong ngày/tuần.
+      </p>
+      <div class="chip-row reveal">
+        <span class="chip">Bộ đếm gắn liền sự kiện</span>
+        <span class="chip">Tự chặn thông báo</span>
+        <span class="chip">Thống kê thời gian tập trung</span>
+      </div>
+    </div>
+    <div class="feature-visual reveal">
+      <div class="glow"></div>
+      <div class="cal-card" style="width:66%; text-align:center;">
+        <div class="cal-head" style="justify-content:center;">
+          <span>Deep Work · Đang chạy</span>
+        </div>
+        <div style="padding:14px 0 10px; font-size:56px; font-weight:700; letter-spacing:-0.02em; font-variant-numeric:tabular-nums;">
+          24:18
+        </div>
+        <div style="color:var(--ink-dim); font-size:13px; letter-spacing:.05em; padding-bottom:6px;">
+          Thông báo đã tắt · Đã tập trung 3 phiên hôm nay
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHOWCASE GALLERY -->
+  <section class="section-pad" id="showcase">
+    <div class="kicker reveal">Showcase</div>
+    <h2 class="section-title reveal">Được thiết kế cho <span class="dim">mọi nhịp làm việc.</span></h2>
+
+    <div class="gallery" style="margin-top:70px;">
+      <div class="gallery-row">
+        <div class="gallery-card reveal">
+          <span class="tag">Import lịch</span>
+          <h5>Nhập lịch hàng loạt trong vài giây</h5>
+          <p>Import chuẩn từ file .ics/.csv, hoặc để AI tự đọc lịch trình từ file Excel/Word/PDF không theo khuôn mẫu nào — xem trước, sửa lại rồi mới lưu.</p>
+        </div>
+        <div class="gallery-card reveal">
+          <span class="tag">Nhắc nhở</span>
+          <h5>Nhắc nhở đa cấp, đúng kênh</h5>
+          <p>Đặt nhiều mốc nhắc cho một sự kiện — 15 phút, 1 giờ, 1 ngày trước — qua popup trong app hoặc email, tuỳ bạn chọn.</p>
+        </div>
+      </div>
+      <div class="gallery-row">
+        <div class="gallery-card reveal" style="flex:1.4;">
+          <span class="tag">Group Workspace</span>
+          <h5>Không gian làm việc cho cả nhóm</h5>
+          <p>Chat real-time, giao task kèm deadline, và lịch chung của nhóm nằm chung một chỗ — AI có thể tự đề xuất giờ họp không trùng lịch ai cả.</p>
+        </div>
+        <div class="gallery-card reveal">
+          <span class="tag">Cá nhân &amp; Đội nhóm</span>
+          <h5>Ghi chú riêng, bình luận chung</h5>
+          <p>Lịch cá nhân có ghi chú (notes) riêng tư; lịch nhóm có bình luận (comment) ngay trong sự kiện để mọi người trao đổi.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROCESS STEPS -->
+  <section class="section-pad" id="process">
+    <div class="kicker reveal">Quy trình</div>
+    <h2 class="section-title reveal">Từ ý nghĩ đến <span class="dim">lịch trình, trong vài giây.</span></h2>
+    <p class="section-desc reveal">Không cần học cách dùng — Workflow được thiết kế để bạn tạo lịch nhanh như đang nhắn tin.</p>
+
+    <div class="process-grid">
+      <div class="process-step reveal">
+        <div class="process-num">01</div>
+        <h4>Nói hoặc gõ một câu</h4>
+        <p>Gõ "Họp với Hùng thứ 6 lúc 3 giờ chiều" — trợ lý AI hiểu và tạo sự kiện thật, không cần điền form.</p>
+        <div class="process-arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 6l6 6-6 6"/>
+          </svg>
+        </div>
+      </div>
+      <div class="process-step reveal">
+        <div class="process-num">02</div>
+        <h4>Mời người liên quan</h4>
+        <p>Gửi lời mời qua email — người nhận bấm "Đồng ý/Từ chối" ngay trong mail, không cần tài khoản.</p>
+        <div class="process-arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 6l6 6-6 6"/>
+          </svg>
+        </div>
+      </div>
+      <div class="process-step reveal">
+        <div class="process-num">03</div>
+        <h4>Được cảnh báo kịp thời</h4>
+        <p>Workflow tự kiểm tra trùng lịch và nhắc nhở đúng lúc — qua popup hoặc email, đúng người cần biết.</p>
+        <div class="process-arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 6l6 6-6 6"/>
+          </svg>
+        </div>
+      </div>
+      <div class="process-step reveal">
+        <div class="process-num">04</div>
+        <h4>Tập trung làm việc</h4>
+        <p>Bật bộ đếm tập trung cho khối thời gian sâu — thông báo tự tắt, hiệu suất tự được ghi lại.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRUST & SECURITY -->
+  <section class="section-pad" id="trust">
+    <div class="kicker reveal">Bảo mật &amp; độ tin cậy</div>
+    <h2 class="section-title reveal">Được xây trên nền tảng <span class="dim">vững chắc.</span></h2>
+    <p class="section-desc reveal">Mỗi lớp trong Workflow đều được thiết kế để dữ liệu lịch trình của bạn luôn an toàn và đúng người mới xem/sửa được.</p>
+
+    <div class="trust-grid">
+      <div class="trust-card reveal">
+        <div class="trust-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </div>
+        <div>
+          <h5>Phân quyền theo hàng (RLS)</h5>
+          <p>Mỗi truy vấn dữ liệu đều được kiểm tra ở tầng database — chỉ thành viên đúng calendar mới đọc/sửa được, kể cả khi gọi thẳng API.</p>
+        </div>
+      </div>
+      <div class="trust-card reveal">
+        <div class="trust-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/>
+          </svg>
+        </div>
+        <div>
+          <h5>Xác nhận email dùng token 1 lần</h5>
+          <p>Link "Đồng ý/Từ chối" trong email dùng token ngẫu nhiên, tự hết hạn sau 7 ngày và vô hiệu ngay sau khi dùng — không ai respond hộ được người khác.</p>
+        </div>
+      </div>
+      <div class="trust-card reveal">
+        <div class="trust-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"/>
+          </svg>
+        </div>
+        <div>
+          <h5>Realtime an toàn</h5>
+          <p>Kết nối WebSocket được xác thực JWT ngay khi mở, mỗi calendar là một room riêng — không rò dữ liệu chéo giữa các lịch khác nhau.</p>
+        </div>
+      </div>
+      <div class="trust-card reveal">
+        <div class="trust-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>
+          </svg>
+        </div>
+        <div>
+          <h5>Giới hạn tần suất AI</h5>
+          <p>Trợ lý AI được giới hạn số lượt gọi mỗi giờ để tránh lạm dụng, đồng thời luôn có bước xác nhận thủ công trước khi tạo sự kiện không rõ ràng.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIAL SECTION -->
+  <section class="testimonial reveal">
+    <blockquote>
+      "Workflow giúp tôi lấy lại quyền kiểm soát thời gian. Không còn trễ hẹn, không còn trùng lịch — trợ lý AI hoạt động như một thư ký thực sự."
+    </blockquote>
+    <cite>— Nguyễn Văn Nam, Product Lead @ TechCorp</cite>
+  </section>
+
+  <!-- CTA STORY SECTION -->
+  <section class="cta-section" id="story">
+    <div class="orb" style="opacity:.35;"></div>
+    <h2 class="reveal">Sẵn sàng cho <span class="dim">nhịp mới</span> chưa?</h2>
+    <p class="sub reveal">Miễn phí dùng thử 30 ngày. Không cần thẻ tín dụng.</p>
+    <div class="hero-cta reveal">
+      <a class="btn-primary" routerLink="/login">Bắt đầu ngay</a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="logo"><span class="dot"></span> Workflow</div>
+    <div class="f-links">
+      <a href="#features" (click)="scrollToSection($event, 'features')">Tính năng</a>
+      <a href="#showcase" (click)="scrollToSection($event, 'showcase')">Showcase</a>
+      <a href="#trust" (click)="scrollToSection($event, 'trust')">Bảo mật</a>
+      <a routerLink="/login">Đăng nhập</a>
+    </div>
+    <div>© {{ currentYear }} Workflow</div>
   </footer>
 </div>

@@ -17,7 +17,8 @@ export class AiController {
   ) {}
 
   @Post('chat')
-  @Throttle({ 'ai-chat': { limit: 20, ttl: 60 * 60 * 1000 } })
+  // Ghi đè throttler 'default' cho riêng route này: 20 lượt chat AI mỗi giờ.
+  @Throttle({ default: { limit: 20, ttl: 60 * 60 * 1000 } })
   async chat(
     @CurrentSupabase() supabase: SupabaseClient,
     @CurrentUser() user: User,

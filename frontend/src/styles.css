@@ -310,6 +310,35 @@ h1, h2, h3, h4, .font-heading {
   transform: translateY(0);
 }
 
+/* Theme-toggle view transition (landing + login pages).
+   These must be global: ::view-transition-* are document-level pseudo-elements,
+   so Angular's component style scoping would rewrite them into selectors that
+   never match. --tx/--ty are set on <html> by the toggling component. */
+::view-transition-old(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+  animation: themeCircleReveal 0.65s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  mix-blend-mode: normal;
+}
+
+@keyframes themeCircleReveal {
+  from {
+    clip-path: circle(0% at var(--tx, 50%) var(--ty, 50%));
+  }
+  to {
+    clip-path: circle(140% at var(--tx, 50%) var(--ty, 50%));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
 /* Print Styles */
 @media print {
   app-calendar-sidebar,

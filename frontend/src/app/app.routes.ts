@@ -15,25 +15,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/auth/login-page/login-page').then((m) => m.LoginPage),
   },
-  {
-    path: 'register',
-    loadComponent: () =>
-      import('./features/auth/register-page/register-page').then((m) => m.RegisterPage),
-  },
-  {
-    path: 'forgot-password',
-    loadComponent: () =>
-      import('./features/auth/forgot-password-page/forgot-password-page').then(
-        (m) => m.ForgotPasswordPage,
-      ),
-  },
-  {
-    path: 'reset-password',
-    loadComponent: () =>
-      import('./features/auth/reset-password-page/reset-password-page').then(
-        (m) => m.ResetPasswordPage,
-      ),
-  },
+  // Đăng ký / quên mật khẩu / đặt lại mật khẩu đã bỏ: /login chỉ còn đăng nhập
+  // bằng Google, tài khoản mới được tạo ngay trong luồng đó và không có mật
+  // khẩu để quên. Giữ redirect cho các link cũ (bookmark, email đã gửi đi).
+  { path: 'register', redirectTo: 'login' },
+  { path: 'forgot-password', redirectTo: 'login' },
+  { path: 'reset-password', redirectTo: 'login' },
   {
     path: 'login-google-socket',
     loadComponent: () =>
