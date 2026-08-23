@@ -289,11 +289,19 @@ export class LandingPage implements OnInit, AfterViewInit {
     const PHRASE = 'Họp với Hùng thứ 6 tuần sau lúc 3 giờ chiều';
     const RING_LEN = 327;
 
+    /** Mốc bắt đầu của 5 stage trên timeline — dùng cho chấm chỉ báo. */
+    const STAGE_AT = [0, 2.4, 4.6, 6.6, 8.6];
+
     // ── trạng thái đầu ──
+    // Vị trí ngang của bảng và cột chữ giờ do CSS quyết định (sân khấu
+    // chiếm 56% bên phải, cột chữ nằm bên trái), nên ở đây chỉ còn lo
+    // góc camera và nội dung.
     gsap.set(steps, { opacity: 0, y: 26 });
     gsap.set(steps[0], { opacity: 1, y: 0 });
-    gsap.set(nodes, { opacity: 0, scale: 0.55 });
-    gsap.set([popAi, popEmail, popWarn, popTimer], { opacity: 0, y: 34, scale: 0.92 });
+    // z: đẩy node ra trước mặt bảng theo trục Z thật, không chỉ dựa vào
+    // z-index — trong preserve-3d thì vị trí Z mới là thứ quyết định.
+    gsap.set(nodes, { opacity: 0, scale: 0.55, z: 60 });
+    gsap.set([popAi, popEmail, popWarn, popTimer], { opacity: 0, y: 26 });
     gsap.set(q('.ev-ai'), { opacity: 0, scale: 0.7 });
     gsap.set(q('.ev-clash'), { opacity: 0 });
     gsap.set(board, { rotateX: 12, rotateY: -16, scale: 1, xPercent: 0, yPercent: 0 });
@@ -319,20 +327,35 @@ export class LandingPage implements OnInit, AfterViewInit {
         scrub: 1.2,
         invalidateOnRefresh: true,
         onUpdate: (self) => {
-          const i = Math.min(4, Math.floor(self.progress * 5.02));
+          // Các stage không dài bằng nhau (stage 0 được kéo dài để 4 node
+          // kịp hiện hết), nên phải quy đổi progress về mốc thời gian
+          // thật của timeline thay vì chia đều cho 5.
+          const t = self.progress * (tl.duration() || 1);
+          let i = 0;
+          for (let k = STAGE_AT.length - 1; k >= 0; k--) {
+            if (t >= STAGE_AT[k] - 0.4) {
+              i = k;
+              break;
+            }
+          }
           dots.forEach((d, k) => d.classList.toggle('on', k === i));
         },
       },
     });
 
-    // ══ STAGE 0 → 1: bung 4 node rồi zoom vào thanh nhập lệnh ══
+    // Bảng đứng yên bên phải suốt cả 5 stage — chỉ góc nhìn đổi. Ở đây
+    // xPercent/yPercent chỉ dùng để lia camera trong phạm vi sân khấu,
+    // không còn kiêm việc đẩy bảng tránh cột chữ như trước.
+
+    // ══ STAGE 0: 4 node bung ra quanh bảng ══
     tl.to(nodes, { opacity: 1, scale: 1, duration: 0.7, stagger: 0.12 }, 0.15)
       .to(board, { rotateY: -10, rotateX: 9, duration: 1.2 }, 0);
 
-    showStep(tl, 1, 1.2);
-    tl.to(nodes, { opacity: 0, scale: 0.7, duration: 0.5, stagger: 0.06 }, 1.1)
-      .to(board, { rotateX: 6, rotateY: -6, scale: 1.7, xPercent: 14, yPercent: 24 }, 1.2)
-      .to(popAi, { opacity: 1, y: 0, scale: 1, duration: 0.7 }, 1.6);
+    // ══ STAGE 1 — Trợ lý AI: lia lên thanh nhập lệnh ══
+    showStep(tl, 1, 2.4);
+    tl.to(nodes, { opacity: 0, scale: 0.7, duration: 0.5, stagger: 0.06 }, 2.3)
+      .to(board, { rotateX: 6, rotateY: -7, scale: 1.22, xPercent: 4, yPercent: 14 }, 2.4)
+      .to(popAi, { opacity: 1, y: 0, duration: 0.7 }, 2.9);
 
     // gõ chữ vào thanh lệnh — scrub được nên tua ngược vẫn xoá dần
     if (cmdText) {
@@ -347,49 +370,49 @@ export class LandingPage implements OnInit, AfterViewInit {
             cmdText.textContent = PHRASE.slice(0, Math.round(typed.n));
           },
         },
-        1.7,
+        2.9,
       );
     }
 
-    tl.to(q('.ev-ai'), { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(2)' }, 2.7);
+    tl.to(q('.ev-ai'), { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(2)' }, 3.9);
 
-    // ══ STAGE 2: xoay sang phải, thẻ email bay ra ══
-    showStep(tl, 2, 3.4);
-    tl.to([popAi], { opacity: 0, y: -26, scale: 0.94, duration: 0.5 }, 3.3)
-      .to(board, { rotateX: 8, rotateY: 24, scale: 1.12, xPercent: -6, yPercent: 0 }, 3.4)
+    // ══ STAGE 2 — Realtime & Email: xoay bảng lộ góc nhìn khác ══
+    showStep(tl, 2, 4.6);
+    tl.to([popAi], { opacity: 0, y: -24, duration: 0.5 }, 4.5)
+      .to(board, { rotateX: 8, rotateY: 22, scale: 1.06, xPercent: 0, yPercent: 0 }, 4.6)
+      // Thẻ email bay vào từ phía bảng (bên phải) để vẫn đọc là "tách ra
+      // khỏi lịch", nhưng đích đến nằm gọn trong cột chữ.
       .fromTo(
         popEmail,
-        { opacity: 0, y: 40, scale: 0.9, rotateY: -30 },
-        { opacity: 1, y: 0, scale: 1, rotateY: 0, duration: 0.8 },
-        3.8,
+        { opacity: 0, x: 60, y: 30, rotateY: 34 },
+        { opacity: 1, x: 0, y: 0, rotateY: 0, duration: 0.85 },
+        5.05,
       )
-      .to(q('.pbtn.yes'), { scale: 0.94, duration: 0.18, yoyo: true, repeat: 1 }, 4.7);
+      .to(q('.pbtn.yes'), { scale: 0.94, duration: 0.18, yoyo: true, repeat: 1 }, 5.9);
 
-    // ══ STAGE 3: phóng vào lưới giờ, hai block chồng nhau ══
-    showStep(tl, 3, 5.4);
-    tl.to(popEmail, { opacity: 0, y: -30, scale: 0.94, duration: 0.5 }, 5.3)
-      .to(board, { rotateX: 4, rotateY: -4, scale: 1.95, xPercent: -10, yPercent: -12 }, 5.4)
-      .to(q('.ev-ai'), { opacity: 0.25, duration: 0.4 }, 5.4)
-      .to(q('.ev-clash'), { opacity: 1, duration: 0.5, stagger: 0.18 }, 5.9)
-      .to(popWarn, { opacity: 1, y: 0, scale: 1, duration: 0.7 }, 6.2);
+    // ══ STAGE 3 — Phát hiện xung đột: lia xuống lưới giờ ══
+    showStep(tl, 3, 6.6);
+    tl.to(popEmail, { opacity: 0, y: -28, duration: 0.5 }, 6.5)
+      .to(board, { rotateX: 4, rotateY: -6, scale: 1.16, xPercent: 0, yPercent: -8 }, 6.6)
+      .to(q('.ev-ai'), { opacity: 0.25, duration: 0.4 }, 6.6)
+      .to(q('.ev-clash'), { opacity: 1, duration: 0.5, stagger: 0.18 }, 7.1)
+      .to(popWarn, { opacity: 1, y: 0, duration: 0.7 }, 7.4);
 
-    // ══ STAGE 4: làm mờ bảng, đồng hồ tập trung ra trước ══
-    showStep(tl, 4, 7.4);
-    tl.to(popWarn, { opacity: 0, y: -26, scale: 0.94, duration: 0.5 }, 7.3)
-      .to(q('.ev-clash'), { opacity: 0, duration: 0.4 }, 7.3)
-      .to(
-        board,
-        { rotateX: 10, rotateY: -18, scale: 0.92, xPercent: 0, yPercent: 0, opacity: 0.4 },
-        7.4,
-      )
+    // ══ STAGE 4 — Tập trung: bảng nhoè đi như xoá nét (depth of field) ══
+    showStep(tl, 4, 8.6);
+    tl.to(popWarn, { opacity: 0, y: -24, duration: 0.5 }, 8.5)
+      .to(q('.ev-clash'), { opacity: 0, duration: 0.4 }, 8.5)
+      // Chỉ blur, không hạ opacity: giảm mờ đục làm bảng bạc phếch, còn
+      // blur đơn thuần đọc ra là "mất nét vì camera lấy nét chỗ khác".
+      .to(board, { rotateX: 10, rotateY: -18, scale: 0.92, xPercent: 0, yPercent: 0 }, 8.6)
       // blur đặt trên .board-wrap chứ không phải .board: filter làm phẳng
       // ngữ cảnh 3D của chính element mang nó, để trên .board thì 3 lớp
       // độ dày translateZ sẽ sập chồng lên nhau.
-      .to(q('.board-wrap'), { filter: 'blur(7px)', duration: 1 }, 7.4)
-      .to(popTimer, { opacity: 1, y: 0, scale: 1, duration: 0.7 }, 7.8);
+      .to(q('.board-wrap'), { filter: 'blur(7px)', duration: 1 }, 8.6)
+      .to(popTimer, { opacity: 1, y: 0, duration: 0.7 }, 9.0);
 
     if (ringFg) {
-      tl.to(ringFg, { strokeDashoffset: RING_LEN * 0.32, duration: 1.4, ease: 'none' }, 8.0);
+      tl.to(ringFg, { strokeDashoffset: RING_LEN * 0.32, duration: 1.4, ease: 'none' }, 9.2);
     }
 
     if (ringTime) {
@@ -407,7 +430,7 @@ export class LandingPage implements OnInit, AfterViewInit {
             ringTime.textContent = `${mm}:${ss}`;
           },
         },
-        8.0,
+        9.2,
       );
     }
   }
