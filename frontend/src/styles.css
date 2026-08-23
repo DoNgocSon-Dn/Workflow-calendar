@@ -20,10 +20,12 @@
   --color-text-faint: #cbd5e1;
   --color-text-disabled: #cbd5e1;
   
-  --color-accent: #6366f1;
-  --color-accent-hover: #4f46e5;
-  --color-accent-soft: #eef2ff;
-  --color-accent-disabled: #c7d2fe;
+  /* Brand blue — the same accent the landing/login pages use, so the calendar
+     reads as one product. Kept clear of the reserved status hues below. */
+  --color-accent: #0866ff;
+  --color-accent-hover: #0055d4;
+  --color-accent-soft: #e7f0ff;
+  --color-accent-disabled: #b8d2ff;
   --color-accent-contrast: #ffffff;
 
   --color-danger: #ef4444;
@@ -33,24 +35,24 @@
 
   --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.04);
   --shadow-sm-hover: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 4px -1px rgba(15, 23, 42, 0.04);
-  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05), 0 10px 25px -5px rgba(99, 102, 241, 0.04);
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05), 0 10px 25px -5px rgba(8, 102, 255, 0.04);
   --shadow-popover: 0 12px 32px -4px rgba(15, 23, 42, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.06);
   --shadow-popup: 0 16px 36px -4px rgba(15, 23, 42, 0.15);
   --shadow-modal: 0 25px 60px -12px rgba(15, 23, 42, 0.25);
   --shadow-drawer: 8px 0 24px rgba(15, 23, 42, 0.08);
   --overlay-backdrop: rgba(15, 23, 42, 0.4);
 
-  /* Vivid glassmorphism accents — gradient spectrum + glow */
-  --gradient-brand: linear-gradient(135deg, #6366f1 0%, #a855f7 45%, #ec4899 100%);
-  --gradient-brand-vivid: linear-gradient(135deg, #4f46e5 0%, #9333ea 35%, #ec4899 70%, #fb923c 100%);
+  /* Glassmorphism accents — single blue→cyan family so the page background
+     stays calm behind colored event chips instead of competing with them. */
+  --gradient-brand: linear-gradient(135deg, #0866ff 0%, #3b9dff 50%, #00c2ff 100%);
+  --gradient-brand-vivid: linear-gradient(135deg, #0055d4 0%, #0866ff 40%, #00a3ff 75%, #00d4ff 100%);
   --gradient-mesh:
-    radial-gradient(at 8% 10%, rgba(99, 102, 241, 0.50) 0px, transparent 55%),
-    radial-gradient(at 92% 12%, rgba(236, 72, 153, 0.42) 0px, transparent 55%),
-    radial-gradient(at 85% 88%, rgba(56, 189, 248, 0.40) 0px, transparent 55%),
-    radial-gradient(at 12% 92%, rgba(168, 85, 247, 0.38) 0px, transparent 55%),
-    radial-gradient(at 50% 50%, rgba(251, 146, 60, 0.14) 0px, transparent 60%);
-  --glow-accent: 0 0 0 1px rgba(99, 102, 241, 0.15), 0 8px 30px -6px rgba(99, 102, 241, 0.35);
-  --glow-accent-strong: 0 0 0 1px rgba(147, 51, 234, 0.25), 0 12px 40px -6px rgba(236, 72, 153, 0.45);
+    radial-gradient(at 8% 10%, rgba(8, 102, 255, 0.28) 0px, transparent 55%),
+    radial-gradient(at 92% 12%, rgba(0, 194, 255, 0.22) 0px, transparent 55%),
+    radial-gradient(at 85% 88%, rgba(56, 189, 248, 0.24) 0px, transparent 55%),
+    radial-gradient(at 12% 92%, rgba(8, 102, 255, 0.18) 0px, transparent 55%);
+  --glow-accent: 0 0 0 1px rgba(8, 102, 255, 0.15), 0 8px 30px -6px rgba(8, 102, 255, 0.35);
+  --glow-accent-strong: 0 0 0 1px rgba(0, 163, 255, 0.25), 0 12px 40px -6px rgba(8, 102, 255, 0.45);
   --glass-bg: rgba(255, 255, 255, 0.6);
   --glass-bg-strong: rgba(255, 255, 255, 0.78);
   --glass-border: rgba(255, 255, 255, 0.5);
@@ -101,11 +103,11 @@
   --color-text-faint: #475569;
   --color-text-disabled: #334155;
   
-  --color-accent: #818cf8;
-  --color-accent-hover: #a5b4fc;
-  --color-accent-soft: rgba(99, 102, 241, 0.18);
+  --color-accent: #4d92ff;
+  --color-accent-hover: #7db0ff;
+  --color-accent-soft: rgba(8, 102, 255, 0.18);
   --color-accent-disabled: #1e293b;
-  --color-accent-contrast: #0f172a;
+  --color-accent-contrast: #061019;
   
   --color-danger: #f87171;
   --color-warning: #fbbf24;
@@ -121,15 +123,15 @@
   --shadow-drawer: 8px 0 28px rgba(0, 0, 0, 0.5);
   --overlay-backdrop: rgba(0, 0, 0, 0.7);
 
-  --gradient-brand: linear-gradient(135deg, #818cf8 0%, #c084fc 45%, #f472b6 100%);
-  --gradient-brand-vivid: linear-gradient(135deg, #818cf8 0%, #c084fc 35%, #f472b6 70%, #fb923c 100%);
+  --gradient-brand: linear-gradient(135deg, #4d92ff 0%, #38bdf8 50%, #22d3ee 100%);
+  --gradient-brand-vivid: linear-gradient(135deg, #2b7fff 0%, #4d92ff 40%, #38bdf8 75%, #22d3ee 100%);
   --gradient-mesh:
-    radial-gradient(at 8% 10%, rgba(99, 102, 241, 0.16) 0px, transparent 45%),
-    radial-gradient(at 92% 12%, rgba(236, 72, 153, 0.13) 0px, transparent 45%),
+    radial-gradient(at 8% 10%, rgba(8, 102, 255, 0.16) 0px, transparent 45%),
+    radial-gradient(at 92% 12%, rgba(0, 194, 255, 0.12) 0px, transparent 45%),
     radial-gradient(at 85% 88%, rgba(14, 165, 233, 0.13) 0px, transparent 45%),
-    radial-gradient(at 12% 92%, rgba(168, 85, 247, 0.12) 0px, transparent 45%);
-  --glow-accent: 0 0 0 1px rgba(129, 140, 248, 0.25), 0 8px 30px -6px rgba(129, 140, 248, 0.45);
-  --glow-accent-strong: 0 0 0 1px rgba(192, 132, 252, 0.3), 0 12px 44px -6px rgba(244, 114, 182, 0.55);
+    radial-gradient(at 12% 92%, rgba(8, 102, 255, 0.11) 0px, transparent 45%);
+  --glow-accent: 0 0 0 1px rgba(77, 146, 255, 0.25), 0 8px 30px -6px rgba(77, 146, 255, 0.45);
+  --glow-accent-strong: 0 0 0 1px rgba(56, 189, 248, 0.3), 0 12px 44px -6px rgba(77, 146, 255, 0.55);
   --glass-bg: rgba(17, 24, 39, 0.82);
   --glass-bg-strong: rgba(17, 24, 39, 0.94);
   --glass-border: rgba(255, 255, 255, 0.1);
@@ -141,131 +143,87 @@
 }
 
 /* ==========================================================================
-   Brand themes — re-skin accent color / corner radius / elevation only.
-   Typography tokens (--font-sans, --font-heading) are never touched here.
+   Brand themes — re-skin the accent ramp only. Typography (--font-sans,
+   --font-heading), shape (--radius-*) and elevation (--shadow-*) are never
+   touched here, so switching color can't shift the calendar's layout.
    Toggled via BrandThemeService, which sets [data-brand] on <html>.
+
+   'default' is the brand blue defined in :root above — it has no block here.
+   Every accent below clears 4.5:1 on its own background and stays away from
+   the reserved status hues (danger red, warning amber, success green,
+   live pink) so an accent never gets mistaken for an event state.
    ========================================================================== */
 
-/* Airbnb — Rausch red-pink, soft pill shapes, single diffuse shadow tier. */
-:root[data-brand='airbnb'] {
-  --color-accent: #ff385c;
-  --color-accent-hover: #e00b41;
-  --color-accent-soft: #ffe4ea;
-  --color-accent-disabled: #ffd1da;
+/* Xanh ngọc — teal, cool and low-key. Deliberately deeper than the success
+   green so "accent" and "sự kiện đã xong" never read as the same color. */
+:root[data-brand='teal'] {
+  --color-accent: #0f766e;
+  --color-accent-hover: #115e59;
+  --color-accent-soft: #d5f5f0;
+  --color-accent-disabled: #99e6dc;
   --color-accent-contrast: #ffffff;
-  --color-border: #dddddd;
-  --color-border-strong: #c1c1c1;
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
-  --shadow-sm: rgba(0, 0, 0, 0.02) 0 0 0 1px, rgba(0, 0, 0, 0.04) 0 2px 6px 0;
-  --shadow-card: rgba(0, 0, 0, 0.02) 0 0 0 1px, rgba(0, 0, 0, 0.04) 0 2px 6px 0, rgba(0, 0, 0, 0.1) 0 4px 8px 0;
-  --shadow-popover: rgba(0, 0, 0, 0.02) 0 0 0 1px, rgba(0, 0, 0, 0.06) 0 4px 12px 0, rgba(0, 0, 0, 0.12) 0 8px 16px 0;
-  --shadow-modal: rgba(0, 0, 0, 0.03) 0 0 0 1px, rgba(0, 0, 0, 0.08) 0 12px 28px 0, rgba(0, 0, 0, 0.16) 0 20px 40px 0;
-  --gradient-brand-vivid: linear-gradient(135deg, #ff385c 0%, #e00b41 55%, #c2185b 100%);
-  --glow-accent: 0 0 0 1px rgba(255, 56, 92, 0.22), 0 8px 30px -6px rgba(255, 56, 92, 0.4);
-  --glow-accent-strong: 0 0 0 1px rgba(224, 11, 65, 0.28), 0 12px 44px -6px rgba(255, 56, 92, 0.5);
+  --gradient-brand: linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #22d3ee 100%);
+  --gradient-brand-vivid: linear-gradient(135deg, #115e59 0%, #0f766e 40%, #14b8a6 75%, #22d3ee 100%);
+  --gradient-mesh:
+    radial-gradient(at 8% 10%, rgba(15, 118, 110, 0.26) 0px, transparent 55%),
+    radial-gradient(at 92% 12%, rgba(34, 211, 238, 0.20) 0px, transparent 55%),
+    radial-gradient(at 85% 88%, rgba(20, 184, 166, 0.22) 0px, transparent 55%),
+    radial-gradient(at 12% 92%, rgba(15, 118, 110, 0.16) 0px, transparent 55%);
+  --glow-accent: 0 0 0 1px rgba(15, 118, 110, 0.16), 0 8px 30px -6px rgba(15, 118, 110, 0.35);
+  --glow-accent-strong: 0 0 0 1px rgba(20, 184, 166, 0.25), 0 12px 40px -6px rgba(15, 118, 110, 0.45);
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05), 0 10px 25px -5px rgba(15, 118, 110, 0.04);
 }
-:root.dark[data-brand='airbnb'] {
-  --color-accent: #ff5a76;
-  --color-accent-hover: #ff7a90;
-  --color-accent-soft: rgba(255, 56, 92, 0.16);
-  --color-accent-disabled: rgba(255, 56, 92, 0.3);
-  --color-accent-contrast: #1a0508;
-}
-
-/* Mintlify — mint green accent, fully pill-shaped controls, layered shadows. */
-:root[data-brand='mintlify'] {
-  --color-accent: #00d4a4;
-  --color-accent-hover: #00b48a;
-  --color-accent-soft: #d7f9ef;
-  --color-accent-disabled: #7cebcb;
-  --color-accent-contrast: #0a0a0a;
-  --color-border: #e5e5e5;
-  --color-border-strong: #d0d0d0;
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --shadow-sm: rgba(0, 0, 0, 0.04) 0px 1px 2px 0px;
-  --shadow-card: rgba(0, 0, 0, 0.08) 0px 4px 12px 0px;
-  --shadow-popover: rgba(0, 0, 0, 0.1) 0px 8px 20px 0px;
-  --shadow-modal: rgba(0, 0, 0, 0.14) 0px 20px 44px -6px;
-  --gradient-brand-vivid: linear-gradient(135deg, #00d4a4 0%, #06b6d4 50%, #00b48a 100%);
-  --glow-accent: 0 0 0 1px rgba(0, 212, 164, 0.2), 0 8px 30px -6px rgba(0, 212, 164, 0.4);
-  --glow-accent-strong: 0 0 0 1px rgba(6, 182, 212, 0.25), 0 12px 44px -6px rgba(0, 212, 164, 0.5);
-}
-:root.dark[data-brand='mintlify'] {
-  --color-accent: #22e6b8;
-  --color-accent-hover: #57f0cc;
-  --color-accent-soft: rgba(0, 212, 164, 0.16);
-  --color-accent-disabled: rgba(0, 212, 164, 0.28);
-  --color-accent-contrast: #052018;
+:root.dark[data-brand='teal'] {
+  --color-accent: #2dd4bf;
+  --color-accent-hover: #5eead4;
+  --color-accent-soft: rgba(20, 184, 166, 0.18);
+  --color-accent-disabled: rgba(20, 184, 166, 0.3);
+  --color-accent-contrast: #04211e;
+  --gradient-brand: linear-gradient(135deg, #2dd4bf 0%, #22d3ee 50%, #67e8f9 100%);
+  --gradient-brand-vivid: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 40%, #22d3ee 75%, #67e8f9 100%);
+  --gradient-mesh:
+    radial-gradient(at 8% 10%, rgba(20, 184, 166, 0.16) 0px, transparent 45%),
+    radial-gradient(at 92% 12%, rgba(34, 211, 238, 0.12) 0px, transparent 45%),
+    radial-gradient(at 85% 88%, rgba(45, 212, 191, 0.13) 0px, transparent 45%),
+    radial-gradient(at 12% 92%, rgba(20, 184, 166, 0.11) 0px, transparent 45%);
+  --glow-accent: 0 0 0 1px rgba(45, 212, 191, 0.25), 0 8px 30px -6px rgba(45, 212, 191, 0.45);
+  --glow-accent-strong: 0 0 0 1px rgba(34, 211, 238, 0.3), 0 12px 44px -6px rgba(45, 212, 191, 0.55);
 }
 
-/* Supabase — emerald accent with near-black text-on-accent, squared 6px
-   radius (never pill), layered elevation. */
-:root[data-brand='supabase'] {
-  --color-accent: #3ecf8e;
-  --color-accent-hover: #24b47e;
-  --color-accent-soft: #d7f7e7;
-  --color-accent-disabled: #a8ecca;
-  --color-accent-contrast: #171717;
-  --color-border: #dfdfdf;
-  --color-border-strong: #c7c7c7;
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
-  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.08);
-  --shadow-popover: 0 12px 32px rgba(0, 0, 0, 0.1);
-  --shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.12);
-  --gradient-brand-vivid: linear-gradient(135deg, #3ecf8e 0%, #22c55e 50%, #24b47e 100%);
-  --glow-accent: 0 0 0 1px rgba(62, 207, 142, 0.2), 0 8px 30px -6px rgba(62, 207, 142, 0.4);
-  --glow-accent-strong: 0 0 0 1px rgba(34, 197, 94, 0.25), 0 12px 44px -6px rgba(62, 207, 142, 0.5);
-}
-:root.dark[data-brand='supabase'] {
-  --color-accent: #3ecf8e;
-  --color-accent-hover: #4ade80;
-  --color-accent-soft: rgba(62, 207, 142, 0.18);
-  --color-accent-disabled: rgba(62, 207, 142, 0.3);
-  --color-accent-contrast: #0a0f0c;
-}
-
-/* Vercel — ink-and-blue duet, bimodal shapes (tight squares + pills),
-   whisper-thin hairline shadows. */
-:root[data-brand='vercel'] {
-  --color-accent: #0070f3;
-  --color-accent-hover: #0761d1;
-  --color-accent-soft: #d3e5ff;
-  --color-accent-disabled: #a8cbff;
+/* Tím — violet, the warmest of the three without straying into the
+   danger/warning reds and ambers. */
+:root[data-brand='violet'] {
+  --color-accent: #7c3aed;
+  --color-accent-hover: #6d28d9;
+  --color-accent-soft: #ede9fe;
+  --color-accent-disabled: #c4b5fd;
   --color-accent-contrast: #ffffff;
-  --color-border: #ebebeb;
-  --color-border-strong: #d4d4d4;
-  --radius-xs: 0px;
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 16px;
-  --shadow-sm: 0px 1px 1px rgba(0, 0, 0, 0.04);
-  --shadow-card: 0px 2px 2px rgba(0, 0, 0, 0.04), 0px 8px 16px -4px rgba(0, 0, 0, 0.06);
-  --shadow-popover: 0px 4px 8px rgba(0, 0, 0, 0.06), 0px 12px 24px -6px rgba(0, 0, 0, 0.08);
-  --shadow-modal: 0px 8px 16px rgba(0, 0, 0, 0.08), 0px 24px 48px -8px rgba(0, 0, 0, 0.12);
-  --gradient-brand-vivid: linear-gradient(135deg, #0070f3 0%, #7928ca 50%, #0761d1 100%);
-  --glow-accent: 0 0 0 1px rgba(0, 112, 243, 0.2), 0 8px 30px -6px rgba(0, 112, 243, 0.4);
-  --glow-accent-strong: 0 0 0 1px rgba(121, 40, 202, 0.25), 0 12px 44px -6px rgba(0, 112, 243, 0.5);
+  --gradient-brand: linear-gradient(135deg, #7c3aed 0%, #a78bfa 50%, #c4b5fd 100%);
+  --gradient-brand-vivid: linear-gradient(135deg, #6d28d9 0%, #7c3aed 40%, #a78bfa 75%, #c4b5fd 100%);
+  --gradient-mesh:
+    radial-gradient(at 8% 10%, rgba(124, 58, 237, 0.26) 0px, transparent 55%),
+    radial-gradient(at 92% 12%, rgba(167, 139, 250, 0.20) 0px, transparent 55%),
+    radial-gradient(at 85% 88%, rgba(139, 92, 246, 0.22) 0px, transparent 55%),
+    radial-gradient(at 12% 92%, rgba(124, 58, 237, 0.16) 0px, transparent 55%);
+  --glow-accent: 0 0 0 1px rgba(124, 58, 237, 0.16), 0 8px 30px -6px rgba(124, 58, 237, 0.35);
+  --glow-accent-strong: 0 0 0 1px rgba(139, 92, 246, 0.25), 0 12px 40px -6px rgba(124, 58, 237, 0.45);
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05), 0 10px 25px -5px rgba(124, 58, 237, 0.04);
 }
-:root.dark[data-brand='vercel'] {
-  --color-accent: #3391ff;
-  --color-accent-hover: #5aa5ff;
-  --color-accent-soft: rgba(0, 112, 243, 0.18);
-  --color-accent-disabled: rgba(0, 112, 243, 0.3);
-  --color-accent-contrast: #061019;
+:root.dark[data-brand='violet'] {
+  --color-accent: #a78bfa;
+  --color-accent-hover: #c4b5fd;
+  --color-accent-soft: rgba(124, 58, 237, 0.18);
+  --color-accent-disabled: rgba(124, 58, 237, 0.3);
+  --color-accent-contrast: #17092e;
+  --gradient-brand: linear-gradient(135deg, #a78bfa 0%, #c4b5fd 50%, #ddd6fe 100%);
+  --gradient-brand-vivid: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 40%, #c4b5fd 75%, #ddd6fe 100%);
+  --gradient-mesh:
+    radial-gradient(at 8% 10%, rgba(124, 58, 237, 0.16) 0px, transparent 45%),
+    radial-gradient(at 92% 12%, rgba(167, 139, 250, 0.12) 0px, transparent 45%),
+    radial-gradient(at 85% 88%, rgba(139, 92, 246, 0.13) 0px, transparent 45%),
+    radial-gradient(at 12% 92%, rgba(124, 58, 237, 0.11) 0px, transparent 45%);
+  --glow-accent: 0 0 0 1px rgba(167, 139, 250, 0.25), 0 8px 30px -6px rgba(167, 139, 250, 0.45);
+  --glow-accent-strong: 0 0 0 1px rgba(139, 92, 246, 0.3), 0 12px 44px -6px rgba(167, 139, 250, 0.55);
 }
 
 html,

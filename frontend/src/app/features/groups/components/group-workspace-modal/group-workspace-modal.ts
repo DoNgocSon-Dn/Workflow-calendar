@@ -33,9 +33,6 @@ export class GroupWorkspaceModal {
     () => this.currentRole() === 'owner' || this.currentRole() === 'admin',
   );
 
-  protected readonly groupInitial = computed(
-    () => (this.store.activeGroup()?.name || '?').trim().charAt(0).toUpperCase(),
-  );
   protected readonly todoTasks = computed(() => this.store.tasks().filter((t) => t.status === 'todo'));
   protected readonly inProgressTasks = computed(() =>
     this.store.tasks().filter((t) => t.status === 'in_progress'),

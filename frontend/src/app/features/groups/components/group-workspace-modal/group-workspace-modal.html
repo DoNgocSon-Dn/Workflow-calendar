@@ -3,7 +3,6 @@
     @if (store.activeGroup(); as group) {
       <header class="modal-header">
         <div class="header-title-box">
-          <span class="group-avatar" [style.background-color]="group.color">{{ groupInitial() }}</span>
           <div>
             <h2>{{ group.name }}</h2>
             <p class="group-desc">{{ group.description || 'Không gian làm việc nhóm' }}</p>

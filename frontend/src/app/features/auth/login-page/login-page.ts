@@ -85,7 +85,7 @@ export class LoginPage implements AfterViewInit {
 
   /**
    * Bypasses change detection on purpose: this drives a purely decorative
-   * parallax effect on the brand panel and must not trigger a render on
+   * parallax effect on the background orbs and must not trigger a render on
    * every pointer move.
    */
   onMouseMove(event: MouseEvent): void {
@@ -137,10 +137,10 @@ export class LoginPage implements AfterViewInit {
   }
 
   /**
-   * Lightweight canvas particle drift for the brand panel. Skipped entirely
-   * on narrow viewports (the brand panel itself is hidden below 960px) and
-   * when the user asked for reduced motion — no point paying the animation
-   * cost for an effect nobody sees.
+   * Lightweight canvas particle drift across the page background. Skipped on
+   * narrow viewports (the effect is barely visible once the card fills the
+   * screen) and when the user asked for reduced motion — no point paying the
+   * animation cost for an effect nobody sees.
    */
   private initParticles(): void {
     if (this.prefersReducedMotion() || !window.matchMedia('(min-width: 960px)').matches) {

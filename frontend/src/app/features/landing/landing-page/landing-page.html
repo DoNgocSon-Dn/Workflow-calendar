@@ -1,4 +1,10 @@
 <div class="landing">
+  <!-- Scroll position, drawn by the compositor via a CSS scroll timeline —
+       no scroll listener, no JS frame work. -->
+  <div class="scroll-progress" aria-hidden="true"></div>
+  <!-- Watched by IntersectionObserver to toggle the nav's elevated state. -->
+  <div class="nav-sentinel" aria-hidden="true"></div>
+
   <header class="nav" [class.scrolled]="navScrolled()">
     <div class="nav-inner">
       <a class="brand" routerLink="/landing">
@@ -17,9 +23,9 @@
       </a>
 
       <nav class="nav-links">
-        <a href="#features">Tính năng</a>
-        <a href="#how-it-works">Cách hoạt động</a>
-        <a href="#faq">Câu hỏi thường gặp</a>
+        <a href="#features" (click)="scrollToSection($event, 'features')">Tính năng</a>
+        <a href="#how-it-works" (click)="scrollToSection($event, 'how-it-works')">Cách hoạt động</a>
+        <a href="#faq" (click)="scrollToSection($event, 'faq')">Câu hỏi thường gặp</a>
       </nav>
 
       <div class="nav-actions">
@@ -35,22 +41,26 @@
       <div class="hero-orb hero-orb-2" aria-hidden="true"></div>
 
       <div class="hero-inner">
-        <span class="hero-kicker">✨ Nền tảng quản lý lịch &amp; công việc thông minh</span>
+        <span class="hero-kicker hero-step">✨ Nền tảng quản lý lịch &amp; công việc thông minh</span>
         <h1 class="hero-title">
-          Kết nối. Lên lịch.<br />
-          <span class="hero-title-gradient">Hoàn thành cùng nhau.</span>
+          <span class="hero-line"><span class="hero-line-inner">Kết nối. Lên lịch.</span></span>
+          <span class="hero-line"
+            ><span class="hero-line-inner hero-title-gradient">Hoàn thành cùng nhau.</span></span
+          >
         </h1>
-        <p class="hero-subtitle">
+        <p class="hero-subtitle hero-step">
           Workflow gộp lịch cá nhân, nhóm làm việc và trợ lý AI vào một nơi duy nhất — đăng nhập
           không cần mật khẩu, cộng tác theo thời gian thực, không còn lịch trình rối rắm.
         </p>
 
-        <div class="hero-actions">
-          <a class="btn-primary" routerLink="/login">Bắt đầu miễn phí</a>
-          <a class="btn-secondary" href="#features">Xem tính năng ↓</a>
+        <div class="hero-actions hero-step">
+          <a class="btn-primary" routerLink="/login">Bắt đầu ngay</a>
+          <a class="btn-secondary" href="#features" (click)="scrollToSection($event, 'features')"
+            >Xem tính năng ↓</a
+          >
         </div>
 
-        <div class="hero-badges">
+        <div class="hero-badges hero-step">
           <span>🔒 Không cần mật khẩu</span>
           <span>⚡ Đồng bộ real-time</span>
           <span>🤖 AI trợ lý tích hợp</span>
@@ -85,7 +95,7 @@
               <span class="preview-chip chip-teal"></span>
               <div>
                 <p class="preview-item-title">Trợ lý AI: tóm tắt lịch tuần</p>
-                <p class="preview-item-time">✨ Đang xử lý…</p>
+                <p class="preview-item-time">16:30 – 16:45</p>
               </div>
             </li>
           </ul>
@@ -93,9 +103,33 @@
       </div>
     </section>
 
-    <!-- TRUST STRIP -->
-    <section class="trust-strip">
-      <p data-reveal>Được xây dựng cho cá nhân, nhóm dự án và mọi quy mô đội ngũ cần lên lịch cùng nhau.</p>
+    <!-- MARQUEE — decorative; the same keywords appear as real text in the
+         Features section below, so screen readers lose nothing here. -->
+    <section class="marquee" aria-hidden="true">
+      <div class="marquee-track">
+        @for (pass of [0, 1]; track pass) {
+          <div class="marquee-group">
+            @for (item of marqueeItems; track item) {
+              <span class="marquee-item">{{ item }}</span>
+              <span class="marquee-sep">✦</span>
+            }
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- STATS -->
+    <section class="stats">
+      <div class="stats-grid">
+        @for (s of stats; track s.label; let i = $index) {
+          <div class="stat" data-reveal [style.transition-delay.ms]="i * 80">
+            <span class="stat-value" [attr.data-target]="s.value" [attr.data-suffix]="s.suffix"
+              >{{ s.value }}{{ s.suffix }}</span
+            >
+            <span class="stat-label">{{ s.label }}</span>
+          </div>
+        }
+      </div>
     </section>
 
     <!-- FEATURES -->
@@ -166,8 +200,8 @@
     <section class="final-cta">
       <div class="final-cta-card" data-reveal>
         <h2>Sẵn sàng sắp xếp lại lịch trình của bạn?</h2>
-        <p>Đăng nhập trong vài giây, không cần mật khẩu, không cần thẻ thanh toán.</p>
-        <a class="btn-primary" routerLink="/login">Bắt đầu ngay — miễn phí</a>
+        <p>Đăng nhập bằng Gmail hoặc email trong vài giây — không cần nhớ mật khẩu.</p>
+        <a class="btn-primary" routerLink="/login">Bắt đầu ngay</a>
       </div>
     </section>
   </main>
@@ -179,9 +213,9 @@
         <p>Nền tảng quản lý lịch &amp; công việc thông minh.</p>
       </div>
       <div class="footer-links">
-        <a href="#features">Tính năng</a>
-        <a href="#how-it-works">Cách hoạt động</a>
-        <a href="#faq">FAQ</a>
+        <a href="#features" (click)="scrollToSection($event, 'features')">Tính năng</a>
+        <a href="#how-it-works" (click)="scrollToSection($event, 'how-it-works')">Cách hoạt động</a>
+        <a href="#faq" (click)="scrollToSection($event, 'faq')">FAQ</a>
         <a routerLink="/login">Đăng nhập</a>
       </div>
     </div>

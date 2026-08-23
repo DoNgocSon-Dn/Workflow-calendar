@@ -11,11 +11,9 @@ interface BrandThemeOption {
 }
 
 const BRAND_THEME_OPTIONS: readonly BrandThemeOption[] = [
-  { value: 'default', label: 'Mặc định', swatch: '#6366f1' },
-  { value: 'airbnb', label: 'Airbnb', swatch: '#ff385c' },
-  { value: 'mintlify', label: 'Mintlify', swatch: '#00d4a4' },
-  { value: 'supabase', label: 'Supabase', swatch: '#3ecf8e' },
-  { value: 'vercel', label: 'Vercel', swatch: '#0070f3' },
+  { value: 'default', label: 'Xanh dương', swatch: '#0866ff' },
+  { value: 'teal', label: 'Xanh ngọc', swatch: '#0f766e' },
+  { value: 'violet', label: 'Tím', swatch: '#7c3aed' },
 ];
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;

@@ -1,15 +1,19 @@
 import { Injectable, effect, signal } from '@angular/core';
 
 /**
- * A "brand theme" only re-skins color/shape/elevation tokens (accent color,
- * corner radius scale, shadow tiers) — it never touches typography. Layered
- * independently from `ThemeService`'s light/dark mode via a `data-brand`
- * attribute on `<html>`, so both can be combined freely.
+ * A "brand theme" only re-skins the accent color ramp — it never touches
+ * typography, spacing or shape. Layered independently from `ThemeService`'s
+ * light/dark mode via a `data-brand` attribute on `<html>`, so both can be
+ * combined freely.
+ *
+ * The three hues are deliberately picked to avoid the calendar's reserved
+ * status colors (red = danger, amber = warning, green = success, pink = live),
+ * so an accent never reads as an event state.
  */
-export type BrandTheme = 'default' | 'airbnb' | 'mintlify' | 'supabase' | 'vercel';
+export type BrandTheme = 'default' | 'teal' | 'violet';
 
 const STORAGE_KEY = 'brand-theme';
-const VALID_THEMES: readonly BrandTheme[] = ['default', 'airbnb', 'mintlify', 'supabase', 'vercel'];
+const VALID_THEMES: readonly BrandTheme[] = ['default', 'teal', 'violet'];
 
 function isBrandTheme(value: string | null): value is BrandTheme {
   return value !== null && (VALID_THEMES as readonly string[]).includes(value);

@@ -49,6 +49,44 @@ a {
   color: inherit;
 }
 
+/* ===== SCROLL PROGRESS =====
+   Driven by a CSS scroll timeline, which the browser runs on the compositor —
+   the bar tracks the scrollbar without a single JS frame. Browsers without
+   scroll timelines simply never see the bar grow, which costs nothing. */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 200;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--color-accent) 0%, #00c2ff 60%, #7db0ff 100%);
+  pointer-events: none;
+}
+
+@supports (animation-timeline: scroll()) {
+  .scroll-progress {
+    animation: progressGrow linear both;
+    animation-timeline: scroll(root block);
+  }
+}
+
+@keyframes progressGrow {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.nav-sentinel {
+  position: absolute;
+  top: 0;
+  height: 1px;
+  width: 1px;
+  pointer-events: none;
+}
+
 /* ===== NAV ===== */
 .nav {
   position: sticky;
@@ -135,6 +173,14 @@ a {
 }
 
 /* ===== SHARED SECTION LAYOUT ===== */
+
+/* Jump targets stop below the sticky nav instead of sliding underneath it. */
+#features,
+#how-it-works,
+#faq {
+  scroll-margin-top: 5.5rem;
+}
+
 main {
   max-width: 1120px;
   margin: 0 auto;
@@ -192,13 +238,18 @@ main {
    the two compose independently instead of one overriding the other. */
 [data-reveal] {
   opacity: 0;
-  translate: 0 26px;
-  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), translate 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  translate: 0 34px;
+  scale: 0.985;
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    translate 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    scale 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 [data-reveal].is-revealed {
   opacity: 1;
   translate: 0 0;
+  scale: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -234,6 +285,7 @@ main {
   top: -12rem;
   left: -8rem;
   background: rgba(8, 102, 255, 0.16);
+  animation: orbDrift1 18s ease-in-out infinite alternate;
 }
 
 .hero-orb-2 {
@@ -242,6 +294,23 @@ main {
   bottom: -10rem;
   right: -6rem;
   background: rgba(0, 194, 255, 0.16);
+  animation: orbDrift2 22s ease-in-out infinite alternate;
+}
+
+/* `translate`/`scale` only — the blur stays fixed, so these never re-rasterize
+   the (expensive) 90px blur; the compositor just moves the cached layer. */
+@keyframes orbDrift1 {
+  to {
+    translate: 60px 40px;
+    scale: 1.12;
+  }
+}
+
+@keyframes orbDrift2 {
+  to {
+    translate: -50px -35px;
+    scale: 1.08;
+  }
 }
 
 .hero-inner {
@@ -250,7 +319,28 @@ main {
   display: flex;
   flex-direction: column;
   gap: 1.35rem;
-  animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Staggered entrance — each element waits its turn instead of the whole
+   column sliding up as one block. */
+.hero-step {
+  animation: fadeSlideUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hero-kicker.hero-step {
+  animation-delay: 0.05s;
+}
+
+.hero-subtitle.hero-step {
+  animation-delay: 0.55s;
+}
+
+.hero-actions.hero-step {
+  animation-delay: 0.68s;
+}
+
+.hero-badges.hero-step {
+  animation-delay: 0.8s;
 }
 
 .hero-kicker {
@@ -274,11 +364,62 @@ main {
   color: var(--color-text);
 }
 
+/* Each line rises out from behind its own clipping box. The negative margin
+   cancels the padding that keeps descenders (the "g" in "cùng") from being
+   sliced off by that same overflow clip. */
+.hero-line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+}
+
+.hero-line-inner {
+  display: block;
+  animation: lineRise 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hero-line:nth-child(1) .hero-line-inner {
+  animation-delay: 0.18s;
+}
+
+/* Line 2 is .hero-title-gradient, which sets its own delay alongside the
+   shimmer — deliberately not given a delay here, since a more specific rule
+   would collapse that two-animation delay list back down to one value. */
+
+@keyframes lineRise {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .hero-title-gradient {
-  background: linear-gradient(100deg, var(--color-accent) 0%, #00c2ff 100%);
+  background: linear-gradient(
+    100deg,
+    var(--color-accent) 0%,
+    #00c2ff 30%,
+    #a5c9ff 45%,
+    #00c2ff 60%,
+    var(--color-accent) 100%
+  );
+  background-size: 250% auto;
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  animation:
+    lineRise 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.32s both,
+    heroShimmer 7s linear 1.4s infinite;
+}
+
+@keyframes heroShimmer {
+  to {
+    background-position: -150% center;
+  }
 }
 
 .hero-subtitle {
@@ -362,7 +503,26 @@ main {
   z-index: 1;
   display: flex;
   justify-content: center;
-  animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+  animation: fadeSlideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
+}
+
+/* Gentle scroll parallax — the card drifts against the page as you leave the
+   hero. Uses a view timeline, so it is compositor-driven like the progress bar
+   and adds no per-frame JS. */
+@supports (animation-timeline: view()) {
+  .hero-preview {
+    animation:
+      fadeSlideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both,
+      heroParallax linear both;
+    animation-timeline: auto, view();
+    animation-range: normal, cover 20% cover 100%;
+  }
+}
+
+@keyframes heroParallax {
+  to {
+    translate: 0 -46px;
+  }
 }
 
 .preview-card {
@@ -488,20 +648,116 @@ main {
   }
 }
 
-/* ===== TRUST STRIP ===== */
-.trust-strip {
-  padding: 1.5rem 0;
-  text-align: center;
+/* ===== MARQUEE =====
+   Full-bleed out of `main`'s 1120px column. The track holds two identical
+   groups and slides exactly one group-width, so the loop point is seamless. */
+.marquee {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-top: 1.5rem;
+  padding: 0.9rem 0;
+  overflow: hidden;
   border-top: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
-  margin: 1rem 0 4.5rem;
+  background: linear-gradient(90deg, var(--color-accent-soft) 0%, #ffffff 50%, var(--color-accent-soft) 100%);
+  /* Fades the strip out at both edges instead of cutting it off hard. */
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
 }
 
-.trust-strip p {
-  margin: 0;
-  font-size: 0.875rem;
-  font-weight: 500;
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marqueeSlide 34s linear infinite;
+}
+
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+.marquee-group {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.marquee-item {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.marquee-sep {
+  margin: 0 1.35rem;
+  font-size: 0.7rem;
+  color: var(--color-accent);
+}
+
+@keyframes marqueeSlide {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* ===== STATS ===== */
+.stats {
+  padding: 3.5rem 0 4.5rem;
+  text-align: center;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1.35rem 0.75rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.stat:hover {
+  transform: translateY(-4px);
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-popover);
+}
+
+.stat-value {
+  font-family: var(--font-heading);
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  /* Digits keep a fixed width so the box doesn't twitch while counting up. */
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, var(--color-accent) 0%, #00c2ff 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.45;
+  text-wrap: balance;
   color: var(--color-text-tertiary);
+}
+
+@media (max-width: 760px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* ===== FEATURES ===== */
@@ -516,12 +772,44 @@ main {
 }
 
 .feature-card {
+  --mx: 50%;
+  --my: 50%;
+  position: relative;
+  overflow: hidden;
   border-radius: var(--radius-lg);
   padding: 1.5rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-card);
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+/* Cursor spotlight. The gradient's centre is fed by --mx/--my, which the
+   component writes once per frame from outside the Angular zone. */
+.feature-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    16rem circle at var(--mx) var(--my),
+    rgba(8, 102, 255, 0.13),
+    rgba(0, 194, 255, 0.06) 45%,
+    transparent 72%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.feature-card:hover::before {
+  opacity: 1;
+}
+
+/* Keeps the card's real content above the spotlight layer. */
+.feature-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .feature-card:hover {
@@ -778,11 +1066,35 @@ main {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-inner,
+  .hero-step,
+  .hero-line-inner,
+  .hero-title-gradient,
+  .hero-orb,
   .hero-preview,
   .feature-card,
   .faq-answer,
-  .preview-card {
-    animation: none;
+  .preview-card,
+  .marquee-track,
+  .scroll-progress {
+    animation: none !important;
+  }
+
+  /* The entrance keyframes use `both`, so cancelling them mid-flight would
+     otherwise strand these elements at their `from` (invisible) state. */
+  .hero-step,
+  .hero-line-inner,
+  .hero-preview {
+    opacity: 1;
+    transform: none;
+  }
+
+  .hero-title-gradient {
+    background-position: 0 center;
+  }
+
+  .stat,
+  .feature-card,
+  .feature-card::before {
+    transition: none;
   }
 }
