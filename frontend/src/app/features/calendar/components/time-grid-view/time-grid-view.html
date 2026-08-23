@@ -10,7 +10,7 @@
             class="lunar-dn"
             [class.lunar-first]="getLunarInfo(day).day === 1"
             [class.lunar-fifteen]="getLunarInfo(day).day === 15"
-            [title]="'Ngày ' + getLunarInfo(day).day + ' tháng ' + getLunarInfo(day).month + ' Âm lịch'"
+            [title]="lunarTooltip(day)"
           >
             {{ getLunarInfo(day).displayText }}
           </span>
@@ -20,7 +20,7 @@
   </div>
 
   <div class="all-day-row" [style.padding-right.px]="scrollbarWidth()">
-    <div class="gutter-spacer">Cả ngày</div>
+    <div class="gutter-spacer">{{ i18n.t('calendar.allDay') }}</div>
     @for (day of days(); track day.getTime()) {
       <div class="all-day-cell" (click)="onAllDayCellClick(day)">
         @for (evt of allDayEventsFor(day); track evt.id) {
@@ -78,7 +78,7 @@
                 [style.width.%]="pe.widthPct"
                 [style.--chip-color]="colorFor(pe.event)"
                 (mousedown)="onBlockMouseDown($event, pe)"
-                [title]="store.conflictingEventIds().has(pe.event.id) ? 'Trùng giờ với sự kiện khác' : ''"
+                [title]="conflictTooltip(pe.event.id)"
               >
                 <div class="block-content">
                   <span class="block-title">{{ pe.event.title }}</span>

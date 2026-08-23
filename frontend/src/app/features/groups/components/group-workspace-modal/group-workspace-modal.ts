@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { AuthStore } from '../../../../core/auth/auth-store';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { GroupStore } from '../../data/group-store';
 import {
@@ -34,6 +35,7 @@ type WorkspaceTab = 'members' | 'calendar' | 'tasks' | 'chat';
 export class GroupWorkspaceModal {
   protected readonly store = inject(GroupStore);
   private readonly authStore = inject(AuthStore);
+  protected readonly i18n = inject(TranslationService);
 
   readonly closed = output<void>();
 
@@ -157,7 +159,7 @@ export class GroupWorkspaceModal {
     const name = this.editName().trim();
     if (!group || this.savingGroup()) return;
     if (!name) {
-      this.groupError.set('Tên nhóm không được để trống.');
+      this.groupError.set(this.i18n.t('group.nameRequired'));
       return;
     }
 
@@ -171,7 +173,7 @@ export class GroupWorkspaceModal {
       });
       this.editingGroup.set(false);
     } catch (err: any) {
-      this.groupError.set(err?.error?.message || 'Không thể cập nhật nhóm.');
+      this.groupError.set(err?.error?.message || this.i18n.t('group.updateGroupError'));
     } finally {
       this.savingGroup.set(false);
     }
@@ -182,11 +184,9 @@ export class GroupWorkspaceModal {
     if (!group || this.deletingGroup()) return;
     // Xoá nhóm kéo theo task, tin nhắn và cả lịch nhóm — bắt gõ đúng tên để
     // không ai xoá nhầm bằng một cú nhấn.
-    const typed = prompt(
-      `Xóa vĩnh viễn nhóm "${group.name}"?\n\nToàn bộ task, tin nhắn và lịch nhóm sẽ bị xóa và KHÔNG thể khôi phục.\nGõ đúng tên nhóm để xác nhận:`,
-    );
+    const typed = prompt(this.i18n.t('group.deleteConfirmPrompt', { name: group.name }));
     if (typed?.trim() !== group.name) {
-      if (typed !== null) alert('Tên nhóm không khớp — đã hủy thao tác xóa.');
+      if (typed !== null) alert(this.i18n.t('group.deleteNameMismatch'));
       return;
     }
 
@@ -194,7 +194,7 @@ export class GroupWorkspaceModal {
     try {
       await this.store.deleteGroup(group.id);
     } catch (err: any) {
-      alert(err?.error?.message || 'Không thể xóa nhóm.');
+      alert(err?.error?.message || this.i18n.t('group.deleteGroupError'));
     } finally {
       this.deletingGroup.set(false);
     }
@@ -206,7 +206,7 @@ export class GroupWorkspaceModal {
     try {
       await this.store.setGroupHidden(group.id, !group.hidden);
     } catch (err: any) {
-      alert(err?.error?.message || 'Không thể cập nhật trạng thái hiển thị nhóm.');
+      alert(err?.error?.message || this.i18n.t('group.toggleHiddenError'));
     }
   }
 
@@ -221,7 +221,7 @@ export class GroupWorkspaceModal {
       await this.store.inviteMember(group.id, email, this.inviteRole());
       this.inviteEmail.set('');
     } catch (err: any) {
-      this.inviteError.set(err?.error?.message || 'Không thể mời thành viên. Kiểm tra lại email.');
+      this.inviteError.set(err?.error?.message || this.i18n.t('group.inviteError'));
     } finally {
       this.inviting.set(false);
     }
@@ -235,7 +235,7 @@ export class GroupWorkspaceModal {
     try {
       await this.store.updateMemberRole(group.id, member.userId, role);
     } catch (err: any) {
-      alert(err?.error?.message || 'Không thể đổi quyền thành viên.');
+      alert(err?.error?.message || this.i18n.t('group.changeRoleError'));
     } finally {
       this.updatingRoleUserId.set(null);
     }
@@ -244,7 +244,7 @@ export class GroupWorkspaceModal {
   async removeMember(member: GroupMember): Promise<void> {
     const group = this.store.activeGroup();
     if (!group) return;
-    if (confirm(`Bạn có chắc chắn muốn xóa ${member.email || member.userId} khỏi nhóm?`)) {
+    if (confirm(this.i18n.t('group.removeMemberConfirm', { member: member.email || member.userId }))) {
       await this.store.removeMember(group.id, member.userId);
     }
   }
@@ -292,7 +292,7 @@ export class GroupWorkspaceModal {
     try {
       await this.store.updateTask(group.id, task.id, { assignedTo: userId || undefined });
     } catch (err: any) {
-      alert(err?.error?.message || 'Không thể giao task.');
+      alert(err?.error?.message || this.i18n.t('group.reassignError'));
     } finally {
       this.reassigningTaskId.set(null);
     }
@@ -303,7 +303,7 @@ export class GroupWorkspaceModal {
     const file = input.files?.[0] ?? null;
     this.attachmentError.set(null);
     if (file && file.size > GroupWorkspaceModal.MAX_ATTACHMENT_BYTES) {
-      this.attachmentError.set('File tối đa 15MB.');
+      this.attachmentError.set(this.i18n.t('group.attachmentTooLarge'));
       input.value = '';
       return;
     }
@@ -352,19 +352,19 @@ export class GroupWorkspaceModal {
       await this.store.editMessage(group.id, msg.id, text);
       this.cancelEditMessage();
     } catch (err: any) {
-      alert(err?.error?.message || 'Không thể sửa tin nhắn.');
+      alert(err?.error?.message || this.i18n.t('group.editMessageError'));
     }
   }
 
   async deleteMessage(msg: GroupMessage): Promise<void> {
     const group = this.store.activeGroup();
     if (!group) return;
-    if (!confirm('Xóa tin nhắn này?')) return;
+    if (!confirm(this.i18n.t('group.deleteMessageConfirm'))) return;
 
     try {
       await this.store.deleteMessage(group.id, msg.id);
     } catch (err: any) {
-      alert(err?.error?.message || 'Không thể xóa tin nhắn.');
+      alert(err?.error?.message || this.i18n.t('group.deleteMessageError'));
     }
   }
 
@@ -386,7 +386,7 @@ export class GroupWorkspaceModal {
       this.chatMessage.set('');
       this.attachmentFile.set(null);
     } catch (err: any) {
-      this.attachmentError.set(err?.error?.message || err?.message || 'Không thể gửi tin nhắn.');
+      this.attachmentError.set(err?.error?.message || err?.message || this.i18n.t('group.sendMessageError'));
     } finally {
       this.uploadingAttachment.set(false);
       this.sendingChat.set(false);

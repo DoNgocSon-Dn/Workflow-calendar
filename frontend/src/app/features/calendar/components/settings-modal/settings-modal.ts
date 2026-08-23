@@ -1,20 +1,21 @@
 import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
 import { AuthStore } from '../../../../core/auth/auth-store';
 import { Density, DensityService } from '../../../../core/density/density-service';
+import { Locale, TranslationService } from '../../../../core/i18n/translation.service';
 import { HolidayPopupService } from '../../../../core/services/holiday-popup.service';
 import { BrandTheme, BrandThemeService } from '../../../../core/theme/brand-theme-service';
 import { Theme, ThemeService } from '../../../../core/theme/theme-service';
 
 interface BrandThemeOption {
   readonly value: BrandTheme;
-  readonly label: string;
+  readonly labelKey: string;
   readonly swatch: string;
 }
 
 const BRAND_THEME_OPTIONS: readonly BrandThemeOption[] = [
-  { value: 'default', label: 'Xanh dương', swatch: '#2563eb' },
-  { value: 'teal', label: 'Xanh ngọc', swatch: '#0f766e' },
-  { value: 'violet', label: 'Tím', swatch: '#7c3aed' },
+  { value: 'default', labelKey: 'settings.brandDefault', swatch: '#2563eb' },
+  { value: 'teal', labelKey: 'settings.brandTeal', swatch: '#0f766e' },
+  { value: 'violet', labelKey: 'settings.brandViolet', swatch: '#7c3aed' },
 ];
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
@@ -31,6 +32,7 @@ export class SettingsModal {
   protected readonly densityService = inject(DensityService);
   protected readonly holidayPopupService = inject(HolidayPopupService);
   protected readonly authStore = inject(AuthStore);
+  protected readonly i18n = inject(TranslationService);
 
   protected readonly brandThemeOptions = BRAND_THEME_OPTIONS;
 
@@ -53,6 +55,10 @@ export class SettingsModal {
 
   setDensity(density: Density): void {
     this.densityService.setDensity(density);
+  }
+
+  setLocale(locale: Locale): void {
+    this.i18n.setLocale(locale);
   }
 
   toggleHolidayNotifications(): void {

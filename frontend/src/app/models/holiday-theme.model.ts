@@ -95,6 +95,10 @@ export interface HolidayContent {
   readonly title: string;
   /** Short greeting line. Supports `{year}` / `{nextYear}` placeholders. */
   readonly subtitle?: string;
+  /** English variants, shown when the app's display language is English.
+   *  Falls back to `title`/`subtitle` when omitted. */
+  readonly titleEn?: string;
+  readonly subtitleEn?: string;
 }
 
 export interface Holiday {

@@ -42,6 +42,8 @@ export const HOLIDAYS: readonly Holiday[] = [
     content: {
       title: 'Chúc Mừng Năm Mới',
       subtitle: 'An khang – thịnh vượng – vạn sự như ý',
+      titleEn: 'Happy Lunar New Year',
+      subtitleEn: 'Health, prosperity, and every wish fulfilled',
     },
   },
 
@@ -67,6 +69,8 @@ export const HOLIDAYS: readonly Holiday[] = [
     content: {
       title: 'Quốc khánh Việt Nam 2/9',
       subtitle: 'Độc lập – Tự do – Hạnh phúc',
+      titleEn: 'Vietnam National Day (Sep 2)',
+      subtitleEn: 'Independence – Freedom – Happiness',
     },
   },
 
@@ -92,6 +96,8 @@ export const HOLIDAYS: readonly Holiday[] = [
     content: {
       title: 'Ngày Giải phóng miền Nam',
       subtitle: 'Thống nhất đất nước – 30/4',
+      titleEn: 'Reunification Day',
+      subtitleEn: 'National reunification – April 30',
     },
   },
 
@@ -117,6 +123,8 @@ export const HOLIDAYS: readonly Holiday[] = [
     content: {
       title: 'Quốc tế Lao động 1/5',
       subtitle: 'Trân trọng những nỗ lực và cống hiến',
+      titleEn: 'International Labor Day (May 1)',
+      subtitleEn: 'Honoring hard work and dedication',
     },
   },
 
@@ -142,6 +150,8 @@ export const HOLIDAYS: readonly Holiday[] = [
     content: {
       title: 'Ngày Quốc tế Phụ nữ 8/3',
       subtitle: 'Chúc luôn xinh đẹp, hạnh phúc và tràn đầy yêu thương',
+      titleEn: "International Women's Day (Mar 8)",
+      subtitleEn: 'Wishing you beauty, happiness, and love',
     },
   },
 
@@ -167,6 +177,8 @@ export const HOLIDAYS: readonly Holiday[] = [
     content: {
       title: 'Ngày Phụ nữ Việt Nam 20/10',
       subtitle: 'Trân trọng vẻ đẹp và bản lĩnh người phụ nữ Việt',
+      titleEn: "Vietnamese Women's Day (Oct 20)",
+      subtitleEn: 'Celebrating the grace and strength of Vietnamese women',
     },
   },
 
@@ -191,6 +203,8 @@ export const HOLIDAYS: readonly Holiday[] = [
     content: {
       title: 'Merry Christmas',
       subtitle: 'Giáng sinh an lành bên người thân yêu',
+      titleEn: 'Merry Christmas',
+      subtitleEn: 'A peaceful Christmas with the ones you love',
     },
   },
 
@@ -262,6 +276,8 @@ export const HOLIDAYS: readonly Holiday[] = [
     content: {
       title: 'Ngày Quốc tế Thiếu nhi 1/6',
       subtitle: 'Chúc các bạn nhỏ luôn vui khỏe và hạnh phúc',
+      titleEn: "International Children's Day (Jun 1)",
+      subtitleEn: 'Wishing every child health and happiness',
     },
   },
 
@@ -286,6 +302,8 @@ export const HOLIDAYS: readonly Holiday[] = [
     content: {
       title: 'Chúc mừng năm mới {year}!',
       subtitle: 'Một năm mới an khang, hạnh phúc và nhiều thành công',
+      titleEn: 'Happy New Year {year}!',
+      subtitleEn: 'Wishing you a healthy, happy, and successful year ahead',
     },
   },
 
@@ -310,6 +328,7 @@ export const HOLIDAYS: readonly Holiday[] = [
     content: {
       title: 'Goodbye {year} - Welcome {nextYear}',
       subtitle: 'Cùng đếm ngược chào đón năm mới',
+      subtitleEn: "Let's count down to the new year together",
     },
   },
 
@@ -335,6 +354,8 @@ export const HOLIDAYS: readonly Holiday[] = [
     content: {
       title: 'Ngày Nhà giáo Việt Nam 20/11',
       subtitle: 'Tri ân thầy cô – những người lái đò thầm lặng',
+      titleEn: "Vietnamese Teachers' Day (Nov 20)",
+      subtitleEn: 'Honoring teachers, our quiet guides',
     },
   },
 
@@ -360,6 +381,8 @@ export const HOLIDAYS: readonly Holiday[] = [
     content: {
       title: 'Ngày thành lập Quân đội Nhân dân Việt Nam',
       subtitle: '22/12 – Tự hào truyền thống anh hùng',
+      titleEn: "Vietnam People's Army Foundation Day",
+      subtitleEn: 'Dec 22 – Proud of a heroic tradition',
     },
   },
 ];

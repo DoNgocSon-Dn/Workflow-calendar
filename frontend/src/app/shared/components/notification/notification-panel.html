@@ -6,11 +6,18 @@
         <span class="notif-panel__unread-pill">{{ unreadCount() }} chưa đọc</span>
       }
     </div>
-    @if (unreadCount() > 0) {
-      <button type="button" class="notif-panel__mark-all" (click)="markAllRead()">
-        Đánh dấu tất cả đã đọc
-      </button>
-    }
+    <div class="notif-panel__header-actions">
+      @if (unreadCount() > 0) {
+        <button type="button" class="notif-panel__mark-all" (click)="markAllRead()">
+          Đánh dấu tất cả đã đọc
+        </button>
+      }
+      @if (hasAnyNotification()) {
+        <button type="button" class="notif-panel__clear-all" (click)="clearAll()">
+          Xóa tất cả
+        </button>
+      }
+    </div>
   </div>
 
   @if (pendingCalendarInvites().length > 0) {
@@ -49,19 +56,22 @@
     </div>
   }
 
-  <div class="notif-panel__tabs" role="tablist">
-    @for (tab of tabs; track tab.id) {
-      <button
-        type="button"
-        role="tab"
-        class="notif-panel__tab"
-        [class.notif-panel__tab--active]="activeTab() === tab.id"
-        [attr.aria-selected]="activeTab() === tab.id"
-        (click)="setTab(tab.id)"
-      >
-        {{ tab.label }}
-      </button>
-    }
+  <div class="notif-panel__tabs-wrap">
+    <div class="notif-panel__tabs" role="tablist">
+      @for (tab of tabs; track tab.id) {
+        <button
+          type="button"
+          role="tab"
+          class="notif-panel__tab"
+          [class.notif-panel__tab--active]="activeTab() === tab.id"
+          [attr.aria-selected]="activeTab() === tab.id"
+          (click)="setTab(tab.id)"
+        >
+          {{ tab.label }}
+        </button>
+      }
+      <span class="notif-panel__tabs-end-spacer" aria-hidden="true"></span>
+    </div>
   </div>
 
   @if (respondError(); as error) {
@@ -93,6 +103,7 @@
           [responding]="respondingId() === n.id"
           (activate)="onActivate($event)"
           (respond)="onRespond($event)"
+          (dismiss)="onDismiss($event)"
         />
       }
     }

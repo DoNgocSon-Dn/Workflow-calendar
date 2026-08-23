@@ -12,6 +12,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, map } from 'rxjs';
 import { AuthStore } from '../../../../core/auth/auth-store';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 import { CalendarStore } from '../../data/calendar-store';
 import {
   Attendee,
@@ -33,30 +34,30 @@ import {
 import { CommentsSection } from '../comments-section/comments-section';
 import { TimePicker } from '../time-picker/time-picker';
 
-function extractErrorMessage(err: unknown): string {
+function extractErrorMessage(err: unknown, fallback: string): string {
   if (err && typeof err === 'object' && 'error' in err) {
     const inner = (err as { error?: { message?: string | string[] } }).error;
     const msg = inner?.message;
     if (Array.isArray(msg)) return msg.join(', ');
     if (typeof msg === 'string') return msg;
   }
-  return 'Đã xảy ra lỗi, vui lòng thử lại.';
+  return fallback;
 }
 
 import { convertSolarToLunar } from '../../utils/lunar-calendar';
 
 interface DurationPreset {
-  label: string;
+  labelKey: string;
   minutes: number;
 }
 
 const DURATION_PRESETS: DurationPreset[] = [
-  { label: '15 phút', minutes: 15 },
-  { label: '30 phút', minutes: 30 },
-  { label: '45 phút', minutes: 45 },
-  { label: '1 giờ', minutes: 60 },
-  { label: '1.5 giờ', minutes: 90 },
-  { label: '2 giờ', minutes: 120 },
+  { labelKey: 'event.duration15m', minutes: 15 },
+  { labelKey: 'event.duration30m', minutes: 30 },
+  { labelKey: 'event.duration45m', minutes: 45 },
+  { labelKey: 'event.duration1h', minutes: 60 },
+  { labelKey: 'event.duration1h30m', minutes: 90 },
+  { labelKey: 'event.duration2h', minutes: 120 },
 ];
 
 @Component({
@@ -70,6 +71,7 @@ export class EventFormModal {
   private readonly fb = inject(FormBuilder);
   private readonly store = inject(CalendarStore);
   private readonly authStore = inject(AuthStore);
+  protected readonly i18n = inject(TranslationService);
 
   readonly event = input<CalendarEvent | null>(null);
   readonly defaultStart = input<Date | null>(null);
@@ -87,7 +89,11 @@ export class EventFormModal {
     const d = new Date(startDateStr);
     if (isNaN(d.getTime())) return '';
     const lunar = convertSolarToLunar(d);
-    return `Ngày ${lunar.day} tháng ${lunar.month} năm ${lunar.year} (Âm lịch)`;
+    return this.i18n.t('event.lunarHint', {
+      day: String(lunar.day),
+      month: String(lunar.month),
+      year: String(lunar.year),
+    });
   });
   readonly calendars = this.store.calendars;
   readonly calendarsLoading = this.store.calendarsLoading;
@@ -113,10 +119,10 @@ export class EventFormModal {
   readonly inviteError = signal<string | null>(null);
   readonly inviting = signal(false);
 
-  readonly reminderPresets: { label: string; offsetMinutes: number }[] = [
-    { label: '15 phút trước', offsetMinutes: 15 },
-    { label: '1 giờ trước', offsetMinutes: 60 },
-    { label: '1 ngày trước', offsetMinutes: 1440 },
+  readonly reminderPresets: { labelKey: string; offsetMinutes: number }[] = [
+    { labelKey: 'event.reminder15m', offsetMinutes: 15 },
+    { labelKey: 'event.reminder1h', offsetMinutes: 60 },
+    { labelKey: 'event.reminder1d', offsetMinutes: 1440 },
   ];
   private readonly presetOffsets = new Set(this.reminderPresets.map((p) => p.offsetMinutes));
   readonly reminderSelections = signal<Map<number, ReminderType>>(new Map());
@@ -386,11 +392,11 @@ export class EventFormModal {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       if (this.calendarsLoading()) {
-        this.saveError.set('Đang tải danh sách lịch, vui lòng đợi trong giây lát.');
+        this.saveError.set(this.i18n.t('event.autoCreatingCalendar'));
       } else if (this.form.controls.title.invalid) {
-        this.saveError.set('Vui lòng nhập tiêu đề sự kiện.');
+        this.saveError.set(this.i18n.t('event.titleRequired'));
       } else {
-        this.saveError.set('Vui lòng kiểm tra lại các trường bắt buộc.');
+        this.saveError.set(this.i18n.t('event.genericError'));
       }
       return;
     }
@@ -432,7 +438,7 @@ export class EventFormModal {
       await this.saveReminders(eventId);
       this.closed.emit();
     } catch (err) {
-      this.saveError.set(extractErrorMessage(err));
+      this.saveError.set(extractErrorMessage(err, this.i18n.t('event.genericError')));
     } finally {
       this.saving.set(false);
     }
@@ -466,7 +472,7 @@ export class EventFormModal {
       this.attendees.update((list) => [...list, attendee]);
       this.inviteEmailControl.reset('');
     } catch (err) {
-      this.inviteError.set(extractErrorMessage(err));
+      this.inviteError.set(extractErrorMessage(err, this.i18n.t('event.genericError')));
     } finally {
       this.inviting.set(false);
     }
@@ -480,13 +486,14 @@ export class EventFormModal {
   }
 
   protected statusLabel(status: Attendee['status']): string {
-    if (status === 'accepted') return 'Đã đồng ý';
-    if (status === 'declined') return 'Đã từ chối';
-    return 'Chờ phản hồi';
+    if (status === 'accepted') return this.i18n.t('event.statusAccepted');
+    if (status === 'declined') return this.i18n.t('event.statusDeclined');
+    return this.i18n.t('event.statusPending');
   }
 
   protected conflictLabel(c: ConflictEvent): string {
-    return `${c.title} (${formatTimeLabel(c.start)} - ${formatTimeLabel(c.end)})`;
+    const locale = this.i18n.locale();
+    return `${c.title} (${formatTimeLabel(c.start, locale)} - ${formatTimeLabel(c.end, locale)})`;
   }
 }
 

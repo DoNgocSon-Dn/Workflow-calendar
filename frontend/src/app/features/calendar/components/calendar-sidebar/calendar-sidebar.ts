@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { CalendarStore } from '../../data/calendar-store';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 import { GroupStore } from '../../../groups/data/group-store';
 import { Group } from '../../../groups/models/group.models';
 import { CALENDAR_COLOR_HEX } from '../../models/calendar.models';
@@ -37,6 +38,7 @@ function dedupeByName(groups: Group[]): Group[] {
 export class CalendarSidebar implements OnInit {
   protected readonly store = inject(CalendarStore);
   protected readonly groupStore = inject(GroupStore);
+  protected readonly i18n = inject(TranslationService);
   protected readonly colorHex = CALENDAR_COLOR_HEX;
 
   readonly createClicked = output<void>();

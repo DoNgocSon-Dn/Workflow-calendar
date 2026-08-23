@@ -67,4 +67,9 @@ export class NotificationService {
   remove(id: string): void {
     this.notificationsState.update((list) => list.filter((n) => n.id !== id));
   }
+
+  /** Xoá toàn bộ — người dùng chủ động dọn sạch trung tâm thông báo. */
+  clearAll(): void {
+    this.notificationsState.set([]);
+  }
 }

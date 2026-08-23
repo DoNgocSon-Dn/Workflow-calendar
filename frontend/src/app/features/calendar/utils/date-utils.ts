@@ -78,23 +78,42 @@ export function spansDays(start: Date, end: Date): number {
   return Math.round((startOfDay(end).getTime() - startOfDay(start).getTime()) / DAY_MS) + 1;
 }
 
-const WEEKDAY_SHORT_VI = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-const MONTH_LABEL_VI = [
-  'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
-  'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12',
-];
+/** Matches TranslationService's `Locale` without importing it here — this
+ *  file has no DI context, so callers pass the current locale explicitly. */
+export type DateLocale = 'vi' | 'en';
 
-export function weekdayShort(date: Date): string {
-  return WEEKDAY_SHORT_VI[date.getDay()];
+const WEEKDAY_SHORT: Record<DateLocale, readonly string[]> = {
+  vi: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'],
+  en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+};
+
+const MONTH_LABEL: Record<DateLocale, readonly string[]> = {
+  vi: [
+    'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+    'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12',
+  ],
+  en: [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ],
+};
+
+const AM_PM: Record<DateLocale, { am: string; pm: string }> = {
+  vi: { am: 'SA', pm: 'CH' },
+  en: { am: 'AM', pm: 'PM' },
+};
+
+export function weekdayShort(date: Date, locale: DateLocale = 'vi'): string {
+  return WEEKDAY_SHORT[locale][date.getDay()];
 }
 
-export function monthYearLabel(date: Date): string {
-  return `${MONTH_LABEL_VI[date.getMonth()]} ${date.getFullYear()}`;
+export function monthYearLabel(date: Date, locale: DateLocale = 'vi'): string {
+  return `${MONTH_LABEL[locale][date.getMonth()]} ${date.getFullYear()}`;
 }
 
-export function formatHourLabel(hour: number): string {
+export function formatHourLabel(hour: number, locale: DateLocale = 'vi'): string {
   if (hour === 0) return '';
-  const period = hour < 12 ? 'SA' : 'CH';
+  const period = hour < 12 ? AM_PM[locale].am : AM_PM[locale].pm;
   const h12 = hour % 12 === 0 ? 12 : hour % 12;
   return `${h12} ${period}`;
 }
@@ -103,10 +122,10 @@ export function formatTime24(date: Date): string {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
-export function formatTimeLabel(date: Date): string {
+export function formatTimeLabel(date: Date, locale: DateLocale = 'vi'): string {
   const h = date.getHours();
   const m = date.getMinutes();
-  const period = h < 12 ? 'SA' : 'CH';
+  const period = h < 12 ? AM_PM[locale].am : AM_PM[locale].pm;
   const h12 = h % 12 === 0 ? 12 : h % 12;
   return `${h12}:${String(m).padStart(2, '0')} ${period}`;
 }

@@ -1,11 +1,18 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { TranslationService } from '../../../core/i18n/translation.service';
 import { HolidayPopupService } from '../../../core/services/holiday-popup.service';
 import {
   DEFAULT_HOLIDAY_THEME,
-  HOLIDAY_TYPE_LABEL,
   HolidayDecoration,
 } from '../../../models/holiday-theme.model';
 import { HolidayVisual } from './holiday-visual';
+
+const HOLIDAY_TYPE_KEY: Record<string, string> = {
+  'le-lon': 'holiday.typeLeLon',
+  'ky-niem': 'holiday.typeKyNiem',
+  'quoc-te': 'holiday.typeQuocTe',
+  'le-hoi': 'holiday.typeLeHoi',
+};
 
 interface HolidayParticleView {
   readonly emoji: string;
@@ -42,6 +49,7 @@ function buildParticles(decoration: HolidayDecoration): readonly HolidayParticle
 })
 export class HolidayPopup {
   private readonly popupService = inject(HolidayPopupService);
+  protected readonly i18n = inject(TranslationService);
 
   protected readonly holiday = this.popupService.activeHoliday;
   protected readonly visible = this.popupService.visible;
@@ -51,26 +59,36 @@ export class HolidayPopup {
 
   protected readonly typeLabel = computed<string | null>(() => {
     const type = this.holiday()?.type;
-    return type ? HOLIDAY_TYPE_LABEL[type] : null;
+    const key = type ? HOLIDAY_TYPE_KEY[type] : null;
+    return key ? this.i18n.t(key) : null;
   });
 
   protected readonly title = computed(() => {
     const holiday = this.holiday();
-    return holiday ? this.popupService.resolveText(holiday.content.title) : '';
+    if (!holiday) return '';
+    const raw = this.i18n.locale() === 'en' ? (holiday.content.titleEn ?? holiday.content.title) : holiday.content.title;
+    return this.popupService.resolveText(raw);
   });
 
   protected readonly subtitle = computed<string | null>(() => {
-    const subtitle = this.holiday()?.content.subtitle;
-    return subtitle ? this.popupService.resolveText(subtitle) : null;
+    const holiday = this.holiday();
+    if (!holiday) return null;
+    const raw =
+      this.i18n.locale() === 'en'
+        ? holiday.content.subtitleEn ?? holiday.content.subtitle
+        : holiday.content.subtitle;
+    return raw ? this.popupService.resolveText(raw) : null;
   });
 
   /** The popup only ever shows on the day it matches, so "today" is simply now. */
-  protected readonly dateLabel = new Intl.DateTimeFormat('vi-VN', {
-    weekday: 'long',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(new Date());
+  protected readonly dateLabel = computed(() =>
+    new Intl.DateTimeFormat(this.i18n.locale() === 'en' ? 'en-US' : 'vi-VN', {
+      weekday: 'long',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(new Date()),
+  );
 
   protected readonly particles = computed<readonly HolidayParticleView[]>(() =>
     buildParticles(this.theme().decoration),

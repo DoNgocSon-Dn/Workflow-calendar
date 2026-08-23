@@ -4,14 +4,14 @@
       type="button"
       class="create-btn"
       [class.icon-only]="store.sidebarCollapsed()"
-      [attr.title]="store.sidebarCollapsed() ? 'Tạo sự kiện' : null"
+      [attr.title]="store.sidebarCollapsed() ? i18n.t('sidebar.createEvent') : null"
       (click)="createClicked.emit()"
     >
       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
         <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z" />
       </svg>
       @if (!store.sidebarCollapsed()) {
-        <span>Tạo sự kiện</span>
+        <span>{{ i18n.t('sidebar.createEvent') }}</span>
       }
     </button>
   </div>
@@ -29,12 +29,12 @@
       <!-- GROUP WORKSPACES SECTION -->
       <div class="calendar-list">
         <div class="calendar-list-header">
-          <h2 class="calendar-list-title">Nhóm làm việc (Workspaces)</h2>
+          <h2 class="calendar-list-title">{{ i18n.t('sidebar.workspaces') }}</h2>
           <button
             type="button"
             class="add-calendar-btn"
-            aria-label="Tạo Nhóm làm việc mới"
-            title="Tạo Nhóm làm việc mới"
+            [attr.aria-label]="i18n.t('sidebar.createWorkspace')"
+            [title]="i18n.t('sidebar.createWorkspace')"
             (click)="createGroupClicked.emit()"
           >
             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
@@ -52,8 +52,8 @@
               <button
                 type="button"
                 class="group-hide-btn"
-                [attr.aria-label]="'Ẩn nhóm ' + g.name"
-                title="Ẩn nhóm khỏi danh sách (tin nhắn mới sẽ tự hiện lại)"
+                [attr.aria-label]="i18n.t('sidebar.hideGroupAria', { name: g.name })"
+                [title]="i18n.t('sidebar.hideGroup')"
                 (click)="onToggleGroupHidden($event, g)"
               >
                 <app-icon name="eye-off" />
@@ -62,7 +62,7 @@
             </div>
           } @empty {
             <div class="empty-groups-hint" (click)="createGroupClicked.emit()">
-              + Tạo Nhóm đầu tiên để cộng tác
+              {{ i18n.t('sidebar.emptyGroupsHint') }}
             </div>
           }
         </div>
@@ -79,7 +79,7 @@
                 class="hidden-groups-caret"
                 [name]="hiddenSectionOpen() ? 'chevron-down' : 'chevron-right'"
               />
-              Nhóm đã ẩn ({{ hiddenGroups().length }})
+              {{ i18n.t('sidebar.hiddenGroups', { count: hiddenGroups().length }) }}
             </button>
 
             @if (hiddenSectionOpen()) {
@@ -91,8 +91,8 @@
                   <button
                     type="button"
                     class="group-hide-btn"
-                    [attr.aria-label]="'Hiện lại nhóm ' + g.name"
-                    title="Hiện lại nhóm"
+                    [attr.aria-label]="i18n.t('sidebar.unhideGroupAria', { name: g.name })"
+                    [title]="i18n.t('sidebar.unhideGroup')"
                     (click)="onToggleGroupHidden($event, g)"
                   >
                     <app-icon name="eye" />
@@ -107,12 +107,12 @@
       <!-- MY CALENDARS SECTION -->
       <div class="calendar-list">
         <div class="calendar-list-header">
-          <h2 class="calendar-list-title">Lịch của tôi</h2>
+          <h2 class="calendar-list-title">{{ i18n.t('sidebar.myCalendars') }}</h2>
           <button
             type="button"
             class="add-calendar-btn"
-            aria-label="Tạo lịch riêng"
-            title="Tạo lịch riêng"
+            [attr.aria-label]="i18n.t('sidebar.createCalendar')"
+            [title]="i18n.t('sidebar.createCalendar')"
             (click)="createCalendarClicked.emit()"
           >
             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
@@ -134,8 +134,8 @@
               <button
                 type="button"
                 class="invite-btn"
-                [attr.aria-label]="'Mời bạn bè vào ' + cal.name"
-                title="Mời bạn bè"
+                [attr.aria-label]="i18n.t('sidebar.inviteFriendsAria', { name: cal.name })"
+                [title]="i18n.t('sidebar.inviteFriends')"
                 (click)="onInviteClicked($event, cal.id, cal.name)"
               >
                 <svg viewBox="0 0 24 24" width="16" height="16">
@@ -150,7 +150,7 @@
 
       <!-- OTHER CALENDARS SECTION -->
       <div class="calendar-list">
-        <h2 class="calendar-list-title">Lịch khác</h2>
+        <h2 class="calendar-list-title">{{ i18n.t('sidebar.otherCalendars') }}</h2>
         <div class="calendar-items-wrapper">
           @for (cal of store.otherCalendars; track cal.id) {
             <label class="calendar-item" [title]="cal.name">

@@ -61,20 +61,39 @@
   border-radius: var(--radius-full);
 }
 
-.notif-panel__mark-all {
+.notif-panel__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   margin-top: 0.35rem;
+}
+
+.notif-panel__mark-all,
+.notif-panel__clear-all {
   border: none;
   background: none;
   padding: 0;
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--color-accent);
   cursor: pointer;
   transition: color 0.15s ease;
 }
 
+.notif-panel__mark-all {
+  color: var(--color-accent);
+}
+
 .notif-panel__mark-all:hover {
   color: var(--color-accent-hover);
+  text-decoration: underline;
+}
+
+.notif-panel__clear-all {
+  color: var(--color-text-tertiary);
+}
+
+.notif-panel__clear-all:hover {
+  color: var(--color-danger);
   text-decoration: underline;
 }
 
@@ -149,18 +168,56 @@
   background: var(--color-border-strong);
 }
 
-.notif-panel__tabs {
+.notif-panel__tabs-wrap {
+  position: relative;
   flex-shrink: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Fade hint that there are more tabs to scroll to — without it the last
+   visible tab looks flush against the panel edge, like it got cut off. */
+.notif-panel__tabs-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 1px;
+  width: 1.5rem;
+  background: linear-gradient(to right, transparent, var(--color-surface));
+  pointer-events: none;
+}
+
+.notif-panel__tabs {
   display: flex;
   gap: 0.25rem;
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--color-border);
+  padding: 0.5rem 0 0.6rem 0.75rem;
   overflow-x: auto;
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
 }
 
 .notif-panel__tabs::-webkit-scrollbar {
-  display: none;
+  height: 5px;
+}
+
+.notif-panel__tabs::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.notif-panel__tabs::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: var(--radius-full);
+}
+
+.notif-panel__tabs::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
+}
+
+/* Real spacer instead of trailing padding — some browsers clip a scroll
+   container's end padding, which made the last tab sit flush on the edge. */
+.notif-panel__tabs-end-spacer {
+  flex-shrink: 0;
+  width: 0.75rem;
 }
 
 .notif-panel__tab {

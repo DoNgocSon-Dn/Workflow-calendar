@@ -14,7 +14,7 @@
         aria-live="polite"
         [attr.aria-label]="title()"
       >
-        <button type="button" class="holiday-popup__close" (click)="close()" aria-label="Đóng thông báo">
+        <button type="button" class="holiday-popup__close" (click)="close()" [attr.aria-label]="i18n.t('holiday.closeNotification')">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
             <line x1="5" y1="5" x2="19" y2="19" />
             <line x1="19" y1="5" x2="5" y2="19" />
@@ -45,7 +45,7 @@
           @if (subtitle(); as sub) {
             <p class="holiday-popup__subtitle">{{ sub }}</p>
           }
-          <p class="holiday-popup__date">{{ dateLabel }}</p>
+          <p class="holiday-popup__date">{{ dateLabel() }}</p>
         </div>
       </div>
     </div>

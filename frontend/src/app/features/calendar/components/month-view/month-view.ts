@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
 import { DensityService } from '../../../../core/density/density-service';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 import { CalendarStore } from '../../data/calendar-store';
 import { CALENDAR_COLOR_HEX, CalendarEvent } from '../../models/calendar.models';
 import {
@@ -20,8 +21,6 @@ interface DragSelectRange {
   end: Date;
 }
 
-const WEEKDAY_HEADERS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-
 export interface CreateRequest {
   start: Date;
   end: Date;
@@ -37,11 +36,30 @@ export interface CreateRequest {
 export class MonthView {
   protected readonly store = inject(CalendarStore);
   private readonly densityService = inject(DensityService);
+  protected readonly i18n = inject(TranslationService);
   protected readonly colorHex = CALENDAR_COLOR_HEX;
-  protected readonly weekdayHeaders = WEEKDAY_HEADERS;
+
+  protected readonly weekdayHeaders = computed(() => [
+    this.i18n.t('weekday.mon'),
+    this.i18n.t('weekday.tue'),
+    this.i18n.t('weekday.wed'),
+    this.i18n.t('weekday.thu'),
+    this.i18n.t('weekday.fri'),
+    this.i18n.t('weekday.sat'),
+    this.i18n.t('weekday.sun'),
+  ]);
 
   getLunarInfo(day: Date): LunarDate {
     return convertSolarToLunar(day);
+  }
+
+  lunarTooltip(day: Date): string {
+    const info = this.getLunarInfo(day);
+    return this.i18n.t('calendar.lunarTooltip', { day: info.day, month: info.month });
+  }
+
+  conflictTooltip(eventId: string): string {
+    return this.store.conflictingEventIds().has(eventId) ? this.i18n.t('calendar.conflictTooltip') : '';
   }
 
   // Chế độ "Gọn" (Cài đặt > Hình thức) hiện nhiều sự kiện hơn mỗi ngày vì
@@ -88,7 +106,7 @@ export class MonthView {
   }
 
   eventLabel(event: CalendarEvent): string {
-    return event.allDay ? event.title : `${formatTimeLabel(event.start)} ${event.title}`;
+    return event.allDay ? event.title : `${formatTimeLabel(event.start, this.i18n.locale())} ${event.title}`;
   }
 
   isToday(day: Date): boolean {

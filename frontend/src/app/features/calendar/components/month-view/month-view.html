@@ -4,7 +4,7 @@
 
 <div class="month-view">
   <div class="weekday-row">
-    @for (wd of weekdayHeaders; track wd) {
+    @for (wd of weekdayHeaders(); track wd) {
       <span class="weekday-cell">{{ wd }}</span>
     }
   </div>
@@ -26,7 +26,7 @@
             class="lunar-day"
             [class.lunar-first]="getLunarInfo(day).day === 1"
             [class.lunar-fifteen]="getLunarInfo(day).day === 15"
-            [title]="'Ngày ' + getLunarInfo(day).day + ' tháng ' + getLunarInfo(day).month + ' Âm lịch'"
+            [title]="lunarTooltip(day)"
           >
             {{ getLunarInfo(day).displayText }}
           </span>
@@ -44,7 +44,7 @@
               (mousedown)="$event.stopPropagation()"
               (dragstart)="onDragStart($event, evt)"
               (click)="onChipClick(evt, $event)"
-              [title]="store.conflictingEventIds().has(evt.id) ? 'Trùng giờ với sự kiện khác' : ''"
+              [title]="conflictTooltip(evt.id)"
             >
               {{ eventLabel(evt) }}
             </button>
@@ -56,7 +56,7 @@
               (mousedown)="$event.stopPropagation()"
               (click)="toggleExpanded(day, $event)"
             >
-              +{{ hiddenCountFor(day) }} khác
+              {{ i18n.t('calendar.moreEvents', { count: hiddenCountFor(day) }) }}
             </button>
           }
         </div>

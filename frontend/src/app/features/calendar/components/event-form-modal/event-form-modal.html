@@ -2,9 +2,9 @@
   <form class="modal" role="dialog" aria-modal="true" aria-labelledby="event-modal-title" [formGroup]="form"
     (ngSubmit)="save()">
     <header class="modal-header">
-      <input id="event-modal-title" class="title-input" type="text" formControlName="title" placeholder="Thêm tiêu đề"
+      <input id="event-modal-title" class="title-input" type="text" formControlName="title" [placeholder]="i18n.t('event.addTitle')"
         autofocus />
-      <button type="button" class="icon-btn" aria-label="Đóng" (click)="cancel()">
+      <button type="button" class="icon-btn" [attr.aria-label]="i18n.t('common.close')" (click)="cancel()">
         <svg viewBox="0 0 24 24" width="20" height="20">
           <path fill="currentColor"
             d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
@@ -13,10 +13,10 @@
     </header>
 
     @if (!calendarsLoading() && calendars().length === 0) {
-    <p class="hint-text hint-inset">Đang tự động khởi tạo lịch mặc định…</p>
+    <p class="hint-text hint-inset">{{ i18n.t('event.autoCreatingCalendar') }}</p>
     }
     @if (form.controls.title.invalid && form.controls.title.touched) {
-    <p class="field-error hint-inset">Vui lòng nhập tiêu đề sự kiện.</p>
+    <p class="field-error hint-inset">{{ i18n.t('event.titleRequired') }}</p>
     }
     @if (saveError() && calendars().length > 0) {
     <p class="field-error hint-inset">{{ saveError() }}</p>
@@ -32,18 +32,18 @@
         <div class="field-content">
           <label class="all-day-toggle">
             <input type="checkbox" formControlName="allDay" />
-            Cả ngày
+            {{ i18n.t('calendar.allDay') }}
           </label>
 
           <div class="row date-row">
             <input class="date-input" type="date" formControlName="startDate" />
             @if (!form.controls.allDay.value) {
-            <app-time-picker formControlName="startTime" ariaLabel="Giờ bắt đầu" />
+            <app-time-picker formControlName="startTime" [ariaLabel]="i18n.t('event.startTime')" />
             }
-            <span class="to-label">đến</span>
+            <span class="to-label">{{ i18n.t('event.to') }}</span>
             <input class="date-input" type="date" formControlName="endDate" />
             @if (!form.controls.allDay.value) {
-            <app-time-picker formControlName="endTime" ariaLabel="Giờ kết thúc" />
+            <app-time-picker formControlName="endTime" [ariaLabel]="i18n.t('event.endTime')" />
             }
           </div>
 
@@ -52,15 +52,15 @@
           }
 
           @if (rangeError()) {
-          <p class="field-error">Thời gian kết thúc phải sau thời gian bắt đầu.</p>
+          <p class="field-error">{{ i18n.t('event.rangeError') }}</p>
           }
           @if (checkingConflicts()) {
-          <p class="hint-text">Đang kiểm tra trùng lịch…</p>
+          <p class="hint-text">{{ i18n.t('event.checkingConflicts') }}</p>
           }
           @if (conflicts(); as list) {
           @if (list.length > 0) {
           <div class="conflict-warning">
-            <p class="conflict-warning-title">⚠️ Trùng lịch với:</p>
+            <p class="conflict-warning-title">{{ i18n.t('event.conflictsWith') }}</p>
             <ul>
               @for (c of list; track c.id) {
               <li>{{ conflictLabel(c) }}</li>
@@ -72,10 +72,10 @@
 
           @if (!form.controls.allDay.value) {
           <div class="row presets-row">
-            <span class="presets-label">Thời lượng nhanh:</span>
-            @for (preset of durationPresets; track preset.label) {
+            <span class="presets-label">{{ i18n.t('event.quickDuration') }}</span>
+            @for (preset of durationPresets; track preset.minutes) {
             <button type="button" class="preset-chip" (click)="applyDuration(preset.minutes)">
-              {{ preset.label }}
+              {{ i18n.t(preset.labelKey) }}
             </button>
             }
           </div>
@@ -92,15 +92,15 @@
         @if (locationOpen()) {
         <div class="field-content">
           <input class="text-input" type="text" formControlName="location"
-            placeholder="Thêm địa điểm hoặc link cuộc họp" />
+            [placeholder]="i18n.t('event.addLocation')" />
           <button type="button" class="text-btn compact" (click)="generateVideoCallLink()">
-            Tạo link họp nhanh
+            {{ i18n.t('event.quickMeetLink') }}
           </button>
         </div>
         } @else {
         <button type="button" class="field-toggle" [class.has-value]="!!form.controls.location.value"
           (click)="toggleField('location')">
-          {{ form.controls.location.value || 'Thêm địa điểm hoặc link cuộc họp' }}
+          {{ form.controls.location.value || i18n.t('event.addLocation') }}
         </button>
         }
       </div>
@@ -113,12 +113,12 @@
         </svg>
         @if (descriptionOpen()) {
         <div class="field-content">
-          <textarea class="text-input" rows="3" formControlName="description" placeholder="Thêm mô tả"></textarea>
+          <textarea class="text-input" rows="3" formControlName="description" [placeholder]="i18n.t('event.addDescription')"></textarea>
         </div>
         } @else {
         <button type="button" class="field-toggle" [class.has-value]="!!form.controls.description.value"
           (click)="toggleField('description')">
-          {{ form.controls.description.value || 'Thêm mô tả' }}
+          {{ form.controls.description.value || i18n.t('event.addDescription') }}
         </button>
         }
       </div>
@@ -133,14 +133,14 @@
         @if (attendeesOpen()) {
         <div class="field-content">
           <div class="row">
-            <input class="text-input" type="email" [formControl]="inviteEmailControl" placeholder="Mời qua email"
+            <input class="text-input" type="email" [formControl]="inviteEmailControl" [placeholder]="i18n.t('event.inviteViaEmail')"
               (keydown.enter)="$event.preventDefault(); invite()" />
             <button type="button" class="text-btn compact" [disabled]="inviting()" (click)="invite()">
-              Mời
+              {{ i18n.t('event.invite') }}
             </button>
           </div>
           @if (inviteEmailControl.invalid && inviteEmailControl.touched) {
-          <p class="field-error">Vui lòng nhập email hợp lệ.</p>
+          <p class="field-error">{{ i18n.t('event.invalidEmail') }}</p>
           }
           @if (inviteError()) {
           <p class="field-error">{{ inviteError() }}</p>
@@ -162,12 +162,12 @@
           @if (myAttendee(); as mine) {
           @if (mine.status === 'pending') {
           <div class="row">
-            <span class="presets-label">Bạn được mời tham gia:</span>
+            <span class="presets-label">{{ i18n.t('event.invitedYou') }}</span>
             <button type="button" class="primary-btn" (click)="respond('accepted')">
-              Đồng ý
+              {{ i18n.t('common.accept') }}
             </button>
             <button type="button" class="text-btn" (click)="respond('declined')">
-              Từ chối
+              {{ i18n.t('common.decline') }}
             </button>
           </div>
           }
@@ -176,7 +176,7 @@
         } @else {
         <button type="button" class="field-toggle" [class.has-value]="attendees().length > 0"
           (click)="toggleField('attendees')">
-          {{ attendees().length > 0 ? attendees().length + ' khách' : 'Thêm khách' }}
+          {{ attendees().length > 0 ? i18n.t('event.guestsCount', { count: attendees().length }) : i18n.t('event.addGuests') }}
         </button>
         }
       </div>
@@ -195,12 +195,12 @@
             <label class="reminder-row">
               <input type="checkbox" [checked]="reminderSelections().has(preset.offsetMinutes)"
                 (change)="toggleReminder(preset.offsetMinutes)" />
-              {{ preset.label }}
+              {{ i18n.t(preset.labelKey) }}
               @if (reminderSelections().has(preset.offsetMinutes)) {
               <select class="reminder-type-select" [value]="reminderSelections().get(preset.offsetMinutes)"
                 (change)="setReminderType(preset.offsetMinutes, $any($event.target).value)">
-                <option value="popup">Thông báo</option>
-                <option value="email">Email</option>
+                <option value="popup">{{ i18n.t('event.reminderNotification') }}</option>
+                <option value="email">{{ i18n.t('event.reminderEmail') }}</option>
               </select>
               }
             </label>
@@ -208,25 +208,25 @@
             @for (entry of customReminderEntries(); track entry[0]) {
             <label class="reminder-row">
               <input type="checkbox" checked (change)="toggleReminder(entry[0])" />
-              {{ entry[0] }} phút trước
+              {{ i18n.t('event.minutesBefore', { count: entry[0] }) }}
               <select class="reminder-type-select" [value]="entry[1]"
                 (change)="setReminderType(entry[0], $any($event.target).value)">
-                <option value="popup">Thông báo</option>
-                <option value="email">Email</option>
+                <option value="popup">{{ i18n.t('event.reminderNotification') }}</option>
+                <option value="email">{{ i18n.t('event.reminderEmail') }}</option>
               </select>
             </label>
             }
             <div class="row">
               <input class="text-input reminder-custom-input" type="number" min="1"
-                [formControl]="customReminderMinutes" placeholder="Số phút trước (tuỳ chỉnh)" />
-              <button type="button" class="text-btn compact" (click)="addCustomReminder()">Thêm</button>
+                [formControl]="customReminderMinutes" [placeholder]="i18n.t('event.customReminderPlaceholder')" />
+              <button type="button" class="text-btn compact" (click)="addCustomReminder()">{{ i18n.t('common.add') }}</button>
             </div>
           </div>
         </div>
         } @else {
         <button type="button" class="field-toggle" [class.has-value]="reminderSelections().size > 0"
           (click)="toggleField('reminders')">
-          {{ reminderSelections().size > 0 ? reminderSelections().size + ' lời nhắc' : 'Thêm thông báo' }}
+          {{ reminderSelections().size > 0 ? i18n.t('event.remindersCount', { count: reminderSelections().size }) : i18n.t('event.addReminder') }}
         </button>
         }
       </div>
@@ -243,7 +243,7 @@
         </div>
         } @else {
         <button type="button" class="field-toggle" (click)="toggleField('comments')">
-          Bình luận
+          {{ i18n.t('event.comments') }}
         </button>
         }
       </div>
@@ -279,13 +279,13 @@
     <footer class="modal-footer">
       @if (event()) {
       <button type="button" class="text-btn danger" (click)="remove()">
-        Xoá
+        {{ i18n.t('common.delete') }}
       </button>
       }
       <span class="spacer"></span>
-      <button type="button" class="text-btn" (click)="cancel()">Huỷ</button>
+      <button type="button" class="text-btn" (click)="cancel()">{{ i18n.t('common.cancel') }}</button>
       <button type="submit" class="primary-btn" [disabled]="saving() || calendarsLoading()">
-        {{ saving() ? 'Đang lưu…' : 'Lưu' }}
+        {{ saving() ? i18n.t('common.saving') : i18n.t('common.save') }}
       </button>
     </footer>
   </form>

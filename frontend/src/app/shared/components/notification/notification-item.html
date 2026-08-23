@@ -12,6 +12,12 @@
     <span class="notif-item__dot" aria-hidden="true"></span>
   }
 
+  <button type="button" class="notif-item__dismiss" aria-label="Xóa thông báo" (click)="onDismiss($event)">
+    <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+      <path fill="currentColor" d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+    </svg>
+  </button>
+
   <div class="notif-item__avatar-wrap">
     <div class="notif-item__avatar notif-item__avatar--{{ icon().tone }}">
       @if (senderAvatar(); as avatar) {

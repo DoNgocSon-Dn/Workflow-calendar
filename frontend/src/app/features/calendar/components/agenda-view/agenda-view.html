@@ -2,7 +2,7 @@
   <!-- Filter Controls Bar -->
   <div class="agenda-header-bar">
     <div class="filter-title">
-      <h3>📅 Lịch biểu {{ currentMonthLabel() }}</h3>
+      <h3>{{ i18n.t('agenda.title', { month: currentMonthLabel() }) }}</h3>
     </div>
 
     <div class="header-controls">
@@ -14,7 +14,7 @@
           [class.active]="calendarType() === 'solar'"
           (click)="setCalendarType('solar')"
         >
-          ☀️ Lịch Dương
+          {{ i18n.t('agenda.solar') }}
         </button>
         <button
           type="button"
@@ -22,7 +22,7 @@
           [class.active]="calendarType() === 'lunar'"
           (click)="setCalendarType('lunar')"
         >
-          🌙 Lịch Âm &amp; Sự kiện Âm Lịch
+          {{ i18n.t('agenda.lunar') }}
         </button>
       </div>
 
@@ -34,7 +34,7 @@
           [class.active]="filterMode() === 'month'"
           (click)="setFilterMode('month')"
         >
-          Tháng này
+          {{ i18n.t('agenda.filterMonth') }}
         </button>
         <button
           type="button"
@@ -42,7 +42,7 @@
           [class.active]="filterMode() === 'next30'"
           (click)="setFilterMode('next30')"
         >
-          30 ngày tới
+          {{ i18n.t('agenda.filterNext30') }}
         </button>
         <button
           type="button"
@@ -50,7 +50,7 @@
           [class.active]="filterMode() === 'all'"
           (click)="setFilterMode('all')"
         >
-          Tất cả
+          {{ i18n.t('agenda.filterAll') }}
         </button>
       </div>
     </div>
@@ -58,7 +58,7 @@
 
   @if (visibleGroupedDays().length === 0) {
     <div class="empty-state">
-      📋 Không có sự kiện nào trong khoảng thời gian được chọn.
+      {{ i18n.t('agenda.empty') }}
     </div>
   } @else {
     <div class="agenda-list">
@@ -68,7 +68,7 @@
             <span class="day-title" [class.lunar-title]="calendarType() === 'lunar'">
               {{ dayGroup.dateLabel }}
             </span>
-            <span class="badge">{{ dayGroup.events.length }} sự kiện</span>
+            <span class="badge">{{ i18n.t('agenda.eventsCount', { count: dayGroup.events.length }) }}</span>
           </div>
 
           <div class="events-list">
@@ -83,14 +83,14 @@
                   <div class="event-title">
                     {{ event.title }}
                     @if (event.isLunarEvent) {
-                      <span class="lunar-badge">Âm lịch truyền thống</span>
+                      <span class="lunar-badge">{{ i18n.t('agenda.lunarTraditional') }}</span>
                     }
                   </div>
                   <div class="event-time">
                     @if (event.isLunarEvent) {
-                      <span class="time-tag lunar-tag">Sự kiện Âm lịch</span>
+                      <span class="time-tag lunar-tag">{{ i18n.t('agenda.lunarEvent') }}</span>
                     } @else if (event.allDay) {
-                      <span class="time-tag all-day">Cả ngày</span>
+                      <span class="time-tag all-day">{{ i18n.t('calendar.allDay') }}</span>
                     } @else {
                       <span class="time-tag">{{ event.start | date:'HH:mm' }} - {{ event.end | date:'HH:mm' }}</span>
                     }
@@ -108,7 +108,7 @@
       @if (hasMore()) {
         <div class="load-more-box">
           <button type="button" class="btn-load-more" (click)="loadMore()">
-            ▼ Xem thêm các ngày tiếp theo
+            {{ i18n.t('agenda.loadMore') }}
           </button>
         </div>
       }

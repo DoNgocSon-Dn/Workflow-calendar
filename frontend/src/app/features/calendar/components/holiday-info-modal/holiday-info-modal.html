@@ -6,11 +6,11 @@
     [style.--holiday-text]="theme().textColor"
     [style.--holiday-subtitle]="theme().subtitleColor"
   >
-    <button type="button" class="close-btn" (click)="close()" aria-label="Đóng">✕</button>
+    <button type="button" class="close-btn" (click)="close()" [attr.aria-label]="i18n.t('common.close')">✕</button>
 
     <div class="icon">{{ icon() }}</div>
     <span class="badge">{{ badgeLabel() }}</span>
-    <h2 class="title">{{ event().title }}</h2>
+    <h2 class="title">{{ displayTitle() }}</h2>
     <p class="date">{{ displayDate() }}</p>
   </div>
 </div>

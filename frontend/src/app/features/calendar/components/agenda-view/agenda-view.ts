@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { CalendarStore } from '../../data/calendar-store';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 import { CALENDAR_COLOR_HEX, CalendarEvent } from '../../models/calendar.models';
 import { DatePipe } from '@angular/common';
 import { convertSolarToLunar } from '../../utils/lunar-calendar';
@@ -30,6 +31,7 @@ export type CalendarType = 'solar' | 'lunar';
 })
 export class AgendaView {
   protected readonly store = inject(CalendarStore);
+  protected readonly i18n = inject(TranslationService);
   protected readonly colorHex = CALENDAR_COLOR_HEX;
 
   readonly selectEvent = output<string>();
@@ -58,7 +60,8 @@ export class AgendaView {
 
   protected readonly currentMonthLabel = computed(() => {
     const d = this.store.focusedDate();
-    return d.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' });
+    const locale = this.i18n.locale() === 'en' ? 'en-US' : 'vi-VN';
+    return d.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
   });
 
   protected readonly allGroupedDays = computed<GroupedAgendaDay[]>(() => {
@@ -66,6 +69,7 @@ export class AgendaView {
     const focused = this.store.focusedDate();
     const mode = this.filterMode();
     const calType = this.calendarType();
+    const intlLocale = this.i18n.locale() === 'en' ? 'en-US' : 'vi-VN';
 
     let filtered = allEvents;
 
@@ -164,10 +168,16 @@ export class AgendaView {
 
         if (calType === 'lunar') {
           const lunar = convertSolarToLunar(item.date);
-          const weekday = item.date.toLocaleDateString('vi-VN', { weekday: 'long' });
-          dateLabel = `${weekday}, Ngày ${lunar.day} Tháng ${lunar.month} Âm lịch (Năm ${lunar.year}${lunar.isLeap ? ' Nhuận' : ''})`;
+          const weekday = item.date.toLocaleDateString(intlLocale, { weekday: 'long' });
+          dateLabel = this.i18n.t('agenda.lunarDateLabel', {
+            weekday,
+            day: lunar.day,
+            month: lunar.month,
+            year: lunar.year,
+            leap: lunar.isLeap ? this.i18n.t('agenda.leapYear') : '',
+          });
         } else {
-          dateLabel = item.date.toLocaleDateString('vi-VN', {
+          dateLabel = item.date.toLocaleDateString(intlLocale, {
             weekday: 'long',
             day: '2-digit',
             month: '2-digit',

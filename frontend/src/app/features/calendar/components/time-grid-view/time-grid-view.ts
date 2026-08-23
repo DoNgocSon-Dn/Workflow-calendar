@@ -12,6 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Clock } from '../../../../core/clock';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 import { CreateRequest } from '../month-view/month-view';
 import { CalendarStore } from '../../data/calendar-store';
 import { CALENDAR_COLOR_HEX, CalendarEvent } from '../../models/calendar.models';
@@ -60,19 +61,38 @@ export class TimeGridView {
   protected readonly store = inject(CalendarStore);
   private readonly clock = inject(Clock);
   private readonly destroyRef = inject(DestroyRef);
+  protected readonly i18n = inject(TranslationService);
 
   getLunarInfo(day: Date): LunarDate {
     return convertSolarToLunar(day);
   }
+
+  lunarTooltip(day: Date): string {
+    const info = this.getLunarInfo(day);
+    return this.i18n.t('calendar.lunarTooltip', { day: info.day, month: info.month });
+  }
+
+  conflictTooltip(eventId: string): string {
+    return this.store.conflictingEventIds().has(eventId) ? this.i18n.t('calendar.conflictTooltip') : '';
+  }
+
   protected readonly colorHex = CALENDAR_COLOR_HEX;
 
   readonly days = input.required<Date[]>();
   readonly createRequested = output<CreateRequest>();
   readonly editRequested = output<CalendarEvent>();
 
-  protected readonly formatHourLabel = formatHourLabel;
-  protected readonly formatTimeLabel = formatTimeLabel;
-  protected readonly weekdayShort = weekdayShort;
+  protected formatHourLabel(hour: number): string {
+    return formatHourLabel(hour, this.i18n.locale());
+  }
+
+  protected formatTimeLabel(date: Date): string {
+    return formatTimeLabel(date, this.i18n.locale());
+  }
+
+  protected weekdayShort(day: Date): string {
+    return weekdayShort(day, this.i18n.locale());
+  }
 
   protected readonly HOUR_HEIGHT = HOUR_HEIGHT;
   protected readonly DAY_HEIGHT = HOUR_HEIGHT * 24;

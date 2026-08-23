@@ -140,6 +140,18 @@ export class NotificationPanel {
     this.service.markAllAsRead();
   }
 
+  onDismiss(notification: AppNotification): void {
+    this.service.remove(notification.id);
+  }
+
+  protected readonly hasAnyNotification = computed(() => this.service.notifications().length > 0);
+
+  clearAll(): void {
+    if (!this.hasAnyNotification()) return;
+    if (!confirm('Xóa tất cả thông báo? Hành động này không thể hoàn tác.')) return;
+    this.service.clearAll();
+  }
+
   onActivate(notification: AppNotification): void {
     this.service.markAsRead(notification.id);
 

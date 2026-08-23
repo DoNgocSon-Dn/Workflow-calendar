@@ -65,6 +65,7 @@ export class NotificationItem {
 
   readonly activate = output<AppNotification>();
   readonly respond = output<NotificationRespondPayload>();
+  readonly dismiss = output<AppNotification>();
 
   protected readonly timeLabel = computed(() => formatNotificationTime(this.notification().createdAt));
 
@@ -127,5 +128,10 @@ export class NotificationItem {
     event.stopPropagation();
     if (this.responding()) return;
     this.respond.emit({ id: this.notification().id, status: 'declined' });
+  }
+
+  onDismiss(event: MouseEvent): void {
+    event.stopPropagation();
+    this.dismiss.emit(this.notification());
   }
 }

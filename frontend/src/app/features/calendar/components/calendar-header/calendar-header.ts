@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthStore } from '../../../../core/auth/auth-store';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 import { CalendarStore } from '../../data/calendar-store';
 import { CalendarViewMode } from '../../models/calendar.models';
 import { addDays, monthYearLabel, startOfWeek } from '../../utils/date-utils';
@@ -17,13 +18,16 @@ import { OpenGroupChatRequest } from '../../../../shared/components/notification
 /** Matches calendar-page.css / calendar-sidebar.css's mobile-drawer breakpoint. */
 const MOBILE_BREAKPOINT_PX = 720;
 
-const DAY_MONTH = new Intl.DateTimeFormat('vi-VN', { day: 'numeric', month: 'short' });
-const FULL_DATE = new Intl.DateTimeFormat('vi-VN', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-});
+const DATE_FMT: Record<'vi' | 'en', { dayMonth: Intl.DateTimeFormat; fullDate: Intl.DateTimeFormat }> = {
+  vi: {
+    dayMonth: new Intl.DateTimeFormat('vi-VN', { day: 'numeric', month: 'short' }),
+    fullDate: new Intl.DateTimeFormat('vi-VN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+  },
+  en: {
+    dayMonth: new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short' }),
+    fullDate: new Intl.DateTimeFormat('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+  },
+};
 
 @Component({
   selector: 'app-calendar-header',
@@ -35,6 +39,7 @@ const FULL_DATE = new Intl.DateTimeFormat('vi-VN', {
 export class CalendarHeader {
   protected readonly store = inject(CalendarStore);
   protected readonly authStore = inject(AuthStore);
+  protected readonly i18n = inject(TranslationService);
   private readonly router = inject(Router);
 
   readonly openImport = output<void>();
@@ -49,26 +54,29 @@ export class CalendarHeader {
   protected readonly userMenuOpen = signal(false);
   protected readonly viewMenuOpen = signal(false);
 
-  readonly viewModes: { mode: CalendarViewMode; label: string }[] = [
-    { mode: 'day', label: 'Ngày' },
-    { mode: 'week', label: 'Tuần' },
-    { mode: 'month', label: 'Tháng' },
-    { mode: 'agenda', label: 'Agenda' },
+  readonly viewModes: { mode: CalendarViewMode; labelKey: string }[] = [
+    { mode: 'day', labelKey: 'header.viewDay' },
+    { mode: 'week', labelKey: 'header.viewWeek' },
+    { mode: 'month', labelKey: 'header.viewMonth' },
+    { mode: 'agenda', labelKey: 'header.viewAgenda' },
   ];
 
-  readonly currentViewLabel = computed(
-    () => this.viewModes.find((v) => v.mode === this.store.viewMode())?.label ?? '',
-  );
+  readonly currentViewLabel = computed(() => {
+    const key = this.viewModes.find((v) => v.mode === this.store.viewMode())?.labelKey;
+    return key ? this.i18n.t(key) : '';
+  });
 
   readonly periodLabel = computed(() => {
     const mode = this.store.viewMode();
     const focused = this.store.focusedDate();
-    if (mode === 'month') return monthYearLabel(focused);
-    if (mode === 'day') return FULL_DATE.format(focused);
+    const locale = this.i18n.locale();
+    const fmt = DATE_FMT[locale];
+    if (mode === 'month') return monthYearLabel(focused, locale);
+    if (mode === 'day') return fmt.fullDate.format(focused);
 
     const start = startOfWeek(focused);
     const end = addDays(start, 6);
-    return `${DAY_MONTH.format(start)} – ${DAY_MONTH.format(end)}, ${end.getFullYear()}`;
+    return `${fmt.dayMonth.format(start)} – ${fmt.dayMonth.format(end)}, ${end.getFullYear()}`;
   });
 
   /** One control that does the useful thing per screen size: on mobile the
