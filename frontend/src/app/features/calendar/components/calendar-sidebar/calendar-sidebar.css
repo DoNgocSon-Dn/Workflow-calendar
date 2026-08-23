@@ -60,13 +60,12 @@
 .sidebar-top {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  justify-content: center;
   margin: 0.25rem 1rem 0.85rem;
 }
 
 .sidebar.collapsed .sidebar-top {
   margin: 0.25rem 0.5rem 0.85rem;
-  flex-direction: column;
 }
 
 .create-btn {
@@ -100,26 +99,6 @@
   width: 2.35rem;
   height: 2.35rem;
   padding: 0;
-}
-
-.collapse-toggle-btn {
-  flex: 0 0 auto;
-  width: 2.35rem;
-  height: 2.35rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.collapse-toggle-btn:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
 }
 
 .sidebar-scrollable {
@@ -360,9 +339,5 @@
 @media (max-width: 720px) {
   .sidebar.collapsed {
     width: 256px;
-  }
-
-  .collapse-toggle-btn {
-    display: none;
   }
 }

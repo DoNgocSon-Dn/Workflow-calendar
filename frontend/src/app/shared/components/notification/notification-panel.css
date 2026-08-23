@@ -13,18 +13,12 @@
   display: flex;
   flex-direction: column;
   max-height: 30rem;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-modal);
   overflow: hidden;
   animation: notifPanelIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-:host-context(.dark) .notif-panel {
-  background: rgba(17, 24, 39, 0.94);
 }
 
 @keyframes notifPanelIn {
@@ -82,6 +76,77 @@
 .notif-panel__mark-all:hover {
   color: var(--color-accent-hover);
   text-decoration: underline;
+}
+
+.notif-panel__invites {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-accent-soft);
+}
+
+.notif-panel__invites-title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.notif-panel__invite-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.notif-panel__invite-text {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.notif-panel__invite-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.notif-panel__invite-btn {
+  border: none;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.notif-panel__invite-btn:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.notif-panel__invite-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.notif-panel__invite-btn--muted {
+  background: var(--color-surface-hover-strong);
+  color: var(--color-text-secondary);
+}
+
+.notif-panel__invite-btn--muted:hover:not(:disabled) {
+  background: var(--color-border-strong);
 }
 
 .notif-panel__tabs {

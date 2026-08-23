@@ -13,6 +13,42 @@
     }
   </div>
 
+  @if (pendingCalendarInvites().length > 0) {
+    <div class="notif-panel__invites">
+      <p class="notif-panel__invites-title">Lời mời tham gia lịch</p>
+      @for (invite of pendingCalendarInvites(); track invite.id) {
+        <div class="notif-panel__invite-item">
+          <p class="notif-panel__invite-text">
+            @if (invite.inviterEmail) {
+              <strong>{{ invite.inviterEmail }}</strong> mời bạn vào
+            } @else {
+              Bạn được mời vào
+            }
+            "{{ invite.calendarName }}" ({{ invite.role === 'editor' ? 'chỉnh sửa' : 'chỉ xem' }})
+          </p>
+          <div class="notif-panel__invite-actions">
+            <button
+              type="button"
+              class="notif-panel__invite-btn"
+              [disabled]="respondingInviteId() === invite.id"
+              (click)="onRespondCalendarInvite(invite.id, 'accepted')"
+            >
+              Đồng ý
+            </button>
+            <button
+              type="button"
+              class="notif-panel__invite-btn notif-panel__invite-btn--muted"
+              [disabled]="respondingInviteId() === invite.id"
+              (click)="onRespondCalendarInvite(invite.id, 'declined')"
+            >
+              Từ chối
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
   <div class="notif-panel__tabs" role="tablist">
     @for (tab of tabs; track tab.id) {
       <button

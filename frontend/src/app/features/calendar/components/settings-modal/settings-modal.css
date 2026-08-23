@@ -176,30 +176,57 @@
   border-top: 1px solid var(--color-border);
 }
 
+.setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.section-label {
+  margin: 0 0 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
 .setting-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.5rem 0;
-}
-
-.setting-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  min-width: 0;
+  padding: 0.3rem 0;
 }
 
 .setting-title {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 500;
-  color: var(--color-text);
+  color: var(--color-text-secondary);
+  min-width: 0;
 }
 
-.setting-desc {
-  font-size: 0.75rem;
-  color: var(--color-text-tertiary);
+.action-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.action-btn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
 }
 
 .segmented {
@@ -238,22 +265,29 @@
 
 .theme-swatch-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
 }
 
 .theme-swatch-btn {
+  flex: 1;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
-  border: 1px solid var(--color-border-strong);
+  border: none;
+  border-left: 1px solid var(--color-border-strong);
   background: var(--color-surface);
   color: var(--color-text-secondary);
-  padding: 0.35rem 0.7rem;
-  border-radius: var(--radius-full);
+  padding: 0.4rem 0.6rem;
   font-size: 0.78rem;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.theme-swatch-btn:first-child {
+  border-left: none;
 }
 
 .theme-swatch-btn:hover {
@@ -261,7 +295,6 @@
 }
 
 .theme-swatch-btn.active {
-  border-color: var(--color-accent);
   background: var(--color-accent-soft);
   color: var(--color-accent);
   font-weight: 600;

@@ -14,16 +14,6 @@
         <span>Tạo sự kiện</span>
       }
     </button>
-
-    <button
-      type="button"
-      class="collapse-toggle-btn"
-      [attr.aria-label]="store.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'"
-      [title]="store.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'"
-      (click)="store.toggleSidebarCollapsed()"
-    >
-      <app-icon [name]="store.sidebarCollapsed() ? 'chevron-right' : 'chevron-left'" />
-    </button>
   </div>
 
   @if (!store.sidebarCollapsed()) {

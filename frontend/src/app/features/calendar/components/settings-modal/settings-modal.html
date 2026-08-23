@@ -33,7 +33,7 @@
           </label>
 
           <div class="name-field">
-            <label for="display-name-input" class="setting-title">Tên hiển thị</label>
+            <label for="display-name-input" class="sr-only">Tên hiển thị</label>
             <div class="name-input-row">
               <input
                 id="display-name-input"
@@ -65,96 +65,109 @@
 
       <div class="section-divider"></div>
 
-      <section class="setting-row">
-        <div class="setting-label">
-          <span class="setting-title">Giao diện</span>
-          <span class="setting-desc">Màu nền sáng hoặc tối cho toàn bộ ứng dụng.</span>
-        </div>
-        <div class="segmented" role="radiogroup" aria-label="Giao diện">
-          <button
-            type="button"
-            role="radio"
-            [attr.aria-checked]="themeService.theme() === 'light'"
-            [class.active]="themeService.theme() === 'light'"
-            (click)="setTheme('light')"
-          >
-            Sáng
-          </button>
-          <button
-            type="button"
-            role="radio"
-            [attr.aria-checked]="themeService.theme() === 'dark'"
-            [class.active]="themeService.theme() === 'dark'"
-            (click)="setTheme('dark')"
-          >
-            Tối
-          </button>
-        </div>
-      </section>
+      <section class="setting-group">
+        <h3 class="section-label">Giao diện</h3>
 
-      <section class="setting-row setting-row-stack">
-        <div class="setting-label">
-          <span class="setting-title">Chủ đề màu</span>
-          <span class="setting-desc">Đổi màu nhấn của toàn bộ giao diện — không đổi phông chữ, bo góc hay bố cục.</span>
-        </div>
-        <div class="theme-swatch-row" role="radiogroup" aria-label="Chủ đề màu">
-          @for (option of brandThemeOptions; track option.value) {
+        <div class="setting-row">
+          <span class="setting-title">Chế độ</span>
+          <div class="segmented" role="radiogroup" aria-label="Giao diện">
             <button
               type="button"
               role="radio"
-              class="theme-swatch-btn"
-              [attr.aria-checked]="brandThemeService.brandTheme() === option.value"
-              [class.active]="brandThemeService.brandTheme() === option.value"
-              (click)="setBrandTheme(option.value)"
+              [attr.aria-checked]="themeService.theme() === 'light'"
+              [class.active]="themeService.theme() === 'light'"
+              (click)="setTheme('light')"
             >
-              <span class="theme-swatch-dot" [style.background-color]="option.swatch"></span>
-              {{ option.label }}
+              Sáng
             </button>
-          }
+            <button
+              type="button"
+              role="radio"
+              [attr.aria-checked]="themeService.theme() === 'dark'"
+              [class.active]="themeService.theme() === 'dark'"
+              (click)="setTheme('dark')"
+            >
+              Tối
+            </button>
+          </div>
+        </div>
+
+        <div class="setting-row setting-row-stack">
+          <span class="setting-title">Màu nhấn</span>
+          <div class="theme-swatch-row" role="radiogroup" aria-label="Chủ đề màu">
+            @for (option of brandThemeOptions; track option.value) {
+              <button
+                type="button"
+                role="radio"
+                class="theme-swatch-btn"
+                [attr.aria-checked]="brandThemeService.brandTheme() === option.value"
+                [class.active]="brandThemeService.brandTheme() === option.value"
+                (click)="setBrandTheme(option.value)"
+              >
+                <span class="theme-swatch-dot" [style.background-color]="option.swatch"></span>
+                {{ option.label }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <span class="setting-title">Mật độ lịch</span>
+          <div class="segmented" role="radiogroup" aria-label="Hình thức">
+            <button
+              type="button"
+              role="radio"
+              [attr.aria-checked]="densityService.density() === 'comfortable'"
+              [class.active]="densityService.density() === 'comfortable'"
+              (click)="setDensity('comfortable')"
+            >
+              Thoải mái
+            </button>
+            <button
+              type="button"
+              role="radio"
+              [attr.aria-checked]="densityService.density() === 'compact'"
+              [class.active]="densityService.density() === 'compact'"
+              (click)="setDensity('compact')"
+            >
+              Gọn
+            </button>
+          </div>
         </div>
       </section>
 
-      <section class="setting-row">
-        <div class="setting-label">
-          <span class="setting-title">Hình thức</span>
-          <span class="setting-desc">Độ giãn dòng của lịch tháng — gọn hơn để thấy nhiều sự kiện hơn.</span>
-        </div>
-        <div class="segmented" role="radiogroup" aria-label="Hình thức">
-          <button
-            type="button"
-            role="radio"
-            [attr.aria-checked]="densityService.density() === 'comfortable'"
-            [class.active]="densityService.density() === 'comfortable'"
-            (click)="setDensity('comfortable')"
-          >
-            Thoải mái
-          </button>
-          <button
-            type="button"
-            role="radio"
-            [attr.aria-checked]="densityService.density() === 'compact'"
-            [class.active]="densityService.density() === 'compact'"
-            (click)="setDensity('compact')"
-          >
-            Gọn
-          </button>
+      <div class="section-divider"></div>
+
+      <section class="setting-group">
+        <h3 class="section-label">Thông báo</h3>
+
+        <div class="setting-row">
+          <span class="setting-title" id="holiday-notif-label">Ngày lễ</span>
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              aria-labelledby="holiday-notif-label"
+              [checked]="holidayPopupService.notificationsEnabled()"
+              (change)="toggleHolidayNotifications()"
+            />
+            <span class="toggle-track" aria-hidden="true"></span>
+          </label>
         </div>
       </section>
 
-      <section class="setting-row">
-        <div class="setting-label">
-          <span class="setting-title" id="holiday-notif-label">Thông báo ngày lễ</span>
-          <span class="setting-desc">Hiện popup khi mở ứng dụng vào ngày lễ lớn.</span>
+      <div class="section-divider"></div>
+
+      <section class="setting-group">
+        <h3 class="section-label">Khác</h3>
+
+        <div class="setting-row">
+          <span class="setting-title">Sự kiện đã xoá</span>
+          <button type="button" class="action-btn" (click)="openTrashFromSettings()">Thùng rác</button>
         </div>
-        <label class="toggle-switch">
-          <input
-            type="checkbox"
-            aria-labelledby="holiday-notif-label"
-            [checked]="holidayPopupService.notificationsEnabled()"
-            (change)="toggleHolidayNotifications()"
-          />
-          <span class="toggle-track" aria-hidden="true"></span>
-        </label>
+        <div class="setting-row">
+          <span class="setting-title">In lịch</span>
+          <button type="button" class="action-btn" (click)="print()">In</button>
+        </div>
       </section>
     </div>
   </div>

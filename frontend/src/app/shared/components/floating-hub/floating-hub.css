@@ -1,0 +1,412 @@
+:host {
+  display: contents;
+}
+
+.fab {
+  position: fixed;
+  z-index: 150;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-size: 1.35rem;
+  box-shadow: var(--shadow-sm);
+  cursor: grab;
+  touch-action: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: box-shadow 0.2s ease, background 0.15s ease;
+}
+
+.fab:hover {
+  background: var(--color-accent-hover);
+  box-shadow: var(--shadow-sm-hover);
+}
+
+.fab.dragging {
+  cursor: grabbing;
+  box-shadow: var(--shadow-popover);
+  transition: none;
+}
+
+.panel {
+  position: fixed;
+  z-index: 150;
+  width: min(350px, calc(100vw - 2.5rem));
+  max-height: 70vh;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-modal);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: panelIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.panel-tabs {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-hover);
+}
+
+.tab-btn {
+  border: none;
+  background: none;
+  color: var(--color-text-tertiary);
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tab-btn:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.tab-btn.active {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.icon-btn {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+}
+
+.icon-btn:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+/* Notes tab */
+.add-row {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-hover);
+}
+
+.note-input {
+  width: 100%;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.75rem;
+  font-size: 0.85rem;
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-bg);
+  resize: vertical;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.note-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+  background: var(--color-surface);
+}
+
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.color-dot {
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s ease;
+}
+
+.color-dot:hover {
+  transform: scale(1.15);
+}
+
+.color-dot.selected {
+  border-color: var(--color-text);
+  box-shadow: 0 0 0 2px var(--color-surface);
+}
+
+.color-dot.color-yellow,
+.note-card.color-yellow {
+  background: #fef08a;
+  color: #713f12;
+}
+
+.color-dot.color-blue,
+.note-card.color-blue {
+  background: #bae6fd;
+  color: #0369a1;
+}
+
+.color-dot.color-green,
+.note-card.color-green {
+  background: #bbf7d0;
+  color: #15803d;
+}
+
+.color-dot.color-pink,
+.note-card.color-pink {
+  background: #fbcfe8;
+  color: #be185d;
+}
+
+.color-dot.color-purple,
+.note-card.color-purple {
+  background: #ddd6fe;
+  color: #6b21a8;
+}
+
+.primary-btn {
+  border: none;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.825rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease;
+}
+
+.primary-btn:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  transform: translateY(-1px);
+}
+
+.primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.note-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.85rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.note-card {
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.85rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.note-content {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.note-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.text-btn {
+  border: none;
+  background: none;
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.3rem;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.15s ease;
+}
+
+.text-btn:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.text-btn.danger {
+  color: var(--color-danger);
+}
+
+.empty-hint {
+  margin: 0;
+  font-size: 0.825rem;
+  color: var(--color-text-tertiary);
+  text-align: center;
+}
+
+/* AI tab */
+.messages {
+  padding: 0.85rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  overflow-y: auto;
+  min-height: 5rem;
+}
+
+.hint-text {
+  margin: 0;
+  font-size: 0.825rem;
+  line-height: 1.45;
+  color: var(--color-text-tertiary);
+  background: var(--color-surface-hover);
+  padding: 0.75rem 0.85rem;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-border-strong);
+}
+
+.suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.suggestion-chip {
+  text-align: left;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.suggestion-chip:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  transform: translateX(2px);
+}
+
+.suggestion-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-width: 88%;
+}
+
+.message p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.85rem;
+  white-space: pre-line;
+}
+
+.message.role-user {
+  align-self: flex-end;
+}
+
+.message.role-user p {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  border-bottom-right-radius: 4px;
+}
+
+.message.role-assistant p {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-bottom-left-radius: 4px;
+}
+
+.message .text-btn {
+  align-self: flex-start;
+  color: var(--color-accent);
+}
+
+.message .text-btn:hover {
+  color: var(--color-accent-hover);
+}
+
+.field-error {
+  flex-shrink: 0;
+  color: var(--color-danger);
+  font-size: 0.8rem;
+  margin: 0 1.1rem;
+}
+
+.input-row {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.1rem;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-hover);
+}
+
+.text-input {
+  flex: 1;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.text-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+  background: var(--color-surface);
+}

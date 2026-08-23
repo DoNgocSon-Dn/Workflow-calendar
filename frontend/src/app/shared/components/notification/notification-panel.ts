@@ -18,6 +18,7 @@ import {
 } from '../../../core/services/notification.model';
 import { NotificationItem } from './notification-item';
 import { GroupStore } from '../../../features/groups/data/group-store';
+import { CalendarStore } from '../../../features/calendar/data/calendar-store';
 
 type NotificationTabId = 'all' | 'unread' | 'message' | 'task' | 'event' | 'group';
 
@@ -52,10 +53,29 @@ export interface OpenGroupChatRequest {
 export class NotificationPanel {
   private readonly service = inject(NotificationService);
   private readonly groupStore = inject(GroupStore);
+  protected readonly calendarStore = inject(CalendarStore);
 
   /** Id thông báo đang gọi API — chặn double-click và bật trạng thái loading. */
   protected readonly respondingId = signal<string | null>(null);
   protected readonly respondError = signal<string | null>(null);
+
+  /** Lời mời chia sẻ lịch — nguồn dữ liệu riêng của CalendarStore (không đi
+   *  qua NotificationService), hiển thị chung một chỗ với thông báo khác. */
+  protected readonly pendingCalendarInvites = this.calendarStore.pendingInvites;
+  protected readonly respondingInviteId = signal<string | null>(null);
+
+  async onRespondCalendarInvite(inviteId: string, status: 'accepted' | 'declined'): Promise<void> {
+    if (this.respondingInviteId()) return;
+    this.respondingInviteId.set(inviteId);
+    this.respondError.set(null);
+    try {
+      await this.calendarStore.respondToCalendarInvite(inviteId, status);
+    } catch {
+      this.respondError.set('Không thể xử lý lời mời. Vui lòng thử lại.');
+    } finally {
+      this.respondingInviteId.set(null);
+    }
+  }
 
   readonly close = output<void>();
   readonly openEvent = output<string>();
@@ -68,7 +88,10 @@ export class NotificationPanel {
 
   protected readonly filtered = computed<readonly AppNotification[]>(() => {
     const tab = this.activeTab();
-    const all = this.service.notifications();
+    // Lời mời chia sẻ lịch có mục riêng ở trên (đã nối đúng
+    // CalendarStore.respondToCalendarInvite) — lọc bỏ bản ghi thông báo cũ ở
+    // đây để tránh một nút Đồng ý/Từ chối thứ hai chỉ đổi trạng thái cục bộ.
+    const all = this.service.notifications().filter((n) => !n.id.startsWith('calendar-invite-'));
     if (tab === 'all') return all;
     if (tab === 'unread') return all.filter((n) => !n.isRead);
     return all.filter((n) => notificationCategory(n.type) === tab);

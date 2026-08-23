@@ -4,7 +4,8 @@
       type="button"
       class="icon-btn"
       aria-label="Ẩn/hiện thanh bên"
-      (click)="store.toggleSidebar()"
+      title="Ẩn/hiện thanh bên"
+      (click)="toggleSidebar()"
     >
       <svg viewBox="0 0 24 24" width="22" height="22">
         <path
@@ -51,40 +52,11 @@
       />
     </div>
 
-    <button type="button" class="today-btn import-btn" (click)="openImport.emit()">
-      📥 Import File
+    <button type="button" class="icon-btn" aria-label="Nhập file" title="Nhập file" (click)="openImport.emit()">
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        <path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z" />
+      </svg>
     </button>
-
-    <div class="gear-menu">
-      <button
-        type="button"
-        class="icon-btn"
-        aria-label="Cài đặt"
-        aria-haspopup="true"
-        [attr.aria-expanded]="gearMenuOpen()"
-        (click)="toggleGearMenu()"
-      >
-        <svg viewBox="0 0 24 24" width="20" height="20">
-          <path
-            fill="currentColor"
-            d="m19.14 12.94.04-.94-.04-.94 2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.6.24-1.15.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.67 8.84a.5.5 0 0 0 .12.64L4.82 11l-.04.94.04.94-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.14.24.4.32.6.22l2.39-.96c.47.38 1.02.7 1.62.94l.36 2.54c.05.24.26.42.5.42h3.84c.24 0 .45-.18.5-.42l.36-2.54c.6-.24 1.15-.56 1.62-.94l2.39.96c.22.08.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7"
-          />
-        </svg>
-      </button>
-      @if (gearMenuOpen()) {
-        <div class="menu-backdrop" (click)="closeGearMenu()"></div>
-        <div class="gear-dropdown" role="menu">
-          <button type="button" role="menuitem" class="dropdown-item" (click)="openSettingsFromMenu()">
-            Cài đặt
-          </button>
-          <button type="button" role="menuitem" class="dropdown-item" (click)="openTrashFromMenu()">
-            Thùng rác
-          </button>
-          <div class="dropdown-divider"></div>
-          <button type="button" role="menuitem" class="dropdown-item" (click)="print()">In</button>
-        </div>
-      }
-    </div>
 
     <app-notification-button
       (openEvent)="onNotificationOpenEvent($event)"
@@ -123,67 +95,6 @@
       }
     </div>
 
-    <div class="invites-menu">
-      <button
-        type="button"
-        class="icon-btn"
-        aria-label="Lời mời tham gia lịch"
-        aria-haspopup="true"
-        [attr.aria-expanded]="invitesMenuOpen()"
-        (click)="toggleInvitesMenu()"
-      >
-        <svg viewBox="0 0 24 24" width="20" height="20">
-          <path fill="currentColor"
-            d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5z" />
-        </svg>
-        @if (pendingInvites().length > 0) {
-          <span class="invite-badge">{{ pendingInvites().length }}</span>
-        }
-      </button>
-      @if (invitesMenuOpen()) {
-        <div class="menu-backdrop" (click)="closeInvitesMenu()"></div>
-        <div class="invites-dropdown" role="menu">
-          <p class="invites-dropdown-title">Lời mời tham gia lịch</p>
-          @if (pendingInvites().length === 0) {
-            <p class="invites-empty">Không có lời mời nào.</p>
-          } @else {
-            @for (invite of pendingInvites(); track invite.id) {
-              <div class="invite-item">
-                <p class="invite-text">
-                  @if (invite.inviterEmail) {
-                    <strong>{{ invite.inviterEmail }}</strong> mời bạn vào
-                  } @else {
-                    Bạn được mời vào
-                  }
-                  "{{ invite.calendarName }}" ({{ invite.role === 'editor' ? 'chỉnh sửa' : 'chỉ xem' }})
-                </p>
-                <div class="invite-actions">
-                  <button
-                    type="button"
-                    class="text-btn"
-                    [disabled]="respondingInviteId() === invite.id"
-                    (click)="respondInvite(invite.id, 'accepted')"
-                  >
-                    Đồng ý
-                  </button>
-                  <button
-                    type="button"
-                    class="text-btn muted"
-                    [disabled]="respondingInviteId() === invite.id"
-                    (click)="respondInvite(invite.id, 'declined')"
-                  >
-                    Từ chối
-                  </button>
-                </div>
-              </div>
-            }
-          }
-        </div>
-      }
-    </div>
-
-    <app-theme-toggle />
-
     @if (userEmail()) {
       <div class="user-menu">
         <button
@@ -208,7 +119,7 @@
               <p class="user-dropdown-email">{{ userEmail() }}</p>
             }
             <button type="button" class="dropdown-item" role="menuitem" (click)="openProfileFromMenu()">
-              Chỉnh sửa hồ sơ
+              Cài đặt
             </button>
             <button type="button" class="dropdown-item" role="menuitem" (click)="logout()">
               Đăng xuất

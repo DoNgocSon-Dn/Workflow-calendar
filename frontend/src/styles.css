@@ -250,8 +250,7 @@ h1, h2, h3, h4, .font-heading {
 /* Print Styles */
 @media print {
   app-calendar-sidebar,
-  app-notes-widget,
-  app-ai-chat-widget,
+  app-floating-hub,
   app-notification-popup,
   app-holiday-popup,
   .backdrop,

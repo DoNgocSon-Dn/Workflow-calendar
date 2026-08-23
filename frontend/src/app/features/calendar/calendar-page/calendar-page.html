@@ -1,7 +1,6 @@
 <div class="calendar-page">
   <app-calendar-header
     (openImport)="importModalOpen.set(true)"
-    (openTrash)="trashModalOpen.set(true)"
     (openSettings)="settingsModalOpen.set(true)"
     (openEventFromNotification)="onViewDetail($event)"
     (openGroupFromNotification)="onOpenGroupFromNotification($event)"
@@ -88,7 +87,10 @@
 }
 
 @if (settingsModalOpen()) {
-  <app-settings-modal (closed)="settingsModalOpen.set(false)" />
+  <app-settings-modal
+    (closed)="settingsModalOpen.set(false)"
+    (openTrash)="trashModalOpen.set(true)"
+  />
 }
 
 @if (inviteModalTarget(); as target) {
@@ -166,5 +168,4 @@
 
 <app-notification-popup (viewDetail)="onViewDetail($event)" />
 <app-holiday-popup />
-<app-notes-widget />
-<app-ai-chat-widget (openManualForm)="openManualFormFromAi($event)" />
+<app-floating-hub (openManualForm)="openManualFormFromAi($event)" />

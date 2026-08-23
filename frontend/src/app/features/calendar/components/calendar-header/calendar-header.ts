@@ -8,12 +8,14 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthStore } from '../../../../core/auth/auth-store';
-import { ThemeToggle } from '../../../../core/theme/theme-toggle/theme-toggle';
 import { CalendarStore } from '../../data/calendar-store';
 import { CalendarViewMode } from '../../models/calendar.models';
 import { addDays, monthYearLabel, startOfWeek } from '../../utils/date-utils';
 import { NotificationButton } from '../../../../shared/components/notification/notification-button';
 import { OpenGroupChatRequest } from '../../../../shared/components/notification/notification-panel';
+
+/** Matches calendar-page.css / calendar-sidebar.css's mobile-drawer breakpoint. */
+const MOBILE_BREAKPOINT_PX = 720;
 
 const DAY_MONTH = new Intl.DateTimeFormat('vi-VN', { day: 'numeric', month: 'short' });
 const FULL_DATE = new Intl.DateTimeFormat('vi-VN', {
@@ -28,7 +30,7 @@ const FULL_DATE = new Intl.DateTimeFormat('vi-VN', {
   templateUrl: './calendar-header.html',
   styleUrl: './calendar-header.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ThemeToggle, NotificationButton],
+  imports: [NotificationButton],
 })
 export class CalendarHeader {
   protected readonly store = inject(CalendarStore);
@@ -37,7 +39,6 @@ export class CalendarHeader {
 
   readonly openImport = output<void>();
   readonly openSettings = output<void>();
-  readonly openTrash = output<void>();
   readonly openEventFromNotification = output<string>();
   readonly openGroupFromNotification = output<OpenGroupChatRequest>();
 
@@ -47,11 +48,6 @@ export class CalendarHeader {
   protected readonly userInitial = computed(() => this.displayName().charAt(0).toUpperCase() || '?');
   protected readonly userMenuOpen = signal(false);
   protected readonly viewMenuOpen = signal(false);
-  protected readonly gearMenuOpen = signal(false);
-  protected readonly invitesMenuOpen = signal(false);
-  protected readonly respondingInviteId = signal<string | null>(null);
-
-  protected readonly pendingInvites = computed(() => this.store.pendingInvites());
 
   readonly viewModes: { mode: CalendarViewMode; label: string }[] = [
     { mode: 'day', label: 'Ngày' },
@@ -75,6 +71,17 @@ export class CalendarHeader {
     return `${DAY_MONTH.format(start)} – ${DAY_MONTH.format(end)}, ${end.getFullYear()}`;
   });
 
+  /** One control that does the useful thing per screen size: on mobile the
+   *  sidebar is an overlay drawer, so it must fully show/hide; on desktop
+   *  there's room to keep an icon rail, so it collapses instead of vanishing. */
+  toggleSidebar(): void {
+    if (window.innerWidth < MOBILE_BREAKPOINT_PX) {
+      this.store.toggleSidebar();
+    } else {
+      this.store.toggleSidebarCollapsed();
+    }
+  }
+
   setViewMode(mode: CalendarViewMode): void {
     this.store.setViewMode(mode);
     this.viewMenuOpen.set(false);
@@ -96,29 +103,6 @@ export class CalendarHeader {
     this.openGroupFromNotification.emit(request);
   }
 
-  toggleGearMenu(): void {
-    this.gearMenuOpen.update((open) => !open);
-  }
-
-  closeGearMenu(): void {
-    this.gearMenuOpen.set(false);
-  }
-
-  openSettingsFromMenu(): void {
-    this.gearMenuOpen.set(false);
-    this.openSettings.emit();
-  }
-
-  openTrashFromMenu(): void {
-    this.gearMenuOpen.set(false);
-    this.openTrash.emit();
-  }
-
-  print(): void {
-    this.gearMenuOpen.set(false);
-    window.print();
-  }
-
   toggleUserMenu(): void {
     this.userMenuOpen.update((open) => !open);
   }
@@ -130,26 +114,6 @@ export class CalendarHeader {
   openProfileFromMenu(): void {
     this.closeUserMenu();
     this.openSettings.emit();
-  }
-
-  toggleInvitesMenu(): void {
-    this.invitesMenuOpen.update((open) => !open);
-  }
-
-  closeInvitesMenu(): void {
-    this.invitesMenuOpen.set(false);
-  }
-
-  async respondInvite(inviteId: string, status: 'accepted' | 'declined'): Promise<void> {
-    if (this.respondingInviteId()) return;
-    this.respondingInviteId.set(inviteId);
-    try {
-      await this.store.respondToCalendarInvite(inviteId, status);
-    } catch {
-      // Lỗi mạng — invite vẫn còn trong danh sách, người dùng có thể thử lại.
-    } finally {
-      this.respondingInviteId.set(null);
-    }
   }
 
   async logout(): Promise<void> {

@@ -35,6 +35,7 @@ export class SettingsModal {
   protected readonly brandThemeOptions = BRAND_THEME_OPTIONS;
 
   readonly closed = output<void>();
+  readonly openTrash = output<void>();
 
   protected readonly nameDraft = signal(this.authStore.displayName() ?? '');
   protected readonly savingName = signal(false);
@@ -102,6 +103,16 @@ export class SettingsModal {
     if (typeof result !== 'string') {
       this.profileError.set('Không thể tải ảnh lên. Vui lòng thử lại.');
     }
+  }
+
+  openTrashFromSettings(): void {
+    this.closed.emit();
+    this.openTrash.emit();
+  }
+
+  print(): void {
+    this.closed.emit();
+    window.print();
   }
 
   cancel(): void {

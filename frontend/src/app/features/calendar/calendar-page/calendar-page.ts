@@ -2,8 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { AuthStore } from '../../../core/auth/auth-store';
 import { DensityService } from '../../../core/density/density-service';
 import { NotificationQueue } from '../../../core/realtime/notification-queue';
-import { AiChatWidget } from '../../ai-assistant/ai-chat-widget';
-import { NotesWidget } from '../../notes/notes-widget';
 import { CalendarHeader } from '../components/calendar-header/calendar-header';
 import { CalendarSidebar } from '../components/calendar-sidebar/calendar-sidebar';
 import { CreateCalendarModal } from '../components/create-calendar-modal/create-calendar-modal';
@@ -26,6 +24,7 @@ import { GroupWorkspaceModal } from '../../groups/components/group-workspace-mod
 import { GroupStore } from '../../groups/data/group-store';
 import { OpenGroupChatRequest } from '../../../shared/components/notification/notification-panel';
 import { HolidayPopup } from '../../../shared/components/holiday-popup/holiday-popup';
+import { FloatingHub } from '../../../shared/components/floating-hub/floating-hub';
 
 interface ModalState {
   event: CalendarEvent | null;
@@ -55,8 +54,7 @@ interface ModalState {
     CreateGroupModal,
     GroupWorkspaceModal,
     NotificationPopup,
-    NotesWidget,
-    AiChatWidget,
+    FloatingHub,
     HolidayPopup,
     HolidayInfoModal,
   ],
