@@ -1,0 +1,325 @@
+:host {
+  display: contents;
+}
+
+.holiday-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--overlay-backdrop);
+  animation: holidayBackdropIn 0.25s ease both;
+}
+
+.holiday-backdrop--closing {
+  animation: holidayBackdropOut 0.2s ease forwards;
+}
+
+@keyframes holidayBackdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes holidayBackdropOut {
+  to {
+    opacity: 0;
+  }
+}
+
+.holiday-popup {
+  position: relative;
+  width: min(640px, 100%);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: var(--holiday-bg);
+  color: var(--holiday-text);
+  box-shadow: var(--shadow-modal), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  animation: holidayPopupIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.holiday-popup--closing {
+  animation: holidayPopupOut 0.2s ease forwards;
+}
+
+@keyframes holidayPopupIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes holidayPopupOut {
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+/* Visual stage — dedicated space above the content for the per-holiday
+   composition (app-holiday-visual) and the foreground particle layer,
+   so decorations never overlap the text below. */
+.holiday-popup__stage {
+  position: relative;
+  height: 320px;
+  overflow: hidden;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--holiday-bg) 40%, transparent) 92%);
+}
+
+/* Ambient sparkle layer — small tinted dots only, never the motif shape
+   itself, so it stays a quiet accent instead of "flying icons". */
+.holiday-popup__particles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.holiday-popup__particle {
+  position: absolute;
+  top: -10%;
+  line-height: 1;
+  opacity: 0;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
+}
+
+.holiday-popup__particle--fall {
+  animation-name: holidayFall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes holidayFall {
+  0% {
+    transform: translateY(-10%) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateY(340px) rotate(50deg);
+    opacity: 0;
+  }
+}
+
+.holiday-popup__particle--float {
+  top: auto;
+  bottom: -10%;
+  animation-name: holidayFloat;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes holidayFloat {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-260px) scale(1.05);
+    opacity: 0;
+  }
+}
+
+.holiday-popup__particle--burst {
+  top: 55%;
+  animation-name: holidayBurst;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes holidayBurst {
+  0% {
+    transform: scale(0.3) translateY(0);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.6) translateY(-45px);
+    opacity: 0;
+  }
+}
+
+.holiday-popup__particle--twinkle {
+  top: 60%;
+  animation-name: holidayTwinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes holidayTwinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.holiday-popup__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  border: none;
+  background: rgba(255, 255, 255, 0.16);
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.holiday-popup__close:hover {
+  background: rgba(255, 255, 255, 0.28);
+  transform: scale(1.06);
+}
+
+.holiday-popup__body {
+  position: relative;
+  z-index: 1;
+  padding: 2rem 2.75rem 2.75rem;
+  text-align: center;
+  opacity: 0;
+  animation: holidayBodyIn 0.5s ease-out 0.4s both;
+}
+
+@keyframes holidayBodyIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.holiday-popup__badge {
+  display: inline-block;
+  margin-bottom: 0.8rem;
+  padding: 0.32rem 0.9rem;
+  border-radius: var(--radius-full);
+  border: 1px solid color-mix(in srgb, var(--holiday-accent) 45%, transparent);
+  color: var(--holiday-accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Typography hierarchy: name strongest, greeting secondary, date quietest. */
+.holiday-popup__title {
+  margin: 0 0 0.6rem;
+  font-size: 2.1rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.holiday-popup__subtitle {
+  margin: 0 0 1rem;
+  font-size: 1.2rem;
+  line-height: 1.55;
+  color: var(--holiday-subtitle);
+}
+
+.holiday-popup__date {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--holiday-accent) 75%, var(--holiday-subtitle));
+  text-transform: capitalize;
+  opacity: 0.85;
+}
+
+@media (max-width: 640px) {
+  .holiday-backdrop {
+    padding: 1rem;
+  }
+
+  .holiday-popup__stage {
+    height: 210px;
+  }
+
+  .holiday-popup__body {
+    padding: 1.5rem 1.5rem 1.85rem;
+  }
+
+  .holiday-popup__title {
+    font-size: 1.6rem;
+  }
+
+  .holiday-popup__subtitle {
+    font-size: 1rem;
+  }
+
+  .holiday-popup__particle:nth-child(n + 9) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .holiday-backdrop,
+  .holiday-popup {
+    animation: holidayFadeInReduced 0.2s ease both;
+  }
+
+  .holiday-backdrop--closing,
+  .holiday-popup--closing {
+    animation: holidayFadeOutReduced 0.15s ease forwards;
+  }
+
+  .holiday-popup__particle {
+    animation: none !important;
+    opacity: 0.25;
+  }
+
+  .holiday-popup__body {
+    animation: none !important;
+    opacity: 1;
+  }
+
+  .holiday-popup__close:hover {
+    transform: none;
+  }
+}
+
+@keyframes holidayFadeInReduced {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes holidayFadeOutReduced {
+  to {
+    opacity: 0;
+  }
+}

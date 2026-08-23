@@ -1,9 +1,15 @@
 <div class="backdrop" (click)="onBackdropClick($event)" role="dialog" aria-modal="true">
-  <div class="card">
+  <div
+    class="card"
+    [style.--holiday-bg]="theme().background"
+    [style.--holiday-accent]="theme().accent"
+    [style.--holiday-text]="theme().textColor"
+    [style.--holiday-subtitle]="theme().subtitleColor"
+  >
     <button type="button" class="close-btn" (click)="close()" aria-label="Đóng">✕</button>
 
-    <div class="icon">🎉</div>
-    <span class="badge">Ngày lễ · Chỉ xem</span>
+    <div class="icon">{{ icon() }}</div>
+    <span class="badge">{{ badgeLabel() }}</span>
     <h2 class="title">{{ event().title }}</h2>
     <p class="date">{{ displayDate() }}</p>
   </div>

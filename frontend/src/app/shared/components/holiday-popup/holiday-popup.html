@@ -1,0 +1,53 @@
+@if (visible()) {
+  @let currentHoliday = holiday();
+  @if (currentHoliday) {
+    <div class="holiday-backdrop" [class.holiday-backdrop--closing]="closing()" (click)="onBackdropClick($event)">
+      <div
+        class="holiday-popup"
+        [class.holiday-popup--closing]="closing()"
+        [style.--holiday-bg]="theme().background"
+        [style.--holiday-accent]="theme().accent"
+        [style.--holiday-text]="theme().textColor"
+        [style.--holiday-subtitle]="theme().subtitleColor"
+        role="dialog"
+        aria-modal="true"
+        aria-live="polite"
+        [attr.aria-label]="title()"
+      >
+        <button type="button" class="holiday-popup__close" (click)="close()" aria-label="Đóng thông báo">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+            <line x1="5" y1="5" x2="19" y2="19" />
+            <line x1="19" y1="5" x2="5" y2="19" />
+          </svg>
+        </button>
+
+        <div class="holiday-popup__stage">
+          <app-holiday-visual [composition]="theme().composition" [theme]="theme()" />
+
+          <div class="holiday-popup__particles" aria-hidden="true">
+            @for (particle of particles(); track $index) {
+              <span
+                class="holiday-popup__particle holiday-popup__particle--{{ theme().decoration.particleAnimation }}"
+                [style.left.%]="particle.leftPercent"
+                [style.font-size.px]="particle.sizePx"
+                [style.animation-delay.s]="particle.delaySeconds"
+                [style.animation-duration.s]="particle.durationSeconds"
+              >{{ particle.emoji }}</span>
+            }
+          </div>
+        </div>
+
+        <div class="holiday-popup__body">
+          @if (typeLabel(); as label) {
+            <span class="holiday-popup__badge">{{ label }}</span>
+          }
+          <h2 class="holiday-popup__title">{{ title() }}</h2>
+          @if (subtitle(); as sub) {
+            <p class="holiday-popup__subtitle">{{ sub }}</p>
+          }
+          <p class="holiday-popup__date">{{ dateLabel }}</p>
+        </div>
+      </div>
+    </div>
+  }
+}

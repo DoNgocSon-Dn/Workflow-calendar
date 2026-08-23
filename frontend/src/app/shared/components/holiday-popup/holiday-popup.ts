@@ -1,6 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { HolidayPopupService } from '../../../core/services/holiday-popup.service';
-import { HolidayDecoration } from '../../../models/holiday-theme.model';
+import {
+  DEFAULT_HOLIDAY_THEME,
+  HOLIDAY_TYPE_LABEL,
+  HolidayDecoration,
+} from '../../../models/holiday-theme.model';
+import { HolidayVisual } from './holiday-visual';
 
 interface HolidayParticleView {
   readonly emoji: string;
@@ -10,36 +15,44 @@ interface HolidayParticleView {
   readonly sizePx: number;
 }
 
-const DEFAULT_PARTICLE_COUNT = 14;
-
 /** Deterministic pseudo-random spread (golden-angle) — no Math.random, so
  *  layout stays stable across change-detection runs. */
 function buildParticles(decoration: HolidayDecoration): readonly HolidayParticleView[] {
   const emojiSet = decoration.particleEmoji;
-  if (emojiSet.length === 0) return [];
-  const count = decoration.particleCount ?? DEFAULT_PARTICLE_COUNT;
-
+  if (!emojiSet || emojiSet.length === 0) return [];
+  const count = decoration.particleCount ?? 0;
   return Array.from({ length: count }, (_, index) => ({
     emoji: emojiSet[index % emojiSet.length],
     leftPercent: (index * 137.5) % 100,
     delaySeconds: (index % 7) * 0.4,
-    durationSeconds: 6 + (index % 5),
+    durationSeconds: 7 + (index % 5),
     sizePx: 14 + (index % 4) * 4,
   }));
 }
 
 @Component({
   selector: 'app-holiday-popup',
-  templateUrl: './holiday-popup.component.html',
-  styleUrl: './holiday-popup.component.scss',
+  templateUrl: './holiday-popup.html',
+  styleUrl: './holiday-popup.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [HolidayVisual],
+  host: {
+    '(document:keydown.escape)': 'onEscape()',
+  },
 })
-export class HolidayPopupComponent {
+export class HolidayPopup {
   private readonly popupService = inject(HolidayPopupService);
 
   protected readonly holiday = this.popupService.activeHoliday;
   protected readonly visible = this.popupService.visible;
   protected readonly closing = signal(false);
+
+  protected readonly theme = computed(() => this.holiday()?.theme ?? DEFAULT_HOLIDAY_THEME);
+
+  protected readonly typeLabel = computed<string | null>(() => {
+    const type = this.holiday()?.type;
+    return type ? HOLIDAY_TYPE_LABEL[type] : null;
+  });
 
   protected readonly title = computed(() => {
     const holiday = this.holiday();
@@ -51,10 +64,17 @@ export class HolidayPopupComponent {
     return subtitle ? this.popupService.resolveText(subtitle) : null;
   });
 
-  protected readonly particles = computed<readonly HolidayParticleView[]>(() => {
-    const holiday = this.holiday();
-    return holiday ? buildParticles(holiday.theme.decoration) : [];
-  });
+  /** The popup only ever shows on the day it matches, so "today" is simply now. */
+  protected readonly dateLabel = new Intl.DateTimeFormat('vi-VN', {
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date());
+
+  protected readonly particles = computed<readonly HolidayParticleView[]>(() =>
+    buildParticles(this.theme().decoration),
+  );
 
   close(): void {
     if (this.closing()) return;
@@ -62,5 +82,13 @@ export class HolidayPopupComponent {
     // Matches the CSS exit animation duration so the popup fades out before
     // it's removed from the DOM instead of disappearing abruptly.
     setTimeout(() => this.popupService.dismiss(), 220);
+  }
+
+  onEscape(): void {
+    if (this.visible()) this.close();
+  }
+
+  onBackdropClick(event: MouseEvent): void {
+    if (event.target === event.currentTarget) this.close();
   }
 }

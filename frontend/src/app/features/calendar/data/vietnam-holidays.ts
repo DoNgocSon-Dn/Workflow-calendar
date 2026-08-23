@@ -89,13 +89,12 @@ export function buildVietnamHolidayEvents(years: number[]): CalendarEvent[] {
 // holidays.data.ts, để bấm vào sự kiện trên lịch có thể mở đúng popup ngày
 // lễ tương ứng. Ngày lễ không có theme trả về null.
 const HOLIDAY_EVENT_TITLE_TO_THEME_ID: Readonly<Record<string, string>> = {
-  'Tết Dương lịch': 'new-year-solar',
+  'Tết Dương lịch': 'new-year',
   'Ngày Quốc tế Phụ nữ': 'womens-day',
-  'Ngày Giải phóng miền Nam': 'liberation-day',
+  'Ngày Giải phóng miền Nam': 'reunification-day',
   'Ngày Quốc tế Lao động': 'labor-day',
   'Quốc khánh': 'national-day',
   'Ngày Nhà giáo Việt Nam': 'teachers-day',
-  'Giỗ Tổ Hùng Vương': 'hung-kings-day',
 };
 
 export function resolveHolidayThemeId(event: CalendarEvent): string | null {

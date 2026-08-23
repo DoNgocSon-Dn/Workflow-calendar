@@ -24,7 +24,7 @@ import { addMinutes, buildWeekDays } from '../utils/date-utils';
 import { CreateGroupModal } from '../../groups/components/create-group-modal/create-group-modal';
 import { GroupWorkspaceModal } from '../../groups/components/group-workspace-modal/group-workspace-modal';
 import { GroupStore } from '../../groups/data/group-store';
-import { HolidayPopupComponent } from '../../../shared/components/holiday-popup/holiday-popup.component';
+import { HolidayPopup } from '../../../shared/components/holiday-popup/holiday-popup';
 
 interface ModalState {
   event: CalendarEvent | null;
@@ -56,7 +56,7 @@ interface ModalState {
     NotificationPopup,
     NotesWidget,
     AiChatWidget,
-    HolidayPopupComponent,
+    HolidayPopup,
     HolidayInfoModal,
   ],
 })
