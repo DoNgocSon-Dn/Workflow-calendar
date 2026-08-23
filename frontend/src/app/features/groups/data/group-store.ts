@@ -319,16 +319,14 @@ export class GroupStore {
       createdAt: message.createdAt,
     };
 
-    // Nhắc tên luôn được báo, kể cả khi đang mở đúng nhóm đó — bị gọi tên là
-    // việc cần biết ngay, không nên im lặng chỉ vì cửa sổ chat đang mở.
+    // Tin nhắn của người khác LUÔN vào Notification Center — kể cả khi đang mở
+    // đúng nhóm đó và đang nhìn thẳng vào khung chat. Chuông là nhật ký hoạt
+    // động, không phải thứ chỉ để báo cái mình chưa thấy; điều kiện duy nhất
+    // chặn thông báo là tin do chính mình gửi (đã lọc ở đầu hàm).
     if (this.mentionsCurrentUser(text, currentUser.email)) {
       this.notifications.ingest(groupMentionDraft(input));
       return;
     }
-
-    // Đang mở đúng workspace của nhóm này thì tin nhắn đã hiện sẵn trong khung
-    // chat — không cần báo thêm ở chuông thông báo.
-    if (this.isActiveGroup(groupId, message.groupId) && this.activeWorkspaceModalOpen()) return;
 
     this.notifications.ingest(groupMessageDraft(input));
   }
