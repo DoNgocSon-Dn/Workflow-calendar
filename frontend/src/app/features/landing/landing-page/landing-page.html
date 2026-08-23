@@ -103,132 +103,192 @@
     <p class="section-desc reveal">Bốn trụ cột đứng sau Workflow — mỗi phần đều được xây để giảm ma sát trong ngày làm việc của bạn.</p>
   </section>
 
-  <!-- FEATURE 01 -->
-  <section class="feature-pin" id="f1">
-    <div class="feature-text">
-      <div class="feature-index reveal">01 / Trợ lý AI</div>
-      <h3 class="reveal">Gõ một câu, lịch tự được tạo</h3>
-      <p class="reveal">
-        Chỉ cần gõ "Họp với Hùng thứ 6 tuần sau lúc 3 giờ chiều" — trợ lý AI của Workflow hiểu ngôn ngữ tự nhiên tiếng Việt và tự tạo đúng sự kiện. Câu mơ hồ sẽ được chuyển sang form thủ công để bạn xác nhận, không bao giờ tạo lịch rác.
-      </p>
-      <div class="chip-row reveal">
-        <span class="chip">Hiểu tiếng Việt tự nhiên</span>
-        <span class="chip">Luôn có bước xác nhận</span>
-      </div>
-    </div>
-    <div class="feature-visual reveal">
-      <div class="glow"></div>
-      <div class="cal-card" style="width:80%;">
-        <div class="cal-head">
-          <span>Trợ lý AI</span>
-          <span>Vừa tạo xong</span>
-        </div>
-        <div style="padding:6px 0 18px; font-size:13px; color:var(--ink-dim); line-height:1.7;">
-          "Nhắc tôi họp với Hùng thứ 6 tuần sau lúc 3 giờ chiều"
-        </div>
-        <div class="cal-grid">
-          <div>Th 5</div>
-          <div class="active">Th 6</div>
-          <div>Th 7</div>
-          <div>CN</div>
-          <div>Th 2</div>
-          <div>Th 3</div>
-          <div>Th 4</div>
-          <div>·</div>
-          <div class="dot-mark">15:00</div>
-          <div>·</div>
-          <div>·</div>
-          <div>·</div>
-          <div>·</div>
-          <div>·</div>
-        </div>
-      </div>
-    </div>
-  </section>
+  <!-- ═══════════ 3D SCROLL SHOWCASE (Stage 0 → 4) ═══════════ -->
+  <section class="scrolly" id="scrolly">
+    <div class="scrolly-viewport">
+      <!-- ── CỘT CHỮ: đổi nội dung theo từng stage ── -->
+      <div class="scrolly-copy">
+        <article class="copy-step" data-step="0">
+          <div class="feature-index">Bốn trụ cột</div>
+          <h3>Mọi thứ xoay quanh <em>một chiếc lịch.</em></h3>
+          <p>
+            Không phải bốn công cụ rời rạc — mà bốn lớp thông minh cùng chạy trên đúng
+            một bảng lịch bạn nhìn mỗi ngày. Cuộn tiếp để xem từng lớp hoạt động.
+          </p>
+        </article>
 
-  <!-- FEATURE 02 -->
-  <section class="feature-pin" id="f2">
-    <div class="feature-text">
-      <div class="feature-index reveal">02 / Realtime &amp; Email</div>
-      <h3 class="reveal">Mời người khác, không cần họ mở app</h3>
-      <p class="reveal">
-        Mọi thay đổi đồng bộ tức thì qua WebSocket trên mọi thiết bị đang mở. Người được mời nhận email có sẵn nút "Đồng ý / Từ chối" — bấm là xong, không cần tài khoản, không cần đăng nhập.
-      </p>
-      <div class="chip-row reveal">
-        <span class="chip">Đồng bộ real-time</span>
-        <span class="chip">Xác nhận ngay trong email</span>
-      </div>
-    </div>
-    <div class="feature-visual reveal">
-      <div class="glow"></div>
-      <div class="cal-card" style="width:82%;">
-        <div class="cal-head">
-          <span>Lời mời họp nhóm</span>
-          <span>Đã gửi qua email</span>
-        </div>
-        <div style="padding:8px 0 22px; font-size:13px; color:var(--ink-dim); line-height:1.7;">
-          "Họp thiết kế · Thứ 6, 15:00 — 16:00"
-        </div>
-        <div class="chip-row" style="margin-top:0;">
-          <span class="chip" style="border-color:var(--accent); color:var(--accent);">✓ Đồng ý</span>
-          <span class="chip">✕ Từ chối</span>
-        </div>
-      </div>
-    </div>
-  </section>
+        <article class="copy-step" data-step="1">
+          <div class="feature-index">01 / Trợ lý AI</div>
+          <h3>Gõ một câu, lịch tự được tạo</h3>
+          <p>
+            Chỉ cần gõ "Họp với Hùng thứ 6 tuần sau lúc 3 giờ chiều" — trợ lý AI hiểu ngôn ngữ
+            tự nhiên tiếng Việt và tự tạo đúng sự kiện. Câu mơ hồ sẽ được chuyển sang form thủ
+            công để bạn xác nhận, không bao giờ tạo lịch rác.
+          </p>
+          <div class="chip-row">
+            <span class="chip">Hiểu tiếng Việt tự nhiên</span>
+            <span class="chip">Luôn có bước xác nhận</span>
+          </div>
+        </article>
 
-  <!-- FEATURE 03 -->
-  <section class="feature-pin" id="f3">
-    <div class="feature-text">
-      <div class="feature-index reveal">03 / Phát hiện xung đột</div>
-      <h3 class="reveal">Không bao giờ đặt trùng lịch nữa</h3>
-      <p class="reveal">
-        Workflow tự kiểm tra chồng chéo thời gian cho bạn và mọi người được mời ngay khi đang tạo sự kiện — cảnh báo hiển thị ngay trong form, kèm viền đỏ trực quan trên lịch nếu hai sự kiện trùng giờ.
-      </p>
-      <div class="chip-row reveal">
-        <span class="chip">Cảnh báo tức thì</span>
-        <span class="chip">Kiểm tra cho cả người mời</span>
-      </div>
-    </div>
-    <div class="feature-visual reveal">
-      <div class="glow"></div>
-      <div class="cal-card" style="width:74%; text-align:center;">
-        <div class="cal-head" style="justify-content:center;">
-          <span>14:00 — 15:00 · Trùng lịch</span>
-        </div>
-        <div style="padding:26px 0; color:var(--accent); font-size:13px; letter-spacing:.03em;">
-          ⚠ Sơn đã có "Họp khách hàng" từ 14:00–15:00
-        </div>
-      </div>
-    </div>
-  </section>
+        <article class="copy-step" data-step="2">
+          <div class="feature-index">02 / Realtime &amp; Email</div>
+          <h3>Mời người khác, không cần họ mở app</h3>
+          <p>
+            Mọi thay đổi đồng bộ tức thì qua WebSocket trên mọi thiết bị đang mở. Người được mời
+            nhận email có sẵn nút "Đồng ý / Từ chối" — bấm là xong, không cần tài khoản,
+            không cần đăng nhập.
+          </p>
+          <div class="chip-row">
+            <span class="chip">Đồng bộ real-time</span>
+            <span class="chip">Xác nhận ngay trong email</span>
+          </div>
+        </article>
 
-  <!-- FEATURE 04 -->
-  <section class="feature-pin" id="f4">
-    <div class="feature-text">
-      <div class="feature-index reveal">04 / Đếm thời gian &amp; Tập trung</div>
-      <h3 class="reveal">Bảo vệ khối thời gian sâu của bạn</h3>
-      <p class="reveal">
-        Gắn một phiên tập trung (kiểu Pomodoro) trực tiếp vào sự kiện trên lịch: bộ đếm ngược chạy nền, tự tắt thông báo và từ chối lời mời họp không khẩn cấp trong lúc đếm giờ. Kết thúc phiên, Workflow ghi lại tổng thời gian bạn đã tập trung thật sự trong ngày/tuần.
-      </p>
-      <div class="chip-row reveal">
-        <span class="chip">Bộ đếm gắn liền sự kiện</span>
-        <span class="chip">Tự chặn thông báo</span>
-        <span class="chip">Thống kê thời gian tập trung</span>
+        <article class="copy-step" data-step="3">
+          <div class="feature-index">03 / Phát hiện xung đột</div>
+          <h3>Không bao giờ đặt trùng lịch nữa</h3>
+          <p>
+            Workflow tự kiểm tra chồng chéo thời gian cho bạn và mọi người được mời ngay khi đang
+            tạo sự kiện — cảnh báo hiển thị ngay trong form, kèm viền đỏ trực quan trên lịch nếu
+            hai sự kiện trùng giờ.
+          </p>
+          <div class="chip-row">
+            <span class="chip">Cảnh báo tức thì</span>
+            <span class="chip">Kiểm tra cho cả người mời</span>
+          </div>
+        </article>
+
+        <article class="copy-step" data-step="4">
+          <div class="feature-index">04 / Đếm thời gian &amp; Tập trung</div>
+          <h3>Bảo vệ khối thời gian sâu của bạn</h3>
+          <p>
+            Gắn một phiên tập trung kiểu Pomodoro trực tiếp vào sự kiện trên lịch: bộ đếm ngược
+            chạy nền, tự tắt thông báo và từ chối lời mời họp không khẩn cấp trong lúc đếm giờ.
+          </p>
+          <div class="chip-row">
+            <span class="chip">Bộ đếm gắn liền sự kiện</span>
+            <span class="chip">Tự chặn thông báo</span>
+            <span class="chip">Thống kê thời gian tập trung</span>
+          </div>
+        </article>
       </div>
-    </div>
-    <div class="feature-visual reveal">
-      <div class="glow"></div>
-      <div class="cal-card" style="width:66%; text-align:center;">
-        <div class="cal-head" style="justify-content:center;">
-          <span>Deep Work · Đang chạy</span>
+
+      <!-- ── SÂN KHẤU 3D ── -->
+      <div class="scrolly-stage">
+        <div class="stage-aura" aria-hidden="true"></div>
+
+        <div class="board-wrap" aria-hidden="true">
+          <div class="board">
+            <!-- mặt trước: giao diện lịch thật -->
+            <div class="board-face">
+              <header class="board-top">
+                <span class="board-month">Tháng 8 · Tuần này</span>
+                <div class="board-cmd">
+                  <span class="cmd-spark">✦</span>
+                  <span class="cmd-text"></span>
+                  <span class="cmd-caret"></span>
+                </div>
+              </header>
+
+              <div class="board-week">
+                <span>T2</span><span>T3</span><span>T4</span><span>T5</span>
+                <span class="hot">T6</span><span>T7</span><span>CN</span>
+              </div>
+
+              <div class="board-grid">
+                <div class="board-hours">
+                  <span>13:00</span><span>14:00</span><span>15:00</span>
+                  <span>16:00</span><span>17:00</span>
+                </div>
+                <div class="board-cols">
+                  <span class="bcol"></span><span class="bcol"></span><span class="bcol"></span>
+                  <span class="bcol"></span><span class="bcol"></span><span class="bcol"></span>
+                  <span class="bcol"></span>
+
+                  <div class="ev ev-idle" style="left:0%;   top:56px;  height:52px;">Standup</div>
+                  <div class="ev ev-idle" style="left:28.5%;top:112px; height:52px;">Review UI</div>
+
+                  <!-- sự kiện do AI tạo (stage 1) -->
+                  <div class="ev ev-ai" style="left:57.1%;top:112px;height:52px;">
+                    <b>Họp với Hùng</b><span>15:00 — 16:00</span>
+                  </div>
+
+                  <!-- cặp sự kiện chồng giờ (stage 3) -->
+                  <div class="ev ev-clash a" style="left:57.1%;top:56px;height:52px;">
+                    <b>Họp khách hàng</b><span>14:00 — 15:00</span>
+                  </div>
+                  <div class="ev ev-clash b" style="left:62%;  top:70px;height:52px;">
+                    <b>Review nội bộ</b><span>14:15 — 15:15</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- lớp lùi trục Z tạo độ dày cho bảng -->
+            <div class="board-depth d1"></div>
+            <div class="board-depth d2"></div>
+            <div class="board-depth d3"></div>
+
+            <!-- 4 node bung ra ở stage 0 -->
+            <div class="node n1"><i>✦</i>Trợ lý AI</div>
+            <div class="node n2"><i>⇄</i>Realtime &amp; Email</div>
+            <div class="node n3"><i>⚠</i>Phát hiện xung đột</div>
+            <div class="node n4"><i>◷</i>Tập trung</div>
+          </div>
         </div>
-        <div style="padding:14px 0 10px; font-size:56px; font-weight:700; letter-spacing:-0.02em; font-variant-numeric:tabular-nums;">
-          24:18
+
+        <!-- ── lớp nổi riêng của từng stage ── -->
+        <div class="pop pop-ai" aria-hidden="true">
+          <div class="pop-head">Trợ lý AI</div>
+          <p class="pop-quote">"Họp với Hùng thứ 6 tuần sau lúc 3 giờ chiều"</p>
+          <div class="pop-foot"><span class="pop-tick">✓</span> Đã tạo sự kiện · Thứ 6, 15:00</div>
         </div>
-        <div style="color:var(--ink-dim); font-size:13px; letter-spacing:.05em; padding-bottom:6px;">
-          Thông báo đã tắt · Đã tập trung 3 phiên hôm nay
+
+        <div class="pop pop-email" aria-hidden="true">
+          <div class="pop-head">
+            <span class="mail-ico">✉</span> Lời mời họp nhóm
+          </div>
+          <p class="pop-title">Họp thiết kế · Thứ 6, 15:00 — 16:00</p>
+          <p class="pop-sub">Gửi tới son&#64;congty.vn — không cần đăng nhập</p>
+          <div class="pop-btns">
+            <span class="pbtn yes">✓ Đồng ý</span>
+            <span class="pbtn no">✕ Từ chối</span>
+          </div>
         </div>
+
+        <div class="pop pop-warn" aria-hidden="true">
+          <span class="warn-badge">⚠</span>
+          <div>
+            <p class="pop-title">Trùng lịch 14:00 — 15:00</p>
+            <p class="pop-sub">Sơn đã có "Họp khách hàng" từ 14:00–15:00</p>
+          </div>
+        </div>
+
+        <div class="pop pop-timer" aria-hidden="true">
+          <div class="ring-wrap">
+            <svg class="ring" viewBox="0 0 120 120">
+              <circle class="ring-bg" cx="60" cy="60" r="52" />
+              <circle class="ring-fg" cx="60" cy="60" r="52" />
+            </svg>
+            <span class="ring-time">24:18</span>
+          </div>
+          <div class="timer-state">
+            <span class="bell-off">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M18 8.5a6 6 0 0 0-9.3-5M5.5 9.5c0 5-2 6.5-2 6.5h13" />
+                <path d="M10.3 19a2 2 0 0 0 3.4 0" />
+                <path d="M3 3l18 18" />
+              </svg>
+            </span>
+            Deep Work · Đã tắt thông báo
+          </div>
+        </div>
+
+        <!-- chỉ báo stage -->
+        <ol class="stage-dots" aria-hidden="true">
+          <li></li><li></li><li></li><li></li><li></li>
+        </ol>
       </div>
     </div>
   </section>

@@ -85,6 +85,7 @@ export class LandingPage implements OnInit, AfterViewInit {
         this.initScrollProgress();
         this.initHeroParticles();
         this.initScrollAnimations();
+        this.initScrollyShowcase();
         this.initCursorAndInteractiveEffects();
       }, this.host.nativeElement);
 
@@ -253,6 +254,161 @@ export class LandingPage implements OnInit, AfterViewInit {
     if (marquee) {
       marquee.addEventListener('mouseenter', () => (marquee.style.animationPlayState = 'paused'));
       marquee.addEventListener('mouseleave', () => (marquee.style.animationPlayState = 'running'));
+    }
+  }
+
+  /**
+   * Scrollytelling 3D: pin sân khấu lại rồi dùng scroll làm timeline.
+   * Không có "camera" thật — thay vào đó biến đổi ngược lại trên .board
+   * (scale/rotate/translate), đúng cách CSS 3D mô phỏng chuyển động camera.
+   */
+  private initScrollyShowcase(): void {
+    const root = this.host.nativeElement as HTMLElement;
+    const scrolly = root.querySelector('.scrolly') as HTMLElement | null;
+    const viewport = root.querySelector('.scrolly-viewport') as HTMLElement | null;
+    const board = root.querySelector('.board') as HTMLElement | null;
+    if (!scrolly || !viewport || !board) return;
+
+    // Giảm chuyển động: giữ nguyên layout xếp dọc tĩnh, vẫn đọc được đủ 5 khối.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    scrolly.classList.add('is-enhanced');
+
+    const q = gsap.utils.selector(scrolly);
+    const steps = q('.copy-step');
+    const nodes = q('.node');
+    const dots = q('.stage-dots li');
+    const popAi = q('.pop-ai');
+    const popEmail = q('.pop-email');
+    const popWarn = q('.pop-warn');
+    const popTimer = q('.pop-timer');
+    const cmdText = scrolly.querySelector('.cmd-text') as HTMLElement | null;
+    const ringFg = scrolly.querySelector('.ring-fg') as SVGCircleElement | null;
+    const ringTime = scrolly.querySelector('.ring-time') as HTMLElement | null;
+
+    const PHRASE = 'Họp với Hùng thứ 6 tuần sau lúc 3 giờ chiều';
+    const RING_LEN = 327;
+
+    // ── trạng thái đầu ──
+    gsap.set(steps, { opacity: 0, y: 26 });
+    gsap.set(steps[0], { opacity: 1, y: 0 });
+    gsap.set(nodes, { opacity: 0, scale: 0.55 });
+    gsap.set([popAi, popEmail, popWarn, popTimer], { opacity: 0, y: 34, scale: 0.92 });
+    gsap.set(q('.ev-ai'), { opacity: 0, scale: 0.7 });
+    gsap.set(q('.ev-clash'), { opacity: 0 });
+    gsap.set(board, { rotateX: 12, rotateY: -16, scale: 1, xPercent: 0, yPercent: 0 });
+    if (ringFg) gsap.set(ringFg, { strokeDashoffset: RING_LEN });
+    if (cmdText) cmdText.textContent = '';
+
+    /** Đưa đúng một khối chữ vào, đẩy khối trước ra — chạy được cả hai chiều cuộn. */
+    const showStep = (tl: gsap.core.Timeline, index: number, at: number) => {
+      steps.forEach((el, i) => {
+        tl.to(el, { opacity: i === index ? 1 : 0, y: i === index ? 0 : 26, duration: 0.45 }, at);
+      });
+    };
+
+    const tl = gsap.timeline({
+      defaults: { ease: 'power2.inOut', duration: 1 },
+      scrollTrigger: {
+        trigger: scrolly,
+        start: 'top top',
+        end: 'bottom bottom',
+        pin: viewport,
+        pinSpacing: false,
+        anticipatePin: 1,
+        scrub: 1.2,
+        invalidateOnRefresh: true,
+        onUpdate: (self) => {
+          const i = Math.min(4, Math.floor(self.progress * 5.02));
+          dots.forEach((d, k) => d.classList.toggle('on', k === i));
+        },
+      },
+    });
+
+    // ══ STAGE 0 → 1: bung 4 node rồi zoom vào thanh nhập lệnh ══
+    tl.to(nodes, { opacity: 1, scale: 1, duration: 0.7, stagger: 0.12 }, 0.15)
+      .to(board, { rotateY: -10, rotateX: 9, duration: 1.2 }, 0);
+
+    showStep(tl, 1, 1.2);
+    tl.to(nodes, { opacity: 0, scale: 0.7, duration: 0.5, stagger: 0.06 }, 1.1)
+      .to(board, { rotateX: 6, rotateY: -6, scale: 1.7, xPercent: 14, yPercent: 24 }, 1.2)
+      .to(popAi, { opacity: 1, y: 0, scale: 1, duration: 0.7 }, 1.6);
+
+    // gõ chữ vào thanh lệnh — scrub được nên tua ngược vẫn xoá dần
+    if (cmdText) {
+      const typed = { n: 0 };
+      tl.to(
+        typed,
+        {
+          n: PHRASE.length,
+          duration: 1.1,
+          ease: 'none',
+          onUpdate: () => {
+            cmdText.textContent = PHRASE.slice(0, Math.round(typed.n));
+          },
+        },
+        1.7,
+      );
+    }
+
+    tl.to(q('.ev-ai'), { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(2)' }, 2.7);
+
+    // ══ STAGE 2: xoay sang phải, thẻ email bay ra ══
+    showStep(tl, 2, 3.4);
+    tl.to([popAi], { opacity: 0, y: -26, scale: 0.94, duration: 0.5 }, 3.3)
+      .to(board, { rotateX: 8, rotateY: 24, scale: 1.12, xPercent: -6, yPercent: 0 }, 3.4)
+      .fromTo(
+        popEmail,
+        { opacity: 0, y: 40, scale: 0.9, rotateY: -30 },
+        { opacity: 1, y: 0, scale: 1, rotateY: 0, duration: 0.8 },
+        3.8,
+      )
+      .to(q('.pbtn.yes'), { scale: 0.94, duration: 0.18, yoyo: true, repeat: 1 }, 4.7);
+
+    // ══ STAGE 3: phóng vào lưới giờ, hai block chồng nhau ══
+    showStep(tl, 3, 5.4);
+    tl.to(popEmail, { opacity: 0, y: -30, scale: 0.94, duration: 0.5 }, 5.3)
+      .to(board, { rotateX: 4, rotateY: -4, scale: 1.95, xPercent: -10, yPercent: -12 }, 5.4)
+      .to(q('.ev-ai'), { opacity: 0.25, duration: 0.4 }, 5.4)
+      .to(q('.ev-clash'), { opacity: 1, duration: 0.5, stagger: 0.18 }, 5.9)
+      .to(popWarn, { opacity: 1, y: 0, scale: 1, duration: 0.7 }, 6.2);
+
+    // ══ STAGE 4: làm mờ bảng, đồng hồ tập trung ra trước ══
+    showStep(tl, 4, 7.4);
+    tl.to(popWarn, { opacity: 0, y: -26, scale: 0.94, duration: 0.5 }, 7.3)
+      .to(q('.ev-clash'), { opacity: 0, duration: 0.4 }, 7.3)
+      .to(
+        board,
+        { rotateX: 10, rotateY: -18, scale: 0.92, xPercent: 0, yPercent: 0, opacity: 0.4 },
+        7.4,
+      )
+      // blur đặt trên .board-wrap chứ không phải .board: filter làm phẳng
+      // ngữ cảnh 3D của chính element mang nó, để trên .board thì 3 lớp
+      // độ dày translateZ sẽ sập chồng lên nhau.
+      .to(q('.board-wrap'), { filter: 'blur(7px)', duration: 1 }, 7.4)
+      .to(popTimer, { opacity: 1, y: 0, scale: 1, duration: 0.7 }, 7.8);
+
+    if (ringFg) {
+      tl.to(ringFg, { strokeDashoffset: RING_LEN * 0.32, duration: 1.4, ease: 'none' }, 8.0);
+    }
+
+    if (ringTime) {
+      const clock = { s: 1458 }; // 24:18
+      tl.to(
+        clock,
+        {
+          s: 1015, // 16:55
+          duration: 1.4,
+          ease: 'none',
+          onUpdate: () => {
+            const s = Math.round(clock.s);
+            const mm = String(Math.floor(s / 60)).padStart(2, '0');
+            const ss = String(s % 60).padStart(2, '0');
+            ringTime.textContent = `${mm}:${ss}`;
+          },
+        },
+        8.0,
+      );
     }
   }
 
