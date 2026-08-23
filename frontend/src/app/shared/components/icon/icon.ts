@@ -17,6 +17,7 @@ export type IconName =
   | 'arrow-left'
   | 'arrow-right'
   | 'chevron-right'
+  | 'chevron-left'
   | 'chevron-down';
 
 /**
@@ -117,6 +118,9 @@ export type IconName =
         }
         @case ('chevron-right') {
           <path d="M9.5 5.5 16 12l-6.5 6.5" />
+        }
+        @case ('chevron-left') {
+          <path d="M14.5 5.5 8 12l6.5 6.5" />
         }
         @case ('chevron-down') {
           <path d="M5.5 9.5 12 16l6.5-6.5" />

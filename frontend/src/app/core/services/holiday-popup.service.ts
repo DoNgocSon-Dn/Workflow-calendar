@@ -1,8 +1,18 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, effect, signal } from '@angular/core';
 import { HOLIDAYS } from '../../data/holidays.data';
 import { Holiday, HolidayDateRule } from '../../models/holiday-theme.model';
 
 const DISMISS_KEY_PREFIX = 'holiday-popup-dismissed:';
+const NOTIFICATIONS_ENABLED_KEY = 'holiday-notifications-enabled';
+
+function readStoredNotificationsEnabled(): boolean {
+  if (!isBrowserStorageAvailable()) return true;
+  try {
+    return window.localStorage.getItem(NOTIFICATIONS_ENABLED_KEY) !== '0';
+  } catch {
+    return true;
+  }
+}
 
 function isBrowserStorageAvailable(): boolean {
   try {
@@ -52,12 +62,30 @@ export class HolidayPopupService {
 
   private readonly dismissedManually = signal(false);
 
+  readonly notificationsEnabled = signal<boolean>(readStoredNotificationsEnabled());
+
   readonly visible = computed<boolean>(() => {
+    if (!this.notificationsEnabled()) return false;
     const holiday = this.activeHoliday();
     if (!holiday) return false;
     if (this.dismissedManually()) return false;
     return !this.isDismissedInStorage(holiday);
   });
+
+  constructor() {
+    effect(() => {
+      if (!isBrowserStorageAvailable()) return;
+      try {
+        window.localStorage.setItem(NOTIFICATIONS_ENABLED_KEY, this.notificationsEnabled() ? '1' : '0');
+      } catch {
+        // Ignore write failures (private browsing quota, etc.).
+      }
+    });
+  }
+
+  setNotificationsEnabled(enabled: boolean): void {
+    this.notificationsEnabled.set(enabled);
+  }
 
   /** Replaces `{year}` / `{nextYear}` placeholders using today's date. */
   resolveText(text: string): string {

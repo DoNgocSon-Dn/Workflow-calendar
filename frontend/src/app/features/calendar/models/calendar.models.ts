@@ -9,12 +9,12 @@ export type CalendarColor =
   | 'teal';
 
 export const CALENDAR_COLOR_HEX: Record<CalendarColor, string> = {
-  blue: '#1a73e8',
-  green: '#0b8043',
-  orange: '#e8710a',
-  red: '#d50000',
-  purple: '#8e24aa',
-  teal: '#009688',
+  blue: '#2563eb',
+  green: '#16a34a',
+  orange: '#ea580c',
+  red: '#dc2626',
+  purple: '#7c3aed',
+  teal: '#0891b2',
 };
 
 export interface CalendarDef {

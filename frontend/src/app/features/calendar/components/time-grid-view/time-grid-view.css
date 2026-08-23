@@ -57,13 +57,13 @@
 }
 
 .lunar-dn.lunar-first {
-  color: #ef4444;
+  color: var(--color-danger);
   font-weight: 700;
   opacity: 1;
 }
 
 .lunar-dn.lunar-fifteen {
-  color: #f59e0b;
+  color: var(--color-warning);
   font-weight: 700;
   opacity: 1;
 }
@@ -197,7 +197,7 @@
 }
 
 .event-block {
-  --chip-color: #1a73e8;
+  --chip-color: #2563eb;
   position: absolute;
   background: color-mix(in srgb, var(--chip-color) 88%, white);
   border-left: 3px solid var(--chip-color);
@@ -227,13 +227,7 @@
   border-left-color: var(--color-danger);
   outline: 1px dashed var(--color-danger);
   outline-offset: -1px;
-  background: repeating-linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--chip-color) 88%, white),
-    color-mix(in srgb, var(--chip-color) 88%, white) 6px,
-    color-mix(in srgb, var(--color-danger) 60%, var(--chip-color)) 6px,
-    color-mix(in srgb, var(--color-danger) 60%, var(--chip-color)) 12px
-  );
+  background: color-mix(in srgb, var(--color-danger) 55%, var(--chip-color));
 }
 
 .block-content {
@@ -268,7 +262,7 @@
 }
 
 .event-chip {
-  --chip-color: #1a73e8;
+  --chip-color: #2563eb;
   border: none;
   background: var(--chip-color);
   color: #fff;

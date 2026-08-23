@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
 import { AuthStore } from '../../../../core/auth/auth-store';
 import { Density, DensityService } from '../../../../core/density/density-service';
+import { HolidayPopupService } from '../../../../core/services/holiday-popup.service';
 import { BrandTheme, BrandThemeService } from '../../../../core/theme/brand-theme-service';
 import { Theme, ThemeService } from '../../../../core/theme/theme-service';
 
@@ -11,7 +12,7 @@ interface BrandThemeOption {
 }
 
 const BRAND_THEME_OPTIONS: readonly BrandThemeOption[] = [
-  { value: 'default', label: 'Xanh dương', swatch: '#0866ff' },
+  { value: 'default', label: 'Xanh dương', swatch: '#2563eb' },
   { value: 'teal', label: 'Xanh ngọc', swatch: '#0f766e' },
   { value: 'violet', label: 'Tím', swatch: '#7c3aed' },
 ];
@@ -28,6 +29,7 @@ export class SettingsModal {
   protected readonly themeService = inject(ThemeService);
   protected readonly brandThemeService = inject(BrandThemeService);
   protected readonly densityService = inject(DensityService);
+  protected readonly holidayPopupService = inject(HolidayPopupService);
   protected readonly authStore = inject(AuthStore);
 
   protected readonly brandThemeOptions = BRAND_THEME_OPTIONS;
@@ -50,6 +52,10 @@ export class SettingsModal {
 
   setDensity(density: Density): void {
     this.densityService.setDensity(density);
+  }
+
+  toggleHolidayNotifications(): void {
+    this.holidayPopupService.setNotificationsEnabled(!this.holidayPopupService.notificationsEnabled());
   }
 
   onNameInput(value: string): void {

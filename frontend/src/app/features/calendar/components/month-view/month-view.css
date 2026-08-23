@@ -19,12 +19,7 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   border-bottom: 1px solid var(--color-border);
-  background: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(8px);
-}
-
-:host-context(.dark) .weekday-row {
-  background: rgba(17, 24, 39, 0.4);
+  background: var(--color-bg-sidebar);
 }
 
 .weekday-cell {
@@ -99,10 +94,9 @@
 }
 
 .day-number.today {
-  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
+  background: var(--color-accent);
   color: var(--color-accent-contrast);
   font-weight: 700;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
 }
 
 .lunar-day {
@@ -119,13 +113,13 @@
 }
 
 .lunar-day.lunar-first {
-  color: #ef4444;
+  color: var(--color-danger);
   font-weight: 700;
   opacity: 1;
 }
 
 .lunar-day.lunar-fifteen {
-  color: #f59e0b;
+  color: var(--color-warning);
   font-weight: 700;
   opacity: 1;
 }
@@ -139,7 +133,7 @@
 }
 
 .event-chip {
-  --chip-color: #6366f1;
+  --chip-color: #2563eb;
   border: none;
   background: color-mix(in srgb, var(--chip-color) 15%, var(--chip-tint-bg));
   color: color-mix(in srgb, var(--chip-color) 85%, var(--chip-tint-text));
@@ -164,33 +158,20 @@
 }
 
 .event-chip.all-day {
-  background: linear-gradient(135deg, var(--chip-color), color-mix(in srgb, var(--chip-color) 80%, black));
+  background: var(--chip-color);
   color: #fff;
   border-left: none;
-  box-shadow: 0 2px 6px color-mix(in srgb, var(--chip-color) 35%, transparent);
 }
 
 .event-chip.conflict {
   border-left-color: var(--color-danger);
   outline: 1px dashed var(--color-danger);
   outline-offset: -1px;
-  background: repeating-linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--chip-color) 15%, var(--chip-tint-bg)),
-    color-mix(in srgb, var(--chip-color) 15%, var(--chip-tint-bg)) 5px,
-    color-mix(in srgb, var(--color-danger) 18%, transparent) 5px,
-    color-mix(in srgb, var(--color-danger) 18%, transparent) 10px
-  );
+  background: color-mix(in srgb, var(--color-danger) 18%, var(--chip-tint-bg));
 }
 
 .event-chip.conflict.all-day {
-  background: repeating-linear-gradient(
-    135deg,
-    var(--chip-color),
-    var(--chip-color) 5px,
-    color-mix(in srgb, var(--color-danger) 55%, var(--chip-color)) 5px,
-    color-mix(in srgb, var(--color-danger) 55%, var(--chip-color)) 10px
-  );
+  background: color-mix(in srgb, var(--color-danger) 55%, var(--chip-color));
 }
 
 .more-btn {
@@ -216,8 +197,7 @@
   top: 0.35rem;
   left: 0.35rem;
   width: 230px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px) saturate(180%);
+  background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-modal);
@@ -228,10 +208,6 @@
   gap: 0.35rem;
   cursor: default;
   animation: popoverIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-:host-context(.dark) .day-popover {
-  background: rgba(17, 24, 39, 0.95);
 }
 
 @keyframes popoverIn {

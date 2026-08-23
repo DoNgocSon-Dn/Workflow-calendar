@@ -6,57 +6,52 @@
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-heading: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
 
-  --color-bg: #f8fafc;
+  --color-bg: #f7f8fa;
+  --color-bg-sidebar: #ffffff;
   --color-surface: #ffffff;
-  --color-surface-hover: #f1f5f9;
-  --color-surface-hover-strong: #e2e8f0;
-  --color-border: #e2e8f0;
-  --color-border-strong: #cbd5e1;
-  
-  --color-text: #0f172a;
-  --color-text-secondary: #334155;
-  --color-text-tertiary: #64748b;
-  --color-text-muted: #94a3b8;
-  --color-text-faint: #cbd5e1;
-  --color-text-disabled: #cbd5e1;
-  
-  /* Brand blue — the same accent the landing/login pages use, so the calendar
-     reads as one product. Kept clear of the reserved status hues below. */
-  --color-accent: #0866ff;
-  --color-accent-hover: #0055d4;
-  --color-accent-soft: #e7f0ff;
-  --color-accent-disabled: #b8d2ff;
+  --color-surface-input: #f3f4f6;
+  --color-surface-hover: #f1f2f4;
+  --color-surface-hover-strong: #e2e4e8;
+  --color-border: #e5e7eb;
+  --color-border-strong: #d1d5db;
+
+  --color-text: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-tertiary: #6b7280;
+  --color-text-muted: #9ca3af;
+  --color-text-faint: #d1d5db;
+  --color-text-disabled: #e5e7eb;
+
+  /* Primary blue — the same accent the calendar, sidebar and buttons use, so
+     the whole product reads as one system. Kept clear of the reserved status
+     hues below. */
+  --color-accent: #2563eb;
+  --color-accent-hover: #1d4ed8;
+  --color-accent-soft: #eff6ff;
+  --color-accent-disabled: #bfdbfe;
   --color-accent-contrast: #ffffff;
 
-  --color-danger: #ef4444;
-  --color-warning: #f59e0b;
+  --color-danger: #dc2626;
+  --color-warning: #d97706;
+  --color-info: #0891b2;
   --color-live: #ec4899;
-  --color-success: #10b981;
+  --color-success: #16a34a;
 
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-sm-hover: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 4px -1px rgba(15, 23, 42, 0.04);
-  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05), 0 10px 25px -5px rgba(8, 102, 255, 0.04);
-  --shadow-popover: 0 12px 32px -4px rgba(15, 23, 42, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.06);
-  --shadow-popup: 0 16px 36px -4px rgba(15, 23, 42, 0.15);
-  --shadow-modal: 0 25px 60px -12px rgba(15, 23, 42, 0.25);
-  --shadow-drawer: 8px 0 24px rgba(15, 23, 42, 0.08);
+  /* Fixed role-badge hues (group member roles) — deliberately independent of
+     --color-accent so they don't shift when the brand accent changes. */
+  --color-role-owner: #7c3aed;
+  --color-role-admin: #2563eb;
+  --color-role-member: #64748b;
+  --color-role-guest: #94a3b8;
+
+  --shadow-sm: 0 1px 3px rgba(17, 24, 39, 0.05), 0 1px 2px rgba(17, 24, 39, 0.04);
+  --shadow-sm-hover: 0 4px 12px -2px rgba(17, 24, 39, 0.08), 0 2px 4px -1px rgba(17, 24, 39, 0.04);
+  --shadow-card: 0 1px 3px rgba(17, 24, 39, 0.06), 0 8px 20px -6px rgba(17, 24, 39, 0.08);
+  --shadow-popover: 0 12px 32px -4px rgba(17, 24, 39, 0.12), 0 4px 12px -2px rgba(17, 24, 39, 0.06);
+  --shadow-popup: 0 16px 36px -4px rgba(17, 24, 39, 0.15);
+  --shadow-modal: 0 25px 60px -12px rgba(17, 24, 39, 0.25);
+  --shadow-drawer: 8px 0 24px rgba(17, 24, 39, 0.08);
   --overlay-backdrop: rgba(15, 23, 42, 0.4);
-
-  /* Glassmorphism accents — single blue→cyan family so the page background
-     stays calm behind colored event chips instead of competing with them. */
-  --gradient-brand: linear-gradient(135deg, #0866ff 0%, #3b9dff 50%, #00c2ff 100%);
-  --gradient-brand-vivid: linear-gradient(135deg, #0055d4 0%, #0866ff 40%, #00a3ff 75%, #00d4ff 100%);
-  --gradient-mesh:
-    radial-gradient(at 8% 10%, rgba(8, 102, 255, 0.28) 0px, transparent 55%),
-    radial-gradient(at 92% 12%, rgba(0, 194, 255, 0.22) 0px, transparent 55%),
-    radial-gradient(at 85% 88%, rgba(56, 189, 248, 0.24) 0px, transparent 55%),
-    radial-gradient(at 12% 92%, rgba(8, 102, 255, 0.18) 0px, transparent 55%);
-  --glow-accent: 0 0 0 1px rgba(8, 102, 255, 0.15), 0 8px 30px -6px rgba(8, 102, 255, 0.35);
-  --glow-accent-strong: 0 0 0 1px rgba(0, 163, 255, 0.25), 0 12px 40px -6px rgba(8, 102, 255, 0.45);
-  --glass-bg: rgba(255, 255, 255, 0.6);
-  --glass-bg-strong: rgba(255, 255, 255, 0.78);
-  --glass-border: rgba(255, 255, 255, 0.5);
-  --glass-blur: blur(20px) saturate(180%);
 
   --chip-tint-bg: #ffffff;
   --chip-tint-text: #0f172a;
@@ -89,31 +84,41 @@
 }
 
 :root.dark {
-  --color-bg: #0b0f17;
-  --color-surface: #111827;
-  --color-surface-hover: #1f293d;
-  --color-surface-hover-strong: #334155;
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-border-strong: rgba(255, 255, 255, 0.16);
-  
-  --color-text: #f8fafc;
-  --color-text-secondary: #cbd5e1;
-  --color-text-tertiary: #94a3b8;
-  --color-text-muted: #64748b;
-  --color-text-faint: #475569;
-  --color-text-disabled: #334155;
-  
-  --color-accent: #4d92ff;
-  --color-accent-hover: #7db0ff;
-  --color-accent-soft: rgba(8, 102, 255, 0.18);
-  --color-accent-disabled: #1e293b;
-  --color-accent-contrast: #061019;
-  
-  --color-danger: #f87171;
-  --color-warning: #fbbf24;
+  --color-bg: #0f1117;
+  --color-bg-sidebar: #0b0d12;
+  --color-surface: #161922;
+  --color-surface-input: #11141b;
+  --color-surface-hover: #1b1f29;
+  --color-surface-hover-strong: #2c3240;
+  --color-border: #252a35;
+  --color-border-strong: #343b4a;
+
+  --color-text: #f3f4f6;
+  --color-text-secondary: #9ca3af;
+  --color-text-tertiary: #838c99;
+  --color-text-muted: #6b7280;
+  --color-text-faint: #4b5563;
+  --color-text-disabled: #374151;
+
+  --color-accent: #3b82f6;
+  --color-accent-hover: #60a5fa;
+  --color-accent-soft: rgba(59, 130, 246, 0.18);
+  --color-accent-disabled: #1e2a3d;
+  /* White on #3b82f6 is only ~3.7:1 (fails AA body text) — a dark contrast
+     color reads correctly here instead of a literal white. */
+  --color-accent-contrast: #0b0d12;
+
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+  --color-info: #06b6d4;
   --color-live: #f472b6;
-  --color-success: #34d399;
-  
+  --color-success: #22c55e;
+
+  --color-role-owner: #a78bfa;
+  --color-role-admin: #60a5fa;
+  --color-role-member: #94a3b8;
+  --color-role-guest: #64748b;
+
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
   --shadow-sm-hover: 0 4px 16px rgba(0, 0, 0, 0.5);
   --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.35);
@@ -122,20 +127,6 @@
   --shadow-modal: 0 25px 65px rgba(0, 0, 0, 0.75);
   --shadow-drawer: 8px 0 28px rgba(0, 0, 0, 0.5);
   --overlay-backdrop: rgba(0, 0, 0, 0.7);
-
-  --gradient-brand: linear-gradient(135deg, #4d92ff 0%, #38bdf8 50%, #22d3ee 100%);
-  --gradient-brand-vivid: linear-gradient(135deg, #2b7fff 0%, #4d92ff 40%, #38bdf8 75%, #22d3ee 100%);
-  --gradient-mesh:
-    radial-gradient(at 8% 10%, rgba(8, 102, 255, 0.16) 0px, transparent 45%),
-    radial-gradient(at 92% 12%, rgba(0, 194, 255, 0.12) 0px, transparent 45%),
-    radial-gradient(at 85% 88%, rgba(14, 165, 233, 0.13) 0px, transparent 45%),
-    radial-gradient(at 12% 92%, rgba(8, 102, 255, 0.11) 0px, transparent 45%);
-  --glow-accent: 0 0 0 1px rgba(77, 146, 255, 0.25), 0 8px 30px -6px rgba(77, 146, 255, 0.45);
-  --glow-accent-strong: 0 0 0 1px rgba(56, 189, 248, 0.3), 0 12px 44px -6px rgba(77, 146, 255, 0.55);
-  --glass-bg: rgba(17, 24, 39, 0.82);
-  --glass-bg-strong: rgba(17, 24, 39, 0.94);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-blur: blur(20px) saturate(180%);
 
   --chip-tint-bg: #1e293b;
   --chip-tint-text: #f8fafc;
@@ -162,32 +153,14 @@
   --color-accent-soft: #d5f5f0;
   --color-accent-disabled: #99e6dc;
   --color-accent-contrast: #ffffff;
-  --gradient-brand: linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #22d3ee 100%);
-  --gradient-brand-vivid: linear-gradient(135deg, #115e59 0%, #0f766e 40%, #14b8a6 75%, #22d3ee 100%);
-  --gradient-mesh:
-    radial-gradient(at 8% 10%, rgba(15, 118, 110, 0.26) 0px, transparent 55%),
-    radial-gradient(at 92% 12%, rgba(34, 211, 238, 0.20) 0px, transparent 55%),
-    radial-gradient(at 85% 88%, rgba(20, 184, 166, 0.22) 0px, transparent 55%),
-    radial-gradient(at 12% 92%, rgba(15, 118, 110, 0.16) 0px, transparent 55%);
-  --glow-accent: 0 0 0 1px rgba(15, 118, 110, 0.16), 0 8px 30px -6px rgba(15, 118, 110, 0.35);
-  --glow-accent-strong: 0 0 0 1px rgba(20, 184, 166, 0.25), 0 12px 40px -6px rgba(15, 118, 110, 0.45);
-  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05), 0 10px 25px -5px rgba(15, 118, 110, 0.04);
 }
 :root.dark[data-brand='teal'] {
   --color-accent: #2dd4bf;
   --color-accent-hover: #5eead4;
   --color-accent-soft: rgba(20, 184, 166, 0.18);
   --color-accent-disabled: rgba(20, 184, 166, 0.3);
+  /* Same asymmetric-contrast reasoning as the default accent above. */
   --color-accent-contrast: #04211e;
-  --gradient-brand: linear-gradient(135deg, #2dd4bf 0%, #22d3ee 50%, #67e8f9 100%);
-  --gradient-brand-vivid: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 40%, #22d3ee 75%, #67e8f9 100%);
-  --gradient-mesh:
-    radial-gradient(at 8% 10%, rgba(20, 184, 166, 0.16) 0px, transparent 45%),
-    radial-gradient(at 92% 12%, rgba(34, 211, 238, 0.12) 0px, transparent 45%),
-    radial-gradient(at 85% 88%, rgba(45, 212, 191, 0.13) 0px, transparent 45%),
-    radial-gradient(at 12% 92%, rgba(20, 184, 166, 0.11) 0px, transparent 45%);
-  --glow-accent: 0 0 0 1px rgba(45, 212, 191, 0.25), 0 8px 30px -6px rgba(45, 212, 191, 0.45);
-  --glow-accent-strong: 0 0 0 1px rgba(34, 211, 238, 0.3), 0 12px 44px -6px rgba(45, 212, 191, 0.55);
 }
 
 /* Tím — violet, the warmest of the three without straying into the
@@ -198,16 +171,6 @@
   --color-accent-soft: #ede9fe;
   --color-accent-disabled: #c4b5fd;
   --color-accent-contrast: #ffffff;
-  --gradient-brand: linear-gradient(135deg, #7c3aed 0%, #a78bfa 50%, #c4b5fd 100%);
-  --gradient-brand-vivid: linear-gradient(135deg, #6d28d9 0%, #7c3aed 40%, #a78bfa 75%, #c4b5fd 100%);
-  --gradient-mesh:
-    radial-gradient(at 8% 10%, rgba(124, 58, 237, 0.26) 0px, transparent 55%),
-    radial-gradient(at 92% 12%, rgba(167, 139, 250, 0.20) 0px, transparent 55%),
-    radial-gradient(at 85% 88%, rgba(139, 92, 246, 0.22) 0px, transparent 55%),
-    radial-gradient(at 12% 92%, rgba(124, 58, 237, 0.16) 0px, transparent 55%);
-  --glow-accent: 0 0 0 1px rgba(124, 58, 237, 0.16), 0 8px 30px -6px rgba(124, 58, 237, 0.35);
-  --glow-accent-strong: 0 0 0 1px rgba(139, 92, 246, 0.25), 0 12px 40px -6px rgba(124, 58, 237, 0.45);
-  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05), 0 10px 25px -5px rgba(124, 58, 237, 0.04);
 }
 :root.dark[data-brand='violet'] {
   --color-accent: #a78bfa;
@@ -215,15 +178,6 @@
   --color-accent-soft: rgba(124, 58, 237, 0.18);
   --color-accent-disabled: rgba(124, 58, 237, 0.3);
   --color-accent-contrast: #17092e;
-  --gradient-brand: linear-gradient(135deg, #a78bfa 0%, #c4b5fd 50%, #ddd6fe 100%);
-  --gradient-brand-vivid: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 40%, #c4b5fd 75%, #ddd6fe 100%);
-  --gradient-mesh:
-    radial-gradient(at 8% 10%, rgba(124, 58, 237, 0.16) 0px, transparent 45%),
-    radial-gradient(at 92% 12%, rgba(167, 139, 250, 0.12) 0px, transparent 45%),
-    radial-gradient(at 85% 88%, rgba(139, 92, 246, 0.13) 0px, transparent 45%),
-    radial-gradient(at 12% 92%, rgba(124, 58, 237, 0.11) 0px, transparent 45%);
-  --glow-accent: 0 0 0 1px rgba(167, 139, 250, 0.25), 0 8px 30px -6px rgba(167, 139, 250, 0.45);
-  --glow-accent-strong: 0 0 0 1px rgba(139, 92, 246, 0.3), 0 12px 44px -6px rgba(167, 139, 250, 0.55);
 }
 
 html,
@@ -232,8 +186,6 @@ body {
   margin: 0;
   font-family: var(--font-sans);
   background-color: var(--color-bg);
-  background-image: var(--gradient-mesh);
-  background-attachment: fixed;
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -264,50 +216,6 @@ h1, h2, h3, h4, .font-heading {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-tertiary);
-}
-
-/* Glassmorphism & UI Utility Classes */
-.glass-panel {
-  background: var(--glass-bg-strong);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-}
-
-/* Higher-transparency glass with a vivid gradient glow ring — use for hero
-   surfaces (sidebar, header, modals) where the mesh background should show
-   through more strongly than the plain .glass-panel. */
-.glass-vibrant {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glow-accent);
-}
-
-.gradient-brand {
-  background: var(--gradient-brand-vivid);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.btn-gradient {
-  background: var(--gradient-brand-vivid);
-  color: #ffffff;
-  border: none;
-  box-shadow: var(--glow-accent);
-  transition: box-shadow 0.2s ease, transform 0.2s ease, filter 0.2s ease;
-}
-
-.btn-gradient:hover {
-  box-shadow: var(--glow-accent-strong);
-  transform: translateY(-1px);
-  filter: brightness(1.05);
-}
-
-.btn-gradient:active {
-  transform: translateY(0);
 }
 
 /* Theme-toggle view transition (landing + login pages).

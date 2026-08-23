@@ -13,13 +13,12 @@
   --bg-2: #0d0d10;
   --ink: #f6f5f1;
   --ink-dim: #8b8a86;
-  --accent: #0668e1;
-  --accent-2: #0081fb;
+  --accent: #2563eb;
   /* Text-safe variant of the accent: the brand blue itself does not clear
      WCAG AA against either background, so labels/links use this instead. */
-  --accent-text: #4da3ff;
+  --accent-text: #60a5fa;
   --accent-ink: #ffffff;
-  --accent-dim: rgba(6, 104, 225, 0.2);
+  --accent-dim: rgba(37, 99, 235, 0.2);
   --line: rgba(246, 245, 241, 0.13);
   --card: #131317;
   --danger: #ff8a8a;
@@ -45,11 +44,10 @@
   --bg-2: #f1f2f5;
   --ink: #101216;
   --ink-dim: #5b5f68;
-  --accent: #0668e1;
-  --accent-2: #0081fb;
-  --accent-text: #0757bd;
+  --accent: #2563eb;
+  --accent-text: #1d4ed8;
   --accent-ink: #ffffff;
-  --accent-dim: rgba(6, 104, 225, 0.1);
+  --accent-dim: rgba(37, 99, 235, 0.1);
   --line: rgba(16, 18, 22, 0.13);
   --card: #f7f8fa;
   --danger: #c62828;
@@ -106,7 +104,7 @@
   border-radius: 50%;
   border: 2px solid var(--line);
   border-top-color: var(--accent);
-  border-right-color: var(--accent-2);
+  border-right-color: var(--accent-text);
   animation: spinRing 0.9s cubic-bezier(0.5, 0, 0.5, 1) infinite;
 }
 
@@ -121,10 +119,7 @@
   font-size: 26px;
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--accent);
   animation: markPulse 1.4s ease-in-out infinite;
 }
 
@@ -171,8 +166,8 @@
   max-width: 760px;
   max-height: 760px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, rgba(6, 104, 225, 0.38), rgba(0, 129, 251, 0.02) 60%);
-  filter: blur(10px);
+  background: rgba(37, 99, 235, 0.22);
+  filter: blur(40px);
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -241,9 +236,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 22px 6vw;
-  background: color-mix(in srgb, var(--bg) 78%, transparent);
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  background: var(--bg);
   border-bottom: 1px solid var(--line);
   transition: background 0.4s ease, border-color 0.4s ease;
 }
@@ -369,9 +362,7 @@ main {
   width: 100%;
   max-width: 420px;
   text-align: center;
-  background: color-mix(in srgb, var(--card) 88%, transparent);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: 24px;
   padding: 48px 38px;

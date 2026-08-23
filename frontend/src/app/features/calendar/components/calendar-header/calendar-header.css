@@ -2,21 +2,12 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.65rem 1.25rem;
+  padding: 0.5rem 1.25rem;
   border-bottom: 1px solid var(--color-border);
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(16px) saturate(180%);
+  background: var(--color-bg-sidebar);
   flex-wrap: wrap;
   position: relative;
   z-index: 50;
-  /* Slightly elevated above the grid so the eye reads it as a fixed strip,
-     not the same plane as the content below. */
-  box-shadow: 0 2px 12px -4px rgba(15, 23, 42, 0.1);
-}
-
-:host-context(.dark) .topbar {
-  background: rgba(13, 18, 28, 0.9);
-  box-shadow: 0 2px 16px -4px rgba(0, 0, 0, 0.4);
 }
 
 .left {
@@ -37,9 +28,6 @@
   letter-spacing: -0.02em;
 }
 
-.brand svg {
-  filter: drop-shadow(0 2px 8px rgba(99, 102, 241, 0.35));
-}
 
 .center {
   display: flex;
@@ -152,7 +140,7 @@
   height: 2.35rem;
   border-radius: var(--radius-full);
   border: 2px solid var(--color-accent-soft);
-  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
+  background: var(--color-accent);
   color: var(--color-accent-contrast);
   font-size: 0.9rem;
   font-weight: 700;
@@ -164,13 +152,11 @@
   flex-shrink: 0;
   overflow: hidden;
   padding: 0;
-  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.25);
-  transition: all 0.2s ease;
+  transition: background 0.2s ease;
 }
 
 .avatar-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+  background: var(--color-accent-hover);
 }
 
 .avatar-img {
@@ -191,8 +177,7 @@
   right: 0;
   z-index: 100;
   min-width: 15rem;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(20px) saturate(180%);
+  background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-modal);
@@ -201,10 +186,6 @@
   flex-direction: column;
   gap: 0.25rem;
   animation: dropdownIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-:host-context(.dark) .user-dropdown {
-  background: rgba(17, 24, 39, 0.92);
 }
 
 @keyframes dropdownIn {
@@ -252,20 +233,18 @@
 }
 
 .import-btn.import-btn {
-  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
+  background: var(--color-accent);
   color: var(--color-accent-contrast);
   border: none;
   border-radius: var(--radius-md);
   padding: 0.45rem 0.9rem;
   font-size: 0.825rem;
   font-weight: 600;
-  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background 0.15s ease;
 }
 
 .import-btn.import-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.45);
+  background: var(--color-accent-hover);
 }
 
 .invites-menu {
@@ -290,7 +269,6 @@
   font-weight: 700;
   line-height: 1.1rem;
   text-align: center;
-  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
 }
 
 .invites-dropdown {
@@ -302,8 +280,7 @@
   max-width: min(20rem, 90vw);
   max-height: 22rem;
   overflow-y: auto;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(20px) saturate(180%);
+  background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-modal);
@@ -312,10 +289,6 @@
   flex-direction: column;
   gap: 0.35rem;
   animation: dropdownIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-:host-context(.dark) .invites-dropdown {
-  background: rgba(17, 24, 39, 0.92);
 }
 
 .invites-dropdown-title {
@@ -384,8 +357,7 @@
   left: 0;
   z-index: 100;
   min-width: 12rem;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(20px) saturate(180%);
+  background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-modal);
@@ -394,10 +366,6 @@
   flex-direction: column;
   gap: 0.15rem;
   animation: dropdownIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-:host-context(.dark) .gear-dropdown {
-  background: rgba(17, 24, 39, 0.92);
 }
 
 .dropdown-divider {
@@ -438,8 +406,7 @@
   left: 0;
   z-index: 100;
   min-width: 10rem;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(20px) saturate(180%);
+  background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-modal);
@@ -448,10 +415,6 @@
   flex-direction: column;
   gap: 0.15rem;
   animation: dropdownIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-:host-context(.dark) .view-dropdown {
-  background: rgba(17, 24, 39, 0.92);
 }
 
 .view-dropdown-item {

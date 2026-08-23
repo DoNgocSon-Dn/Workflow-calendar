@@ -11,49 +11,115 @@
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--color-border);
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(12px);
+  background: var(--color-bg-sidebar);
   box-sizing: border-box;
-  /* Subtle depth so the sidebar reads as its own layer next to the grid,
-     not the same flat tone. */
-  box-shadow: var(--shadow-drawer);
+  transition: width 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-:host-context(.dark) .sidebar {
-  background: rgba(10, 14, 23, 0.75);
+.sidebar.collapsed {
+  width: 64px;
+}
+
+.rail-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0;
+}
+
+.rail-item {
+  flex-shrink: 0;
+  width: 2.35rem;
+  height: 2.35rem;
+  border: none;
+  background: none;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.rail-item:hover {
+  background: var(--color-surface-hover);
+}
+
+.rail-item.is-off .color-dot {
+  opacity: 0.35;
+}
+
+.rail-divider {
+  width: 1.5rem;
+  height: 1px;
+  background: var(--color-border);
+  margin: 0.25rem 0;
+}
+
+.sidebar-top {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.25rem 1rem 0.85rem;
+}
+
+.sidebar.collapsed .sidebar-top {
+  margin: 0.25rem 0.5rem 0.85rem;
+  flex-direction: column;
 }
 
 .create-btn {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.6rem;
-  margin: 0.25rem 1rem 0.85rem;
   padding: 0.7rem 1.25rem;
   border-radius: var(--radius-full);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
+  border: 1px solid transparent;
+  background: var(--color-accent);
   color: var(--color-accent-contrast);
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  box-shadow: var(--shadow-sm);
   font-family: var(--font-heading);
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, filter 0.2s ease;
+  transition: background 0.15s ease, box-shadow 0.2s ease;
   letter-spacing: -0.01em;
 }
 
 .create-btn:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 8px 26px rgba(99, 102, 241, 0.55);
-  filter: brightness(1.05);
+  background: var(--color-accent-hover);
+  box-shadow: var(--shadow-sm-hover);
 }
 
-.create-btn:active {
-  transform: translateY(0) scale(1);
+.create-btn.icon-only {
+  flex: 0 0 auto;
+  width: 2.35rem;
+  height: 2.35rem;
+  padding: 0;
 }
 
-.create-btn svg {
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+.collapse-toggle-btn {
+  flex: 0 0 auto;
+  width: 2.35rem;
+  height: 2.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.collapse-toggle-btn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
 }
 
 .sidebar-scrollable {
@@ -285,5 +351,18 @@
 
 .empty-groups-hint:hover {
   background: var(--color-accent);
-  color: #ffffff;
+  color: var(--color-accent-contrast);
+}
+
+/* Icon-rail mode is a desktop affordance — the mobile drawer (see
+   calendar-page.css's max-width:720px override) always shows the full
+   sidebar, so the collapse control has no effect there. */
+@media (max-width: 720px) {
+  .sidebar.collapsed {
+    width: 256px;
+  }
+
+  .collapse-toggle-btn {
+    display: none;
+  }
 }

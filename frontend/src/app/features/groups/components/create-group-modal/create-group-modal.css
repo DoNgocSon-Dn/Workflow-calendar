@@ -1,7 +1,7 @@
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--overlay-backdrop);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -10,13 +10,13 @@
 }
 
 .modal-card {
-  background: #1e1f23;
-  color: #e2e8f0;
+  background: var(--color-surface);
+  color: var(--color-text);
   border-radius: 12px;
   width: 100%;
   max-width: 440px;
-  border: 1px solid #2e3038;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-modal);
   overflow: hidden;
 }
 
@@ -25,14 +25,14 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid #2e3038;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .modal-header h2 {
   font-size: 1.1rem;
   font-weight: 600;
   margin: 0;
-  color: #f8fafc;
+  color: var(--color-text);
 }
 
 .btn-close {
@@ -41,15 +41,15 @@
   justify-content: center;
   background: none;
   border: none;
-  color: #94a3b8;
+  color: var(--color-text-tertiary);
   font-size: 1.2rem;
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 4px;
 }
 .btn-close:hover {
-  background: #2e3038;
-  color: #ffffff;
+  background: var(--color-surface-hover-strong);
+  color: var(--color-text);
 }
 
 .modal-body {
@@ -62,16 +62,16 @@
 .field-label {
   font-size: 0.85rem;
   font-weight: 500;
-  color: #94a3b8;
+  color: var(--color-text-tertiary);
 }
 
 .text-input, .text-area {
   width: 100%;
-  background: #141518;
-  border: 1px solid #334155;
+  background: var(--color-surface-input);
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
   padding: 10px 14px;
-  color: #f8fafc;
+  color: var(--color-text);
   font-size: 0.95rem;
   box-sizing: border-box;
 }
@@ -101,20 +101,20 @@
 }
 
 .color-dot.selected {
-  border-color: #ffffff;
+  border-color: var(--color-text);
   box-shadow: 0 0 0 2px var(--color-accent);
 }
 
 .error-msg {
-  color: #ef4444;
+  color: var(--color-danger);
   font-size: 0.85rem;
   margin: 0;
 }
 
 .modal-footer {
   padding: 14px 20px;
-  background: #18191c;
-  border-top: 1px solid #2e3038;
+  background: var(--color-bg-sidebar);
+  border-top: 1px solid var(--color-border);
   display: flex;
   justify-content: flex-end;
   gap: 10px;
@@ -130,11 +130,11 @@
 }
 
 .btn-secondary {
-  background: #334155;
-  color: #e2e8f0;
+  background: var(--color-surface-hover-strong);
+  color: var(--color-text-secondary);
 }
 .btn-secondary:hover {
-  background: #475569;
+  background: var(--color-border-strong);
 }
 
 .btn-primary {

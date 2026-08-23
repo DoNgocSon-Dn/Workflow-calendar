@@ -52,7 +52,7 @@ export class AgendaView {
   }
 
   protected colorFor(event: CalendarEvent & { isLunarEvent?: boolean }): string {
-    if (event.isLunarEvent) return '#f59e0b';
+    if (event.isLunarEvent) return 'var(--color-warning)';
     return this.colorHex[this.store.calendarColor().get(event.calendarId) ?? 'blue'];
   }
 

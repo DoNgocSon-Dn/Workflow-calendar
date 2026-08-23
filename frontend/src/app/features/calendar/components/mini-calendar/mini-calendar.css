@@ -96,9 +96,8 @@
 }
 
 .day-cell.selected {
-  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
+  background: var(--color-accent);
   color: var(--color-accent-contrast);
   font-weight: 700;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
   transform: scale(1.05);
 }

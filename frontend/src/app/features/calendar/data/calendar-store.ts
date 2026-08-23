@@ -38,6 +38,11 @@ import { addDays, clampToDay, formatTimeLabel, startOfDay } from '../utils/date-
 import { VN_HOLIDAY_CALENDAR_DEF, VN_HOLIDAY_CALENDAR_ID, buildVietnamHolidayEvents } from './vietnam-holidays';
 
 const SELF_ORIGIN_TTL_MS = 8000;
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'sidebar-collapsed';
+
+function readStoredSidebarCollapsed(): boolean {
+  return localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === '1';
+}
 const HOLIDAY_YEARS = [2024, 2025, 2026, 2027, 2028];
 
 interface CalendarApiDto {
@@ -224,6 +229,7 @@ export class CalendarStore {
   readonly focusedDate = signal(startOfDay(this.clock.now()));
   readonly viewMode = signal<CalendarViewMode>('week');
   readonly sidebarOpen = signal(true);
+  readonly sidebarCollapsed = signal<boolean>(readStoredSidebarCollapsed());
 
   readonly calendars = signal<CalendarDef[]>([]);
   readonly calendarsLoading = signal(false);
@@ -299,6 +305,10 @@ export class CalendarStore {
         this.pendingInvites.set([]);
         this.realtime.disconnect();
       }
+    });
+
+    effect(() => {
+      localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, this.sidebarCollapsed() ? '1' : '0');
     });
   }
 
@@ -673,6 +683,10 @@ export class CalendarStore {
 
   toggleSidebar(): void {
     this.sidebarOpen.update((v) => !v);
+  }
+
+  toggleSidebarCollapsed(): void {
+    this.sidebarCollapsed.update((v) => !v);
   }
 
   async createEvent(draft: CalendarEventDraft): Promise<CalendarEvent> {

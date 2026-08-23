@@ -73,9 +73,8 @@
 }
 
 .type-btn.active {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: var(--color-warning);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
 }
 
 .filter-pills {
@@ -104,8 +103,8 @@
 }
 
 .filter-pill.active {
-  background: #3b82f6;
-  color: #ffffff;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
 }
 
 .empty-state {
@@ -147,7 +146,7 @@
 }
 
 .day-title.lunar-title {
-  color: #f59e0b;
+  color: var(--color-warning);
 }
 
 .badge {
@@ -175,8 +174,8 @@
 }
 
 .event-card.lunar-event-card {
-  background: rgba(245, 158, 11, 0.05);
-  border-color: rgba(245, 158, 11, 0.3);
+  background: color-mix(in srgb, var(--color-warning) 5%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-warning) 30%, var(--color-border));
 }
 
 .event-card:hover {
@@ -206,13 +205,13 @@
 }
 
 .lunar-badge {
-  background: rgba(245, 158, 11, 0.15);
-  color: #d97706;
+  background: color-mix(in srgb, var(--color-warning) 15%, transparent);
+  color: var(--color-warning);
   font-size: 0.7rem;
   font-weight: 700;
   padding: 0.15rem 0.45rem;
   border-radius: 4px;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 30%, transparent);
 }
 
 .event-time {
@@ -228,16 +227,16 @@
 }
 
 .time-tag.all-day {
-  background: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+  color: var(--color-accent);
   padding: 1px 6px;
   border-radius: 4px;
   font-size: 0.75rem;
 }
 
 .time-tag.lunar-tag {
-  background: rgba(245, 158, 11, 0.15);
-  color: #d97706;
+  background: color-mix(in srgb, var(--color-warning) 15%, transparent);
+  color: var(--color-warning);
   padding: 1px 6px;
   border-radius: 4px;
   font-size: 0.75rem;
@@ -256,8 +255,8 @@
 
 .btn-load-more {
   background: var(--color-surface-hover);
-  color: #3b82f6;
-  border: 1px solid #3b82f6;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
   border-radius: var(--radius-full);
   padding: 8px 20px;
   font-size: 0.85rem;
@@ -267,6 +266,6 @@
 }
 
 .btn-load-more:hover {
-  background: #3b82f6;
-  color: #ffffff;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
 }

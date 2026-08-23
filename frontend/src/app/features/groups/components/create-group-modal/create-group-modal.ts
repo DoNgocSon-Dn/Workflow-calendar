@@ -1,9 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { GroupStore } from '../../data/group-store';
+import { GROUP_COLOR_HEX, GROUP_COLORS, GroupColor } from '../../models/group.models';
 import { Icon } from '../../../../shared/components/icon/icon';
-
-type GroupColor = 'blue' | 'green' | 'orange' | 'red' | 'purple' | 'teal';
 
 function extractErrorMessage(err: unknown): string {
   if (err instanceof HttpErrorResponse) {
@@ -18,17 +17,6 @@ function extractErrorMessage(err: unknown): string {
   return 'Không thể tạo nhóm mới. Vui lòng thử lại.';
 }
 
-const COLOR_HEX: Record<GroupColor, string> = {
-  blue: '#3b82f6',
-  green: '#22c55e',
-  orange: '#f97316',
-  red: '#ef4444',
-  purple: '#a855f7',
-  teal: '#14b8a6',
-};
-
-const COLORS: GroupColor[] = ['blue', 'green', 'orange', 'red', 'purple', 'teal'];
-
 @Component({
   selector: 'app-create-group-modal',
   templateUrl: './create-group-modal.html',
@@ -39,8 +27,8 @@ const COLORS: GroupColor[] = ['blue', 'green', 'orange', 'red', 'purple', 'teal'
 export class CreateGroupModal {
   private readonly groupStore = inject(GroupStore);
 
-  protected readonly colorHex = COLOR_HEX;
-  protected readonly colors = COLORS;
+  protected readonly colorHex = GROUP_COLOR_HEX;
+  protected readonly colors = GROUP_COLORS;
 
   readonly created = output<{ groupId: string; groupName: string }>();
   readonly closed = output<void>();

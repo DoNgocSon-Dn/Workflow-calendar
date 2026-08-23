@@ -309,22 +309,16 @@
   width: 5.5rem;
   height: 1.1rem;
   border-radius: var(--radius-full);
-  background: linear-gradient(
-    90deg,
-    var(--color-surface-hover) 25%,
-    var(--color-border) 50%,
-    var(--color-surface-hover) 75%
-  );
-  background-size: 200% 100%;
-  animation: swatch-skeleton-shimmer 1.2s ease-in-out infinite;
+  background: var(--color-surface-hover-strong);
+  animation: swatch-skeleton-pulse 1.2s ease-in-out infinite;
 }
 
-@keyframes swatch-skeleton-shimmer {
-  0% {
-    background-position: 200% 0;
+@keyframes swatch-skeleton-pulse {
+  0%, 100% {
+    opacity: 0.55;
   }
-  100% {
-    background-position: -200% 0;
+  50% {
+    opacity: 1;
   }
 }
 

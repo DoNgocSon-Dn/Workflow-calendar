@@ -1,156 +1,219 @@
-<aside class="sidebar">
-  <button type="button" class="create-btn" (click)="createClicked.emit()">
-    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-      <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z" />
-    </svg>
-    Tạo sự kiện
-  </button>
+<aside class="sidebar" [class.collapsed]="store.sidebarCollapsed()">
+  <div class="sidebar-top">
+    <button
+      type="button"
+      class="create-btn"
+      [class.icon-only]="store.sidebarCollapsed()"
+      [attr.title]="store.sidebarCollapsed() ? 'Tạo sự kiện' : null"
+      (click)="createClicked.emit()"
+    >
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z" />
+      </svg>
+      @if (!store.sidebarCollapsed()) {
+        <span>Tạo sự kiện</span>
+      }
+    </button>
 
-  <app-mini-calendar
-    [focusedDate]="store.focusedDate()"
-    [today]="store.today()"
-    (dateSelected)="onDateSelected($event)"
-  />
+    <button
+      type="button"
+      class="collapse-toggle-btn"
+      [attr.aria-label]="store.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'"
+      [title]="store.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'"
+      (click)="store.toggleSidebarCollapsed()"
+    >
+      <app-icon [name]="store.sidebarCollapsed() ? 'chevron-right' : 'chevron-left'" />
+    </button>
+  </div>
+
+  @if (!store.sidebarCollapsed()) {
+    <app-mini-calendar
+      [focusedDate]="store.focusedDate()"
+      [today]="store.today()"
+      (dateSelected)="onDateSelected($event)"
+    />
+  }
 
   <div class="sidebar-scrollable">
-    <!-- GROUP WORKSPACES SECTION -->
-    <div class="calendar-list">
-      <div class="calendar-list-header">
-        <h2 class="calendar-list-title">Nhóm làm việc (Workspaces)</h2>
-        <button
-          type="button"
-          class="add-calendar-btn"
-          aria-label="Tạo Nhóm làm việc mới"
-          title="Tạo Nhóm làm việc mới"
-          (click)="createGroupClicked.emit()"
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-            <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z" />
-          </svg>
-        </button>
-      </div>
-
-      <div class="calendar-items-wrapper">
-        @for (g of displayGroups(); track g.id) {
-          <div class="calendar-item group-item" (click)="onGroupClicked(g)" [title]="g.name">
-            <span class="color-dot" [style.background]="g.color"></span>
-            <app-icon class="group-icon" name="users" />
-            <span class="calendar-name">{{ g.name }}</span>
-            <button
-              type="button"
-              class="group-hide-btn"
-              [attr.aria-label]="'Ẩn nhóm ' + g.name"
-              title="Ẩn nhóm khỏi danh sách (tin nhắn mới sẽ tự hiện lại)"
-              (click)="onToggleGroupHidden($event, g)"
-            >
-              <app-icon name="eye-off" />
-            </button>
-            <app-icon class="group-arrow" name="chevron-right" />
-          </div>
-        } @empty {
-          <div class="empty-groups-hint" (click)="createGroupClicked.emit()">
-            + Tạo Nhóm đầu tiên để cộng tác
-          </div>
-        }
-      </div>
-
-      @if (hiddenGroups().length > 0) {
-        <div class="hidden-groups">
+    @if (!store.sidebarCollapsed()) {
+      <!-- GROUP WORKSPACES SECTION -->
+      <div class="calendar-list">
+        <div class="calendar-list-header">
+          <h2 class="calendar-list-title">Nhóm làm việc (Workspaces)</h2>
           <button
             type="button"
-            class="hidden-groups-toggle"
-            [attr.aria-expanded]="hiddenSectionOpen()"
-            (click)="toggleHiddenSection()"
+            class="add-calendar-btn"
+            aria-label="Tạo Nhóm làm việc mới"
+            title="Tạo Nhóm làm việc mới"
+            (click)="createGroupClicked.emit()"
           >
-            <app-icon
-              class="hidden-groups-caret"
-              [name]="hiddenSectionOpen() ? 'chevron-down' : 'chevron-right'"
-            />
-            Nhóm đã ẩn ({{ hiddenGroups().length }})
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z" />
+            </svg>
           </button>
+        </div>
 
-          @if (hiddenSectionOpen()) {
-            @for (g of hiddenGroups(); track g.id) {
-              <div class="calendar-item group-item is-hidden" (click)="onGroupClicked(g)" [title]="g.name">
-                <span class="color-dot" [style.background]="g.color"></span>
-                <app-icon class="group-icon" name="users" />
-                <span class="calendar-name">{{ g.name }}</span>
-                <button
-                  type="button"
-                  class="group-hide-btn"
-                  [attr.aria-label]="'Hiện lại nhóm ' + g.name"
-                  title="Hiện lại nhóm"
-                  (click)="onToggleGroupHidden($event, g)"
-                >
-                  <app-icon name="eye" />
-                </button>
-              </div>
-            }
+        <div class="calendar-items-wrapper">
+          @for (g of displayGroups(); track g.id) {
+            <div class="calendar-item group-item" (click)="onGroupClicked(g)" [title]="g.name">
+              <span class="color-dot" [style.background]="g.color"></span>
+              <app-icon class="group-icon" name="users" />
+              <span class="calendar-name">{{ g.name }}</span>
+              <button
+                type="button"
+                class="group-hide-btn"
+                [attr.aria-label]="'Ẩn nhóm ' + g.name"
+                title="Ẩn nhóm khỏi danh sách (tin nhắn mới sẽ tự hiện lại)"
+                (click)="onToggleGroupHidden($event, g)"
+              >
+                <app-icon name="eye-off" />
+              </button>
+              <app-icon class="group-arrow" name="chevron-right" />
+            </div>
+          } @empty {
+            <div class="empty-groups-hint" (click)="createGroupClicked.emit()">
+              + Tạo Nhóm đầu tiên để cộng tác
+            </div>
           }
         </div>
-      }
-    </div>
 
-    <!-- MY CALENDARS SECTION -->
-    <div class="calendar-list">
-      <div class="calendar-list-header">
-        <h2 class="calendar-list-title">Lịch của tôi</h2>
-        <button
-          type="button"
-          class="add-calendar-btn"
-          aria-label="Tạo lịch riêng"
-          title="Tạo lịch riêng"
-          (click)="createCalendarClicked.emit()"
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-            <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z" />
-          </svg>
-        </button>
-      </div>
-      
-      <div class="calendar-items-wrapper">
-        @for (cal of displayCalendars(); track cal.id) {
-          <label class="calendar-item" [title]="cal.name">
-            <input
-              type="checkbox"
-              [checked]="isVisible(cal.id)"
-              (change)="store.toggleCalendarVisibility(cal.id)"
-            />
-            <span class="color-dot" [style.background]="colorHex[cal.color]"></span>
-            <span class="calendar-name">{{ cal.name }}</span>
+        @if (hiddenGroups().length > 0) {
+          <div class="hidden-groups">
             <button
               type="button"
-              class="invite-btn"
-              [attr.aria-label]="'Mời bạn bè vào ' + cal.name"
-              title="Mời bạn bè"
-              (click)="onInviteClicked($event, cal.id, cal.name)"
+              class="hidden-groups-toggle"
+              [attr.aria-expanded]="hiddenSectionOpen()"
+              (click)="toggleHiddenSection()"
             >
-              <svg viewBox="0 0 24 24" width="16" height="16">
-                <path fill="currentColor"
-                  d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-              </svg>
+              <app-icon
+                class="hidden-groups-caret"
+                [name]="hiddenSectionOpen() ? 'chevron-down' : 'chevron-right'"
+              />
+              Nhóm đã ẩn ({{ hiddenGroups().length }})
             </button>
-          </label>
-        }
-      </div>
-    </div>
 
-    <!-- OTHER CALENDARS SECTION -->
-    <div class="calendar-list">
-      <h2 class="calendar-list-title">Lịch khác</h2>
-      <div class="calendar-items-wrapper">
-        @for (cal of store.otherCalendars; track cal.id) {
-          <label class="calendar-item" [title]="cal.name">
-            <input
-              type="checkbox"
-              [checked]="isVisible(cal.id)"
-              (change)="store.toggleCalendarVisibility(cal.id)"
-            />
-            <span class="color-dot" [style.background]="colorHex[cal.color]"></span>
-            <span class="calendar-name">{{ cal.name }}</span>
-          </label>
+            @if (hiddenSectionOpen()) {
+              @for (g of hiddenGroups(); track g.id) {
+                <div class="calendar-item group-item is-hidden" (click)="onGroupClicked(g)" [title]="g.name">
+                  <span class="color-dot" [style.background]="g.color"></span>
+                  <app-icon class="group-icon" name="users" />
+                  <span class="calendar-name">{{ g.name }}</span>
+                  <button
+                    type="button"
+                    class="group-hide-btn"
+                    [attr.aria-label]="'Hiện lại nhóm ' + g.name"
+                    title="Hiện lại nhóm"
+                    (click)="onToggleGroupHidden($event, g)"
+                  >
+                    <app-icon name="eye" />
+                  </button>
+                </div>
+              }
+            }
+          </div>
         }
       </div>
-    </div>
+
+      <!-- MY CALENDARS SECTION -->
+      <div class="calendar-list">
+        <div class="calendar-list-header">
+          <h2 class="calendar-list-title">Lịch của tôi</h2>
+          <button
+            type="button"
+            class="add-calendar-btn"
+            aria-label="Tạo lịch riêng"
+            title="Tạo lịch riêng"
+            (click)="createCalendarClicked.emit()"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="calendar-items-wrapper">
+          @for (cal of displayCalendars(); track cal.id) {
+            <label class="calendar-item" [title]="cal.name">
+              <input
+                type="checkbox"
+                [checked]="isVisible(cal.id)"
+                (change)="store.toggleCalendarVisibility(cal.id)"
+              />
+              <span class="color-dot" [style.background]="colorHex[cal.color]"></span>
+              <span class="calendar-name">{{ cal.name }}</span>
+              <button
+                type="button"
+                class="invite-btn"
+                [attr.aria-label]="'Mời bạn bè vào ' + cal.name"
+                title="Mời bạn bè"
+                (click)="onInviteClicked($event, cal.id, cal.name)"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16">
+                  <path fill="currentColor"
+                    d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+              </button>
+            </label>
+          }
+        </div>
+      </div>
+
+      <!-- OTHER CALENDARS SECTION -->
+      <div class="calendar-list">
+        <h2 class="calendar-list-title">Lịch khác</h2>
+        <div class="calendar-items-wrapper">
+          @for (cal of store.otherCalendars; track cal.id) {
+            <label class="calendar-item" [title]="cal.name">
+              <input
+                type="checkbox"
+                [checked]="isVisible(cal.id)"
+                (change)="store.toggleCalendarVisibility(cal.id)"
+              />
+              <span class="color-dot" [style.background]="colorHex[cal.color]"></span>
+              <span class="calendar-name">{{ cal.name }}</span>
+            </label>
+          }
+        </div>
+      </div>
+    } @else {
+      <!-- COLLAPSED RAIL — icon-only, native title tooltips on hover -->
+      <div class="rail-list">
+        @for (g of displayGroups(); track g.id) {
+          <button type="button" class="rail-item" [title]="g.name" [attr.aria-label]="g.name" (click)="onGroupClicked(g)">
+            <span class="color-dot" [style.background]="g.color"></span>
+          </button>
+        }
+
+        @if (displayCalendars().length > 0 || store.otherCalendars.length > 0) {
+          <div class="rail-divider"></div>
+        }
+
+        @for (cal of displayCalendars(); track cal.id) {
+          <button
+            type="button"
+            class="rail-item"
+            [class.is-off]="!isVisible(cal.id)"
+            [title]="cal.name"
+            [attr.aria-label]="cal.name"
+            (click)="store.toggleCalendarVisibility(cal.id)"
+          >
+            <span class="color-dot" [style.background]="colorHex[cal.color]"></span>
+          </button>
+        }
+
+        @for (cal of store.otherCalendars; track cal.id) {
+          <button
+            type="button"
+            class="rail-item"
+            [class.is-off]="!isVisible(cal.id)"
+            [title]="cal.name"
+            [attr.aria-label]="cal.name"
+            (click)="store.toggleCalendarVisibility(cal.id)"
+          >
+            <span class="color-dot" [style.background]="colorHex[cal.color]"></span>
+          </button>
+        }
+      </div>
+    }
   </div>
 </aside>

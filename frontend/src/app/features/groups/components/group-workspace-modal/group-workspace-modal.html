@@ -65,7 +65,7 @@
                 [class.selected]="editColor() === c"
                 [attr.aria-checked]="editColor() === c"
                 [attr.aria-label]="'Màu ' + c"
-                [style.background]="c"
+                [style.background]="groupColorHex[c]"
                 (click)="editColor.set(c)"
               ></button>
             }

@@ -13,6 +13,8 @@ import { AuthStore } from '../../../../core/auth/auth-store';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { GroupStore } from '../../data/group-store';
 import {
+  GROUP_COLOR_HEX,
+  GROUP_COLORS,
   GroupColor,
   GroupMember,
   GroupMessage,
@@ -21,8 +23,6 @@ import {
 } from '../../models/group.models';
 
 type WorkspaceTab = 'members' | 'calendar' | 'tasks' | 'chat';
-
-const GROUP_COLORS: GroupColor[] = ['blue', 'green', 'orange', 'red', 'purple', 'teal'];
 
 @Component({
   selector: 'app-group-workspace-modal',
@@ -86,6 +86,7 @@ export class GroupWorkspaceModal {
 
   // Group edit / delete / hide
   protected readonly groupColors = GROUP_COLORS;
+  protected readonly groupColorHex = GROUP_COLOR_HEX;
   protected readonly editingGroup = signal(false);
   protected readonly editName = signal('');
   protected readonly editDescription = signal('');

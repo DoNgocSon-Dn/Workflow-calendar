@@ -1,5 +1,16 @@
 export type GroupColor = 'blue' | 'green' | 'orange' | 'red' | 'purple' | 'teal';
 
+export const GROUP_COLORS: readonly GroupColor[] = ['blue', 'green', 'orange', 'red', 'purple', 'teal'];
+
+export const GROUP_COLOR_HEX: Record<GroupColor, string> = {
+  blue: '#2563eb',
+  green: '#16a34a',
+  orange: '#ea580c',
+  red: '#dc2626',
+  purple: '#7c3aed',
+  teal: '#0891b2',
+};
+
 export interface Group {
   id: string;
   name: string;

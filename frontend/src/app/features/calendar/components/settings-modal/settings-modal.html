@@ -140,6 +140,22 @@
           </button>
         </div>
       </section>
+
+      <section class="setting-row">
+        <div class="setting-label">
+          <span class="setting-title" id="holiday-notif-label">Thông báo ngày lễ</span>
+          <span class="setting-desc">Hiện popup khi mở ứng dụng vào ngày lễ lớn.</span>
+        </div>
+        <label class="toggle-switch">
+          <input
+            type="checkbox"
+            aria-labelledby="holiday-notif-label"
+            [checked]="holidayPopupService.notificationsEnabled()"
+            (change)="toggleHolidayNotifications()"
+          />
+          <span class="toggle-track" aria-hidden="true"></span>
+        </label>
+      </section>
     </div>
   </div>
 </div>
