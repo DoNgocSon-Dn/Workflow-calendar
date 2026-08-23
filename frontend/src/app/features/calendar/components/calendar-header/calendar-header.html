@@ -86,6 +86,11 @@
       }
     </div>
 
+    <app-notification-button
+      (openEvent)="onNotificationOpenEvent($event)"
+      (openGroup)="onNotificationOpenGroup($event)"
+    />
+
     <div class="view-menu">
       <button
         type="button"

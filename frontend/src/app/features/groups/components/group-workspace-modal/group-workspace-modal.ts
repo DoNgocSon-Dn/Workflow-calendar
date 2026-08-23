@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  output,
+  signal,
+  untracked,
+} from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { AuthStore } from '../../../../core/auth/auth-store';
 import { Icon } from '../../../../shared/components/icon/icon';
@@ -89,14 +98,37 @@ export class GroupWorkspaceModal {
   private static readonly MAX_ATTACHMENT_BYTES = 15 * 1024 * 1024;
 
   constructor() {
+    // Luồng bên ngoài (click thông báo tin nhắn) yêu cầu mở sẵn một tab cụ thể.
+    effect(() => {
+      const requested = this.store.requestedWorkspaceTab();
+      if (!requested) return;
+      this.activeTab.set(requested);
+      this.store.requestedWorkspaceTab.set(null);
+    });
+
     effect(() => {
       const msgs = this.store.messages();
-      if (this.activeTab() === 'chat' && msgs.length > 0) {
-        setTimeout(() => {
-          const el = document.querySelector('.chat-messages');
-          if (el) el.scrollTop = el.scrollHeight;
-        }, 50);
-      }
+      if (this.activeTab() !== 'chat' || msgs.length === 0) return;
+
+      // untracked: xoá cờ sau khi cuộn xong không được kích hoạt lại effect,
+      // nếu không lần chạy thứ hai sẽ cuộn xuống đáy và huỷ mất focus vừa đặt.
+      const targetId = untracked(() => this.store.pendingChatMessageId());
+      setTimeout(() => {
+        const container = document.querySelector('.chat-messages');
+        if (!container) return;
+
+        // Có tin nhắn cần focus thì cuộn tới đúng nó, còn lại giữ hành vi cũ
+        // là cuộn xuống tin mới nhất.
+        const target = targetId ? document.getElementById(`chat-msg-${targetId}`) : null;
+        if (target) {
+          target.scrollIntoView({ block: 'center' });
+          target.classList.add('chat-msg-row--focused');
+          setTimeout(() => target.classList.remove('chat-msg-row--focused'), 2000);
+        } else {
+          container.scrollTop = container.scrollHeight;
+        }
+        if (targetId) this.store.pendingChatMessageId.set(null);
+      }, 50);
     });
   }
 

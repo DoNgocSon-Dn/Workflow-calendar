@@ -21,12 +21,35 @@ import { CreateGroupTaskDto } from './dto/create-group-task.dto';
 import { UpdateGroupTaskDto } from './dto/update-group-task.dto';
 import { SendGroupMessageDto } from './dto/send-group-message.dto';
 import { UpdateGroupMessageDto } from './dto/update-group-message.dto';
+import { RespondGroupInviteDto } from './dto/respond-group-invite.dto';
 import { GroupsService } from './groups.service';
 
 @Controller('groups')
 @UseGuards(SupabaseAuthGuard)
 export class GroupsController {
   constructor(private readonly groupsService: GroupsService) {}
+
+  // Các route tĩnh phải đứng TRƯỚC ':id', nếu không Nest sẽ khớp "invites" và
+  // "tasks" thành groupId.
+  @Get('invites/mine')
+  async listMyInvites(@CurrentSupabase() supabase: SupabaseClient) {
+    return this.groupsService.listMyInvites(supabase);
+  }
+
+  @Patch('invites/:inviteId/respond')
+  async respondInvite(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('inviteId') inviteId: string,
+    @Body() dto: RespondGroupInviteDto,
+  ) {
+    return this.groupsService.respondInvite(supabase, user.id, inviteId, dto);
+  }
+
+  @Get('tasks/mine')
+  async listMyTasks(@CurrentSupabase() supabase: SupabaseClient) {
+    return this.groupsService.listMyTasks(supabase);
+  }
 
   @Post()
   async createGroup(

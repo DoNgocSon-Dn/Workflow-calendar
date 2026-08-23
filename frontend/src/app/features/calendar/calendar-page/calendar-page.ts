@@ -24,6 +24,7 @@ import { addMinutes, buildWeekDays } from '../utils/date-utils';
 import { CreateGroupModal } from '../../groups/components/create-group-modal/create-group-modal';
 import { GroupWorkspaceModal } from '../../groups/components/group-workspace-modal/group-workspace-modal';
 import { GroupStore } from '../../groups/data/group-store';
+import { OpenGroupChatRequest } from '../../../shared/components/notification/notification-panel';
 import { HolidayPopup } from '../../../shared/components/holiday-popup/holiday-popup';
 
 interface ModalState {
@@ -111,6 +112,10 @@ export class CalendarPage {
     // read-only holiday entries that live in a separate static list.
     const event = this.store.visibleEvents().find((e) => e.id === eventId);
     if (event) this.openEdit(event);
+  }
+
+  onOpenGroupFromNotification(request: OpenGroupChatRequest): void {
+    void this.groupStore.openGroupChat(request.groupId, request.messageId);
   }
 
   openCreateBlank(): void {

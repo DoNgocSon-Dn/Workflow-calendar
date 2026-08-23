@@ -17,6 +17,43 @@ import { CreateGroupTaskDto } from './dto/create-group-task.dto';
 import { UpdateGroupTaskDto } from './dto/update-group-task.dto';
 import { SendGroupMessageDto } from './dto/send-group-message.dto';
 import { UpdateGroupMessageDto } from './dto/update-group-message.dto';
+import { RespondGroupInviteDto } from './dto/respond-group-invite.dto';
+
+export interface GroupInviteDto {
+  id: string;
+  groupId: string;
+  groupName: string;
+  groupColor: string;
+  role: string;
+  status: string;
+  createdAt: string;
+  inviterEmail: string | null;
+}
+
+/** Hàng thô từ RPC list_my_group_invites / respond_group_invite. */
+export interface GroupInviteRow {
+  id: string;
+  group_id: string;
+  group_name: string;
+  group_color: string;
+  role: string;
+  status: string;
+  created_at: string;
+  inviter_email: string | null;
+}
+
+function toGroupInviteDto(row: GroupInviteRow): GroupInviteDto {
+  return {
+    id: row.id,
+    groupId: row.group_id,
+    groupName: row.group_name,
+    groupColor: row.group_color,
+    role: row.role,
+    status: row.status,
+    createdAt: row.created_at,
+    inviterEmail: row.inviter_email,
+  };
+}
 
 export interface GroupDto {
   id: string;
@@ -445,7 +482,7 @@ export class GroupsService {
     inviter: User,
     groupId: string,
     dto: InviteGroupMemberDto,
-  ): Promise<GroupMemberDto> {
+  ): Promise<GroupInviteDto> {
     const { data: invitedUserId, error: lookupError } = await supabase.rpc(
       'find_user_id_by_email',
       { p_email: dto.email },
@@ -476,39 +513,134 @@ export class GroupsService {
     }
 
     const role = dto.role || 'member';
-    const { data: newMem, error: insertErr } = await supabase
-      .from('group_members')
-      .insert({
-        group_id: groupId,
-        user_id: invitedUserId,
-        role,
-      })
-      .select('*')
-      .single();
 
-    if (insertErr || !newMem) {
+    // Tạo LỜI MỜI ở trạng thái pending thay vì thêm thẳng vào nhóm — người được
+    // mời tự quyết định Chấp nhận / Từ chối (giống luồng calendar_invites).
+    const { data: inviteRow, error: inviteErr } = await supabase
+      .from('group_invites')
+      .upsert(
+        {
+          group_id: groupId,
+          invited_user_id: invitedUserId,
+          invited_by: inviter.id,
+          role,
+          status: 'pending',
+        },
+        { onConflict: 'group_id,invited_user_id' },
+      )
+      .select('id, role, status, created_at')
+      .single<{
+        id: string;
+        role: string;
+        status: string;
+        created_at: string;
+      }>();
+
+    if (inviteErr || !inviteRow) {
       throw new InternalServerErrorException(
-        insertErr?.message || 'Không thể thêm thành viên',
+        inviteErr?.message || 'Không thể tạo lời mời',
       );
     }
 
-    // Also add to group calendar_members
-    if (group.calendar_id) {
-      await supabase.from('calendar_members').upsert({
-        calendar_id: group.calendar_id,
-        user_id: invitedUserId,
-        role: role === 'admin' ? 'editor' : 'viewer',
-      });
+    const { data: groupRow } = await supabase
+      .from('groups')
+      .select('name, color')
+      .eq('id', groupId)
+      .maybeSingle<{ name: string; color: string }>();
+
+    const invite: GroupInviteDto = {
+      id: inviteRow.id,
+      groupId,
+      groupName: groupRow?.name ?? 'Nhóm',
+      groupColor: groupRow?.color ?? 'blue',
+      role: inviteRow.role,
+      status: inviteRow.status,
+      createdAt: inviteRow.created_at,
+      inviterEmail: inviter.email ?? null,
+    };
+
+    // Bắn thẳng vào room riêng của người được mời: họ chưa phải thành viên nên
+    // không có mặt trong bất kỳ room nhóm nào.
+    this.realtimeGateway.emitToUser(invitedUserId as string, 'group:invited', {
+      invite,
+    });
+
+    return invite;
+  }
+
+  /** Task được giao cho người gọi trên MỌI nhóm — Notification Center dùng để
+   *  theo dõi deadline mà không phải mở từng nhóm một. */
+  async listMyTasks(supabase: SupabaseClient): Promise<GroupTaskDto[]> {
+    const { data, error } = await supabase.rpc('list_my_group_tasks');
+    if (error) throw new InternalServerErrorException(error.message);
+
+    return (
+      data as {
+        id: string;
+        group_id: string;
+        title: string;
+        description: string | null;
+        status: GroupTaskDto['status'];
+        assigned_to: string | null;
+        due_date: string | null;
+        created_by: string | null;
+        created_at: string;
+      }[]
+    ).map((row) => ({
+      id: row.id,
+      groupId: row.group_id,
+      title: row.title,
+      description: row.description ?? undefined,
+      status: row.status,
+      assignedTo: row.assigned_to ?? undefined,
+      dueDate: row.due_date ?? undefined,
+      createdBy: row.created_by ?? undefined,
+      createdAt: row.created_at,
+    }));
+  }
+
+  async listMyInvites(supabase: SupabaseClient): Promise<GroupInviteDto[]> {
+    const { data, error } = await supabase.rpc('list_my_group_invites');
+    if (error) throw new InternalServerErrorException(error.message);
+    return (data as GroupInviteRow[]).map(toGroupInviteDto);
+  }
+
+  async respondInvite(
+    supabase: SupabaseClient,
+    userId: string,
+    inviteId: string,
+    dto: RespondGroupInviteDto,
+  ): Promise<GroupInviteDto> {
+    const { data, error } = await supabase
+      .rpc('respond_group_invite', {
+        p_invite_id: inviteId,
+        p_status: dto.status,
+      })
+      .single<Omit<GroupInviteRow, 'inviter_email'>>();
+
+    if (error) {
+      if (error.message.includes('invite not found')) {
+        throw new NotFoundException('Lời mời không tồn tại');
+      }
+      if (error.message.includes('already handled')) {
+        throw new ConflictException('Lời mời này đã được xử lý');
+      }
+      throw new InternalServerErrorException(error.message);
     }
 
-    return {
-      id: newMem.id,
-      groupId: newMem.group_id,
-      userId: newMem.user_id,
-      role: newMem.role,
-      createdAt: newMem.created_at,
-      email: dto.email,
-    };
+    const invite = toGroupInviteDto({ ...data, inviter_email: null });
+
+    // Báo cho cả nhóm biết kết quả, để danh sách thành viên của họ tự cập nhật.
+    await this.emitToGroupMembers(
+      supabase,
+      invite.groupId,
+      dto.status === 'accepted'
+        ? 'group:invitationAccepted'
+        : 'group:invitationDeclined',
+      { inviteId: invite.id, groupId: invite.groupId, userId, role: invite.role },
+    );
+
+    return invite;
   }
 
   async updateMemberRole(

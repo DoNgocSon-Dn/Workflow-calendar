@@ -19,6 +19,7 @@ import { NotesModule } from './notes/notes.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { SupabaseModule } from './supabase/supabase.module';
+import { SystemNotificationsModule } from './system-notifications/system-notifications.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { SupabaseModule } from './supabase/supabase.module';
     AiModule,
     ImportModule,
     GroupsModule,
+    SystemNotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

@@ -381,7 +381,7 @@
           <div class="chat-section">
             <div class="chat-messages">
               @for (msg of store.messages(); track msg.id) {
-                <div class="chat-msg-row" [class.deleted]="msg.deletedAt">
+                <div class="chat-msg-row" [id]="'chat-msg-' + msg.id" [class.deleted]="msg.deletedAt">
                   <div class="chat-msg-main">
                     <span class="chat-sender">{{ msg.senderEmail || 'Thành viên' }}:</span>
                     @if (msg.deletedAt) {

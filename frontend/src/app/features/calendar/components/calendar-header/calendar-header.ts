@@ -12,6 +12,8 @@ import { ThemeToggle } from '../../../../core/theme/theme-toggle/theme-toggle';
 import { CalendarStore } from '../../data/calendar-store';
 import { CalendarViewMode } from '../../models/calendar.models';
 import { addDays, monthYearLabel, startOfWeek } from '../../utils/date-utils';
+import { NotificationButton } from '../../../../shared/components/notification/notification-button';
+import { OpenGroupChatRequest } from '../../../../shared/components/notification/notification-panel';
 
 const DAY_MONTH = new Intl.DateTimeFormat('vi-VN', { day: 'numeric', month: 'short' });
 const FULL_DATE = new Intl.DateTimeFormat('vi-VN', {
@@ -26,7 +28,7 @@ const FULL_DATE = new Intl.DateTimeFormat('vi-VN', {
   templateUrl: './calendar-header.html',
   styleUrl: './calendar-header.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ThemeToggle],
+  imports: [ThemeToggle, NotificationButton],
 })
 export class CalendarHeader {
   protected readonly store = inject(CalendarStore);
@@ -36,6 +38,8 @@ export class CalendarHeader {
   readonly openImport = output<void>();
   readonly openSettings = output<void>();
   readonly openTrash = output<void>();
+  readonly openEventFromNotification = output<string>();
+  readonly openGroupFromNotification = output<OpenGroupChatRequest>();
 
   protected readonly userEmail = computed(() => this.authStore.user()?.email ?? '');
   protected readonly displayName = computed(() => this.authStore.displayName() ?? this.userEmail());
@@ -82,6 +86,14 @@ export class CalendarHeader {
 
   closeViewMenu(): void {
     this.viewMenuOpen.set(false);
+  }
+
+  onNotificationOpenEvent(eventId: string): void {
+    this.openEventFromNotification.emit(eventId);
+  }
+
+  onNotificationOpenGroup(request: OpenGroupChatRequest): void {
+    this.openGroupFromNotification.emit(request);
   }
 
   toggleGearMenu(): void {

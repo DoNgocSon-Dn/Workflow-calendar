@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import {
   Group,
+  GroupInvite,
   GroupMember,
   GroupMessage,
   GroupMessageAttachment,
@@ -11,6 +12,30 @@ import { GroupApiService } from '../services/group-api.service';
 import { AuthStore } from '../../../core/auth/auth-store';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { SUPABASE_CLIENT } from '../../../core/supabase-client';
+import { NotificationService } from '../../../core/services/notification.service';
+import {
+  DeadlinePhase,
+  GroupMessageDraftInput,
+  groupInvitationDraft,
+  groupMentionDraft,
+  groupMessageDraft,
+  groupTaskAssignedDraft,
+  groupTaskUpdatedDraft,
+  systemNoticeDraft,
+  taskDeadlineDraft,
+} from '../../../core/services/notification-drafts';
+
+/** Các tab của Group Workspace — khai báo ở store để luồng bên ngoài có thể
+ *  yêu cầu mở đúng tab mà không phải import ngược vào component modal. */
+export type WorkspaceTabRequest = 'members' | 'calendar' | 'tasks' | 'chat';
+
+/** Thời gian bỏ qua tiếng vọng realtime của thao tác do chính mình gây ra. */
+const SELF_ORIGIN_TTL_MS = 10_000;
+
+/** Báo "sắp đến hạn" khi deadline còn trong khoảng này. */
+const DEADLINE_SOON_MS = 24 * 60 * 60 * 1000;
+/** Quét lại định kỳ để mốc deadline vẫn nổ khi tab mở lâu. */
+const DEADLINE_SCAN_INTERVAL_MS = 5 * 60 * 1000;
 
 @Injectable({ providedIn: 'root' })
 export class GroupStore {
@@ -18,6 +43,7 @@ export class GroupStore {
   private readonly authStore = inject(AuthStore);
   private readonly realtime = inject(RealtimeService);
   private readonly supabase = inject(SUPABASE_CLIENT);
+  private readonly notifications = inject(NotificationService);
 
   readonly groups = signal<Group[]>([]);
   readonly activeGroup = signal<Group | null>(null);
@@ -26,8 +52,91 @@ export class GroupStore {
   readonly messages = signal<GroupMessage[]>([]);
   readonly loading = signal<boolean>(false);
   readonly activeWorkspaceModalOpen = signal<boolean>(false);
+  /** Lời mời nhóm đang chờ mình phản hồi. */
+  readonly pendingInvites = signal<GroupInvite[]>([]);
+
+  /** Đặt bởi các luồng mở workspace từ bên ngoài (ví dụ click thông báo tin
+   *  nhắn) để yêu cầu modal mở đúng tab thay vì tab mặc định. */
+  readonly requestedWorkspaceTab = signal<WorkspaceTabRequest | null>(null);
+  /** Tin nhắn cần cuộn tới sau khi mở tab Trò chuyện. */
+  readonly pendingChatMessageId = signal<string | null>(null);
 
   private realtimeInitialized = false;
+  private readonly selfOriginTaskIds = new Set<string>();
+
+  constructor() {
+    // Quét lại định kỳ để các mốc deadline đã qua vẫn được bắt khi tab mở lâu
+    // — bổ trợ cho cron backend, không thay thế nó.
+    setInterval(() => void this.scanMyTaskDeadlines(), DEADLINE_SCAN_INTERVAL_MS);
+  }
+
+  /**
+   * Quét deadline của MỌI task được giao cho mình (không chỉ nhóm đang mở).
+   *
+   * FALLBACK, không phải realtime do server đẩy: nó bắt các mốc đã qua từ
+   * trước khi người dùng mở app — lúc đó chưa có socket nên cron
+   * `task:deadline` không tới được. Từ khi app mở, nguồn chính vẫn là cron
+   * backend; hai đường dùng chung `id` ổn định nên không đẻ thông báo trùng.
+   */
+  private async scanMyTaskDeadlines(): Promise<void> {
+    if (!this.authStore.session()) return;
+
+    let tasks: GroupTask[];
+    try {
+      tasks = await this.api.getMyTasks();
+    } catch (err) {
+      console.error('Không tải được danh sách task để kiểm tra deadline:', err);
+      return;
+    }
+
+    const now = Date.now();
+    for (const task of tasks) {
+      if (!task.dueDate || task.status === 'done') continue;
+
+      const due = new Date(task.dueDate).getTime();
+      if (Number.isNaN(due)) continue;
+      if (due - now > DEADLINE_SOON_MS) continue;
+
+      this.notifications.ingest(
+        taskDeadlineDraft({
+          taskId: task.id,
+          groupId: task.groupId,
+          groupName: this.groups().find((g) => g.id === task.groupId)?.name ?? null,
+          title: task.title,
+          dueDate: task.dueDate,
+          phase: due < now ? 'overdue' : 'upcoming',
+        }),
+      );
+    }
+  }
+
+  /** Lời mời nhóm đang chờ mình phản hồi. */
+  async loadPendingInvites(): Promise<void> {
+    if (!this.authStore.session()) return;
+    try {
+      const invites = await this.api.getMyInvites();
+      this.pendingInvites.set(invites.filter((i) => i.status === 'pending'));
+    } catch (err) {
+      console.error('Không tải được lời mời nhóm:', err);
+    }
+  }
+
+  async respondToInvite(inviteId: string, status: 'accepted' | 'declined'): Promise<void> {
+    const invite = await this.api.respondInvite(inviteId, status);
+    this.pendingInvites.update((list) => list.filter((i) => i.id !== inviteId));
+    this.notifications.respond(`group-invitation-${inviteId}`, status);
+
+    if (status === 'accepted') {
+      // Vào nhóm rồi thì nhóm mới phải xuất hiện ở sidebar ngay, kèm join room
+      // realtime để nhận tin nhắn/task từ lúc này.
+      await this.loadGroups();
+      const joined = this.groups().find((g) => g.id === invite.groupId);
+      if (joined) {
+        this.realtime.joinCalendar(joined.id);
+        if (joined.calendarId) this.realtime.joinCalendar(joined.calendarId);
+      }
+    }
+  }
 
   readonly activeGroupId = computed(() => this.activeGroup()?.id ?? null);
 
@@ -39,23 +148,22 @@ export class GroupStore {
     this.realtimeInitialized = true;
     this.realtime.connect();
 
-    // Rejoin the active group's rooms after a reconnect (network blip, token
+    // Rejoin every known group's room after a reconnect (network blip, token
     // refresh) — join()s aren't remembered server-side across a fresh socket
-    // handshake.
-    this.realtime.onConnect(() => {
-      const group = this.activeGroup();
-      if (!group) return;
-      this.realtime.joinCalendar(group.id);
-      if (group.calendarId) this.realtime.joinCalendar(group.calendarId);
-    });
+    // handshake. Joining all groups (not just the active one) is what lets
+    // message notifications keep arriving for groups the user isn't looking
+    // at right now.
+    this.realtime.onConnect(() => this.joinAllGroupRooms());
 
     this.realtime.on<{ groupId: string; message: GroupMessage }>('group:messageSent', (payload) => {
       if (!payload?.message) return;
-      if (!this.isActiveGroup(payload.groupId, payload.message.groupId)) return;
-      this.messages.update((list) => {
-        if (list.some((m) => m.id === payload.message.id)) return list;
-        return [...list, payload.message];
-      });
+      if (this.isActiveGroup(payload.groupId, payload.message.groupId)) {
+        this.messages.update((list) => {
+          if (list.some((m) => m.id === payload.message.id)) return list;
+          return [...list, payload.message];
+        });
+      }
+      this.notifyIncomingMessage(payload.groupId, payload.message);
     });
 
     this.realtime.on<{ groupId: string; message: GroupMessage }>('group:messageUpdated', (payload) => {
@@ -72,17 +180,21 @@ export class GroupStore {
 
     this.realtime.on<{ groupId: string; task: GroupTask }>('group:taskCreated', (payload) => {
       if (!payload?.task) return;
-      if (!this.isActiveGroup(payload.groupId, payload.task.groupId)) return;
-      this.tasks.update((list) => {
-        if (list.some((t) => t.id === payload.task.id)) return list;
-        return [payload.task, ...list];
-      });
+      if (this.isActiveGroup(payload.groupId, payload.task.groupId)) {
+        this.tasks.update((list) => {
+          if (list.some((t) => t.id === payload.task.id)) return list;
+          return [payload.task, ...list];
+        });
+      }
+      this.notifyTaskEvent(payload.groupId, payload.task, 'created');
     });
 
     this.realtime.on<{ groupId: string; task: GroupTask }>('group:taskUpdated', (payload) => {
       if (!payload?.task) return;
-      if (!this.isActiveGroup(payload.groupId, payload.task.groupId)) return;
-      this.tasks.update((list) => list.map((t) => (t.id === payload.task.id ? payload.task : t)));
+      if (this.isActiveGroup(payload.groupId, payload.task.groupId)) {
+        this.tasks.update((list) => list.map((t) => (t.id === payload.task.id ? payload.task : t)));
+      }
+      this.notifyTaskEvent(payload.groupId, payload.task, 'updated');
     });
 
     // Ba sự kiện dưới đây đến từ room riêng của user (không phải room nhóm) nên
@@ -109,6 +221,56 @@ export class GroupStore {
       if (!payload?.groupId) return;
       this.setHiddenLocally(payload.groupId, false);
     });
+
+    // ---- Ba listener dưới đây đăng ký CÙNG guard realtimeInitialized ở trên,
+    // nên vẫn chỉ bind đúng một lần cho cả vòng đời ứng dụng. ----
+
+    // Lời mời nhóm: bắn vào room riêng của người được mời (họ chưa là thành viên).
+    this.realtime.on<{ invite: GroupInvite }>('group:invited', (payload) => {
+      if (!payload?.invite) return;
+      this.pendingInvites.update((list) => [
+        payload.invite,
+        ...list.filter((i) => i.id !== payload.invite.id),
+      ]);
+      this.notifications.ingest(
+        groupInvitationDraft({
+          inviteId: payload.invite.id,
+          groupId: payload.invite.groupId,
+          groupName: payload.invite.groupName,
+          inviterEmail: payload.invite.inviterEmail,
+          role: payload.invite.role,
+          status: 'pending',
+          createdAt: payload.invite.createdAt,
+        }),
+      );
+    });
+
+    // Deadline do cron backend đẩy (không phải tính ở client).
+    this.realtime.on<{
+      taskId: string;
+      groupId: string;
+      groupName: string | null;
+      title: string;
+      dueDate: string;
+      phase: DeadlinePhase;
+    }>('task:deadline', (payload) => {
+      if (!payload?.taskId) return;
+      this.notifications.ingest(taskDeadlineDraft(payload));
+    });
+
+    // Thông báo hệ thống: broadcast hoặc gửi riêng cho một user.
+    this.realtime.on<{
+      notification: {
+        id: string;
+        title: string;
+        message: string;
+        level: 'info' | 'warning' | 'maintenance';
+        createdAt: string;
+      };
+    }>('system:notice', (payload) => {
+      if (!payload?.notification) return;
+      this.notifications.ingest(systemNoticeDraft(payload.notification));
+    });
   }
 
   private setHiddenLocally(groupId: string, hidden: boolean): void {
@@ -131,6 +293,88 @@ export class GroupStore {
     return groupId === currentActiveId || altGroupId === currentActiveId;
   }
 
+  /** Joins every group's socket room so realtime events (messages, tasks...)
+   *  keep arriving even for groups whose workspace isn't currently open —
+   *  required for the notification bell to see messages from other groups. */
+  private joinAllGroupRooms(): void {
+    for (const group of this.groups()) {
+      this.realtime.joinCalendar(group.id);
+      if (group.calendarId) this.realtime.joinCalendar(group.calendarId);
+    }
+  }
+
+  private notifyIncomingMessage(groupId: string, message: GroupMessage): void {
+    const currentUser = this.authStore.user();
+    if (!currentUser || message.senderId === currentUser.id) return;
+
+    const group = this.groups().find((g) => g.id === groupId || g.id === message.groupId);
+    const text = message.message ?? (message.attachmentName ? `Đã gửi tệp: ${message.attachmentName}` : '');
+    const input: GroupMessageDraftInput = {
+      senderId: message.senderId,
+      senderName: message.senderEmail ?? 'Một thành viên',
+      groupId: group?.id ?? message.groupId,
+      groupName: group?.name ?? 'nhóm của bạn',
+      messageId: message.id,
+      messageText: text,
+      createdAt: message.createdAt,
+    };
+
+    // Nhắc tên luôn được báo, kể cả khi đang mở đúng nhóm đó — bị gọi tên là
+    // việc cần biết ngay, không nên im lặng chỉ vì cửa sổ chat đang mở.
+    if (this.mentionsCurrentUser(text, currentUser.email)) {
+      this.notifications.ingest(groupMentionDraft(input));
+      return;
+    }
+
+    // Đang mở đúng workspace của nhóm này thì tin nhắn đã hiện sẵn trong khung
+    // chat — không cần báo thêm ở chuông thông báo.
+    if (this.isActiveGroup(groupId, message.groupId) && this.activeWorkspaceModalOpen()) return;
+
+    this.notifications.ingest(groupMessageDraft(input));
+  }
+
+  /** Nhận diện "@tên" hoặc email đầy đủ của người dùng trong nội dung tin nhắn. */
+  private mentionsCurrentUser(text: string, email: string | undefined): boolean {
+    if (!text || !email) return false;
+    const lower = text.toLowerCase();
+    const localPart = email.split('@')[0].toLowerCase();
+    return lower.includes(email.toLowerCase()) || lower.includes(`@${localPart}`);
+  }
+
+  private notifyTaskEvent(groupId: string, task: GroupTask, kind: 'created' | 'updated'): void {
+    const currentUserId = this.authStore.user()?.id;
+    if (!currentUserId) return;
+    // Chỉ báo việc liên quan trực tiếp tới mình, và không báo lại thao tác do
+    // chính mình vừa thực hiện.
+    if (task.assignedTo !== currentUserId) return;
+    if (this.selfOriginTaskIds.has(task.id)) {
+      this.selfOriginTaskIds.delete(task.id);
+      return;
+    }
+
+    const group = this.groups().find((g) => g.id === groupId || g.id === task.groupId);
+    const input = {
+      taskId: task.id,
+      groupId: group?.id ?? task.groupId,
+      groupName: group?.name ?? 'nhóm của bạn',
+      title: task.title,
+      status: task.status,
+      assignedTo: task.assignedTo,
+      createdAt: task.createdAt,
+    };
+
+    this.notifications.ingest(
+      kind === 'created' ? groupTaskAssignedDraft(input) : groupTaskUpdatedDraft(input),
+    );
+  }
+
+  /** Đánh dấu task vừa được chính người dùng này sửa, để bỏ qua tiếng vọng
+   *  realtime của chính thao tác đó (server không gửi kèm "ai vừa sửa"). */
+  private markTaskSelfOrigin(taskId: string): void {
+    this.selfOriginTaskIds.add(taskId);
+    setTimeout(() => this.selfOriginTaskIds.delete(taskId), SELF_ORIGIN_TTL_MS);
+  }
+
   async loadGroups(): Promise<void> {
     if (!this.authStore.session()) return;
     try {
@@ -138,16 +382,25 @@ export class GroupStore {
       this.initRealtime();
       const list = await this.api.getGroups();
       this.groups.set(list);
+      this.joinAllGroupRooms();
     } catch (err) {
       console.error('Lỗi khi tải danh sách nhóm:', err);
     } finally {
       this.loading.set(false);
     }
+
+    // Bắt kịp những gì đã xảy ra lúc chưa mở app: lời mời đang chờ và các mốc
+    // deadline mà cron đã bắn khi socket còn chưa kết nối.
+    void this.loadPendingInvites();
+    void this.scanMyTaskDeadlines();
   }
 
   async createGroup(name: string, description?: string, color?: string): Promise<Group> {
     const newGroup = await this.api.createGroup(name, description, color);
     this.groups.update((prev) => [newGroup, ...prev]);
+    this.initRealtime();
+    this.realtime.joinCalendar(newGroup.id);
+    if (newGroup.calendarId) this.realtime.joinCalendar(newGroup.calendarId);
     return newGroup;
   }
 
@@ -182,6 +435,18 @@ export class GroupStore {
     }
   }
 
+  /** Mở workspace của nhóm và nhảy thẳng vào tab Trò chuyện — dùng cho luồng
+   *  click thông báo tin nhắn. `messageId` (nếu có) sẽ được cuộn tới. */
+  async openGroupChat(groupId: string, messageId?: string): Promise<void> {
+    const group = this.groups().find((g) => g.id === groupId);
+    if (!group) return;
+    // Đặt trước selectGroup: modal được tạo mới khi workspace mở nên nó phải
+    // đọc được yêu cầu ngay ở lần khởi tạo đầu tiên.
+    this.requestedWorkspaceTab.set('chat');
+    this.pendingChatMessageId.set(messageId ?? null);
+    await this.selectGroup(group);
+  }
+
   async selectGroup(group: Group): Promise<void> {
     this.activeGroup.set(group);
     this.activeWorkspaceModalOpen.set(true);
@@ -204,10 +469,10 @@ export class GroupStore {
     }
   }
 
-  async inviteMember(groupId: string, email: string, role?: string): Promise<GroupMember> {
-    const member = await this.api.inviteMember(groupId, email, role);
-    this.members.update((prev) => [...prev, member]);
-    return member;
+  /** Gửi lời mời (pending). Người được mời chỉ thành thành viên sau khi họ
+   *  chấp nhận, nên KHÔNG thêm vào `members` ở đây nữa. */
+  async inviteMember(groupId: string, email: string, role?: string): Promise<GroupInvite> {
+    return this.api.inviteMember(groupId, email, role);
   }
 
   async updateMemberRole(groupId: string, userId: string, role: string): Promise<GroupMember> {
@@ -239,6 +504,7 @@ export class GroupStore {
     dueDate?: string,
   ): Promise<GroupTask> {
     const task = await this.api.createTask(groupId, title, description, status, assignedTo, dueDate);
+    this.markTaskSelfOrigin(task.id);
     this.tasks.update((prev) => {
       if (prev.some((t) => t.id === task.id)) return prev;
       return [task, ...prev];
@@ -251,6 +517,7 @@ export class GroupStore {
   }
 
   async updateTask(groupId: string, taskId: string, updates: Partial<GroupTask>): Promise<GroupTask> {
+    this.markTaskSelfOrigin(taskId);
     const updated = await this.api.updateTask(groupId, taskId, updates);
     this.tasks.update((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
     return updated;

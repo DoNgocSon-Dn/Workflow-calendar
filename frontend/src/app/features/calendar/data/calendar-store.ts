@@ -5,6 +5,16 @@ import { environment } from '../../../../environments/environment';
 import { AuthStore } from '../../../core/auth/auth-store';
 import { Clock } from '../../../core/clock';
 import { NotificationKind, NotificationQueue } from '../../../core/realtime/notification-queue';
+import { NotificationService } from '../../../core/services/notification.service';
+import {
+  calendarInvitationDraft,
+  calendarMemberJoinedDraft,
+  eventCreatedDraft,
+  eventDeletedDraft,
+  eventInvitationDraft,
+  eventUpdatedDraft,
+  reminderDraft,
+} from '../../../core/services/notification-drafts';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { GroupStore } from '../../groups/data/group-store';
 import {
@@ -200,6 +210,7 @@ export class CalendarStore {
   private readonly authStore = inject(AuthStore);
   private readonly realtime = inject(RealtimeService);
   private readonly notificationQueue = inject(NotificationQueue);
+  private readonly notifications = inject(NotificationService);
   private readonly groupStore = inject(GroupStore);
 
   private readonly apiUrl = environment.apiUrl;
@@ -465,34 +476,61 @@ export class CalendarStore {
     });
   }
 
+  /** Trả về `false` khi sự kiện là tiếng vọng của thao tác do chính người dùng
+   *  vừa thực hiện — người gọi dùng nó để bỏ qua luôn cả Notification Center. */
   private notifyIfNotSelfOrigin(
     id: string,
     kind: NotificationKind,
     title: string,
     body: string,
-  ): void {
+  ): boolean {
     if (this.selfOriginIds.has(id)) {
       this.selfOriginIds.delete(id);
-      return;
+      return false;
     }
     this.notificationQueue.push({ eventId: id, title, body, kind });
+    return true;
   }
 
   private handleRemoteCreated(dto: EventApiDto): void {
     const event = toCalendarEvent(dto);
     this.upsertEvent(event);
-    this.notifyIfNotSelfOrigin(event.id, 'created', `Sự kiện mới: ${event.title}`, eventTimeLabel(event));
+    if (!this.notifyIfNotSelfOrigin(event.id, 'created', `Sự kiện mới: ${event.title}`, eventTimeLabel(event))) {
+      return;
+    }
+    this.notifications.ingest(
+      eventCreatedDraft({
+        eventId: event.id,
+        title: event.title,
+        timeLabel: eventTimeLabel(event),
+        start: dto.start,
+        end: dto.end,
+      }),
+    );
   }
 
   private handleRemoteUpdated(dto: EventApiDto): void {
     const event = toCalendarEvent(dto);
     this.upsertEvent(event);
-    this.notifyIfNotSelfOrigin(event.id, 'updated', `Đã cập nhật: ${event.title}`, eventTimeLabel(event));
+    if (!this.notifyIfNotSelfOrigin(event.id, 'updated', `Đã cập nhật: ${event.title}`, eventTimeLabel(event))) {
+      return;
+    }
+    this.notifications.ingest(
+      eventUpdatedDraft({
+        eventId: event.id,
+        title: event.title,
+        timeLabel: eventTimeLabel(event),
+        start: dto.start,
+        end: dto.end,
+      }),
+    );
   }
 
   private handleRemoteDeleted(id: string): void {
+    const title = this.events().find((e) => e.id === id)?.title ?? null;
     this.events.update((list) => list.filter((e) => e.id !== id));
-    this.notifyIfNotSelfOrigin(id, 'deleted', 'Sự kiện đã bị xoá', '');
+    if (!this.notifyIfNotSelfOrigin(id, 'deleted', 'Sự kiện đã bị xoá', '')) return;
+    this.notifications.ingest(eventDeletedDraft(id, title));
   }
 
   private async handleAttendeeInvited(payload: {
@@ -507,6 +545,8 @@ export class CalendarStore {
       body: '',
       kind: 'created',
     });
+    const title = this.events().find((e) => e.id === payload.eventId)?.title ?? null;
+    this.notifications.ingest(eventInvitationDraft(payload.eventId, title));
   }
 
   private handleAttendeeStatusChanged(payload: { eventId: string; attendee: AttendeeApiDto }): void {
@@ -529,6 +569,15 @@ export class CalendarStore {
         : `Mời bạn vào "${invite.calendarName}"`,
       kind: 'invite',
     });
+    this.notifications.ingest(
+      calendarInvitationDraft({
+        inviteId: invite.id,
+        calendarId: invite.calendarId,
+        calendarName: invite.calendarName,
+        inviterEmail: invite.inviterEmail ?? null,
+        createdAt: payload.invite.createdAt,
+      }),
+    );
   }
 
   private handleCalendarMemberJoined(payload: {
@@ -543,6 +592,9 @@ export class CalendarStore {
       body: `Một người vừa tham gia lịch "${calendar.name}"`,
       kind: 'invite',
     });
+    this.notifications.ingest(
+      calendarMemberJoinedDraft(payload.calendarId, calendar.name, payload.member.userId),
+    );
   }
 
   private handleReminderFire(payload: {
@@ -558,6 +610,7 @@ export class CalendarStore {
       body: payload.startAt ? formatTimeLabel(new Date(payload.startAt)) : '',
       kind: 'reminder',
     });
+    this.notifications.ingest(reminderDraft(payload));
   }
 
   private async refreshEvents(): Promise<void> {

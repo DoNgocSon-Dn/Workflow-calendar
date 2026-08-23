@@ -111,4 +111,10 @@ export class RealtimeGateway implements OnGatewayConnection {
   emitToUser(userId: string, event: string, payload: unknown): void {
     this.server.to(userRoomName(userId)).emit(event, payload);
   }
+
+  /** Gửi tới mọi client đang kết nối — dùng cho thông báo hệ thống dạng
+   *  broadcast (bảo trì, sự cố...). */
+  broadcast(event: string, payload: unknown): void {
+    this.server.emit(event, payload);
+  }
 }

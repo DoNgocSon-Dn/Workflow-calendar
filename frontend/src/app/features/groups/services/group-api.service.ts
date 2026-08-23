@@ -5,6 +5,7 @@ import { environment } from '../../../../environments/environment';
 import { AuthStore } from '../../../core/auth/auth-store';
 import {
   Group,
+  GroupInvite,
   GroupMember,
   GroupMessage,
   GroupMessageAttachment,
@@ -77,13 +78,41 @@ export class GroupApiService {
     );
   }
 
-  async inviteMember(groupId: string, email: string, role?: string): Promise<GroupMember> {
+  /** Tạo lời mời ở trạng thái pending — người được mời phải tự chấp nhận. */
+  async inviteMember(groupId: string, email: string, role?: string): Promise<GroupInvite> {
     return firstValueFrom(
-      this.http.post<GroupMember>(
+      this.http.post<GroupInvite>(
         `${environment.apiUrl}/groups/${groupId}/members/invite`,
         { email, role },
         { headers: this.authHeaders },
       ),
+    );
+  }
+
+  async getMyInvites(): Promise<GroupInvite[]> {
+    return firstValueFrom(
+      this.http.get<GroupInvite[]>(`${environment.apiUrl}/groups/invites/mine`, {
+        headers: this.authHeaders,
+      }),
+    );
+  }
+
+  async respondInvite(inviteId: string, status: 'accepted' | 'declined'): Promise<GroupInvite> {
+    return firstValueFrom(
+      this.http.patch<GroupInvite>(
+        `${environment.apiUrl}/groups/invites/${inviteId}/respond`,
+        { status },
+        { headers: this.authHeaders },
+      ),
+    );
+  }
+
+  /** Task được giao cho mình trên mọi nhóm — dùng để theo dõi deadline. */
+  async getMyTasks(): Promise<GroupTask[]> {
+    return firstValueFrom(
+      this.http.get<GroupTask[]>(`${environment.apiUrl}/groups/tasks/mine`, {
+        headers: this.authHeaders,
+      }),
     );
   }
 

@@ -1,0 +1,214 @@
+:host {
+  display: block;
+  /* @for track theo id nên node cũ được giữ nguyên — animation này chỉ chạy
+     cho item vừa được chèn thêm, không replay cho cả danh sách. */
+  animation: notifItemIn 0.24s ease-out both;
+}
+
+@keyframes notifItemIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host {
+    animation: none;
+  }
+}
+
+.notif-item {
+  position: relative;
+  display: flex;
+  gap: 0.7rem;
+  padding: 0.7rem 0.75rem 0.7rem 1.4rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.notif-item:hover,
+.notif-item:focus-visible {
+  background: var(--color-surface-hover);
+  outline: none;
+}
+
+.notif-item--unread {
+  background: var(--color-accent-soft);
+}
+
+.notif-item--unread:hover {
+  background: color-mix(in srgb, var(--color-accent-soft) 80%, var(--color-surface-hover));
+}
+
+.notif-item__dot {
+  position: absolute;
+  top: 1.05rem;
+  left: 0.5rem;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.notif-item__avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.notif-item__avatar {
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  color: #fff;
+  overflow: hidden;
+}
+
+.notif-item__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Chấm chỉ dấu "tin nhắn" gắn ở góc avatar — phân biệt nhanh với các loại
+   thông báo khác mà không cần đọc nội dung. */
+.notif-item__type-badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 1rem;
+  height: 1rem;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  border: 2px solid var(--color-surface);
+}
+
+.notif-item--unread .notif-item__type-badge {
+  border-color: color-mix(in srgb, var(--color-accent-soft) 55%, var(--color-surface));
+}
+
+.notif-item__avatar--accent {
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
+}
+
+.notif-item__avatar--success {
+  background: linear-gradient(135deg, var(--color-success) 0%, #059669 100%);
+}
+
+.notif-item__avatar--warning {
+  background: linear-gradient(135deg, var(--color-warning) 0%, #d97706 100%);
+}
+
+.notif-item__avatar--danger {
+  background: linear-gradient(135deg, var(--color-danger) 0%, #dc2626 100%);
+}
+
+.notif-item__avatar--neutral {
+  background: var(--color-text-tertiary);
+}
+
+.notif-item__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.notif-item__title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text);
+  overflow-wrap: break-word;
+}
+
+.notif-item__message {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  overflow-wrap: break-word;
+}
+
+/* Trích đoạn tin nhắn — lùi vào và bo nhẹ để đọc ra ngay là lời người khác
+   nói, không lẫn với dòng mô tả của thông báo. */
+.notif-item__preview {
+  margin: 0.3rem 0 0.1rem;
+  padding: 0.35rem 0.55rem;
+  border-left: 2px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  font-size: 0.79rem;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  overflow-wrap: break-word;
+}
+
+.notif-item__time {
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  color: var(--color-text-tertiary);
+}
+
+.notif-item__status {
+  margin-top: 0.1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+}
+
+.notif-item__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.notif-item__action {
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.notif-item__action:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.notif-item__action--accept {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.notif-item__action--accept:hover {
+  background: var(--color-accent-hover);
+}
+
+.notif-item__action--decline {
+  background: var(--color-surface-hover-strong);
+  color: var(--color-text-secondary);
+}
+
+.notif-item__action--decline:hover {
+  background: var(--color-border-strong);
+}

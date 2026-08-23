@@ -14,6 +14,8 @@ export interface AppConfig {
     gmailUser: string;
     gmailAppPassword: string;
   };
+  /** Token bảo vệ endpoint gửi thông báo hệ thống. Để trống = tắt endpoint. */
+  systemNotificationToken: string;
 }
 
 export default (): AppConfig => {
@@ -36,5 +38,6 @@ export default (): AppConfig => {
       gmailUser: process.env.GMAIL_USER ?? '',
       gmailAppPassword: process.env.GMAIL_APP_PASSWORD ?? '',
     },
+    systemNotificationToken: process.env.SYSTEM_NOTIFICATION_TOKEN ?? '',
   };
 };

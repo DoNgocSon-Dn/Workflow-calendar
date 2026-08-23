@@ -27,6 +27,19 @@ export interface GroupMember {
   email?: string;
 }
 
+export type GroupInviteStatus = 'pending' | 'accepted' | 'declined';
+
+export interface GroupInvite {
+  id: string;
+  groupId: string;
+  groupName: string;
+  groupColor: string;
+  role: string;
+  status: GroupInviteStatus;
+  createdAt: string;
+  inviterEmail: string | null;
+}
+
 export interface GroupTask {
   id: string;
   groupId: string;
