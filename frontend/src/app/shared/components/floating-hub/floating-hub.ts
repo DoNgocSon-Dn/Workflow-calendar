@@ -2,8 +2,12 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, output, s
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { AuthStore } from '../../../core/auth/auth-store';
-import { CalendarStore } from '../../../features/calendar/data/calendar-store';
+import { AiChatHistoryEntry, CalendarStore } from '../../../features/calendar/data/calendar-store';
 import { Note } from '../../../features/calendar/models/calendar.models';
+
+/** Số lượt chat gần nhất gửi kèm lên backend làm ngữ cảnh — đủ để AI hiểu các
+ *  câu hỏi tiếp nối ("còn ngày mai thì sao?") mà không làm phình prompt. */
+const CHAT_HISTORY_TURNS = 10;
 
 /**
  * One draggable floating bubble that combines the personal-notes widget and
@@ -286,6 +290,12 @@ export class FloatingHub {
       return;
     }
 
+    // Chụp lại lịch sử TRƯỚC khi thêm tin nhắn user hiện tại — tránh gửi trùng
+    // câu vừa hỏi trong cả `message` lẫn `history`.
+    const history: AiChatHistoryEntry[] = this.messages()
+      .slice(-CHAT_HISTORY_TURNS * 2)
+      .map((m) => ({ role: m.role, content: m.text }));
+
     this.pushMessage('user', text);
     this.draft.set('');
     this.sending.set(true);
@@ -298,10 +308,12 @@ export class FloatingHub {
     }
 
     try {
-      const result = await this.store.sendAiChat(text, calendarId);
+      const result = await this.store.sendAiChat(text, calendarId, history);
       if (result.intent === 'create_event') {
         this.lastCreatedEventId.set(result.event.id);
         this.pushMessage('assistant', `Đã tạo sự kiện:\n${formatEventPreview(result.event)}`);
+      } else if (result.intent === 'chat') {
+        this.pushMessage('assistant', result.reply);
       } else {
         this.pushMessage(
           'assistant',

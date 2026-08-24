@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { AppConfig } from '../config/configuration';
 
 export interface AiParsedIntent {
-  intent: 'create_event' | 'unclear';
+  intent: 'create_event' | 'chat' | 'unclear';
   title?: string;
   start_at?: string;
   end_at?: string;
@@ -12,6 +12,26 @@ export interface AiParsedIntent {
   allDay?: boolean;
   attendees?: string[];
   recurrence_rule?: string | null;
+  /** Câu trả lời tự nhiên khi intent là 'chat' (hỏi về lịch hoặc trò chuyện chung). */
+  reply?: string;
+}
+
+export interface AiChatHistoryEntry {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface AiEventSummary {
+  title: string;
+  start: string;
+  end: string;
+  location?: string;
+  allDay?: boolean;
+}
+
+export interface AiChatContext {
+  history: AiChatHistoryEntry[];
+  events: AiEventSummary[];
 }
 
 interface GeminiResponse {
@@ -24,26 +44,35 @@ export class AiService {
 
   constructor(private readonly configService: ConfigService<AppConfig, true>) {}
 
-  async parseEventFromText(userText: string): Promise<AiParsedIntent> {
+  async chat(userText: string, context: AiChatContext): Promise<AiParsedIntent> {
     const { geminiApiKey } = this.configService.get('ai', { infer: true });
 
-    // 1. Thử gọi Gemini AI nếu có key
+    // 1. Thử gọi Gemini AI nếu có key — hiểu ngôn ngữ tự nhiên thật sự và có
+    // thể trò chuyện/trả lời về lịch, không chỉ tạo sự kiện.
     if (geminiApiKey && geminiApiKey.trim().length > 0) {
       try {
-        const geminiResult = await this.callGemini(userText, geminiApiKey.trim());
-        if (geminiResult && geminiResult.intent === 'create_event' && geminiResult.start_at) {
-          return geminiResult;
+        const geminiResult = await this.callGemini(userText, geminiApiKey.trim(), context);
+        if (geminiResult) {
+          if (geminiResult.intent === 'create_event' && geminiResult.start_at) return geminiResult;
+          if (geminiResult.intent === 'chat' && geminiResult.reply) return geminiResult;
+          if (geminiResult.intent === 'unclear') return geminiResult;
         }
       } catch (err: any) {
         this.logger.warn(`Gemini AI parsing failed, falling back to local NLP: ${err.message}`);
       }
     }
 
-    // 2. Fallback sang bộ phân tích ngôn ngữ tự nhiên tiếng Việt thông minh
+    // 2. Fallback sang bộ phân tích ngôn ngữ tự nhiên tiếng Việt thông minh —
+    // chỉ nhận diện được ý định tạo sự kiện, không trò chuyện tự do được
+    // (cần Gemini để hiểu ngôn ngữ tự nhiên thật sự).
     return this.parseLocalVietnameseEvent(userText);
   }
 
-  private async callGemini(userText: string, apiKey: string): Promise<AiParsedIntent | null> {
+  private async callGemini(
+    userText: string,
+    apiKey: string,
+    context: AiChatContext,
+  ): Promise<AiParsedIntent | null> {
     const now = new Date();
     // Giờ địa phương Việt Nam (UTC+7)
     const vnTimeStr = new Intl.DateTimeFormat('vi-VN', {
@@ -52,12 +81,39 @@ export class AiService {
       timeZone: 'Asia/Ho_Chi_Minh',
     }).format(now);
 
-    const systemPrompt = `Bạn là trợ lý AI chuyên phân tích yêu cầu đặt lịch hẹn/sự kiện bằng tiếng Việt hoặc tiếng Anh.
+    const eventsBlock =
+      context.events.length > 0
+        ? context.events
+            .map((e) => {
+              const range = e.allDay
+                ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium', timeZone: 'Asia/Ho_Chi_Minh' }).format(
+                    new Date(e.start),
+                  )
+                : `${new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(e.start))} - ${new Intl.DateTimeFormat('vi-VN', { timeStyle: 'short', timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(e.end))}`;
+              return `- "${e.title}" (${range}${e.location ? `, tại ${e.location}` : ''})`;
+            })
+            .join('\n')
+        : '(không có sự kiện nào trong khoảng thời gian gần đây)';
+
+    const historyBlock =
+      context.history.length > 0
+        ? context.history.map((h) => `${h.role === 'user' ? 'Người dùng' : 'Trợ lý'}: ${h.content}`).join('\n')
+        : '(chưa có tin nhắn trước đó)';
+
+    const systemPrompt = `Bạn là trợ lý AI lịch làm việc, có thể vừa TẠO SỰ KIỆN vừa TRÒ CHUYỆN tự nhiên (trả lời câu hỏi về lịch của người dùng hoặc trò chuyện chung) bằng tiếng Việt hoặc tiếng Anh — trả lời theo đúng ngôn ngữ người dùng đang dùng.
 Thời điểm hiện tại: ${vnTimeStr} (ISO: ${now.toISOString()}). Múi giờ mặc định: Asia/Ho_Chi_Minh (+07:00).
 
-Nhiệm vụ: Trích xuất thông tin sự kiện từ câu nói của người dùng và trả về DUY NHẤT một JSON object theo schema sau (không thêm markdown hoặc text nào khác ngoài JSON):
+Lịch của người dùng (các sự kiện gần đây, đã sắp theo thời gian):
+${eventsBlock}
+
+Lịch sử hội thoại gần nhất trong phiên chat này:
+${historyBlock}
+
+Nhiệm vụ: Đọc câu nói MỚI NHẤT của người dùng, xác định đúng MỘT trong ba ý định sau, và trả về DUY NHẤT một JSON object (không thêm markdown hoặc text nào khác ngoài JSON):
+
+1) Người dùng muốn TẠO một sự kiện/lịch hẹn mới (nói rõ hoặc ngầm hiểu được ngày/giờ):
 {
-  "intent": "create_event" | "unclear",
+  "intent": "create_event",
   "title": "tiêu đề sự kiện — CHỈ nội dung hoạt động chính, ngắn gọn tự nhiên. Loại bỏ hoàn toàn các từ/cụm mang tính yêu cầu-mệnh lệnh (vd \"tạo cho tôi\", \"giúp tôi\", \"nhắc tôi\", \"lên lịch\", \"thêm lịch\") và loại bỏ mọi cụm chỉ ngày/giờ đã được tách sang start_at/end_at (vd \"sáng mai\", \"9h\", \"thứ 2 tuần sau\") — không lặp lại chúng trong title.",
   "start_at": "ISO 8601 string có offset múi giờ +07:00 hoặc Z",
   "end_at": "ISO 8601 string (mặc định nếu không nói rõ thời lượng thì sau start_at 1 giờ)",
@@ -68,10 +124,21 @@ Nhiệm vụ: Trích xuất thông tin sự kiện từ câu nói của người
   "recurrence_rule": null
 }
 
-Nếu câu nói không thể suy luận ra ngày/giờ hợp lý, trả về:
-{ "intent": "unclear", "title": "tiêu đề đoán được (nếu có)" }`;
+2) Người dùng hỏi về lịch của họ (vd "hôm nay tôi có gì", "tuần sau rảnh không", "cuộc họp lúc mấy giờ") HOẶC chỉ đang trò chuyện/hỏi đáp chung (chào hỏi, hỏi kiến thức, tâm sự...) — KHÔNG có ý định tạo sự kiện mới:
+{
+  "intent": "chat",
+  "reply": "câu trả lời tự nhiên, thân thiện, ngắn gọn (2-4 câu). Nếu là câu hỏi về lịch, dựa CHÍNH XÁC vào danh sách sự kiện ở trên để trả lời, không bịa thêm sự kiện không có trong danh sách."
+}
 
-    const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-flash'];
+3) Câu nói có vẻ muốn tạo sự kiện nhưng thiếu thông tin ngày/giờ rõ ràng để suy luận:
+{ "intent": "unclear", "title": "tiêu đề đoán được (nếu có)" }
+
+Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự kiện — mọi câu hỏi/trò chuyện khác đều dùng "chat".`;
+
+    // gemini-2.0-flash/1.5-flash/2.5-flash đã bị Google khai tử (404 NOT_FOUND) —
+    // dùng alias "-latest" làm chính (luôn trỏ tới bản flash mới nhất) với một
+    // bản ghim cụ thể làm dự phòng nếu alias đổi hành vi bất ngờ.
+    const models = ['gemini-flash-latest', 'gemini-3.6-flash'];
 
     for (const model of models) {
       try {
@@ -82,7 +149,7 @@ Nếu câu nói không thể suy luận ra ngày/giờ hợp lý, trả về:
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               contents: [
-                { parts: [{ text: `${systemPrompt}\n\nCâu người dùng: "${userText}"` }] },
+                { parts: [{ text: `${systemPrompt}\n\nCâu người dùng (mới nhất, cần xử lý): "${userText}"` }] },
               ],
               generationConfig: { responseMimeType: 'application/json' },
             }),

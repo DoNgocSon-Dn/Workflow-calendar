@@ -131,6 +131,10 @@
 
 .calendar-list-header .calendar-list-title {
   margin: 0.5rem 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .add-calendar-btn {

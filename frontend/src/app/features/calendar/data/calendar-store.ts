@@ -942,9 +942,13 @@ export class CalendarStore {
     await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/notes/${id}`));
   }
 
-  async sendAiChat(message: string, calendarId: string): Promise<AiChatResult> {
+  async sendAiChat(
+    message: string,
+    calendarId: string,
+    history: readonly AiChatHistoryEntry[] = [],
+  ): Promise<AiChatResult> {
     const result = await firstValueFrom(
-      this.http.post<AiChatResult>(`${this.apiUrl}/ai/chat`, { message, calendarId }),
+      this.http.post<AiChatResult>(`${this.apiUrl}/ai/chat`, { message, calendarId, history }),
     );
     if (result.intent === 'create_event') {
       this.markSelfOrigin(result.event.id);
@@ -956,4 +960,10 @@ export class CalendarStore {
 
 export type AiChatResult =
   | { intent: 'create_event'; event: EventApiDto }
+  | { intent: 'chat'; reply: string }
   | { intent: 'unclear'; title?: string; message: string };
+
+export interface AiChatHistoryEntry {
+  readonly role: 'user' | 'assistant';
+  readonly content: string;
+}

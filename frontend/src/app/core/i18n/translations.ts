@@ -24,7 +24,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
 
     // --- sidebar ------------------------------------------------------------
     'sidebar.createEvent': 'Tạo sự kiện',
-    'sidebar.workspaces': 'Nhóm làm việc (Workspaces)',
+    'sidebar.workspaces': 'Nhóm làm việc',
     'sidebar.createWorkspace': 'Tạo Nhóm làm việc mới',
     'sidebar.myCalendars': 'Lịch của tôi',
     'sidebar.createCalendar': 'Tạo lịch riêng',
@@ -105,7 +105,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'hub.aiTab': '✨ Trợ lý AI',
     'hub.notePlaceholder': 'Viết ghi chú mới…',
     'hub.emptyNotes': 'Chưa có ghi chú nào.',
-    'hub.aiHint': 'Gõ câu tự nhiên để lên lịch hoặc chọn gợi ý bên dưới:',
+    'hub.aiHint': 'Lên lịch, hỏi về lịch của bạn, hoặc trò chuyện — gõ câu tự nhiên hoặc chọn gợi ý bên dưới:',
     'hub.aiPlaceholder': 'Nhập yêu cầu…',
     'hub.openManualForm': 'Mở form nhập tay',
 
@@ -363,7 +363,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'hub.aiTab': '✨ AI Assistant',
     'hub.notePlaceholder': 'Write a new note…',
     'hub.emptyNotes': 'No notes yet.',
-    'hub.aiHint': 'Type a natural sentence to schedule something, or pick a suggestion below:',
+    'hub.aiHint': 'Schedule something, ask about your calendar, or just chat — type naturally or pick a suggestion below:',
     'hub.aiPlaceholder': 'Type a request…',
     'hub.openManualForm': 'Open manual form',
 
