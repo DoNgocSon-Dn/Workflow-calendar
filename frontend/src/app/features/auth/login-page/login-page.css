@@ -24,6 +24,30 @@
   --danger: #ff8a8a;
   --success: #5fd6a4;
 
+  /* Token của TẦNG KHÔNG KHÍ (nền, quầng sáng, quỹ đạo, hạt, bề mặt thẻ).
+     Tách riêng khỏi token màu chữ vì hai theme cần công thức ánh sáng KHÁC
+     nhau, không phải đảo màu: nền tối thì ánh sáng cộng vào, nền sáng thì
+     bóng và sắc lạnh trừ đi. */
+  --login-wash-top: rgba(37, 99, 235, 0.1);
+  --login-wash-mid: var(--bg-2);
+  --login-glow: rgba(37, 99, 235, 0.22);
+  --login-glow-2: rgba(37, 99, 235, 0.14);
+  --login-glow-blur: 40px;
+  --login-halo: rgba(37, 99, 235, 0.2);
+  --login-orbit: rgba(96, 165, 250, 0.16);
+  --login-orbit-soft: rgba(96, 165, 250, 0.11);
+  --login-orbit-strong: rgba(96, 165, 250, 0.22);
+  --login-orbit-dot: #93c5fd;
+  --login-particle: rgba(96, 165, 250, 0.85);
+  --login-card-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 2px 6px rgba(0, 0, 0, 0.4),
+    0 30px 70px rgba(0, 0, 0, 0.5),
+    0 0 60px rgba(37, 99, 235, 0.08);
+  --login-card-edge: rgba(147, 197, 253, 0.32);
+  --login-card-sheen: rgba(255, 255, 255, 0.055);
+  --login-btn-hover-shadow: rgba(0, 0, 0, 0.42);
+
   --font-heading: 'Plus Jakarta Sans', 'Be Vietnam Pro', 'Inter', system-ui, -apple-system, sans-serif;
   --font-sans: 'Inter', 'Be Vietnam Pro', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 
@@ -40,18 +64,43 @@
 
 .login-page[data-theme='light'],
 :host-context([data-theme='light']) .login-page {
-  --bg: #ffffff;
-  --bg-2: #f1f2f5;
+  /* Nền KHÔNG dùng trắng tinh: hơi lạnh và tối hơn thẻ một bậc, để thẻ
+     trắng nổi lên được. Trắng trên trắng thì thẻ chìm mất. */
+  --bg: #eef1f7;
+  --bg-2: #e4e9f2;
   --ink: #101216;
   --ink-dim: #5b5f68;
   --accent: #2563eb;
   --accent-text: #1d4ed8;
   --accent-ink: #ffffff;
   --accent-dim: rgba(37, 99, 235, 0.1);
-  --line: rgba(16, 18, 22, 0.13);
-  --card: #f7f8fa;
+  --line: rgba(16, 18, 22, 0.1);
+  --card: #ffffff;
   --danger: #c62828;
   --success: #0f7a51;
+
+  /* Nền sáng: ánh sáng phải LAN RỘNG và nhạt hơn nhiều, blur lớn hơn — trên
+     nền sáng, một quầng đậm sẽ đọc thành vết bẩn chứ không thành ánh sáng. */
+  --login-wash-top: rgba(37, 99, 235, 0.09);
+  --login-wash-mid: #e8edf6;
+  --login-glow: rgba(59, 130, 246, 0.16);
+  --login-glow-2: rgba(99, 102, 241, 0.1);
+  --login-glow-blur: 70px;
+  --login-halo: rgba(59, 130, 246, 0.14);
+  --login-orbit: rgba(37, 99, 235, 0.16);
+  --login-orbit-soft: rgba(37, 99, 235, 0.1);
+  --login-orbit-strong: rgba(37, 99, 235, 0.24);
+  --login-orbit-dot: #2563eb;
+  /* Hạt sáng phải rất mờ, nếu không sẽ thành chấm bẩn trên nền sáng. */
+  --login-particle: rgba(37, 99, 235, 0.3);
+  --login-card-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 1px 2px rgba(16, 24, 40, 0.06),
+    0 18px 40px rgba(16, 24, 40, 0.1),
+    0 0 60px rgba(37, 99, 235, 0.07);
+  --login-card-edge: rgba(37, 99, 235, 0.22);
+  --login-card-sheen: rgba(37, 99, 235, 0.045);
+  --login-btn-hover-shadow: rgba(16, 24, 40, 0.14);
 }
 
 .login-page ::selection {
@@ -166,8 +215,8 @@
   max-width: 760px;
   max-height: 760px;
   border-radius: 50%;
-  background: rgba(37, 99, 235, 0.22);
-  filter: blur(40px);
+  background: var(--login-glow);
+  filter: blur(var(--login-glow-blur));
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -203,7 +252,7 @@
 .particle {
   position: absolute;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--login-particle);
   opacity: 0;
   animation: particleFloat linear infinite;
 }
@@ -366,15 +415,11 @@ main {
   border-radius: 24px;
   padding: 48px 38px;
   box-shadow: 0 40px 80px rgba(0, 0, 0, 0.35);
-  opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.7s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.auth-card.revealed {
-  opacity: 1;
-  transform: translateY(0);
-}
+/* Trạng thái vào màn của thẻ do GSAP nắm (xem playEntrance). KHÔNG đặt
+   transition cho opacity/transform ở đây: GSAP ghi inline style mỗi frame,
+   gặp transition sẽ bị níu lại và animation thành lờ đờ. */
 
 .auth-kicker {
   font-family: var(--font-heading);
@@ -549,4 +594,432 @@ main {
   .preloader {
     transition: none !important;
   }
+}
+
+/* ============================================================
+   REDESIGN — không gian có chiều sâu + thẻ đăng nhập là tiêu điểm
+   Dùng lại đúng ngôn ngữ của landing: phân lớp, blur→sharp, chuyển
+   động rất chậm, màu chỉ dùng làm điểm nhấn.
+   ============================================================ */
+
+/* --- Lớp 1: nền có độ sâu, không phẳng tuyệt đối --- */
+.depth-wash {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 42%, var(--login-wash-top), transparent 68%),
+    linear-gradient(180deg, var(--bg) 0%, var(--login-wash-mid) 55%, var(--bg) 100%);
+}
+
+/* --- Lớp 2: quầng sáng thứ hai đặt lệch, phá thế đối xứng cứng --- */
+.orb--offset {
+  width: 34vw;
+  height: 34vw;
+  max-width: 460px;
+  max-height: 460px;
+  top: 26%;
+  left: 68%;
+  background: var(--login-glow-2);
+  filter: blur(calc(var(--login-glow-blur) + 30px));
+  animation-duration: 9s;
+  animation-direction: alternate;
+}
+
+/* --- Lớp 3: motif "quỹ đạo thời gian" của Workflow ---------------
+   Cung tròn HỞ (dùng dash dài + khoảng hở) thay vì vòng khép kín, để
+   gợi nhịp lịch trình đang chạy chứ không thành vòng radar. */
+.orbit-motif {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(96vw, 1020px);
+  height: min(96vw, 1020px);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  overflow: visible;
+}
+
+.orbit-arc {
+  fill: none;
+  stroke: var(--login-orbit);
+  stroke-width: 1;
+  transform-origin: 400px 400px;
+}
+
+.orbit-arc--a {
+  stroke-dasharray: 210 120;
+  animation: orbitDrift 90s linear infinite;
+}
+
+.orbit-arc--b {
+  stroke-dasharray: 90 300;
+  stroke: var(--login-orbit-soft);
+  animation: orbitDrift 140s linear infinite reverse;
+}
+
+.orbit-arc--c {
+  stroke-dasharray: 40 90;
+  stroke: var(--login-orbit-soft);
+  animation: orbitDrift 70s linear infinite;
+}
+
+@keyframes orbitDrift {
+  to { transform: rotate(360deg); }
+}
+
+/* Vạch chia giờ — dấu hiệu "thời gian" rõ nhất trong motif, nhưng để mờ
+   để không đọc thành mặt đồng hồ. */
+.orbit-motif__ticks line {
+  stroke: var(--login-orbit-strong);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.orbit-motif__ticks {
+  transform-origin: 400px 400px;
+  animation: orbitDrift 220s linear infinite;
+}
+
+/* Một điểm sáng duy nhất chạy trên quỹ đạo: đủ để không gian "còn sống",
+   không thành mưa sao. */
+.orbit-motif__traveller {
+  transform-origin: 400px 400px;
+  animation: orbitDrift 26s linear infinite;
+}
+
+.orbit-dot {
+  fill: var(--login-orbit-dot);
+  filter: drop-shadow(0 0 6px var(--login-orbit-strong));
+}
+
+/* --- Thẻ đăng nhập: bề mặt tiêu điểm, không còn là cái hộp ------- */
+.auth-stage {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Quầng sáng nằm SAU thẻ, tạo cảm giác thẻ nổi lên khỏi nền thay vì
+   dán lên nền. */
+.auth-halo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 150%;
+  max-width: 720px;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--login-halo), transparent 62%);
+  filter: blur(30px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.auth-card {
+  position: relative;
+  isolation: isolate;
+  /* Bóng nhiều tầng: một tầng sát mép cho khối, một tầng đổ xa cho độ cao,
+     một tầng xanh rất nhạt để thẻ dính vào không khí của trang. */
+  box-shadow: var(--login-card-shadow);
+  will-change: transform, opacity;
+}
+
+/* Viền gradient mảnh: sáng ở mép trên, tắt dần xuống dưới — như vật liệu
+   bắt sáng từ nguồn sáng phía trên. */
+.auth-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    160deg,
+    var(--login-card-edge),
+    var(--login-card-sheen) 32%,
+    transparent 62%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Vệt sáng nhẹ ở góc trên trái, giữ nguyên (không quét qua lại) để không
+   gây phân tâm khi người dùng đang đọc. */
+.auth-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  border-radius: inherit inherit 0 0;
+  background: radial-gradient(ellipse 70% 100% at 22% 0%, var(--login-card-sheen), transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Các phần bên trong thẻ vào theo lớp, không hiện cùng lúc. */
+.auth-kicker,
+.auth-card h1,
+.auth-card .sub,
+.btn-oauth,
+.auth-footer {
+  opacity: 0;
+  transform: translateY(14px);
+  filter: blur(6px);
+  will-change: transform, opacity, filter;
+}
+
+/* --- Nút Google: hành động quan trọng nhất trang --- */
+.btn-oauth {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.22s cubic-bezier(0.22, 0.61, 0.24, 1),
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    background 0.22s ease;
+}
+
+.btn-oauth:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: var(--login-card-edge);
+  box-shadow:
+    0 8px 22px var(--login-btn-hover-shadow),
+    0 0 26px var(--login-halo);
+}
+
+.btn-oauth:active:not(:disabled) {
+  transform: translateY(0) scale(0.985);
+  transition-duration: 0.09s;
+}
+
+.btn-oauth:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+  /* Mobile: bớt lớp nền cho nhẹ và giữ chữ dễ đọc. */
+  .orbit-motif { opacity: 0.5 !important; }
+  .orb--offset { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbit-arc,
+  .orbit-motif__ticks,
+  .orbit-motif__traveller,
+  .orb,
+  .orb--offset,
+  .grid-ring,
+  .particle {
+    animation: none !important;
+  }
+  .btn-oauth:hover:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* ============================================================
+   Chuyển theme: đổi ÁNH SÁNG của cùng một không gian, không phải
+   nhảy sang trang khác. Liệt kê property cụ thể — dùng
+   `transition: all` sẽ kéo theo cả transform đang do GSAP điều
+   khiển và làm animation giật.
+   ============================================================ */
+.depth-wash,
+.orb,
+.auth-halo {
+  transition: background 0.55s ease, filter 0.55s ease;
+}
+
+.orbit-arc,
+.orbit-motif__ticks line,
+.orbit-dot {
+  transition: stroke 0.55s ease, fill 0.55s ease;
+}
+
+.auth-card {
+  transition: background 0.45s ease, border-color 0.45s ease, box-shadow 0.55s ease;
+}
+
+.particle {
+  transition: background 0.55s ease;
+}
+
+/* --- Header: gắn vào trang thay vì nổi lềnh bềnh bên trên ------- */
+.login-nav {
+  position: relative;
+  z-index: 3;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: border-color 0.45s ease, background 0.45s ease;
+}
+
+/* Đường phân cách mảnh dần về hai mép — cứng cả dải sẽ cắt đôi trang. */
+.login-nav::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line) 18%, var(--line) 82%, transparent);
+  pointer-events: none;
+}
+
+.logo {
+  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.22, 0.61, 0.24, 1);
+}
+
+.logo:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+.back-link {
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.back-link:hover {
+  transform: translateX(-2px);
+}
+
+/* Nút theme: hai icon xoay đổi chỗ cho nhau, kèm quầng sáng rất nhẹ khi hover
+   để thấy nó là nút bấm chứ không phải icon trang trí. */
+.theme-toggle {
+  position: relative;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.05);
+  border-color: var(--login-card-edge);
+  box-shadow: 0 0 18px var(--login-halo);
+}
+
+.theme-toggle:active {
+  transform: scale(0.96);
+}
+
+.theme-toggle .icon-moon,
+.theme-toggle .icon-sun {
+  transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.22, 0.61, 0.24, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .depth-wash,
+  .orb,
+  .auth-halo,
+  .orbit-arc,
+  .auth-card,
+  .particle {
+    transition-duration: 0.2s;
+  }
+  .theme-toggle:hover,
+  .logo:hover,
+  .back-link:hover {
+    transform: none;
+  }
+}
+
+/* ============================================================
+   Rời cảnh khi bấm "Tiếp tục với Google"
+   ============================================================ */
+
+/* Perspective đặt ở TẦNG THẺ, không đặt lên .login-page: perspective tạo
+   containing block mới, sẽ làm .backdrop { position: fixed } bị neo sai. */
+.auth-stage {
+  perspective: 1100px;
+  perspective-origin: 50% 45%;
+}
+
+.auth-card {
+  transform-style: preserve-3d;
+}
+
+/* Vệt sáng chạy ngang nút — thay cho spinner, để trạng thái "đang xử lý" nằm
+   trong chính chuyển cảnh chứ không phải một vòng xoay dán thêm. */
+.btn-oauth::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    var(--login-card-edge) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.is-departing .btn-oauth::after {
+  animation: btnSweep 0.55s cubic-bezier(0.4, 0, 0.4, 1) forwards;
+}
+
+@keyframes btnSweep {
+  0%   { transform: translateX(-100%); opacity: 0; }
+  35%  { opacity: 1; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+
+/* Đang rời cảnh thì khoá tương tác, tránh bấm thêm trong lúc animation chạy. */
+.is-departing .auth-card,
+.is-departing .login-nav {
+  pointer-events: none;
+}
+
+/* Nền dừng "thở" khi đang rời đi: hai chuyển động chồng nhau sẽ đọc thành
+   rung, không thành chiều sâu. */
+.is-departing .orb,
+.is-departing .orb--offset,
+.is-departing .grid-ring,
+.is-departing .orbit-arc,
+.is-departing .orbit-motif__ticks,
+.is-departing .orbit-motif__traveller,
+.is-departing .particle {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .is-departing .btn-oauth::after {
+    animation: none;
+  }
+}
+
+/* Đốm sáng khởi phát: sinh ra ở vị trí nút Google (đáy thẻ) rồi lan ngược lên
+   — thứ nối các pha lại thành một chuỗi nhân-quả thay vì nhiều animation rời. */
+.card-ignition {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  width: 120%;
+  aspect-ratio: 1;
+  transform: translate(-50%, 50%) scale(0);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--login-halo) 0%, transparent 62%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Sweep nhanh hơn để nằm gọn trong pha đầu, không kéo dài sang pha sau. */
+.is-departing .btn-oauth::after {
+  animation-duration: 0.3s;
+}
+
+/* Thẻ phóng tới mức phủ kín khung nên sẽ vượt ra ngoài mép trang — khoá cuộn
+   trong lúc rời cảnh, nếu không sẽ thấy thanh cuộn nhấp nháy giữa animation. */
+.is-departing {
+  overflow: hidden;
+}
+
+.is-departing .auth-stage,
+.is-departing main {
+  overflow: visible;
 }
