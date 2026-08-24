@@ -75,6 +75,10 @@ export class SettingsModal {
     void this.soundService.preview();
   }
 
+  previewChatSound(): void {
+    void this.soundService.preview('chat');
+  }
+
   onNameInput(value: string): void {
     this.nameDraft.set(value);
     this.nameSaved.set(false);

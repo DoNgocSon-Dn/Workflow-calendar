@@ -52,7 +52,7 @@ export class NotificationService {
 
     // Âm báo là bước CUỐI và hoàn toàn phụ: state đã cập nhật xong ở trên, nên
     // dù âm thanh lỗi hay bị trình duyệt chặn thì thông báo vẫn hiện bình thường.
-    this.sound.notify();
+    this.sound.notify(notification);
     return true;
   }
 
