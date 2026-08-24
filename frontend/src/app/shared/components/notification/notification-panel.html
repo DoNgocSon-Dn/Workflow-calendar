@@ -1,9 +1,20 @@
 <div class="notif-panel" role="menu" aria-label="Thông báo">
+  @if (realtimeOffline()) {
+    <p class="notif-panel__offline" role="status">
+      Mất kết nối máy chủ — thông báo mới tạm dừng cho tới khi kết nối lại.
+    </p>
+  }
+
   <div class="notif-panel__header">
     <div class="notif-panel__title-row">
+      <span class="notif-panel__header-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="15" height="15">
+          <path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1z" />
+        </svg>
+      </span>
       <h2 class="notif-panel__title">Thông báo</h2>
       @if (unreadCount() > 0) {
-        <span class="notif-panel__unread-pill">{{ unreadCount() }} chưa đọc</span>
+        <span class="notif-panel__unread-pill">{{ unreadCount() }} mới</span>
       }
     </div>
     <div class="notif-panel__header-actions">
@@ -87,24 +98,31 @@
   <div class="notif-panel__list" #list (scroll)="onListScroll()">
     @if (filtered().length === 0) {
       <div class="notif-panel__empty">
-        <svg viewBox="0 0 24 24" width="38" height="38" class="notif-panel__empty-icon" aria-hidden="true">
-          <path
-            fill="currentColor"
-            d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1z"
-          />
-        </svg>
+        <span class="notif-panel__empty-art" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="26" height="26">
+            <path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1z" />
+          </svg>
+        </span>
         <p class="notif-panel__empty-title">Không có thông báo mới</p>
-        <p class="notif-panel__empty-body">Bạn sẽ thấy các hoạt động mới tại đây.</p>
+        <p class="notif-panel__empty-body">Bạn đã xem hết hoạt động hôm nay.</p>
       </div>
     } @else {
-      @for (n of filtered(); track n.id) {
-        <app-notification-item
-          [notification]="n"
-          [responding]="respondingId() === n.id"
-          (activate)="onActivate($event)"
-          (respond)="onRespond($event)"
-          (dismiss)="onDismiss($event)"
-        />
+      @for (section of groupedSections(); track section.key) {
+        <p class="notif-panel__section-label">
+          {{ section.label }}
+          <span class="notif-panel__section-count">{{ section.items.length }}</span>
+        </p>
+        @for (n of section.items; track n.id) {
+          <app-notification-item
+            class="notif-panel__row"
+            [style.--stagger]="$index"
+            [notification]="n"
+            [responding]="respondingId() === n.id"
+            (activate)="onActivate($event)"
+            (respond)="onRespond($event)"
+            (dismiss)="onDismiss($event)"
+          />
+        }
       }
     }
   </div>

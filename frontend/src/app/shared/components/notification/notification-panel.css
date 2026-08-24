@@ -328,3 +328,146 @@
     width: 20rem;
   }
 }
+
+/* Cảnh báo mất kết nối — dùng tông cảnh báo nhẹ, không đỏ gắt, vì đây là
+   trạng thái tạm thời sẽ tự phục hồi chứ không phải lỗi của người dùng. */
+.notif-panel__offline {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0.5rem 1rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-warning) 25%, transparent);
+}
+
+/* ===== Redesign: header có điểm nhấn, nhóm mục, stagger, scrollbar ===== */
+
+.notif-panel__header-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 0.55rem;
+  background: linear-gradient(140deg, var(--color-accent-soft), transparent 80%),
+    var(--color-accent-soft);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 22%, transparent);
+  color: var(--color-accent);
+}
+
+/* Badge "N mới" thở nhẹ một nhịp khi số đổi — đủ để mắt bắt được, không nhấp
+   nháy liên tục gây khó chịu. */
+.notif-panel__unread-pill {
+  animation: pillPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pillPop {
+  0%   { transform: scale(0.82); opacity: 0.4; }
+  60%  { transform: scale(1.06); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Nhãn nhóm: dùng spacing + chữ nhỏ in hoa thay cho đường kẻ ngang, để danh
+   sách không bị cắt vụn. */
+.notif-panel__section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.7rem 0 0.25rem;
+  padding: 0 0.55rem;
+  font-size: 0.685rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.notif-panel__list > .notif-panel__section-label:first-child {
+  margin-top: 0.15rem;
+}
+
+.notif-panel__section-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.3rem;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-hover-strong);
+  color: var(--color-text-tertiary);
+  font-size: 0.65rem;
+  letter-spacing: 0;
+}
+
+/* Stagger: mỗi card vào chậm hơn card trước một nhịp rất ngắn. Giới hạn qua
+   biến --stagger do template truyền vào; nhân 28ms nên card thứ 10 cũng chỉ
+   trễ 280ms, không làm người dùng phải chờ. */
+.notif-panel__row {
+  animation-delay: calc(var(--stagger, 0) * 28ms);
+}
+
+/* Scrollbar mảnh, chỉ rõ khi trỏ vào danh sách. */
+.notif-panel__list {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.2s ease;
+}
+
+.notif-panel__list:hover {
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+.notif-panel__list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notif-panel__list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.notif-panel__list::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: var(--radius-full);
+  transition: background 0.2s ease;
+}
+
+.notif-panel__list:hover::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+}
+
+.notif-panel__list::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Empty state: vòng tròn mềm + chuông, đung đưa rất nhẹ cho đỡ chết cứng. */
+.notif-panel__empty-art {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  margin-bottom: 0.55rem;
+  border-radius: var(--radius-full);
+  background: radial-gradient(circle at 50% 35%, var(--color-accent-soft), transparent 72%);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  animation: bellIdle 5s ease-in-out infinite;
+}
+
+@keyframes bellIdle {
+  0%, 88%, 100% { transform: rotate(0deg); }
+  91%           { transform: rotate(-7deg); }
+  95%           { transform: rotate(5deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notif-panel__row,
+  .notif-panel__empty-art,
+  .notif-panel__unread-pill {
+    animation: none !important;
+  }
+}

@@ -34,19 +34,23 @@ export class NotificationQueue {
     this.queue.update((list) => list.filter((n) => n.id !== id));
   }
 
-  snooze(id: string): void {
+  /** `minutes` để trống thì dùng mặc định 5 phút — giữ nguyên hành vi của mọi
+   *  lời gọi cũ, đồng thời cho UI chọn 10/30/60 phút. */
+  snooze(id: string, minutes?: number): void {
     const item = this.queue().find((n) => n.id === id);
     this.dismiss(id);
     if (!item) return;
 
+    const delayMs = minutes ? minutes * 60_000 : SNOOZE_MS;
+
     if (item.reminderId && this.onSnoozeReminder) {
-      this.onSnoozeReminder(item.reminderId, SNOOZE_MS / 60_000);
+      this.onSnoozeReminder(item.reminderId, delayMs / 60_000);
       return;
     }
 
     setTimeout(() => {
       this.push({ eventId: item.eventId, title: item.title, body: item.body, kind: item.kind });
-    }, SNOOZE_MS);
+    }, delayMs);
   }
 
   requestPermission(): void {

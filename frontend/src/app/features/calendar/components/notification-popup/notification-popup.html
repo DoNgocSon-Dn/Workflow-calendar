@@ -1,19 +1,86 @@
-<div class="popup-stack" aria-live="polite">
+<div class="toast-stack" aria-live="polite">
   @for (item of notificationQueue.visible(); track item.id) {
-    <div class="popup-card" role="status">
-      <div class="popup-body">
-        <p class="popup-title">{{ item.title }}</p>
-        <p class="popup-message">{{ item.body }}</p>
-      </div>
-      <div class="popup-actions">
-        @if (item.eventId; as eventId) {
-          <button type="button" class="text-btn" (click)="onViewDetail(eventId, item.id)">
-            Xem chi tiết
-          </button>
+    <div
+      class="toast"
+      [class.toast--held]="snoozeMenuFor() === item.id"
+      [class.toast--leaving]="isLeaving(item.id)"
+      [class.toast--confirming]="isConfirming(item.id)"
+      role="status"
+    >
+      <span class="toast__sheen" aria-hidden="true"></span>
+      <span class="toast__rail" aria-hidden="true"></span>
+
+      <span class="toast__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path
+            fill="currentColor"
+            d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1z"
+          />
+        </svg>
+      </span>
+
+      <div class="toast__body">
+        <p class="toast__title">{{ item.title }}</p>
+        @if (item.body) {
+          <p class="toast__message">{{ item.body }}</p>
         }
-        <button type="button" class="text-btn" (click)="snooze(item.id)">Snooze</button>
-        <button type="button" class="text-btn muted" (click)="dismiss(item.id)">Bỏ qua</button>
+
+        <div class="toast__actions">
+          @if (item.eventId; as eventId) {
+            <button type="button" class="toast__btn toast__btn--primary" (click)="onViewDetail(eventId, item.id)">
+              Xem chi tiết
+            </button>
+          }
+
+          <div class="toast__snooze">
+            <button
+              type="button"
+              class="toast__btn toast__btn--secondary"
+              [attr.aria-expanded]="snoozeMenuFor() === item.id"
+              (click)="toggleSnoozeMenu(item.id)"
+            >
+              <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm.5-13H11v6l5 3 .75-1.23-4.25-2.52z"
+                />
+              </svg>
+              Hoãn
+            </button>
+
+            @if (snoozeMenuFor() === item.id) {
+              <div class="toast__snooze-menu" role="menu">
+                @for (option of snoozeOptions; track option.minutes) {
+                  <button
+                    type="button"
+                    role="menuitem"
+                    class="toast__snooze-option"
+                    (click)="snooze(item.id, option.minutes)"
+                  >
+                    {{ option.label }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <button type="button" class="toast__btn toast__btn--ghost" (click)="dismiss(item.id)">
+            Bỏ qua
+          </button>
+        </div>
       </div>
+
+      <button type="button" class="toast__close" aria-label="Đóng" (click)="dismiss(item.id)">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <line x1="6" y1="6" x2="18" y2="18" />
+          <line x1="18" y1="6" x2="6" y2="18" />
+        </svg>
+      </button>
+
+      <!-- Thanh này VỪA là chỉ báo thời gian VỪA là đồng hồ đếm: animationend
+           của nó chính là lúc hết giờ, nên hover tạm dừng animation là tạm
+           dừng luôn việc tự tắt, không cần timer riêng ở TypeScript. -->
+      <span class="toast__progress" aria-hidden="true" (animationend)="onProgressEnd(item.id)"></span>
     </div>
   }
 </div>

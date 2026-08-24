@@ -364,6 +364,11 @@ export class CalendarStore {
     this.realtimeListenersBound = true;
 
     this.realtime.onConnect(() => this.joinAllCalendarRooms());
+    // Kết nối lại thì kéo lại sự kiện + lời mời đã lỡ trong lúc mất mạng.
+    this.realtime.onReconnect(() => {
+      void this.refreshEvents();
+      void this.refreshPendingInvites();
+    });
     this.realtime.on<EventApiDto>('event:created', (dto) => this.handleRemoteCreated(dto));
     this.realtime.on<EventApiDto>('event:updated', (dto) => this.handleRemoteUpdated(dto));
     this.realtime.on<{ id: string }>('event:deleted', (payload) =>

@@ -155,6 +155,13 @@ export class GroupStore {
     // at right now.
     this.realtime.onConnect(() => this.joinAllGroupRooms());
 
+    // Mất mạng rồi nối lại: Socket.IO KHÔNG phát lại event đã lỡ, nên phải tự
+    // kéo về phần bỏ sót. Dedupe theo id ổn định lo chuyện trùng lặp.
+    this.realtime.onReconnect(() => {
+      void this.loadPendingInvites();
+      void this.scanMyTaskDeadlines();
+    });
+
     this.realtime.on<{ groupId: string; message: GroupMessage }>('group:messageSent', (payload) => {
       if (!payload?.message) return;
       if (this.isActiveGroup(payload.groupId, payload.message.groupId)) {

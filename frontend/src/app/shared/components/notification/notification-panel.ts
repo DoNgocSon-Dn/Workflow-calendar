@@ -18,6 +18,7 @@ import {
 } from '../../../core/services/notification.model';
 import { NotificationItem } from './notification-item';
 import { GroupStore } from '../../../features/groups/data/group-store';
+import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { CalendarStore } from '../../../features/calendar/data/calendar-store';
 
 type NotificationTabId = 'all' | 'unread' | 'message' | 'task' | 'event' | 'group';
@@ -34,6 +35,12 @@ const TABS: readonly { id: NotificationTabId; label: string }[] = [
 const EVENT_RELATED_TYPES = new Set<AppNotification['type']>(['event_invitation', 'event_update', 'reminder']);
 
 /** Dưới ngưỡng này coi như người dùng vẫn đang ở đầu danh sách. */
+interface NotificationSection {
+  readonly key: string;
+  readonly label: string;
+  readonly items: readonly AppNotification[];
+}
+
 const SCROLL_TOP_THRESHOLD_PX = 24;
 
 /** Yêu cầu mở workspace nhóm; có `messageId` nghĩa là mở thẳng tab Trò chuyện
@@ -52,6 +59,11 @@ export interface OpenGroupChatRequest {
 })
 export class NotificationPanel {
   private readonly service = inject(NotificationService);
+  private readonly realtime = inject(RealtimeService);
+
+  /** Real-time còn sống không — mất kết nối thì báo rõ, thay vì để danh sách
+   *  đứng im và người dùng tưởng là không có gì mới. */
+  protected readonly realtimeOffline = this.realtime.disconnected;
   private readonly groupStore = inject(GroupStore);
   protected readonly calendarStore = inject(CalendarStore);
 
@@ -95,6 +107,33 @@ export class NotificationPanel {
     if (tab === 'all') return all;
     if (tab === 'unread') return all.filter((n) => !n.isRead);
     return all.filter((n) => notificationCategory(n.type) === tab);
+  });
+
+  /**
+   * Gom thông báo thành 3 mốc để mắt bắt được nhịp thay vì đọc một danh sách
+   * phẳng: chưa đọc lên đầu, rồi tới hôm nay, rồi cũ hơn. Section rỗng bị loại
+   * ngay tại đây nên template không phải tự kiểm tra.
+   */
+  protected readonly groupedSections = computed<readonly NotificationSection[]>(() => {
+    const items = this.filtered();
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const fresh: AppNotification[] = [];
+    const today: AppNotification[] = [];
+    const earlier: AppNotification[] = [];
+
+    for (const n of items) {
+      if (!n.isRead) fresh.push(n);
+      else if (new Date(n.createdAt).getTime() >= startOfToday.getTime()) today.push(n);
+      else earlier.push(n);
+    }
+
+    return [
+      { key: 'fresh', label: 'Mới', items: fresh },
+      { key: 'today', label: 'Hôm nay', items: today },
+      { key: 'earlier', label: 'Trước đó', items: earlier },
+    ].filter((section) => section.items.length > 0);
   });
 
   private readonly listRef = viewChild<ElementRef<HTMLElement>>('list');

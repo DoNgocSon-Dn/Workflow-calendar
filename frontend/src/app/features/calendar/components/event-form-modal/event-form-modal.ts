@@ -51,6 +51,12 @@ interface DurationPreset {
   minutes: number;
 }
 
+/** Sự kiện MỚI được tick sẵn một lời nhắc: lịch không nhắc thì mất nửa công
+ *  dụng, mà mục "Lời nhắc" lại thu gọn mặc định nên rất dễ bị bỏ qua hoàn toàn.
+ *  Người không cần vẫn bỏ tick được như thường. Sự kiện đang sửa KHÔNG bị áp
+ *  giá trị này — nó nạp đúng lời nhắc đã lưu. */
+const DEFAULT_REMINDER_OFFSET_MINUTES = 15;
+
 const DURATION_PRESETS: DurationPreset[] = [
   { labelKey: 'event.duration15m', minutes: 15 },
   { labelKey: 'event.duration30m', minutes: 30 },
@@ -163,10 +169,16 @@ export class EventFormModal {
       this.attendees.set([]);
       this.inviteEmailControl.reset('');
       this.inviteError.set(null);
-      this.reminderSelections.set(new Map());
+      // Sự kiện mới: tick sẵn lời nhắc mặc định. Sự kiện cũ: để rỗng ở đây rồi
+      // loadReminders() bên dưới đổ đúng dữ liệu đã lưu vào.
+      this.reminderSelections.set(
+        evt ? new Map() : new Map([[DEFAULT_REMINDER_OFFSET_MINUTES, 'popup' as ReminderType]]),
+      );
       this.customReminderMinutes.reset(null);
       this.attendeesOpen.set(false);
-      this.remindersOpen.set(false);
+      // Mở sẵn cho sự kiện mới để lời nhắc mặc định NHÌN THẤY được và bỏ tick
+      // được ngay — thêm lời nhắc ngầm sau lưng người dùng còn tệ hơn không thêm.
+      this.remindersOpen.set(!evt);
       this.commentsOpen.set(false);
       if (evt) {
         void this.loadAttendees(evt.id);

@@ -1,243 +1,301 @@
 :host {
   display: block;
-  /* @for track theo id nên node cũ được giữ nguyên — animation này chỉ chạy
-     cho item vừa được chèn thêm, không replay cho cả danh sách. */
-  animation: notifItemIn 0.24s ease-out both;
+  /* @for track theo id nên node cũ giữ nguyên — animation chỉ chạy cho card
+     vừa được chèn, không replay cả danh sách. */
+  animation: cardIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-@keyframes notifItemIn {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  :host {
-    animation: none;
-  }
+/* ---- Bảng màu nhấn theo loại -----------------------------------------
+   Mỗi loại chỉ khai báo 2 biến; phần còn lại của card đọc từ đây, nên thêm
+   loại mới chỉ tốn một dòng. */
+.notif-card {
+  --accent: #6366f1;
+  --accent-soft: rgba(99, 102, 241, 0.14);
 }
+.notif-card[data-accent="event"]    { --accent: #6366f1; --accent-soft: rgba(99, 102, 241, 0.14); }
+.notif-card[data-accent="reminder"] { --accent: #a855f7; --accent-soft: rgba(168, 85, 247, 0.14); }
+.notif-card[data-accent="message"]  { --accent: #06b6d4; --accent-soft: rgba(6, 182, 212, 0.14); }
+.notif-card[data-accent="task"]     { --accent: #3b82f6; --accent-soft: rgba(59, 130, 246, 0.14); }
+.notif-card[data-accent="deadline"] { --accent: #f59e0b; --accent-soft: rgba(245, 158, 11, 0.15); }
+.notif-card[data-accent="overdue"]  { --accent: #ef4444; --accent-soft: rgba(239, 68, 68, 0.15); }
+.notif-card[data-accent="group"]    { --accent: #10b981; --accent-soft: rgba(16, 185, 129, 0.14); }
+.notif-card[data-accent="system"]   { --accent: #94a3b8; --accent-soft: rgba(148, 163, 184, 0.14); }
 
-.notif-item {
+.notif-card {
   position: relative;
   display: flex;
   gap: 0.7rem;
-  padding: 0.7rem 1.85rem 0.7rem 1.4rem;
+  padding: 0.75rem 2rem 0.8rem 0.9rem;
+  border: 1px solid transparent;
   border-radius: var(--radius-md);
+  background: transparent;
   cursor: pointer;
-  transition: background 0.15s ease;
+  overflow: hidden;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
-.notif-item:hover,
-.notif-item:focus-visible {
+/* Vạch màu bên trái — dấu hiệu loại thông báo. Chỉ rõ khi chưa đọc hoặc đang
+   hover, để danh sách lúc bình thường không bị sọc rối mắt. */
+.notif-card__rail {
+  position: absolute;
+  top: 0.55rem;
+  bottom: 0.55rem;
+  left: 0;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent);
+  opacity: 0;
+  transform: scaleY(0.4);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.notif-card:hover,
+.notif-card:focus-visible {
   background: var(--color-surface-hover);
+  border-color: var(--color-border);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
   outline: none;
 }
 
-.notif-item--unread {
-  background: var(--color-accent-soft);
+.notif-card:hover .notif-card__rail,
+.notif-card:focus-visible .notif-card__rail {
+  opacity: 0.55;
+  transform: scaleY(1);
 }
 
-.notif-item--unread:hover {
-  background: color-mix(in srgb, var(--color-accent-soft) 80%, var(--color-surface-hover));
+.notif-card--unread {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
-.notif-item__dismiss {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.4rem;
-  height: 1.4rem;
-  padding: 0;
-  border: none;
-  border-radius: var(--radius-full);
-  background: none;
-  color: var(--color-text-tertiary);
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
-}
-
-.notif-item:hover .notif-item__dismiss,
-.notif-item:focus-within .notif-item__dismiss {
+.notif-card--unread .notif-card__rail {
   opacity: 1;
+  transform: scaleY(1);
 }
 
-.notif-item__dismiss:hover {
-  background: var(--color-surface-hover-strong);
-  color: var(--color-danger);
+.notif-card--unread:hover {
+  background: color-mix(in srgb, var(--accent) 11%, transparent);
 }
 
-.notif-item__dot {
-  position: absolute;
-  top: 1.05rem;
-  left: 0.5rem;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-accent);
-}
-
-.notif-item__avatar-wrap {
+.notif-card__icon-wrap {
   position: relative;
   flex-shrink: 0;
   align-self: flex-start;
 }
 
-.notif-item__avatar {
-  width: 2.35rem;
-  height: 2.35rem;
-  border-radius: var(--radius-full);
+.notif-card__icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.9rem;
-  font-weight: 700;
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 0.7rem;
+  background: linear-gradient(140deg, var(--accent-soft), transparent 75%), var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+  color: var(--accent);
   font-family: var(--font-heading);
-  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
   overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
-.notif-item__avatar-img {
+.notif-card:hover .notif-card__icon {
+  transform: scale(1.06);
+}
+
+.notif-card--unread .notif-card__icon {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.notif-card__avatar-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* Chấm chỉ dấu "tin nhắn" gắn ở góc avatar — phân biệt nhanh với các loại
-   thông báo khác mà không cần đọc nội dung. */
-.notif-item__type-badge {
+/* Chấm báo chưa đọc gắn ở góc icon, thay vì chiếm hẳn một cột lề chỉ để
+   chứa 6px. */
+.notif-card__pulse {
   position: absolute;
+  top: -2px;
   right: -2px;
-  bottom: -2px;
-  width: 1rem;
-  height: 1rem;
-  border-radius: var(--radius-full);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
   border: 2px solid var(--color-surface);
 }
 
-.notif-item--unread .notif-item__type-badge {
-  border-color: color-mix(in srgb, var(--color-accent-soft) 55%, var(--color-surface));
-}
-
-.notif-item__avatar--accent {
-  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
-}
-
-.notif-item__avatar--success {
-  background: linear-gradient(135deg, var(--color-success) 0%, #059669 100%);
-}
-
-.notif-item__avatar--warning {
-  background: linear-gradient(135deg, var(--color-warning) 0%, #d97706 100%);
-}
-
-.notif-item__avatar--danger {
-  background: linear-gradient(135deg, var(--color-danger) 0%, #dc2626 100%);
-}
-
-.notif-item__avatar--neutral {
-  background: var(--color-text-tertiary);
-}
-
-.notif-item__body {
+.notif-card__body {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.16rem;
 }
 
-.notif-item__title {
+.notif-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.notif-card__title {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.855rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.notif-card--unread .notif-card__title {
   font-weight: 700;
   color: var(--color-text);
-  overflow-wrap: break-word;
 }
 
-.notif-item__message {
+.notif-card__time {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.notif-card__message {
   margin: 0;
-  font-size: 0.8rem;
-  line-height: 1.4;
-  color: var(--color-text-secondary);
-  overflow-wrap: break-word;
+  font-size: 0.795rem;
+  line-height: 1.45;
+  color: var(--color-text-tertiary);
+  overflow-wrap: anywhere;
 }
 
-/* Trích đoạn tin nhắn — lùi vào và bo nhẹ để đọc ra ngay là lời người khác
-   nói, không lẫn với dòng mô tả của thông báo. */
-.notif-item__preview {
-  margin: 0.3rem 0 0.1rem;
-  padding: 0.35rem 0.55rem;
-  border-left: 2px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
+.notif-card--unread .notif-card__message {
+  color: var(--color-text-secondary);
+}
+
+.notif-card__quote {
+  margin: 0.34rem 0 0.1rem;
+  padding: 0.34rem 0.55rem;
+  border-left: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  background: color-mix(in srgb, var(--color-text) 6%, transparent);
-  font-size: 0.79rem;
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+  font-size: 0.775rem;
   line-height: 1.4;
   color: var(--color-text-secondary);
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
-.notif-item__time {
-  margin-top: 0.15rem;
-  font-size: 0.72rem;
-  color: var(--color-text-tertiary);
+.notif-card__countdown {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.38rem;
+  padding: 0.16rem 0.5rem 0.16rem 0.42rem;
+  border-radius: var(--radius-full);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.715rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.notif-item__status {
-  margin-top: 0.1rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-text-tertiary);
-}
-
-.notif-item__actions {
+.notif-card__actions {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.35rem;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
 }
 
-.notif-item__action {
-  border: none;
+.notif-card__btn {
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  padding: 0.35rem 0.75rem;
-  font-size: 0.78rem;
+  padding: 0.32rem 0.7rem;
+  font-size: 0.765rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
-.notif-item__action:disabled {
-  opacity: 0.6;
+.notif-card__btn:disabled {
+  opacity: 0.55;
   cursor: default;
 }
 
-.notif-item__action--accept {
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+.notif-card__btn--primary {
+  background: var(--accent);
+  color: #fff;
 }
 
-.notif-item__action--accept:hover {
-  background: var(--color-accent-hover);
+.notif-card__btn--primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
 }
 
-.notif-item__action--decline {
+.notif-card__btn--ghost {
+  background: transparent;
+  border-color: var(--color-border-strong);
+  color: var(--color-text-tertiary);
+}
+
+.notif-card__btn--ghost:hover:not(:disabled) {
   background: var(--color-surface-hover-strong);
   color: var(--color-text-secondary);
 }
 
-.notif-item__action--decline:hover {
-  background: var(--color-border-strong);
+.notif-card__status {
+  margin-top: 0.28rem;
+  font-size: 0.735rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.notif-card__dismiss {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.45rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.notif-card:hover .notif-card__dismiss,
+.notif-card:focus-within .notif-card__dismiss {
+  opacity: 1;
+}
+
+.notif-card__dismiss:hover {
+  background: var(--color-surface-hover-strong);
+  color: var(--color-danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host,
+  .notif-card,
+  .notif-card__icon,
+  .notif-card__rail {
+    animation: none !important;
+    transition: none !important;
+  }
+  .notif-card:hover {
+    transform: none;
+  }
 }

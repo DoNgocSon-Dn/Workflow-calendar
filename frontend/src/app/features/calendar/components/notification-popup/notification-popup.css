@@ -1,58 +1,421 @@
-.popup-stack {
+/* Perspective dat o STACK chu khong nhet vao tung transform: cac toast khi do
+   cung chung mot khong gian 3D, nen chong len nhau van thay dung chieu sau. */
+.toast-stack {
   position: fixed;
-  right: 1rem;
-  bottom: 1rem;
-  z-index: 200;
+  right: 1.15rem;
+  bottom: 1.15rem;
+  z-index: 1200;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  width: 100%;
-  max-width: 320px;
+  width: min(23rem, calc(100vw - 2rem));
+  perspective: 1200px;
+  perspective-origin: 70% 50%;
+  pointer-events: none;
 }
 
-.popup-card {
+/* --life dieu khien CA thanh progress LAN thoi diem tu tat, vi hai thu do la
+   MOT: animationend cua thanh progress chinh la het gio. */
+.toast {
+  --life: 7s;
+  --dim-at: 5.8s;
+  --accent: #a855f7;
+  --accent-soft: rgba(168, 85, 247, 0.15);
+
+  position: relative;
+  display: flex;
+  gap: 0.7rem;
+  padding: 0.85rem 2.1rem 0.95rem 1rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
+  box-shadow: var(--shadow-modal);
+  pointer-events: auto;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  will-change: transform, opacity, filter;
+  animation:
+    toastIn 0.52s cubic-bezier(0.22, 1.12, 0.36, 1) both,
+    toastDim 1.2s ease-in var(--dim-at) both;
+}
+
+/* Bay tu phia sau man hinh toi, vuot qua vi tri dich mot chut roi lui ve.
+   Overshoot nam o keyframe 72% chu khong nho cubic-bezier, de kiem soat duoc
+   bien do va khong bi giat. */
+@keyframes toastIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(24px, -26px, -160px) rotateX(-14deg) rotateY(6deg) scale(0.86);
+    filter: blur(10px);
+  }
+  55% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  72% {
+    transform: translate3d(0, 2px, 26px) rotateX(2.5deg) rotateY(-1deg) scale(1.022);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotateX(0) rotateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Tin hieu sap roi di: mo di rat nhe + shadow co lai. Khong dung chu dem nguoc
+   de khoi keo mat nguoi dung khoi viec dang lam. */
+@keyframes toastDim {
+  to {
+    opacity: 0.82;
+    box-shadow: var(--shadow-sm);
+    filter: blur(0.35px);
+  }
+}
+
+/* Hover / mo menu / dang roi di deu DONG BANG dong ho dem gio. CSS giu nguyen
+   tien do khi paused nen bo hover la chay tiep tu dung cho cu, khong reset. */
+.toast:hover,
+.toast:focus-within,
+.toast--held {
+  animation-play-state: running, paused;
+}
+
+.toast:hover .toast__progress,
+.toast:focus-within .toast__progress,
+.toast--held .toast__progress,
+.toast--leaving .toast__progress {
+  animation-play-state: paused;
+}
+
+.toast:hover,
+.toast:focus-within {
+  opacity: 1;
+  filter: blur(0);
+  box-shadow: var(--shadow-modal), 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+/* Nhun nhe xac nhan da nhan lenh, truoc khi lui vao chieu sau. */
+.toast--confirming {
+  animation: toastConfirm 0.16s ease-out both;
+}
+
+@keyframes toastConfirm {
+  to { transform: scale(0.975); }
+}
+
+/* Bi hut nguoc vao giao dien: nghieng, thu nho, lui theo truc Z, mo dan. */
+.toast--leaving {
+  animation: toastOut 0.42s cubic-bezier(0.55, 0, 0.85, 0.35) both;
+}
+
+@keyframes toastOut {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotateX(0) rotateY(0) scale(1);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(10px, -18px, -120px) rotateX(9deg) rotateY(-3deg) scale(0.9);
+    filter: blur(8px);
+    box-shadow: none;
+  }
+}
+
+/* ---- Anh sang luot qua be mat ---- */
+.toast__sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    112deg,
+    transparent 28%,
+    color-mix(in srgb, #fff 9%, transparent) 46%,
+    transparent 62%
+  );
+  opacity: 0;
+  pointer-events: none;
+  animation: sheenSweep 1.05s cubic-bezier(0.33, 1, 0.68, 1) 0.16s both;
+}
+
+@keyframes sheenSweep {
+  0%   { opacity: 0; transform: translateX(-70%); }
+  35%  { opacity: 1; }
+  100% { opacity: 0; transform: translateX(70%); }
+}
+
+/* ---- Vach accent duoc kich hoat sau khi card vao cho ---- */
+.toast__rail {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 35%, transparent));
+  transform-origin: top;
+  animation: railWake 0.42s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+
+@keyframes railWake {
+  from { opacity: 0; transform: scaleY(0.2); }
+  to   { opacity: 1; transform: scaleY(1); }
+}
+
+/* ---- Icon day ra tu trong card, muon hon card 120ms ---- */
+.toast__icon {
+  flex-shrink: 0;
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 0.65rem;
+  background: linear-gradient(140deg, var(--accent-soft), transparent 78%), var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+  color: var(--accent);
+  animation: iconPush 0.46s cubic-bezier(0.22, 1.15, 0.36, 1) 0.12s both;
+}
+
+@keyframes iconPush {
+  0% {
+    opacity: 0;
+    transform: translateZ(-30px) scale(0.5) rotateZ(-14deg);
+    box-shadow: 0 0 0 0 transparent;
+  }
+  65% {
+    opacity: 1;
+    transform: translateZ(6px) scale(1.1) rotateZ(4deg);
+    box-shadow: 0 0 14px 2px color-mix(in srgb, var(--accent) 32%, transparent);
+  }
+  100% {
+    opacity: 1;
+    transform: translateZ(0) scale(1) rotateZ(0);
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.toast--confirming .toast__icon {
+  animation: iconConfirm 0.16s ease-out both;
+}
+
+@keyframes iconConfirm {
+  to {
+    transform: scale(0.86);
+    box-shadow: 0 0 12px 2px color-mix(in srgb, var(--accent) 38%, transparent);
+  }
+}
+
+/* ---- Noi dung lap theo lop ---- */
+.toast__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast__title,
+.toast__message,
+.toast__actions {
+  animation: layerIn 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.toast__title   { animation-delay: 0.19s; }
+.toast__message { animation-delay: 0.25s; }
+.toast__actions { animation-delay: 0.31s; }
+
+@keyframes layerIn {
+  from { opacity: 0; transform: translate3d(-6px, 4px, -14px); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+/* ---- Progress: vua la chi bao, vua LA dong ho dem gio ---- */
+.toast__progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+  transform-origin: left;
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 45%, transparent));
+  animation: progressDrain var(--life) linear 0.3s both;
+}
+
+@keyframes progressDrain {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+.toast__title {
+  margin: 0;
+  font-size: 0.865rem;
+  font-weight: 700;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.toast__message {
+  margin: 0.14rem 0 0;
+  font-size: 0.79rem;
+  line-height: 1.45;
+  color: var(--color-text-tertiary);
+  overflow-wrap: anywhere;
+}
+
+.toast__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+.toast__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0.34rem 0.68rem;
+  font-size: 0.765rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.toast__btn--primary {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.toast__btn--primary:hover {
+  background: var(--color-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm-hover);
+}
+
+.toast__btn--secondary {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.toast__btn--secondary:hover {
+  background: var(--color-surface-hover-strong);
+}
+
+.toast__btn--ghost {
+  margin-left: auto;
+  background: none;
+  color: var(--color-text-muted);
+}
+
+.toast__btn--ghost:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+}
+
+.toast__snooze {
+  position: relative;
+}
+
+.toast__snooze-menu {
+  position: absolute;
+  bottom: calc(100% + 0.35rem);
+  left: 0;
+  z-index: 2;
+  min-width: 7rem;
+  padding: 0.28rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-popup);
-  padding: 0.75rem 0.9rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-popover);
+  animation: menuIn 0.16s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.popup-title {
-  margin: 0 0 0.2rem;
-  font-size: 0.9rem;
-  font-weight: 600;
+@keyframes menuIn {
+  from { opacity: 0; transform: translateY(4px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.toast__snooze-option {
+  border: none;
+  background: none;
+  text-align: left;
+  padding: 0.38rem 0.55rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.775rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background 0.13s ease, color 0.13s ease;
+}
+
+.toast__snooze-option:hover {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.toast__close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.toast:hover .toast__close,
+.toast:focus-within .toast__close {
+  opacity: 1;
+}
+
+.toast__close:hover {
+  background: var(--color-surface-hover-strong);
   color: var(--color-text);
 }
 
-.popup-message {
-  margin: 0;
-  font-size: 0.8rem;
-  color: var(--color-text-tertiary);
+@media (max-width: 520px) {
+  .toast-stack {
+    right: 0.6rem;
+    left: 0.6rem;
+    bottom: 0.6rem;
+    width: auto;
+  }
 }
 
-.popup-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.25rem;
-  margin-top: 0.5rem;
-}
-
-.text-btn {
-  border: none;
-  background: none;
-  color: var(--color-accent);
-  font-weight: 600;
-  font-size: 0.8rem;
-  padding: 0.35rem 0.5rem;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-}
-
-.text-btn:hover {
-  background: var(--color-surface-hover);
-}
-
-.text-btn.muted {
-  color: var(--color-text-tertiary);
+/* Bo chuyen dong, NHUNG giu progress de co che tu tat van chay: tat no di thi
+   toast se nam lai vinh vien. */
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .toast__sheen,
+  .toast__rail,
+  .toast__icon,
+  .toast__title,
+  .toast__message,
+  .toast__actions,
+  .toast__snooze-menu {
+    animation: none !important;
+  }
+  .toast--leaving {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .toast__progress {
+    animation: progressDrain var(--life) linear 0.3s both;
+  }
+  .toast__btn:hover {
+    transform: none;
+  }
 }
