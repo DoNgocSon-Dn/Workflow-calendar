@@ -169,3 +169,10 @@
 <app-notification-popup (viewDetail)="onViewDetail($event)" />
 <app-holiday-popup />
 <app-floating-hub (openManualForm)="openManualFormFromAi($event)" />
+
+@if (loginTransitionOpen()) {
+  <app-login-success-transition
+    [ready]="!store.calendarsLoading()"
+    (finished)="loginTransitionOpen.set(false)"
+  />
+}

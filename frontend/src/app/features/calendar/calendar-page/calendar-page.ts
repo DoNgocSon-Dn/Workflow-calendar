@@ -25,6 +25,8 @@ import { GroupStore } from '../../groups/data/group-store';
 import { OpenGroupChatRequest } from '../../../shared/components/notification/notification-panel';
 import { HolidayPopup } from '../../../shared/components/holiday-popup/holiday-popup';
 import { FloatingHub } from '../../../shared/components/floating-hub/floating-hub';
+import { LoginSuccessTransition } from '../../auth/login-success-transition/login-success-transition';
+import { consumeOauthRedirect } from '../../../core/auth/oauth-redirect-flag';
 
 interface ModalState {
   event: CalendarEvent | null;
@@ -57,6 +59,7 @@ interface ModalState {
     FloatingHub,
     HolidayPopup,
     HolidayInfoModal,
+    LoginSuccessTransition,
   ],
 })
 export class CalendarPage {
@@ -71,6 +74,15 @@ export class CalendarPage {
 
   protected readonly modalState = signal<ModalState | null>(null);
   protected readonly holidayInfoEvent = signal<CalendarEvent | null>(null);
+  /**
+   * Chỉ bật khi người dùng vừa từ Google quay về (cờ được chụp ở main.ts) và
+   * không bật chế độ giảm chuyển động. Cờ tự xoá sau lần đọc đầu nên F5 hay
+   * điều hướng nội bộ về sau vào thẳng lịch.
+   */
+  protected readonly loginTransitionOpen = signal(
+    consumeOauthRedirect() && !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
+
   protected readonly importModalOpen = signal(false);
   protected readonly trashModalOpen = signal(false);
   protected readonly settingsModalOpen = signal(false);

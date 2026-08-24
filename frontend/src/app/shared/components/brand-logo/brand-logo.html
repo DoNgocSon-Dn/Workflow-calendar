@@ -1,0 +1,32 @@
+<span class="bl" [attr.data-phase]="phase()">
+  <span class="bl-icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="26" height="26">
+      <rect x="3" y="4" width="18" height="17" rx="2" fill="#1a73e8" />
+      <rect x="3" y="4" width="18" height="4" rx="2" fill="#185abc" />
+      @if (dayNumber() !== null) {
+        <text x="12" y="17" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">
+          {{ dayNumber() }}
+        </text>
+      }
+    </svg>
+  </span>
+
+  <span class="bl-word">
+    <!-- Chữ đầu: chữ W duy nhất xuất hiện ở chặng 'mark'. -->
+    <span class="bl-l bl-first">W</span>
+
+    <!-- Sáu chữ giữa: o-r-k-f-l-o, hiện lần lượt ở chặng 'word'. -->
+    @for (ch of middle; track $index) {
+      <span class="bl-l bl-mid" [style.--i]="$index">{{ ch }}</span>
+    }
+
+    <!-- Chữ cuối: hai glyph chồng nhau để crossfade hoa → thường mà không
+         phải thay text trong DOM (thay text sẽ giật khung hình). -->
+    <span class="bl-l bl-last">
+      <span class="bl-g bl-up" aria-hidden="true">W</span>
+      <span class="bl-g bl-low" aria-hidden="true">w</span>
+    </span>
+  </span>
+
+  <span class="bl-sr">Workflow</span>
+</span>

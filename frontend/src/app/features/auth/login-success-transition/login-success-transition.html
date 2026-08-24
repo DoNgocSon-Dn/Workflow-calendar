@@ -1,0 +1,10 @@
+<div class="lst" [attr.data-phase]="phase()">
+  <div class="lst-veil"></div>
+  <div class="lst-halo" aria-hidden="true"></div>
+
+  <!-- Dùng đúng component logo của header/login, chỉ truyền `phase` để nó tự
+       dựng. Không có bản sao riêng cho animation. -->
+  <div class="lst-logo" #logo role="status" aria-live="polite">
+    <app-brand-logo [phase]="logoPhase()" [dayNumber]="todayDate" />
+  </div>
+</div>

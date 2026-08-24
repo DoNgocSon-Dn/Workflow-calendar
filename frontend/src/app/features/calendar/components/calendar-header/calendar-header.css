@@ -19,7 +19,7 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  /* Khoảng cách icon–chữ giờ nằm trong <app-brand-logo>. */
   font-family: var(--font-heading);
   font-size: 1.35rem;
   font-weight: 700;

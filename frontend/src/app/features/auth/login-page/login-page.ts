@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth-store';
+import { BrandLogo } from '../../../shared/components/brand-logo/brand-logo';
 
 /** Thời gian giữ vòng xoay trước khi mở màn (ms). */
 const SPIN_HOLD_MS = 1500;
@@ -32,7 +33,7 @@ interface AmbientParticle {
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, BrandLogo],
 })
 export class LoginPage implements OnInit, AfterViewInit {
   private readonly authStore = inject(AuthStore);

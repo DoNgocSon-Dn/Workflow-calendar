@@ -1,0 +1,136 @@
+/* ═══════════════════════════════════════════════════════════════
+   Chuyển cảnh sau khi đăng nhập Google thành công.
+   W → WW → "Workflow" → thu nhỏ bay về logo header (FLIP).
+
+   Overlay nằm ĐÈ LÊN trang lịch đã dựng sẵn, nên đích hạ cánh là
+   logo thật trong header chứ không phải một toạ độ đoán trước —
+   nhờ vậy đúng ở mọi cỡ màn hình.
+
+   Hình dạng logo do <app-brand-logo> tự lo; file này chỉ lo phần
+   nền, vị trí và chuyến bay.
+   ═══════════════════════════════════════════════════════════════ */
+
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.lst {
+  position: absolute;
+  inset: 0;
+  /* Cỡ phóng của khối bay — phải là SỐ THUẦN.
+     Bản trước viết clamp(1.6, 5.2vw, 2.6): clamp() không cho trộn <number>
+     với <length>, nên khi thay vào scale() cả khai báo transform hỏng.
+     Giờ dùng số cố định, thu nhỏ dần theo breakpoint. */
+  --scale: 3.2;
+}
+
+.lst-veil {
+  position: absolute;
+  inset: 0;
+  background: var(--color-bg, #0b0d12);
+  transition: opacity 0.6s ease;
+}
+
+.lst-halo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(560px, 80vw);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-accent, #2563eb) 34%, transparent) 0%,
+    transparent 62%
+  );
+  filter: blur(60px);
+  animation: lst-breathe 2.6s ease-in-out infinite;
+  transition: opacity 0.5s ease;
+}
+
+@keyframes lst-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    scale: 1;
+  }
+  50% {
+    opacity: 0.9;
+    scale: 1.09;
+  }
+}
+
+/* ── Khối bay ── */
+
+.lst-logo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* Cỡ chữ gốc lấy đúng .brand của header, phần phóng to nằm ở scale — nhờ
+     vậy lúc scale về 1 là khớp tuyệt đối, không lệch nét chữ. */
+  font-size: 1.35rem;
+  color: var(--color-text, #f1f5f9);
+
+  transform: translate(-50%, -50%) translate(var(--fly-x, 0px), var(--fly-y, 0px))
+    scale(var(--fly-scale, var(--scale)));
+  transform-origin: 50% 50%;
+  transition: transform 0.8s cubic-bezier(0.66, 0, 0.34, 1), opacity 0.4s ease;
+}
+
+/* Chặng đầu: cả khối nhô lên nhẹ cho có điểm nhấn mở màn. */
+.lst[data-phase='mark'] .lst-logo {
+  animation: lst-mark-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes lst-mark-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(calc(var(--scale) * 0.74));
+  }
+}
+
+.lst[data-phase='fly'] .lst-halo,
+.lst[data-phase='out'] .lst-halo {
+  opacity: 0;
+}
+
+/* ── Kéo màn, lộ trang lịch ── */
+
+.lst[data-phase='out'] .lst-veil {
+  opacity: 0;
+}
+
+.lst[data-phase='out'] .lst-logo {
+  /* Logo thật trong header đã nằm đúng chỗ này, nên tắt bản đang bay đi là
+     mắt không kịp nhận ra đã đổi element. */
+  opacity: 0;
+  transition-delay: 0.3s;
+}
+
+/* ── Giảm chuyển động: bỏ hẳn hiệu ứng ── */
+
+/* ── Màn nhỏ: hạ cỡ phóng để logo không tràn mép ── */
+
+@media (max-width: 900px) {
+  .lst {
+    --scale: 2.4;
+  }
+}
+
+@media (max-width: 560px) {
+  .lst {
+    --scale: 1.9;
+  }
+}
+
+/* ── Giảm chuyển động: bỏ hẳn hiệu ứng ── */
+
+@media (prefers-reduced-motion: reduce) {
+  :host {
+    display: none;
+  }
+}

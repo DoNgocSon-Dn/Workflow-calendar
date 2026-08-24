@@ -285,10 +285,9 @@
 
 .logo {
   font-family: var(--font-heading);
+  /* Chính tả chuẩn "Workflow" — bỏ uppercase để khớp logo header. */
   font-size: 15px;
   font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
   display: flex;
   align-items: center;
   gap: 8px;

@@ -1,0 +1,171 @@
+/* ═══════════════════════════════════════════════════════════════
+   Logo Workflow dùng chung.
+   `idle` = trạng thái tĩnh (header, trang đăng nhập).
+   `mark` → `split` → `word` = ba chặng dựng logo của hiệu ứng sau
+   khi đăng nhập Google.
+   ═══════════════════════════════════════════════════════════════ */
+
+:host {
+  display: inline-flex;
+}
+
+.bl {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: inherit;
+  white-space: nowrap;
+  /* Chính tả chuẩn: chữ hoa/thường do nội dung quyết định, tuyệt đối
+     không viết hoa toàn bộ bằng CSS. */
+  text-transform: none;
+}
+
+.bl-icon {
+  display: inline-flex;
+  flex: none;
+  overflow: hidden;
+  /* em chứ không px: header dùng font 1.35rem, login dùng 15px — icon phải
+     co theo cỡ chữ thì hai nơi mới cân. */
+  width: 1.2em;
+  margin-right: 0.45em;
+}
+
+.bl-icon svg {
+  display: block;
+  flex: none;
+  width: 1.2em;
+  height: 1.2em;
+}
+
+.bl-word {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.bl-l {
+  display: inline-block;
+  overflow: hidden;
+  /* --w do TS đo và ghim; khi chưa đo thì dùng bề rộng tự nhiên. */
+  width: var(--w, auto);
+  text-align: center;
+}
+
+/* Ô chữ cuối chứa hai glyph chồng nhau, nên phải tự khai bề rộng. */
+.bl-last {
+  position: relative;
+  width: var(--w-low, auto);
+}
+
+.bl-g {
+  display: inline-block;
+}
+
+.bl-last .bl-up {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+}
+
+.bl-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ─────────── Chặng động (chỉ khi phase ≠ idle) ─────────── */
+
+.bl:not([data-phase='idle']) .bl-icon,
+.bl:not([data-phase='idle']) .bl-l,
+.bl:not([data-phase='idle']) .bl-g {
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    margin-right 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.32s ease,
+    translate 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── mark: chỉ còn chữ W đầu ── */
+
+.bl[data-phase='mark'] .bl-icon {
+  width: 0;
+  margin-right: 0;
+}
+
+.bl[data-phase='mark'] .bl-mid,
+.bl[data-phase='mark'] .bl-last {
+  width: 0;
+  opacity: 0;
+}
+
+/* ── split: hai chữ W cân đối hai bên ──
+   Chữ cuối mượn glyph HOA để giai đoạn này không lệch hoa/thường. */
+
+.bl[data-phase='split'] .bl-icon {
+  width: 0;
+  margin-right: 0;
+}
+
+.bl[data-phase='split'] .bl-mid {
+  width: 0;
+  opacity: 0;
+}
+
+.bl[data-phase='split'] .bl-last {
+  width: var(--w-up, auto);
+  opacity: 1;
+}
+
+.bl[data-phase='split'] .bl-up {
+  opacity: 1;
+}
+
+.bl[data-phase='split'] .bl-low {
+  opacity: 0;
+}
+
+/* ── word: chữ giữa hiện dần, chữ cuối đổi về thường ── */
+
+.bl[data-phase='word'] .bl-mid {
+  width: var(--w, auto);
+  opacity: 1;
+  /* Stagger theo thứ tự chữ để đọc ra như đang được viết. */
+  transition-delay: calc(var(--i) * 55ms);
+}
+
+.bl[data-phase='word'] .bl-last {
+  width: var(--w-low, auto);
+}
+
+/* Crossfade hoa → thường. Đặt trễ 110ms để rơi vào GIỮA lúc các chữ quanh
+   nó đang hiện ra — mắt đọc thành "chữ đang hình thành", không nhận ra đây
+   là một bước sửa case riêng. Chậm hơn phần còn lại (220ms) cho êm. */
+.bl[data-phase='word'] .bl-up {
+  opacity: 0;
+  transition: opacity 0.22s ease-in-out 0.11s;
+}
+
+.bl[data-phase='word'] .bl-low {
+  opacity: 1;
+  transition: opacity 0.22s ease-in-out 0.11s;
+}
+
+.bl[data-phase='word'] .bl-icon {
+  width: 1.2em;
+  margin-right: 0.45em;
+  transition-delay: 0.18s;
+}
+
+/* ─────────── Giảm chuyển động ─────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .bl-icon,
+  .bl-l,
+  .bl-g {
+    transition: none !important;
+  }
+}

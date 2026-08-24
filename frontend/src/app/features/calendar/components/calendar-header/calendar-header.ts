@@ -14,6 +14,7 @@ import { CalendarViewMode } from '../../models/calendar.models';
 import { addDays, monthYearLabel, startOfWeek } from '../../utils/date-utils';
 import { NotificationButton } from '../../../../shared/components/notification/notification-button';
 import { OpenGroupChatRequest } from '../../../../shared/components/notification/notification-panel';
+import { BrandLogo } from '../../../../shared/components/brand-logo/brand-logo';
 
 /** Matches calendar-page.css / calendar-sidebar.css's mobile-drawer breakpoint. */
 const MOBILE_BREAKPOINT_PX = 720;
@@ -34,7 +35,7 @@ const DATE_FMT: Record<'vi' | 'en', { dayMonth: Intl.DateTimeFormat; fullDate: I
   templateUrl: './calendar-header.html',
   styleUrl: './calendar-header.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NotificationButton],
+  imports: [NotificationButton, BrandLogo],
 })
 export class CalendarHeader {
   protected readonly store = inject(CalendarStore);
