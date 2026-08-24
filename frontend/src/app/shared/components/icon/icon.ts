@@ -18,7 +18,8 @@ export type IconName =
   | 'arrow-right'
   | 'chevron-right'
   | 'chevron-left'
-  | 'chevron-down';
+  | 'chevron-down'
+  | 'star';
 
 /**
  * Bộ icon nét mảnh dùng chung, thay cho emoji trong UI.
@@ -47,7 +48,7 @@ export type IconName =
   template: `
     <svg
       viewBox="0 0 24 24"
-      fill="none"
+      [attr.fill]="filled() ? 'currentColor' : 'none'"
       stroke="currentColor"
       [attr.stroke-width]="strokeWidth()"
       stroke-linecap="round"
@@ -125,6 +126,9 @@ export type IconName =
         @case ('chevron-down') {
           <path d="M5.5 9.5 12 16l6.5-6.5" />
         }
+        @case ('star') {
+          <path d="M12 2.5 15.1 8.8l6.9 1-5 4.9L18.3 21.5 12 18.1l-6.3 3.4 1.2-6.8-5-4.9 6.9-1z" />
+        }
       }
     </svg>
   `,
@@ -132,4 +136,7 @@ export type IconName =
 export class Icon {
   readonly name = input.required<IconName>();
   readonly strokeWidth = input(1.75);
+  /** Ngôi sao đã gắn dấu vẽ đặc ruột thay vì chỉ viền — các icon khác không
+   *  cần input này. */
+  readonly filled = input(false);
 }

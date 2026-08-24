@@ -309,13 +309,76 @@
     </div>
     } @else {
     <div class="modal-body">
-      <p class="hint-text hint-inset">{{ i18n.t('event.todoHint') }}</p>
       @if (form.controls.title.invalid && form.controls.title.touched) {
       <p class="field-error hint-inset">{{ i18n.t('event.todoTitleRequired') }}</p>
       }
       @if (todoError(); as err) {
       <p class="field-error hint-inset">{{ err }}</p>
       }
+
+      <!-- Thời hạn (tuỳ chọn) -->
+      <div class="field-row">
+        <svg class="field-icon" viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor"
+            d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
+        </svg>
+        @if (todoDueDateOpen()) {
+        <div class="field-content">
+          <div class="row date-row">
+            <input class="date-input" type="date" formControlName="startDate" />
+            <app-time-picker formControlName="startTime" [ariaLabel]="i18n.t('event.startTime')" />
+          </div>
+          <button type="button" class="text-btn compact" (click)="todoDueDateOpen.set(false)">
+            {{ i18n.t('event.removeDueDate') }}
+          </button>
+        </div>
+        } @else {
+        <button type="button" class="field-toggle" (click)="todoDueDateOpen.set(true)">
+          {{ i18n.t('event.addDueDate') }}
+        </button>
+        }
+      </div>
+
+      <!-- Mô tả -->
+      <div class="field-row">
+        <svg class="field-icon" viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor" d="M4 4h16v2H4zm0 5h16v2H4zm0 5h10v2H4z" />
+        </svg>
+        @if (descriptionOpen()) {
+        <div class="field-content">
+          <textarea class="text-input" rows="3" formControlName="description" [placeholder]="i18n.t('event.addDescription')"></textarea>
+        </div>
+        } @else {
+        <button type="button" class="field-toggle" [class.has-value]="!!form.controls.description.value"
+          (click)="toggleField('description')">
+          {{ form.controls.description.value || i18n.t('event.addDescription') }}
+        </button>
+        }
+      </div>
+
+      <!-- Danh sách -->
+      <div class="field-row">
+        <svg class="field-icon" viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor" d="M4 5h2v2H4zm4 0h12v2H8zm-4 6h2v2H4zm4 0h12v2H8zm-4 6h2v2H4zm4 0h12v2H8z" />
+        </svg>
+        <div class="field-content">
+          @if (loadingTodoLists()) {
+          <span class="hint-text">{{ i18n.t('common.saving') }}</span>
+          } @else {
+          <select
+            class="date-input"
+            [attr.aria-label]="i18n.t('event.selectListAria')"
+            [value]="todoListId()"
+            (change)="onTodoListSelect($event)"
+          >
+            @for (list of todoLists(); track list.id) {
+            <option [value]="list.id">{{ list.name }}</option>
+            }
+            <option [value]="newTodoListValue">+ Tạo danh sách mới</option>
+          </select>
+          }
+        </div>
+      </div>
     </div>
     }
 

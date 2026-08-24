@@ -216,10 +216,8 @@ export class FloatingHub {
     effect(() => {
       if (this.authStore.user()) {
         void this.loadNotes();
-        void this.loadTodos();
       } else {
         this.notes.set([]);
-        this.todos.set([]);
       }
     });
   }
@@ -269,7 +267,9 @@ export class FloatingHub {
   }
 
   // --- Todos tab (checklist, sibling of notes) ----------------------------
-  protected readonly todos = signal<Todo[]>([]);
+  // Đọc thẳng từ CalendarStore — KHÔNG giữ bản sao riêng — để thêm/sửa/xoá ở
+  // đây phản ánh ngay trên trang "Việc cần làm" (/tasks) và ngược lại.
+  protected readonly todos = this.store.todos;
   protected readonly newTodoContent = signal('');
   protected readonly savingTodo = signal(false);
   protected readonly editingTodoId = signal<string | null>(null);
@@ -281,21 +281,15 @@ export class FloatingHub {
    *  gộp thành 1 mảng để dùng chung 1 @for/@empty trong template. */
   protected readonly sortedTodos = computed(() => [...this.pendingTodos(), ...this.doneTodos()]);
 
-  private async loadTodos(): Promise<void> {
-    try {
-      this.todos.set(await this.store.listTodos());
-    } catch {
-      this.todos.set([]);
-    }
-  }
-
   async addTodo(): Promise<void> {
     const content = this.newTodoContent().trim();
     if (!content) return;
     this.savingTodo.set(true);
     try {
-      const todo = await this.store.createTodo(content);
-      this.todos.update((list) => [todo, ...list]);
+      // Thêm nhanh từ bong bóng nổi không cho chọn danh sách — luôn rơi vào
+      // danh sách mặc định, xem/di chuyển danh sách khác thì mở trang Tasks.
+      const defaultList = await this.store.ensureDefaultTodoList();
+      await this.store.createTodo(content, defaultList.id);
       this.newTodoContent.set('');
     } finally {
       this.savingTodo.set(false);
@@ -303,8 +297,7 @@ export class FloatingHub {
   }
 
   async toggleTodo(todo: Todo): Promise<void> {
-    const updated = await this.store.updateTodo(todo.id, { done: !todo.done });
-    this.todos.update((list) => list.map((t) => (t.id === todo.id ? updated : t)));
+    await this.store.updateTodo(todo.id, { done: !todo.done });
   }
 
   startEditTodo(todo: Todo): void {
@@ -320,14 +313,12 @@ export class FloatingHub {
   async saveEditTodo(id: string): Promise<void> {
     const content = this.editingTodoContent().trim();
     if (!content) return;
-    const updated = await this.store.updateTodo(id, { content });
-    this.todos.update((list) => list.map((t) => (t.id === id ? updated : t)));
+    await this.store.updateTodo(id, { content });
     this.cancelEditTodo();
   }
 
   async removeTodo(id: string): Promise<void> {
     await this.store.deleteTodo(id);
-    this.todos.update((list) => list.filter((t) => t.id !== id));
   }
 
   // --- AI chat tab (unchanged behavior, moved from AiChatWidget) ---------

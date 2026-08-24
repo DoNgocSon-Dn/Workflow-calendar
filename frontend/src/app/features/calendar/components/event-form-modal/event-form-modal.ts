@@ -58,6 +58,10 @@ interface DurationPreset {
  *  giá trị này — nó nạp đúng lời nhắc đã lưu. */
 const DEFAULT_REMINDER_OFFSET_MINUTES = 15;
 
+/** Giá trị đặc biệt trong ô chọn danh sách — chọn vào là mở luồng tạo danh
+ *  sách mới ngay tại chỗ, thay vì phải rời modal sang trang Tasks. */
+const NEW_TODO_LIST_VALUE = '__create_new__';
+
 const DURATION_PRESETS: DurationPreset[] = [
   { labelKey: 'event.duration15m', minutes: 15 },
   { labelKey: 'event.duration30m', minutes: 30 },
@@ -95,6 +99,12 @@ export class EventFormModal {
   readonly createMode = signal<'event' | 'todo'>('event');
   readonly savingTodo = signal(false);
   readonly todoError = signal<string | null>(null);
+  readonly todoDueDateOpen = signal(false);
+  // Đọc thẳng từ CalendarStore — cùng nguồn với FloatingHub và trang Tasks,
+  // nên danh sách vừa tạo ở đây hiện ngay ở hai chỗ kia, không cần tải lại.
+  readonly todoLists = this.store.todoLists;
+  readonly todoListId = signal<string | null>(null);
+  readonly loadingTodoLists = signal(false);
 
   protected readonly lunarDateHint = computed(() => {
     const startDateStr = this.form.controls.startDate.value;
@@ -210,6 +220,8 @@ export class EventFormModal {
       this.customReminderMinutes.reset(null);
       this.createMode.set('event');
       this.todoError.set(null);
+      this.todoDueDateOpen.set(false);
+      this.todoListId.set(null);
       this.dateTimeOpen.set(false);
       this.attendeesOpen.set(false);
       // Mở sẵn cho sự kiện mới để lời nhắc mặc định NHÌN THẤY được và bỏ tick
@@ -495,6 +507,48 @@ export class EventFormModal {
   setCreateMode(mode: 'event' | 'todo'): void {
     this.createMode.set(mode);
     this.todoError.set(null);
+    if (mode === 'todo' && this.todoLists().length === 0 && !this.loadingTodoLists()) {
+      void this.loadTodoLists();
+    } else if (mode === 'todo' && !this.todoListId()) {
+      this.todoListId.set(this.todoLists()[0]?.id ?? null);
+    }
+  }
+
+  /** CalendarStore đã tự tải todoLists() lúc đăng nhập — nhánh rỗng ở đây chỉ
+   *  là lưới an toàn cho trường hợp modal mở ra trước khi tải xong. */
+  private async loadTodoLists(): Promise<void> {
+    this.loadingTodoLists.set(true);
+    try {
+      const list = await this.store.ensureDefaultTodoList();
+      if (!this.todoListId()) this.todoListId.set(list.id);
+    } finally {
+      this.loadingTodoLists.set(false);
+    }
+  }
+
+  protected readonly newTodoListValue = NEW_TODO_LIST_VALUE;
+
+  async onTodoListSelect(event: Event): Promise<void> {
+    const select = event.target as HTMLSelectElement;
+    if (select.value !== NEW_TODO_LIST_VALUE) {
+      this.todoListId.set(select.value);
+      return;
+    }
+    const name = prompt('Tên danh sách mới:')?.trim();
+    if (!name) {
+      // Angular bỏ qua việc ghi lại [value] nếu todoListId() không đổi (dù
+      // DOM <select> vừa bị người dùng tự đổi qua tay) — reset thẳng DOM để
+      // không kẹt lại ở dòng "+ Tạo danh sách mới".
+      select.value = this.todoListId() ?? '';
+      return;
+    }
+    try {
+      const list = await this.store.createTodoList(name);
+      this.todoListId.set(list.id);
+    } catch (err) {
+      this.todoError.set(extractErrorMessage(err, this.i18n.t('event.genericError')));
+      select.value = this.todoListId() ?? '';
+    }
   }
 
   onSubmit(): void {
@@ -516,7 +570,16 @@ export class EventFormModal {
     this.savingTodo.set(true);
     this.todoError.set(null);
     try {
-      await this.store.createTodo(content);
+      const listId = this.todoListId() ?? (await this.store.ensureDefaultTodoList()).id;
+      const v = this.form.getRawValue();
+      const dueAt = this.todoDueDateOpen() && v.startDate
+        ? parseTime24(v.startTime || '09:00', fromDateInputValue(v.startDate))
+        : undefined;
+
+      await this.store.createTodo(content, listId, {
+        description: v.description.trim() || undefined,
+        dueAt,
+      });
       this.closed.emit();
     } catch (err) {
       this.todoError.set(extractErrorMessage(err, this.i18n.t('event.genericError')));

@@ -83,8 +83,20 @@ export interface Note {
 
 export interface Todo {
   id: string;
+  listId: string;
   content: string;
+  description?: string;
   done: boolean;
+  dueAt?: Date;
+  starred: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TodoList {
+  id: string;
+  name: string;
+  position: number;
   createdAt: Date;
   updatedAt: Date;
 }
