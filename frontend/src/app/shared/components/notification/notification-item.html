@@ -62,7 +62,7 @@
           [disabled]="responding()"
           (click)="onAccept($event)"
         >
-          {{ responding() ? 'Đang xử lý…' : acceptLabel() }}
+          {{ responding() ? i18n.t('notif.processing') : acceptLabel() }}
         </button>
         <button
           type="button"
@@ -70,7 +70,7 @@
           [disabled]="responding()"
           (click)="onDecline($event)"
         >
-          Từ chối
+          {{ i18n.t('notif.decline') }}
         </button>
       </div>
     } @else if (actionStatusLabel(); as label) {
@@ -81,7 +81,7 @@
   <button
     type="button"
     class="notif-card__dismiss"
-    aria-label="Xóa thông báo"
+    [attr.aria-label]="i18n.t('notif.dismiss')"
     (click)="onDismiss($event)"
   >
     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">

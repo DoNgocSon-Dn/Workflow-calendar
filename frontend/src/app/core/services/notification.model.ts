@@ -80,21 +80,45 @@ export function notificationCategory(type: NotificationType): NotificationCatego
   return CATEGORY_BY_TYPE[type];
 }
 
-/** "Vừa xong" / "5 phút trước" / "1 giờ trước" / "Hôm qua" / absolute date. */
-export function formatNotificationTime(iso: string, now: Date = new Date()): string {
+/** Hàm tra chuỗi dịch. Truyền vào thay vì inject TranslationService để hàm
+ *  này vẫn thuần và test được, đồng thời model không phải phụ thuộc Angular. */
+export type TranslateFn = (key: string, vars?: Readonly<Record<string, string | number>>) => string;
+
+/** "Vừa xong" / "5 phút trước" / "1 giờ trước" / "Hôm qua" / ngày tuyệt đối.
+ *  Không truyền `translate` thì rơi về tiếng Việt như trước. */
+export function formatNotificationTime(
+  iso: string,
+  now: Date = new Date(),
+  translate?: TranslateFn,
+): string {
+  const t: TranslateFn = translate ?? ((key, vars) => {
+    const fallback: Record<string, string> = {
+      'notif.timeJustNow': 'Vừa xong',
+      'notif.timeMinutesAgo': '{n} phút trước',
+      'notif.timeHoursAgo': '{n} giờ trước',
+      'notif.timeYesterday': 'Hôm qua',
+      'notif.timeDaysAgo': '{n} ngày trước',
+    };
+    return (fallback[key] ?? key).replace('{n}', String(vars?.['n'] ?? ''));
+  });
+
   const date = new Date(iso);
   const diffMs = now.getTime() - date.getTime();
   const diffMin = Math.floor(diffMs / 60_000);
 
-  if (diffMin < 1) return 'Vừa xong';
-  if (diffMin < 60) return `${diffMin} phút trước`;
+  if (diffMin < 1) return t('notif.timeJustNow');
+  if (diffMin < 60) return t('notif.timeMinutesAgo', { n: diffMin });
 
   const diffHour = Math.floor(diffMin / 60);
-  if (diffHour < 24) return `${diffHour} giờ trước`;
+  if (diffHour < 24) return t('notif.timeHoursAgo', { n: diffHour });
 
   const diffDay = Math.floor(diffHour / 24);
-  if (diffDay === 1) return 'Hôm qua';
-  if (diffDay < 7) return `${diffDay} ngày trước`;
+  if (diffDay === 1) return t('notif.timeYesterday');
+  if (diffDay < 7) return t('notif.timeDaysAgo', { n: diffDay });
 
-  return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+  // Ngày tuyệt đối cũng theo ngôn ngữ đang chọn, không cứng vi-VN.
+  const dateLocale = translate ? translate('common.dateLocale') : 'vi-VN';
+  return new Intl.DateTimeFormat(dateLocale, {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+  }).format(date);
 }

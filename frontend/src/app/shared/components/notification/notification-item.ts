@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { TranslationService } from '../../../core/i18n/translation.service';
 import {
   AppNotification,
   NotificationRespondPayload,
@@ -66,6 +67,8 @@ setInterval(() => nowTick.set(Date.now()), 30_000);
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NotificationItem {
+  protected readonly i18n = inject(TranslationService);
+
   readonly notification = input.required<AppNotification>();
   /** Đang chờ backend xác nhận Chấp nhận/Từ chối. */
   readonly responding = input<boolean>(false);
@@ -75,7 +78,7 @@ export class NotificationItem {
   readonly dismiss = output<AppNotification>();
 
   protected readonly timeLabel = computed(() =>
-    formatNotificationTime(this.notification().createdAt, new Date(nowTick())),
+    formatNotificationTime(this.notification().createdAt, new Date(nowTick()), (k, v) => this.i18n.t(k, v)),
   );
 
   protected readonly visual = computed<NotificationVisual>(() => VISUAL_BY_TYPE[this.notification().type]);
@@ -114,17 +117,19 @@ export class NotificationItem {
 
     if (diffMs < 0) {
       const overdueMin = Math.floor(-diffMs / 60_000);
-      if (overdueMin < 60) return `Trễ ${overdueMin} phút`;
+      if (overdueMin < 60) return this.i18n.t('notif.lateMinutes', { n: overdueMin });
       const overdueHours = Math.floor(overdueMin / 60);
-      return overdueHours < 24 ? `Trễ ${overdueHours} giờ` : `Trễ ${Math.floor(overdueHours / 24)} ngày`;
+      return overdueHours < 24
+        ? this.i18n.t('notif.lateHours', { n: overdueHours })
+        : this.i18n.t('notif.lateDays', { n: Math.floor(overdueHours / 24) });
     }
 
     const min = Math.round(diffMs / 60_000);
-    if (min < 1) return 'Sắp bắt đầu';
-    if (min < 60) return `Còn ${min} phút`;
+    if (min < 1) return this.i18n.t('notif.startingSoon');
+    if (min < 60) return this.i18n.t('notif.inMinutes', { n: min });
     const hours = Math.floor(min / 60);
-    if (hours < 24) return `Còn ${hours} giờ`;
-    return `Còn ${Math.floor(hours / 24)} ngày`;
+    if (hours < 24) return this.i18n.t('notif.inHours', { n: hours });
+    return this.i18n.t('notif.inDays', { n: Math.floor(hours / 24) });
   });
 
   protected readonly isActionable = computed(
@@ -135,13 +140,13 @@ export class NotificationItem {
 
   protected readonly actionStatusLabel = computed<string | null>(() => {
     const status = this.notification().actionStatus;
-    if (status === 'accepted') return 'Đã chấp nhận';
-    if (status === 'declined') return 'Đã từ chối';
+    if (status === 'accepted') return this.i18n.t('notif.accepted');
+    if (status === 'declined') return this.i18n.t('notif.declined');
     return null;
   });
 
   protected readonly acceptLabel = computed(() =>
-    this.notification().type === 'event_invitation' ? 'Tham gia' : 'Chấp nhận',
+    this.notification().type === 'event_invitation' ? this.i18n.t('notif.join') : this.i18n.t('notif.accept'),
   );
 
   onActivate(): void {

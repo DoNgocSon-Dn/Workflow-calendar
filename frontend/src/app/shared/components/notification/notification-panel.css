@@ -323,9 +323,79 @@
   max-width: 16rem;
 }
 
-@media (max-width: 480px) {
+/* ===== Mobile: chuyển hẳn sang bottom sheet ==========================
+   Dropdown neo theo nút chuông không dùng được trên màn hẹp: nó bị tràn mép
+   và nằm ngoài tầm ngón cái. Bottom sheet đưa nội dung xuống cạnh dưới, nơi
+   tay cầm máy chạm tới được. */
+@media (max-width: 560px) {
   :host {
-    width: 20rem;
+    position: fixed;
+    inset: auto 0 0 0;
+    width: 100%;
+    max-width: 100%;
+    z-index: 1300;
+  }
+
+  .notif-panel {
+    max-height: 82vh;
+    /* Bo góc chỉ ở trên: cạnh dưới dính vào mép màn hình. */
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    border-bottom: none;
+    box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.35);
+    animation: notifSheetIn 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+    /* Chừa vùng an toàn cho thanh gesture của iOS. */
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  @keyframes notifSheetIn {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+
+  /* Thanh kéo — dấu hiệu quen thuộc báo đây là sheet vuốt xuống được. */
+  .notif-panel__grabber {
+    display: block;
+    width: 2.5rem;
+    height: 4px;
+    margin: 0.55rem auto 0.15rem;
+    border-radius: var(--radius-full);
+    background: var(--color-border-strong);
+    flex-shrink: 0;
+  }
+
+  /* Vùng chạm rộng hơn cho ngón tay. */
+  .notif-panel__tab {
+    padding: 0.5rem 0.85rem;
+  }
+
+  .notif-panel__list {
+    padding-bottom: 0.8rem;
+  }
+}
+
+/* Trên desktop thanh kéo là thừa. */
+.notif-panel__grabber {
+  display: none;
+}
+
+/* Nền mờ phía sau sheet, chỉ có trên mobile. */
+.notif-panel__scrim {
+  display: none;
+}
+
+@media (max-width: 560px) {
+  .notif-panel__scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: rgba(0, 0, 0, 0.45);
+    animation: scrimIn 0.26s ease both;
+  }
+
+  @keyframes scrimIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
 }
 

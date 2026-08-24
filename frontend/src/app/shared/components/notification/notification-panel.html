@@ -1,7 +1,15 @@
-<div class="notif-panel" role="menu" aria-label="Thông báo">
+<span class="notif-panel__scrim" aria-hidden="true" (click)="close.emit()"></span>
+
+<div class="notif-panel" role="menu" [attr.aria-label]="i18n.t('notif.title')">
+  <span
+    class="notif-panel__grabber"
+    aria-hidden="true"
+    (pointerdown)="onSheetDragStart($event)"
+  ></span>
+
   @if (realtimeOffline()) {
     <p class="notif-panel__offline" role="status">
-      Mất kết nối máy chủ — thông báo mới tạm dừng cho tới khi kết nối lại.
+      {{ i18n.t('notif.offline') }}
     </p>
   }
 
@@ -12,20 +20,20 @@
           <path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1z" />
         </svg>
       </span>
-      <h2 class="notif-panel__title">Thông báo</h2>
+      <h2 class="notif-panel__title">{{ i18n.t('notif.title') }}</h2>
       @if (unreadCount() > 0) {
-        <span class="notif-panel__unread-pill">{{ unreadCount() }} mới</span>
+        <span class="notif-panel__unread-pill">{{ i18n.t('notif.unreadPill', { count: unreadCount() }) }}</span>
       }
     </div>
     <div class="notif-panel__header-actions">
       @if (unreadCount() > 0) {
         <button type="button" class="notif-panel__mark-all" (click)="markAllRead()">
-          Đánh dấu tất cả đã đọc
+          {{ i18n.t('notif.markAllRead') }}
         </button>
       }
       @if (hasAnyNotification()) {
         <button type="button" class="notif-panel__clear-all" (click)="clearAll()">
-          Xóa tất cả
+          {{ i18n.t('notif.clearAll') }}
         </button>
       }
     </div>
@@ -33,16 +41,16 @@
 
   @if (pendingCalendarInvites().length > 0) {
     <div class="notif-panel__invites">
-      <p class="notif-panel__invites-title">Lời mời tham gia lịch</p>
+      <p class="notif-panel__invites-title">{{ i18n.t('notif.calendarInvites') }}</p>
       @for (invite of pendingCalendarInvites(); track invite.id) {
         <div class="notif-panel__invite-item">
           <p class="notif-panel__invite-text">
             @if (invite.inviterEmail) {
-              <strong>{{ invite.inviterEmail }}</strong> mời bạn vào
+              <strong>{{ invite.inviterEmail }}</strong> {{ i18n.t('notif.invitedBy') }}
             } @else {
-              Bạn được mời vào
+              {{ i18n.t('notif.invitedPlain') }}
             }
-            "{{ invite.calendarName }}" ({{ invite.role === 'editor' ? 'chỉnh sửa' : 'chỉ xem' }})
+            "{{ invite.calendarName }}" ({{ invite.role === 'editor' ? i18n.t('notif.roleEditor') : i18n.t('notif.roleViewer') }})
           </p>
           <div class="notif-panel__invite-actions">
             <button
@@ -51,7 +59,7 @@
               [disabled]="respondingInviteId() === invite.id"
               (click)="onRespondCalendarInvite(invite.id, 'accepted')"
             >
-              Đồng ý
+              {{ i18n.t('notif.agree') }}
             </button>
             <button
               type="button"
@@ -59,7 +67,7 @@
               [disabled]="respondingInviteId() === invite.id"
               (click)="onRespondCalendarInvite(invite.id, 'declined')"
             >
-              Từ chối
+              {{ i18n.t('notif.decline') }}
             </button>
           </div>
         </div>
@@ -78,7 +86,7 @@
           [attr.aria-selected]="activeTab() === tab.id"
           (click)="setTab(tab.id)"
         >
-          {{ tab.label }}
+          {{ i18n.t(tab.labelKey) }}
         </button>
       }
       <span class="notif-panel__tabs-end-spacer" aria-hidden="true"></span>
@@ -91,7 +99,7 @@
 
   @if (newWhileScrolled() > 0) {
     <button type="button" class="notif-panel__new-pill" (click)="scrollToNewest()">
-      ↑ {{ newWhileScrolled() }} thông báo mới
+      {{ i18n.t('notif.newWhileScrolled', { count: newWhileScrolled() }) }}
     </button>
   }
 
@@ -103,13 +111,13 @@
             <path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1z" />
           </svg>
         </span>
-        <p class="notif-panel__empty-title">Không có thông báo mới</p>
-        <p class="notif-panel__empty-body">Bạn đã xem hết hoạt động hôm nay.</p>
+        <p class="notif-panel__empty-title">{{ i18n.t('notif.emptyTitle') }}</p>
+        <p class="notif-panel__empty-body">{{ i18n.t('notif.emptyBody') }}</p>
       </div>
     } @else {
       @for (section of groupedSections(); track section.key) {
         <p class="notif-panel__section-label">
-          {{ section.label }}
+          {{ i18n.t(section.labelKey) }}
           <span class="notif-panel__section-count">{{ section.items.length }}</span>
         </p>
         @for (n of section.items; track n.id) {

@@ -18,18 +18,19 @@ import {
 } from '../../../core/services/notification.model';
 import { NotificationItem } from './notification-item';
 import { GroupStore } from '../../../features/groups/data/group-store';
+import { TranslationService } from '../../../core/i18n/translation.service';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { CalendarStore } from '../../../features/calendar/data/calendar-store';
 
 type NotificationTabId = 'all' | 'unread' | 'message' | 'task' | 'event' | 'group';
 
-const TABS: readonly { id: NotificationTabId; label: string }[] = [
-  { id: 'all', label: 'Tất cả' },
-  { id: 'unread', label: 'Chưa đọc' },
-  { id: 'message', label: 'Tin nhắn' },
-  { id: 'task', label: 'Công việc' },
-  { id: 'event', label: 'Sự kiện' },
-  { id: 'group', label: 'Nhóm' },
+const TABS: readonly { id: NotificationTabId; labelKey: string }[] = [
+  { id: 'all', labelKey: 'notif.tabAll' },
+  { id: 'unread', labelKey: 'notif.tabUnread' },
+  { id: 'message', labelKey: 'notif.tabMessage' },
+  { id: 'task', labelKey: 'notif.tabTask' },
+  { id: 'event', labelKey: 'notif.tabEvent' },
+  { id: 'group', labelKey: 'notif.tabGroup' },
 ];
 
 const EVENT_RELATED_TYPES = new Set<AppNotification['type']>(['event_invitation', 'event_update', 'reminder']);
@@ -37,7 +38,7 @@ const EVENT_RELATED_TYPES = new Set<AppNotification['type']>(['event_invitation'
 /** Dưới ngưỡng này coi như người dùng vẫn đang ở đầu danh sách. */
 interface NotificationSection {
   readonly key: string;
-  readonly label: string;
+  readonly labelKey: string;
   readonly items: readonly AppNotification[];
 }
 
@@ -59,6 +60,7 @@ export interface OpenGroupChatRequest {
 })
 export class NotificationPanel {
   private readonly service = inject(NotificationService);
+  protected readonly i18n = inject(TranslationService);
   private readonly realtime = inject(RealtimeService);
 
   /** Real-time còn sống không — mất kết nối thì báo rõ, thay vì để danh sách
@@ -83,7 +85,7 @@ export class NotificationPanel {
     try {
       await this.calendarStore.respondToCalendarInvite(inviteId, status);
     } catch {
-      this.respondError.set('Không thể xử lý lời mời. Vui lòng thử lại.');
+      this.respondError.set(this.i18n.t('notif.respondError'));
     } finally {
       this.respondingInviteId.set(null);
     }
@@ -130,9 +132,9 @@ export class NotificationPanel {
     }
 
     return [
-      { key: 'fresh', label: 'Mới', items: fresh },
-      { key: 'today', label: 'Hôm nay', items: today },
-      { key: 'earlier', label: 'Trước đó', items: earlier },
+      { key: 'fresh', labelKey: 'notif.sectionFresh', items: fresh },
+      { key: 'today', labelKey: 'notif.sectionToday', items: today },
+      { key: 'earlier', labelKey: 'notif.sectionEarlier', items: earlier },
     ].filter((section) => section.items.length > 0);
   });
 
@@ -158,6 +160,47 @@ export class NotificationPanel {
         }
       });
     });
+  }
+
+  /**
+   * Vuốt thanh kéo xuống để đóng sheet trên mobile.
+   *
+   * Dùng Pointer Events nên chạy chung cho cả chạm lẫn chuột, và
+   * setPointerCapture giữ được luồng sự kiện kể cả khi ngón tay trượt ra ngoài
+   * thanh kéo — thiếu nó thì vuốt nhanh sẽ bị rớt giữa chừng.
+   */
+  onSheetDragStart(event: PointerEvent): void {
+    const sheet = (event.currentTarget as HTMLElement).closest('.notif-panel') as HTMLElement | null;
+    if (!sheet) return;
+
+    const startY = event.clientY;
+    const target = event.currentTarget as HTMLElement;
+    target.setPointerCapture(event.pointerId);
+    sheet.style.transition = 'none';
+
+    const onMove = (move: PointerEvent): void => {
+      // Chỉ cho kéo XUỐNG; kéo lên không làm sheet dính lên trên mép màn hình.
+      const delta = Math.max(0, move.clientY - startY);
+      sheet.style.transform = `translateY(${delta}px)`;
+    };
+
+    const onEnd = (end: PointerEvent): void => {
+      target.removeEventListener('pointermove', onMove);
+      target.removeEventListener('pointerup', onEnd);
+      target.removeEventListener('pointercancel', onEnd);
+      sheet.style.transition = '';
+
+      // Quá 1/4 chiều cao sheet thì coi như muốn đóng; chưa tới thì bật về.
+      if (end.clientY - startY > sheet.offsetHeight * 0.25) {
+        this.close.emit();
+      } else {
+        sheet.style.transform = '';
+      }
+    };
+
+    target.addEventListener('pointermove', onMove);
+    target.addEventListener('pointerup', onEnd);
+    target.addEventListener('pointercancel', onEnd);
   }
 
   onListScroll(): void {
@@ -187,7 +230,7 @@ export class NotificationPanel {
 
   clearAll(): void {
     if (!this.hasAnyNotification()) return;
-    if (!confirm('Xóa tất cả thông báo? Hành động này không thể hoàn tác.')) return;
+    if (!confirm(this.i18n.t('notif.clearConfirm'))) return;
     this.service.clearAll();
   }
 
@@ -237,7 +280,7 @@ export class NotificationPanel {
     try {
       await this.groupStore.respondToInvite(inviteId, payload.status);
     } catch {
-      this.respondError.set('Không thể xử lý lời mời. Vui lòng thử lại.');
+      this.respondError.set(this.i18n.t('notif.respondError'));
     } finally {
       this.respondingId.set(null);
     }
