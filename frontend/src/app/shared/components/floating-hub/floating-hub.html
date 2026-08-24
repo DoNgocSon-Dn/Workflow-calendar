@@ -1,6 +1,7 @@
 @if (open()) {
   <div
     class="panel"
+    [style.--ripple-origin]="rippleOrigin()"
     role="dialog"
     [attr.aria-label]="activeTab() === 'notes' ? 'Ghi chú cá nhân' : activeTab() === 'todos' ? 'Việc cần làm' : 'Trợ lý AI'"
     [style.left.px]="panelLeft()"
@@ -8,6 +9,17 @@
     [style.top.px]="panelTop()"
     [style.bottom.px]="panelBottom()"
   >
+    <!-- MỘT vòng sóng duy nhất, và chỉ tồn tại trong lượt mở: @if gỡ hẳn nó
+         khỏi DOM sau ~900ms nên card không còn lớp phủ nào nằm trên nội dung. -->
+    @if (rippleActive()) {
+      <span
+        class="panel-ripple"
+        aria-hidden="true"
+        [style.--ripple-x]="rippleX()"
+        [style.--ripple-y]="rippleY()"
+      ></span>
+    }
+
     <div class="panel-tabs">
       <button type="button" class="tab-btn" [class.active]="activeTab() === 'notes'" (click)="setTab('notes')">
         📝 Ghi chú
@@ -140,22 +152,43 @@
       @default {
       <div class="messages">
         @if (messages().length === 0) {
-          <p class="hint-text">
-            Gõ câu tự nhiên để lên lịch hoặc chọn gợi ý bên dưới:
-          </p>
-          <div class="suggestions-list">
-            @for (s of suggestions; track s) {
-              <button
-                type="button"
-                class="suggestion-chip"
-                [disabled]="sending()"
-                (click)="sendSuggestion(s)"
-              >
-                ✨ {{ s }}
-              </button>
-            }
+          <div class="ai-welcome">
+            <span class="ai-welcome__aura" aria-hidden="true"></span>
+
+            <span class="ai-welcome__mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path
+                  fill="currentColor"
+                  d="M12 2l1.9 5.6L19.5 9.5 13.9 11.4 12 17l-1.9-5.6L4.5 9.5l5.6-1.9zM18 15l.9 2.6 2.6.9-2.6.9L18 22l-.9-2.6-2.6-.9 2.6-.9z"
+                />
+              </svg>
+            </span>
+
+            <h3 class="ai-welcome__title">Hôm nay bạn muốn sắp xếp gì?</h3>
+            <p class="ai-welcome__sub">
+              Viết bằng câu tiếng Việt bình thường — mình đọc được ngày giờ và tạo sự kiện thẳng vào lịch.
+            </p>
+
+            <div class="ai-suggestions">
+              @for (s of suggestions; track s) {
+                <button
+                  type="button"
+                  class="ai-suggestion"
+                  [disabled]="sending()"
+                  (click)="sendSuggestion(s)"
+                >
+                  <span class="ai-suggestion__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="13" height="13">
+                      <path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V9h14z" />
+                    </svg>
+                  </span>
+                  <span class="ai-suggestion__text">{{ s }}</span>
+                </button>
+              }
+            </div>
           </div>
         }
+
         @for (m of messages(); track m.id) {
           <div class="message" [class]="'role-' + m.role">
             <p>{{ m.text }}</p>
@@ -170,11 +203,30 @@
             }
           </div>
         }
+
+        <!-- Trạng thái đang nghĩ: nằm NGAY dưới tin nhắn cuối nên không bao giờ
+             có khoảng trống giữa lúc gửi và lúc có trả lời. -->
+        @if (sending()) {
+          <div class="ai-thinking" role="status" aria-live="polite">
+            <span class="ai-thinking__pulse" aria-hidden="true">
+              <i></i><i></i><i></i>
+            </span>
+            <!-- track theo chính câu chữ: câu đổi thì Angular thay node, nhờ
+                 vậy animation crossfade chạy lại cho từng câu. -->
+            @for (line of [thinkingLine()]; track line) {
+              <span class="ai-thinking__line">{{ line }}</span>
+            }
+          </div>
+        }
       </div>
 
       @if (aiError()) {
         <p class="field-error">{{ aiError() }}</p>
       }
+
+      <p class="ai-disclaimer">
+        WorkflowAI có thể mắc lỗi. Hãy kiểm tra các thông tin quan trọng.
+      </p>
 
       <div class="input-row">
         <input
