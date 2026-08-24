@@ -33,8 +33,10 @@ import {
   Note,
   Reminder,
   ReminderDraft,
+  Todo,
 } from '../models/calendar.models';
-import { addDays, clampToDay, formatTimeLabel, startOfDay } from '../utils/date-utils';
+import { TimeFormatService } from '../../../core/time-format/time-format-service';
+import { TimeFormat, addDays, clampToDay, formatTimeLabel, startOfDay } from '../utils/date-utils';
 import { VN_HOLIDAY_CALENDAR_DEF, VN_HOLIDAY_CALENDAR_ID, buildVietnamHolidayEvents } from './vietnam-holidays';
 
 const SELF_ORIGIN_TTL_MS = 8000;
@@ -112,6 +114,14 @@ interface NoteApiDto {
   updatedAt: string;
 }
 
+interface TodoApiDto {
+  id: string;
+  content: string;
+  done: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 function toReminder(dto: ReminderApiDto): Reminder {
   return { id: dto.id, eventId: dto.eventId, remindAt: new Date(dto.remindAt), type: dto.type };
 }
@@ -131,6 +141,16 @@ function toNote(dto: NoteApiDto): Note {
     id: dto.id,
     content: dto.content,
     color: dto.color,
+    createdAt: new Date(dto.createdAt),
+    updatedAt: new Date(dto.updatedAt),
+  };
+}
+
+function toTodo(dto: TodoApiDto): Todo {
+  return {
+    id: dto.id,
+    content: dto.content,
+    done: dto.done,
     createdAt: new Date(dto.createdAt),
     updatedAt: new Date(dto.updatedAt),
   };
@@ -203,9 +223,9 @@ function toEventApiPayload(draft: Partial<CalendarEventDraft>): Record<string, u
   return payload;
 }
 
-function eventTimeLabel(event: CalendarEvent): string {
+function eventTimeLabel(event: CalendarEvent, format: TimeFormat): string {
   if (event.allDay) return 'Cả ngày';
-  return `${formatTimeLabel(event.start)} - ${formatTimeLabel(event.end)}`;
+  return `${formatTimeLabel(event.start, 'vi', format)} - ${formatTimeLabel(event.end, 'vi', format)}`;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -217,6 +237,7 @@ export class CalendarStore {
   private readonly notificationQueue = inject(NotificationQueue);
   private readonly notifications = inject(NotificationService);
   private readonly groupStore = inject(GroupStore);
+  private readonly timeFormatService = inject(TimeFormatService);
 
   private readonly apiUrl = environment.apiUrl;
   private readonly selfOriginIds = new Set<string>();
@@ -510,14 +531,15 @@ export class CalendarStore {
   private handleRemoteCreated(dto: EventApiDto): void {
     const event = toCalendarEvent(dto);
     this.upsertEvent(event);
-    if (!this.notifyIfNotSelfOrigin(event.id, 'created', `Sự kiện mới: ${event.title}`, eventTimeLabel(event))) {
+    const timeLabel = eventTimeLabel(event, this.timeFormatService.format());
+    if (!this.notifyIfNotSelfOrigin(event.id, 'created', `Sự kiện mới: ${event.title}`, timeLabel)) {
       return;
     }
     this.notifications.ingest(
       eventCreatedDraft({
         eventId: event.id,
         title: event.title,
-        timeLabel: eventTimeLabel(event),
+        timeLabel,
         start: dto.start,
         end: dto.end,
       }),
@@ -527,14 +549,15 @@ export class CalendarStore {
   private handleRemoteUpdated(dto: EventApiDto): void {
     const event = toCalendarEvent(dto);
     this.upsertEvent(event);
-    if (!this.notifyIfNotSelfOrigin(event.id, 'updated', `Đã cập nhật: ${event.title}`, eventTimeLabel(event))) {
+    const timeLabel = eventTimeLabel(event, this.timeFormatService.format());
+    if (!this.notifyIfNotSelfOrigin(event.id, 'updated', `Đã cập nhật: ${event.title}`, timeLabel)) {
       return;
     }
     this.notifications.ingest(
       eventUpdatedDraft({
         eventId: event.id,
         title: event.title,
-        timeLabel: eventTimeLabel(event),
+        timeLabel,
         start: dto.start,
         end: dto.end,
       }),
@@ -622,7 +645,7 @@ export class CalendarStore {
       eventId: payload.eventId,
       reminderId: payload.reminderId,
       title: `Nhắc lịch: ${payload.title}`,
-      body: payload.startAt ? formatTimeLabel(new Date(payload.startAt)) : '',
+      body: payload.startAt ? formatTimeLabel(new Date(payload.startAt), 'vi', this.timeFormatService.format()) : '',
       kind: 'reminder',
     });
     this.notifications.ingest(reminderDraft(payload));
@@ -940,6 +963,29 @@ export class CalendarStore {
 
   async deleteNote(id: string): Promise<void> {
     await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/notes/${id}`));
+  }
+
+  async listTodos(): Promise<Todo[]> {
+    const result = await firstValueFrom(this.http.get<TodoApiDto[]>(`${this.apiUrl}/todos`));
+    return result.map(toTodo);
+  }
+
+  async createTodo(content: string): Promise<Todo> {
+    const result = await firstValueFrom(
+      this.http.post<TodoApiDto>(`${this.apiUrl}/todos`, { content }),
+    );
+    return toTodo(result);
+  }
+
+  async updateTodo(id: string, changes: { content?: string; done?: boolean }): Promise<Todo> {
+    const result = await firstValueFrom(
+      this.http.patch<TodoApiDto>(`${this.apiUrl}/todos/${id}`, changes),
+    );
+    return toTodo(result);
+  }
+
+  async deleteTodo(id: string): Promise<void> {
+    await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/todos/${id}`));
   }
 
   async sendAiChat(

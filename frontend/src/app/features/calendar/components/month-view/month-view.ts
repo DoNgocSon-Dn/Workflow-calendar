@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
 import { DensityService } from '../../../../core/density/density-service';
 import { TranslationService } from '../../../../core/i18n/translation.service';
+import { TimeFormatService } from '../../../../core/time-format/time-format-service';
 import { CalendarStore } from '../../data/calendar-store';
 import { CALENDAR_COLOR_HEX, CalendarEvent } from '../../models/calendar.models';
 import {
@@ -37,6 +38,7 @@ export class MonthView {
   protected readonly store = inject(CalendarStore);
   private readonly densityService = inject(DensityService);
   protected readonly i18n = inject(TranslationService);
+  private readonly timeFormatService = inject(TimeFormatService);
   protected readonly colorHex = CALENDAR_COLOR_HEX;
 
   protected readonly weekdayHeaders = computed(() => [
@@ -106,7 +108,9 @@ export class MonthView {
   }
 
   eventLabel(event: CalendarEvent): string {
-    return event.allDay ? event.title : `${formatTimeLabel(event.start, this.i18n.locale())} ${event.title}`;
+    return event.allDay
+      ? event.title
+      : `${formatTimeLabel(event.start, this.i18n.locale(), this.timeFormatService.format())} ${event.title}`;
   }
 
   isToday(day: Date): boolean {

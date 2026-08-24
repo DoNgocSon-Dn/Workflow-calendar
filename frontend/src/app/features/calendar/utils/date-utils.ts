@@ -82,6 +82,10 @@ export function spansDays(start: Date, end: Date): number {
  *  file has no DI context, so callers pass the current locale explicitly. */
 export type DateLocale = 'vi' | 'en';
 
+/** Matches TimeFormatService's setting — see note above on why this file
+ *  takes it as a plain param instead of injecting the service. */
+export type TimeFormat = '24h' | '12h';
+
 const WEEKDAY_SHORT: Record<DateLocale, readonly string[]> = {
   vi: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'],
   en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
@@ -111,8 +115,9 @@ export function monthYearLabel(date: Date, locale: DateLocale = 'vi'): string {
   return `${MONTH_LABEL[locale][date.getMonth()]} ${date.getFullYear()}`;
 }
 
-export function formatHourLabel(hour: number, locale: DateLocale = 'vi'): string {
+export function formatHourLabel(hour: number, locale: DateLocale = 'vi', format: TimeFormat = '24h'): string {
   if (hour === 0) return '';
+  if (format === '24h') return `${hour}`;
   const period = hour < 12 ? AM_PM[locale].am : AM_PM[locale].pm;
   const h12 = hour % 12 === 0 ? 12 : hour % 12;
   return `${h12} ${period}`;
@@ -122,12 +127,14 @@ export function formatTime24(date: Date): string {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
-export function formatTimeLabel(date: Date, locale: DateLocale = 'vi'): string {
+export function formatTimeLabel(date: Date, locale: DateLocale = 'vi', format: TimeFormat = '24h'): string {
   const h = date.getHours();
   const m = date.getMinutes();
+  const mm = String(m).padStart(2, '0');
+  if (format === '24h') return `${h}:${mm}`;
   const period = h < 12 ? AM_PM[locale].am : AM_PM[locale].pm;
   const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+  return `${h12}:${mm} ${period}`;
 }
 
 export function parseTime24(value: string, day: Date): Date {

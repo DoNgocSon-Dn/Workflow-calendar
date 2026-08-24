@@ -13,6 +13,7 @@ import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angu
 import { debounceTime, distinctUntilChanged, map } from 'rxjs';
 import { AuthStore } from '../../../../core/auth/auth-store';
 import { TranslationService } from '../../../../core/i18n/translation.service';
+import { TimeFormatService } from '../../../../core/time-format/time-format-service';
 import { CalendarStore } from '../../data/calendar-store';
 import {
   Attendee,
@@ -78,6 +79,7 @@ export class EventFormModal {
   private readonly store = inject(CalendarStore);
   private readonly authStore = inject(AuthStore);
   protected readonly i18n = inject(TranslationService);
+  private readonly timeFormatService = inject(TimeFormatService);
 
   readonly event = input<CalendarEvent | null>(null);
   readonly defaultStart = input<Date | null>(null);
@@ -88,6 +90,11 @@ export class EventFormModal {
   readonly closed = output<void>();
 
   readonly durationPresets = DURATION_PRESETS;
+
+  /** Chỉ áp dụng khi tạo mới — sửa sự kiện có sẵn thì luôn ở chế độ 'event'. */
+  readonly createMode = signal<'event' | 'todo'>('event');
+  readonly savingTodo = signal(false);
+  readonly todoError = signal<string | null>(null);
 
   protected readonly lunarDateHint = computed(() => {
     const startDateStr = this.form.controls.startDate.value;
@@ -111,11 +118,37 @@ export class EventFormModal {
   readonly saving = signal(false);
   readonly saveError = signal<string | null>(null);
 
+  readonly dateTimeOpen = signal(false);
   readonly locationOpen = signal(false);
   readonly descriptionOpen = signal(false);
   readonly attendeesOpen = signal(false);
   readonly remindersOpen = signal(false);
   readonly commentsOpen = signal(false);
+
+  /** Tóm tắt một dòng khi phần ngày/giờ đang thu gọn — vd "Thứ Bảy, 29 tháng 8, 9:00 – 10:00". */
+  protected readonly dateTimeSummary = computed(() => {
+    const v = this.form.getRawValue();
+    if (!v.startDate || !v.endDate) return '';
+    const locale = this.i18n.locale();
+    const intlLocale = locale === 'en' ? 'en-US' : 'vi-VN';
+    const startDate = fromDateInputValue(v.startDate);
+    const endDate = fromDateInputValue(v.endDate);
+    const dateFmt = new Intl.DateTimeFormat(intlLocale, { weekday: 'long', day: 'numeric', month: 'long' });
+    const sameDay = v.startDate === v.endDate;
+
+    if (v.allDay) {
+      return sameDay ? dateFmt.format(startDate) : `${dateFmt.format(startDate)} – ${dateFmt.format(endDate)}`;
+    }
+
+    const format = this.timeFormatService.format();
+    const start = parseTime24(v.startTime, startDate);
+    const end = parseTime24(v.endTime, endDate);
+    const startLabel = formatTimeLabel(start, locale, format);
+    const endLabel = formatTimeLabel(end, locale, format);
+    return sameDay
+      ? `${dateFmt.format(startDate)}, ${startLabel} – ${endLabel}`
+      : `${dateFmt.format(startDate)}, ${startLabel} – ${dateFmt.format(endDate)}, ${endLabel}`;
+  });
 
   readonly attendees = signal<Attendee[]>([]);
   readonly inviteEmailControl = new FormControl('', {
@@ -175,6 +208,9 @@ export class EventFormModal {
         evt ? new Map() : new Map([[DEFAULT_REMINDER_OFFSET_MINUTES, 'popup' as ReminderType]]),
       );
       this.customReminderMinutes.reset(null);
+      this.createMode.set('event');
+      this.todoError.set(null);
+      this.dateTimeOpen.set(false);
       this.attendeesOpen.set(false);
       // Mở sẵn cho sự kiện mới để lời nhắc mặc định NHÌN THẤY được và bỏ tick
       // được ngay — thêm lời nhắc ngầm sau lưng người dùng còn tệ hơn không thêm.
@@ -456,6 +492,39 @@ export class EventFormModal {
     }
   }
 
+  setCreateMode(mode: 'event' | 'todo'): void {
+    this.createMode.set(mode);
+    this.todoError.set(null);
+  }
+
+  onSubmit(): void {
+    if (this.createMode() === 'todo') {
+      void this.saveTodo();
+    } else {
+      void this.save();
+    }
+  }
+
+  async saveTodo(): Promise<void> {
+    const content = this.form.controls.title.value.trim();
+    if (!content) {
+      this.form.controls.title.markAsTouched();
+      return;
+    }
+    if (this.savingTodo()) return;
+
+    this.savingTodo.set(true);
+    this.todoError.set(null);
+    try {
+      await this.store.createTodo(content);
+      this.closed.emit();
+    } catch (err) {
+      this.todoError.set(extractErrorMessage(err, this.i18n.t('event.genericError')));
+    } finally {
+      this.savingTodo.set(false);
+    }
+  }
+
   remove(): void {
     const current = this.event();
     if (current) this.store.deleteEvent(current.id);
@@ -505,7 +574,8 @@ export class EventFormModal {
 
   protected conflictLabel(c: ConflictEvent): string {
     const locale = this.i18n.locale();
-    return `${c.title} (${formatTimeLabel(c.start, locale)} - ${formatTimeLabel(c.end, locale)})`;
+    const format = this.timeFormatService.format();
+    return `${c.title} (${formatTimeLabel(c.start, locale, format)} - ${formatTimeLabel(c.end, locale, format)})`;
   }
 }
 

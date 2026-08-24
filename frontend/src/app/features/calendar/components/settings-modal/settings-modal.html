@@ -11,216 +11,251 @@
     </header>
 
     <div class="modal-body">
-      <section class="profile-section">
-        <div class="avatar-preview">
-          @if (authStore.avatarUrl(); as avatarUrl) {
-            <img [src]="avatarUrl" alt="" class="avatar-img" />
-          } @else {
-            <span class="avatar-fallback">{{ (authStore.displayName() ?? authStore.user()?.email ?? '?').charAt(0).toUpperCase() }}</span>
-          }
-        </div>
-
-        <div class="profile-fields">
-          <label class="avatar-upload-btn">
-            {{ uploadingAvatar() ? i18n.t('settings.uploadingAvatar') : i18n.t('settings.changeAvatar') }}
-            <input
-              type="file"
-              accept="image/*"
-              class="sr-only"
-              [disabled]="uploadingAvatar()"
-              (change)="onAvatarSelected($event)"
-            />
-          </label>
-
-          <div class="name-field">
-            <label for="display-name-input" class="sr-only">{{ i18n.t('settings.displayNamePlaceholder') }}</label>
-            <div class="name-input-row">
-              <input
-                id="display-name-input"
-                type="text"
-                class="name-input"
-                [placeholder]="i18n.t('settings.displayNamePlaceholder')"
-                [value]="nameDraft()"
-                (input)="onNameInput($any($event.target).value)"
-              />
-              <button
-                type="button"
-                class="save-name-btn"
-                [disabled]="savingName() || !nameDraft().trim()"
-                (click)="saveName()"
-              >
-                {{ savingName() ? i18n.t('common.saving') : i18n.t('common.save') }}
-              </button>
-            </div>
-            @if (nameSaved()) {
-              <span class="profile-success">{{ i18n.t('settings.nameSaved') }}</span>
-            }
-          </div>
-
-          @if (profileError(); as err) {
-            <span class="profile-error">{{ err }}</span>
-          }
-        </div>
-      </section>
-
-      <div class="section-divider"></div>
-
-      <section class="setting-group">
-        <h3 class="section-label">{{ i18n.t('settings.sectionAppearance') }}</h3>
-
-        <div class="setting-row">
-          <span class="setting-title">{{ i18n.t('settings.mode') }}</span>
-          <div class="segmented" role="radiogroup" [attr.aria-label]="i18n.t('settings.mode')">
-            <button
-              type="button"
-              role="radio"
-              [attr.aria-checked]="themeService.theme() === 'light'"
-              [class.active]="themeService.theme() === 'light'"
-              (click)="setTheme('light')"
-            >
-              {{ i18n.t('settings.light') }}
-            </button>
-            <button
-              type="button"
-              role="radio"
-              [attr.aria-checked]="themeService.theme() === 'dark'"
-              [class.active]="themeService.theme() === 'dark'"
-              (click)="setTheme('dark')"
-            >
-              {{ i18n.t('settings.dark') }}
-            </button>
-          </div>
-        </div>
-
-        <div class="setting-row setting-row-stack">
-          <span class="setting-title">{{ i18n.t('settings.accentColor') }}</span>
-          <div class="theme-swatch-row" role="radiogroup" [attr.aria-label]="i18n.t('settings.accentColor')">
-            @for (option of brandThemeOptions; track option.value) {
-              <button
-                type="button"
-                role="radio"
-                class="theme-swatch-btn"
-                [attr.aria-checked]="brandThemeService.brandTheme() === option.value"
-                [class.active]="brandThemeService.brandTheme() === option.value"
-                (click)="setBrandTheme(option.value)"
-              >
-                <span class="theme-swatch-dot" [style.background-color]="option.swatch"></span>
-                {{ i18n.t(option.labelKey) }}
-              </button>
-            }
-          </div>
-        </div>
-
-        <div class="setting-row">
-          <span class="setting-title">{{ i18n.t('settings.density') }}</span>
-          <div class="segmented" role="radiogroup" [attr.aria-label]="i18n.t('settings.density')">
-            <button
-              type="button"
-              role="radio"
-              [attr.aria-checked]="densityService.density() === 'comfortable'"
-              [class.active]="densityService.density() === 'comfortable'"
-              (click)="setDensity('comfortable')"
-            >
-              {{ i18n.t('settings.comfortable') }}
-            </button>
-            <button
-              type="button"
-              role="radio"
-              [attr.aria-checked]="densityService.density() === 'compact'"
-              [class.active]="densityService.density() === 'compact'"
-              (click)="setDensity('compact')"
-            >
-              {{ i18n.t('settings.compact') }}
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <div class="section-divider"></div>
-
-      <section class="setting-group">
-        <h3 class="section-label">{{ i18n.t('settings.sectionLanguage') }}</h3>
-
-        <div class="setting-row">
-          <span class="setting-title">{{ i18n.t('settings.language') }}</span>
-          <div class="segmented" role="radiogroup" [attr.aria-label]="i18n.t('settings.language')">
-            <button
-              type="button"
-              role="radio"
-              [attr.aria-checked]="i18n.locale() === 'vi'"
-              [class.active]="i18n.locale() === 'vi'"
-              (click)="setLocale('vi')"
-            >
-              {{ i18n.t('settings.langVi') }}
-            </button>
-            <button
-              type="button"
-              role="radio"
-              [attr.aria-checked]="i18n.locale() === 'en'"
-              [class.active]="i18n.locale() === 'en'"
-              (click)="setLocale('en')"
-            >
-              {{ i18n.t('settings.langEn') }}
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <div class="section-divider"></div>
-
-      <section class="setting-group">
-        <h3 class="section-label">{{ i18n.t('settings.sectionNotifications') }}</h3>
-
-        <div class="setting-row">
-          <span class="setting-title" id="notification-sound-label">{{ i18n.t('settings.notificationSound') }}</span>
-          <div class="setting-inline">
-            <button type="button" class="sound-preview-btn" (click)="previewNotificationSound()">
-              Nghe thử
-            </button>
-            <label class="toggle-switch">
-              <input
-                type="checkbox"
-                aria-labelledby="notification-sound-label"
-                [checked]="soundService.enabled()"
-                (change)="toggleNotificationSound()"
-              />
-              <span class="toggle-track" aria-hidden="true"></span>
-            </label>
-          </div>
-        </div>
-
-        @if (soundService.previewError(); as soundError) {
-          <p class="setting-hint setting-hint--error" role="alert">{{ soundError }}</p>
+      <nav class="settings-nav" [attr.aria-label]="i18n.t('settings.title')">
+        @for (item of navItems; track item.id) {
+          <button
+            type="button"
+            class="nav-item"
+            [class.active]="activeSection() === item.id"
+            (click)="activeSection.set(item.id)"
+          >
+            {{ i18n.t(item.labelKey) }}
+          </button>
         }
+      </nav>
 
-        <div class="setting-row">
-          <span class="setting-title" id="holiday-notif-label">{{ i18n.t('settings.holidayNotif') }}</span>
-          <label class="toggle-switch">
-            <input
-              type="checkbox"
-              aria-labelledby="holiday-notif-label"
-              [checked]="holidayPopupService.notificationsEnabled()"
-              (change)="toggleHolidayNotifications()"
-            />
-            <span class="toggle-track" aria-hidden="true"></span>
-          </label>
-        </div>
-      </section>
+      <div class="settings-content">
+        @switch (activeSection()) {
+          @case ('profile') {
+            <section class="profile-section">
+              <div class="avatar-preview">
+                @if (authStore.avatarUrl(); as avatarUrl) {
+                  <img [src]="avatarUrl" alt="" class="avatar-img" />
+                } @else {
+                  <span class="avatar-fallback">{{ (authStore.displayName() ?? authStore.user()?.email ?? '?').charAt(0).toUpperCase() }}</span>
+                }
+              </div>
 
-      <div class="section-divider"></div>
+              <div class="profile-fields">
+                <label class="avatar-upload-btn">
+                  {{ uploadingAvatar() ? i18n.t('settings.uploadingAvatar') : i18n.t('settings.changeAvatar') }}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    class="sr-only"
+                    [disabled]="uploadingAvatar()"
+                    (change)="onAvatarSelected($event)"
+                  />
+                </label>
 
-      <section class="setting-group">
-        <h3 class="section-label">{{ i18n.t('settings.sectionOther') }}</h3>
+                <div class="name-field">
+                  <label for="display-name-input" class="sr-only">{{ i18n.t('settings.displayNamePlaceholder') }}</label>
+                  <div class="name-input-row">
+                    <input
+                      id="display-name-input"
+                      type="text"
+                      class="name-input"
+                      [placeholder]="i18n.t('settings.displayNamePlaceholder')"
+                      [value]="nameDraft()"
+                      (input)="onNameInput($any($event.target).value)"
+                    />
+                    <button
+                      type="button"
+                      class="save-name-btn"
+                      [disabled]="savingName() || !nameDraft().trim()"
+                      (click)="saveName()"
+                    >
+                      {{ savingName() ? i18n.t('common.saving') : i18n.t('common.save') }}
+                    </button>
+                  </div>
+                  @if (nameSaved()) {
+                    <span class="profile-success">{{ i18n.t('settings.nameSaved') }}</span>
+                  }
+                </div>
 
-        <div class="setting-row">
-          <span class="setting-title">{{ i18n.t('settings.deletedEvents') }}</span>
-          <button type="button" class="action-btn" (click)="openTrashFromSettings()">{{ i18n.t('header.trash') }}</button>
-        </div>
-        <div class="setting-row">
-          <span class="setting-title">{{ i18n.t('settings.printCalendar') }}</span>
-          <button type="button" class="action-btn" (click)="print()">{{ i18n.t('header.print') }}</button>
-        </div>
-      </section>
+                @if (profileError(); as err) {
+                  <span class="profile-error">{{ err }}</span>
+                }
+              </div>
+            </section>
+          }
+
+          @case ('appearance') {
+            <section class="setting-group">
+              <div class="setting-row">
+                <span class="setting-title">{{ i18n.t('settings.mode') }}</span>
+                <div class="segmented" role="radiogroup" [attr.aria-label]="i18n.t('settings.mode')">
+                  <button
+                    type="button"
+                    role="radio"
+                    [attr.aria-checked]="themeService.theme() === 'light'"
+                    [class.active]="themeService.theme() === 'light'"
+                    (click)="setTheme('light')"
+                  >
+                    {{ i18n.t('settings.light') }}
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    [attr.aria-checked]="themeService.theme() === 'dark'"
+                    [class.active]="themeService.theme() === 'dark'"
+                    (click)="setTheme('dark')"
+                  >
+                    {{ i18n.t('settings.dark') }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-row setting-row-stack">
+                <span class="setting-title">{{ i18n.t('settings.accentColor') }}</span>
+                <div class="theme-swatch-row" role="radiogroup" [attr.aria-label]="i18n.t('settings.accentColor')">
+                  @for (option of brandThemeOptions; track option.value) {
+                    <button
+                      type="button"
+                      role="radio"
+                      class="theme-swatch-btn"
+                      [attr.aria-checked]="brandThemeService.brandTheme() === option.value"
+                      [class.active]="brandThemeService.brandTheme() === option.value"
+                      (click)="setBrandTheme(option.value)"
+                    >
+                      <span class="theme-swatch-dot" [style.background-color]="option.swatch"></span>
+                      {{ i18n.t(option.labelKey) }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <span class="setting-title">{{ i18n.t('settings.density') }}</span>
+                <div class="segmented" role="radiogroup" [attr.aria-label]="i18n.t('settings.density')">
+                  <button
+                    type="button"
+                    role="radio"
+                    [attr.aria-checked]="densityService.density() === 'comfortable'"
+                    [class.active]="densityService.density() === 'comfortable'"
+                    (click)="setDensity('comfortable')"
+                  >
+                    {{ i18n.t('settings.comfortable') }}
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    [attr.aria-checked]="densityService.density() === 'compact'"
+                    [class.active]="densityService.density() === 'compact'"
+                    (click)="setDensity('compact')"
+                  >
+                    {{ i18n.t('settings.compact') }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <span class="setting-title">{{ i18n.t('settings.timeFormat') }}</span>
+                <div class="segmented" role="radiogroup" [attr.aria-label]="i18n.t('settings.timeFormat')">
+                  <button
+                    type="button"
+                    role="radio"
+                    [attr.aria-checked]="timeFormatService.format() === '24h'"
+                    [class.active]="timeFormatService.format() === '24h'"
+                    (click)="setTimeFormat('24h')"
+                  >
+                    {{ i18n.t('settings.timeFormat24h') }}
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    [attr.aria-checked]="timeFormatService.format() === '12h'"
+                    [class.active]="timeFormatService.format() === '12h'"
+                    (click)="setTimeFormat('12h')"
+                  >
+                    {{ i18n.t('settings.timeFormat12h') }}
+                  </button>
+                </div>
+              </div>
+            </section>
+          }
+
+          @case ('language') {
+            <section class="setting-group">
+              <div class="setting-row">
+                <span class="setting-title">{{ i18n.t('settings.language') }}</span>
+                <div class="segmented" role="radiogroup" [attr.aria-label]="i18n.t('settings.language')">
+                  <button
+                    type="button"
+                    role="radio"
+                    [attr.aria-checked]="i18n.locale() === 'vi'"
+                    [class.active]="i18n.locale() === 'vi'"
+                    (click)="setLocale('vi')"
+                  >
+                    {{ i18n.t('settings.langVi') }}
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    [attr.aria-checked]="i18n.locale() === 'en'"
+                    [class.active]="i18n.locale() === 'en'"
+                    (click)="setLocale('en')"
+                  >
+                    {{ i18n.t('settings.langEn') }}
+                  </button>
+                </div>
+              </div>
+            </section>
+          }
+
+          @case ('notifications') {
+            <section class="setting-group">
+              <div class="setting-row">
+                <span class="setting-title" id="notification-sound-label">{{ i18n.t('settings.notificationSound') }}</span>
+                <div class="setting-inline">
+                  <button type="button" class="sound-preview-btn" (click)="previewNotificationSound()">
+                    Nghe thử
+                  </button>
+                  <label class="toggle-switch">
+                    <input
+                      type="checkbox"
+                      aria-labelledby="notification-sound-label"
+                      [checked]="soundService.enabled()"
+                      (change)="toggleNotificationSound()"
+                    />
+                    <span class="toggle-track" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+
+              @if (soundService.previewError(); as soundError) {
+                <p class="setting-hint setting-hint--error" role="alert">{{ soundError }}</p>
+              }
+
+              <div class="setting-row">
+                <span class="setting-title" id="holiday-notif-label">{{ i18n.t('settings.holidayNotif') }}</span>
+                <label class="toggle-switch">
+                  <input
+                    type="checkbox"
+                    aria-labelledby="holiday-notif-label"
+                    [checked]="holidayPopupService.notificationsEnabled()"
+                    (change)="toggleHolidayNotifications()"
+                  />
+                  <span class="toggle-track" aria-hidden="true"></span>
+                </label>
+              </div>
+            </section>
+          }
+
+          @case ('other') {
+            <section class="setting-group">
+              <div class="setting-row">
+                <span class="setting-title">{{ i18n.t('settings.deletedEvents') }}</span>
+                <button type="button" class="action-btn" (click)="openTrashFromSettings()">{{ i18n.t('header.trash') }}</button>
+              </div>
+              <div class="setting-row">
+                <span class="setting-title">{{ i18n.t('settings.printCalendar') }}</span>
+                <button type="button" class="action-btn" (click)="print()">{{ i18n.t('header.print') }}</button>
+              </div>
+            </section>
+          }
+        }
+      </div>
     </div>
   </div>
 </div>

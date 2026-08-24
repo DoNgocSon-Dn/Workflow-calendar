@@ -92,7 +92,7 @@
                 (click)="selectHour(mark.value)"
               >
                 <circle [attr.cx]="mark.x" [attr.cy]="mark.y" r="15" />
-                <text [attr.x]="mark.x" [attr.y]="mark.y + 5">{{ mark.value }}</text>
+                <text [attr.x]="mark.x" [attr.y]="mark.y + 5">{{ hourMarkLabel(mark.value) }}</text>
               </g>
             }
           } @else {

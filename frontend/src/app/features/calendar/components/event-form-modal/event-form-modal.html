@@ -1,6 +1,6 @@
 <div class="backdrop" (click)="onBackdropClick($event)">
   <form class="modal" role="dialog" aria-modal="true" aria-labelledby="event-modal-title" [formGroup]="form"
-    (ngSubmit)="save()">
+    (ngSubmit)="onSubmit()">
     <header class="modal-header">
       <input id="event-modal-title" class="title-input" type="text" formControlName="title" [placeholder]="i18n.t('event.addTitle')"
         autofocus />
@@ -12,6 +12,32 @@
       </button>
     </header>
 
+    @if (!event()) {
+    <div class="create-mode-tabs" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        class="create-mode-tab"
+        [class.active]="createMode() === 'event'"
+        [attr.aria-selected]="createMode() === 'event'"
+        (click)="setCreateMode('event')"
+      >
+        {{ i18n.t('event.tabEvent') }}
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="create-mode-tab"
+        [class.active]="createMode() === 'todo'"
+        [attr.aria-selected]="createMode() === 'todo'"
+        (click)="setCreateMode('todo')"
+      >
+        {{ i18n.t('event.tabTodo') }}
+      </button>
+    </div>
+    }
+
+    @if (createMode() === 'event') {
     @if (!calendarsLoading() && calendars().length === 0) {
     <p class="hint-text hint-inset">{{ i18n.t('event.autoCreatingCalendar') }}</p>
     }
@@ -35,6 +61,7 @@
             {{ i18n.t('calendar.allDay') }}
           </label>
 
+          @if (dateTimeOpen()) {
           <div class="row date-row">
             <input class="date-input" type="date" formControlName="startDate" />
             @if (!form.controls.allDay.value) {
@@ -46,6 +73,11 @@
             <app-time-picker formControlName="endTime" [ariaLabel]="i18n.t('event.endTime')" />
             }
           </div>
+          } @else {
+          <button type="button" class="field-toggle has-value" (click)="dateTimeOpen.set(true)">
+            {{ dateTimeSummary() }}
+          </button>
+          }
 
           @if (lunarDateHint()) {
             <p class="lunar-hint-badge">🌕 {{ lunarDateHint() }}</p>
@@ -70,7 +102,7 @@
           }
           }
 
-          @if (!form.controls.allDay.value) {
+          @if (dateTimeOpen() && !form.controls.allDay.value) {
           <div class="row presets-row">
             <span class="presets-label">{{ i18n.t('event.quickDuration') }}</span>
             @for (preset of durationPresets; track preset.minutes) {
@@ -275,6 +307,17 @@
         </div>
       </div>
     </div>
+    } @else {
+    <div class="modal-body">
+      <p class="hint-text hint-inset">{{ i18n.t('event.todoHint') }}</p>
+      @if (form.controls.title.invalid && form.controls.title.touched) {
+      <p class="field-error hint-inset">{{ i18n.t('event.todoTitleRequired') }}</p>
+      }
+      @if (todoError(); as err) {
+      <p class="field-error hint-inset">{{ err }}</p>
+      }
+    </div>
+    }
 
     <footer class="modal-footer">
       @if (event()) {
@@ -284,9 +327,15 @@
       }
       <span class="spacer"></span>
       <button type="button" class="text-btn" (click)="cancel()">{{ i18n.t('common.cancel') }}</button>
+      @if (createMode() === 'event') {
       <button type="submit" class="primary-btn" [disabled]="saving() || calendarsLoading()">
         {{ saving() ? i18n.t('common.saving') : i18n.t('common.save') }}
       </button>
+      } @else {
+      <button type="submit" class="primary-btn" [disabled]="savingTodo()">
+        {{ savingTodo() ? i18n.t('common.saving') : i18n.t('common.save') }}
+      </button>
+      }
     </footer>
   </form>
 </div>

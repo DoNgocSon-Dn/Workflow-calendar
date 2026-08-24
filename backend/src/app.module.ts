@@ -20,6 +20,7 @@ import { RealtimeModule } from './realtime/realtime.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { SystemNotificationsModule } from './system-notifications/system-notifications.module';
+import { TodosModule } from './todos/todos.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { SystemNotificationsModule } from './system-notifications/system-notific
     RemindersModule,
     MailModule,
     NotesModule,
+    TodosModule,
     CommentsModule,
     AiModule,
     ImportModule,

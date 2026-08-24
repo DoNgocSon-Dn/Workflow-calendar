@@ -3,7 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { AuthStore } from '../../../core/auth/auth-store';
 import { AiChatHistoryEntry, CalendarStore } from '../../../features/calendar/data/calendar-store';
-import { Note } from '../../../features/calendar/models/calendar.models';
+import { Note, Todo } from '../../../features/calendar/models/calendar.models';
 
 /** Số lượt chat gần nhất gửi kèm lên backend làm ngữ cảnh — đủ để AI hiểu các
  *  câu hỏi tiếp nối ("còn ngày mai thì sao?") mà không làm phình prompt. */
@@ -18,7 +18,7 @@ const CHAT_HISTORY_TURNS = 10;
 const NOTE_COLORS = ['yellow', 'blue', 'green', 'pink', 'purple'] as const;
 type NoteColor = (typeof NOTE_COLORS)[number];
 
-type HubTab = 'notes' | 'ai';
+type HubTab = 'notes' | 'todos' | 'ai';
 
 interface ChatMessage {
   id: string;
@@ -216,8 +216,10 @@ export class FloatingHub {
     effect(() => {
       if (this.authStore.user()) {
         void this.loadNotes();
+        void this.loadTodos();
       } else {
         this.notes.set([]);
+        this.todos.set([]);
       }
     });
   }
@@ -264,6 +266,68 @@ export class FloatingHub {
   async removeNote(id: string): Promise<void> {
     await this.store.deleteNote(id);
     this.notes.update((list) => list.filter((n) => n.id !== id));
+  }
+
+  // --- Todos tab (checklist, sibling of notes) ----------------------------
+  protected readonly todos = signal<Todo[]>([]);
+  protected readonly newTodoContent = signal('');
+  protected readonly savingTodo = signal(false);
+  protected readonly editingTodoId = signal<string | null>(null);
+  protected readonly editingTodoContent = signal('');
+
+  protected readonly pendingTodos = computed(() => this.todos().filter((t) => !t.done));
+  protected readonly doneTodos = computed(() => this.todos().filter((t) => t.done));
+  /** Chưa xong nổi lên trên, đã xong dồn xuống dưới sau một dòng phân cách —
+   *  gộp thành 1 mảng để dùng chung 1 @for/@empty trong template. */
+  protected readonly sortedTodos = computed(() => [...this.pendingTodos(), ...this.doneTodos()]);
+
+  private async loadTodos(): Promise<void> {
+    try {
+      this.todos.set(await this.store.listTodos());
+    } catch {
+      this.todos.set([]);
+    }
+  }
+
+  async addTodo(): Promise<void> {
+    const content = this.newTodoContent().trim();
+    if (!content) return;
+    this.savingTodo.set(true);
+    try {
+      const todo = await this.store.createTodo(content);
+      this.todos.update((list) => [todo, ...list]);
+      this.newTodoContent.set('');
+    } finally {
+      this.savingTodo.set(false);
+    }
+  }
+
+  async toggleTodo(todo: Todo): Promise<void> {
+    const updated = await this.store.updateTodo(todo.id, { done: !todo.done });
+    this.todos.update((list) => list.map((t) => (t.id === todo.id ? updated : t)));
+  }
+
+  startEditTodo(todo: Todo): void {
+    this.editingTodoId.set(todo.id);
+    this.editingTodoContent.set(todo.content);
+  }
+
+  cancelEditTodo(): void {
+    this.editingTodoId.set(null);
+    this.editingTodoContent.set('');
+  }
+
+  async saveEditTodo(id: string): Promise<void> {
+    const content = this.editingTodoContent().trim();
+    if (!content) return;
+    const updated = await this.store.updateTodo(id, { content });
+    this.todos.update((list) => list.map((t) => (t.id === id ? updated : t)));
+    this.cancelEditTodo();
+  }
+
+  async removeTodo(id: string): Promise<void> {
+    await this.store.deleteTodo(id);
+    this.todos.update((list) => list.filter((t) => t.id !== id));
   }
 
   // --- AI chat tab (unchanged behavior, moved from AiChatWidget) ---------

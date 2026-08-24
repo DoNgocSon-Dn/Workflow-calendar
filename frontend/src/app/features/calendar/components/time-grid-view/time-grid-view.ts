@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { Clock } from '../../../../core/clock';
 import { TranslationService } from '../../../../core/i18n/translation.service';
+import { TimeFormatService } from '../../../../core/time-format/time-format-service';
 import { CreateRequest } from '../month-view/month-view';
 import { CalendarStore } from '../../data/calendar-store';
 import { CALENDAR_COLOR_HEX, CalendarEvent } from '../../models/calendar.models';
@@ -62,6 +63,7 @@ export class TimeGridView {
   private readonly clock = inject(Clock);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly i18n = inject(TranslationService);
+  protected readonly timeFormatService = inject(TimeFormatService);
 
   getLunarInfo(day: Date): LunarDate {
     return convertSolarToLunar(day);
@@ -83,11 +85,11 @@ export class TimeGridView {
   readonly editRequested = output<CalendarEvent>();
 
   protected formatHourLabel(hour: number): string {
-    return formatHourLabel(hour, this.i18n.locale());
+    return formatHourLabel(hour, this.i18n.locale(), this.timeFormatService.format());
   }
 
   protected formatTimeLabel(date: Date): string {
-    return formatTimeLabel(date, this.i18n.locale());
+    return formatTimeLabel(date, this.i18n.locale(), this.timeFormatService.format());
   }
 
   protected weekdayShort(day: Date): string {

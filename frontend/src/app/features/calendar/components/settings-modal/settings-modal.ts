@@ -4,6 +4,8 @@ import { Density, DensityService } from '../../../../core/density/density-servic
 import { Locale, TranslationService } from '../../../../core/i18n/translation.service';
 import { HolidayPopupService } from '../../../../core/services/holiday-popup.service';
 import { NotificationSoundService } from '../../../../core/services/notification-sound.service';
+import { TimeFormatService } from '../../../../core/time-format/time-format-service';
+import { TimeFormat } from '../../utils/date-utils';
 import { BrandTheme, BrandThemeService } from '../../../../core/theme/brand-theme-service';
 import { Theme, ThemeService } from '../../../../core/theme/theme-service';
 
@@ -21,6 +23,21 @@ const BRAND_THEME_OPTIONS: readonly BrandThemeOption[] = [
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
+type SettingsSection = 'profile' | 'appearance' | 'language' | 'notifications' | 'other';
+
+interface SettingsNavItem {
+  readonly id: SettingsSection;
+  readonly labelKey: string;
+}
+
+const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
+  { id: 'profile', labelKey: 'settings.sectionProfile' },
+  { id: 'appearance', labelKey: 'settings.sectionAppearance' },
+  { id: 'language', labelKey: 'settings.sectionLanguage' },
+  { id: 'notifications', labelKey: 'settings.sectionNotifications' },
+  { id: 'other', labelKey: 'settings.sectionOther' },
+];
+
 @Component({
   selector: 'app-settings-modal',
   templateUrl: './settings-modal.html',
@@ -31,12 +48,15 @@ export class SettingsModal {
   protected readonly themeService = inject(ThemeService);
   protected readonly brandThemeService = inject(BrandThemeService);
   protected readonly densityService = inject(DensityService);
+  protected readonly timeFormatService = inject(TimeFormatService);
   protected readonly holidayPopupService = inject(HolidayPopupService);
   protected readonly soundService = inject(NotificationSoundService);
   protected readonly authStore = inject(AuthStore);
   protected readonly i18n = inject(TranslationService);
 
   protected readonly brandThemeOptions = BRAND_THEME_OPTIONS;
+  protected readonly navItems = SETTINGS_NAV_ITEMS;
+  protected readonly activeSection = signal<SettingsSection>('profile');
 
   readonly closed = output<void>();
   readonly openTrash = output<void>();
@@ -57,6 +77,10 @@ export class SettingsModal {
 
   setDensity(density: Density): void {
     this.densityService.setDensity(density);
+  }
+
+  setTimeFormat(format: TimeFormat): void {
+    this.timeFormatService.setFormat(format);
   }
 
   setLocale(locale: Locale): void {

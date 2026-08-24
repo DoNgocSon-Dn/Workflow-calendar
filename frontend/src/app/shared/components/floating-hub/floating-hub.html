@@ -2,7 +2,7 @@
   <div
     class="panel"
     role="dialog"
-    [attr.aria-label]="activeTab() === 'notes' ? 'Ghi chú cá nhân' : 'Trợ lý AI'"
+    [attr.aria-label]="activeTab() === 'notes' ? 'Ghi chú cá nhân' : activeTab() === 'todos' ? 'Việc cần làm' : 'Trợ lý AI'"
     [style.left.px]="panelLeft()"
     [style.right.px]="panelRight()"
     [style.top.px]="panelTop()"
@@ -12,13 +12,17 @@
       <button type="button" class="tab-btn" [class.active]="activeTab() === 'notes'" (click)="setTab('notes')">
         📝 Ghi chú
       </button>
+      <button type="button" class="tab-btn" [class.active]="activeTab() === 'todos'" (click)="setTab('todos')">
+        ✅ Việc cần làm
+      </button>
       <button type="button" class="tab-btn" [class.active]="activeTab() === 'ai'" (click)="setTab('ai')">
         ✨ Trợ lý AI
       </button>
       <button type="button" class="icon-btn" aria-label="Đóng" (click)="toggle()">×</button>
     </div>
 
-    @if (activeTab() === 'notes') {
+    @switch (activeTab()) {
+      @case ('notes') {
       <div class="add-row">
         <textarea
           class="note-input"
@@ -73,7 +77,67 @@
           <p class="empty-hint">Chưa có ghi chú nào.</p>
         }
       </ul>
-    } @else {
+      }
+
+      @case ('todos') {
+      <div class="add-row">
+        <div class="todo-input-row">
+          <input
+            class="text-input"
+            type="text"
+            [ngModel]="newTodoContent()"
+            (ngModelChange)="newTodoContent.set($event)"
+            placeholder="Thêm việc cần làm…"
+            [disabled]="savingTodo()"
+            (keydown.enter)="$event.preventDefault(); addTodo()"
+          />
+          <button type="button" class="primary-btn" [disabled]="savingTodo()" (click)="addTodo()">
+            Thêm
+          </button>
+        </div>
+      </div>
+
+      <ul class="note-list todo-list">
+        @for (todo of sortedTodos(); track todo.id; let i = $index) {
+          @if (i === pendingTodos().length && doneTodos().length > 0) {
+            <li class="todo-divider">Đã xong ({{ doneTodos().length }})</li>
+          }
+          <li class="todo-item" [class.todo-item-done]="todo.done">
+            <label class="todo-checkbox">
+              <input type="checkbox" [checked]="todo.done" (change)="toggleTodo(todo)" />
+              <span aria-hidden="true"></span>
+            </label>
+            @if (editingTodoId() === todo.id) {
+              <input
+                class="text-input todo-edit-input"
+                type="text"
+                [ngModel]="editingTodoContent()"
+                (ngModelChange)="editingTodoContent.set($event)"
+                (keydown.enter)="$event.preventDefault(); saveEditTodo(todo.id)"
+              />
+              <div class="note-actions">
+                <button type="button" class="text-btn" (click)="saveEditTodo(todo.id)">Lưu</button>
+                <button type="button" class="text-btn" (click)="cancelEditTodo()">Huỷ</button>
+              </div>
+            } @else {
+              <span class="todo-content">{{ todo.content }}</span>
+              <div class="note-actions">
+                @if (!todo.done) {
+                  <button type="button" class="text-btn" (click)="startEditTodo(todo)">Sửa</button>
+                }
+                <button type="button" class="text-btn danger" (click)="removeTodo(todo.id)">
+                  Xoá
+                </button>
+              </div>
+            }
+          </li>
+        } @empty {
+          <p class="empty-hint">Chưa có việc cần làm nào.</p>
+        }
+      </ul>
+      }
+
+      @default {
       <div class="messages">
         @if (messages().length === 0) {
           <p class="hint-text">
@@ -126,6 +190,7 @@
           Gửi
         </button>
       </div>
+      }
     }
   </div>
 }
@@ -134,7 +199,7 @@
   type="button"
   class="fab"
   [class.dragging]="dragging()"
-  aria-label="Ghi chú & Trợ lý AI"
+  aria-label="Ghi chú, Việc cần làm & Trợ lý AI"
   [style.left.px]="pos().x"
   [style.top.px]="pos().y"
   (pointerdown)="onFabPointerDown($event)"

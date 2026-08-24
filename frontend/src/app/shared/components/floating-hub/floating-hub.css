@@ -278,6 +278,112 @@
   text-align: center;
 }
 
+/* Todos tab */
+.todo-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.todo-input-row .text-input {
+  flex: 1;
+}
+
+.todo-list {
+  gap: 0.35rem;
+}
+
+.todo-divider {
+  list-style: none;
+  margin: 0.35rem 0 0.1rem;
+  padding: 0 0.1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.todo-item {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-hover);
+}
+
+.todo-item-done {
+  opacity: 0.6;
+}
+
+.todo-checkbox {
+  flex-shrink: 0;
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.todo-checkbox input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.todo-checkbox span {
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border-strong);
+  background: var(--color-surface);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.todo-checkbox input:checked + span {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.todo-checkbox input:checked + span::after {
+  content: '';
+  width: 0.32rem;
+  height: 0.6rem;
+  border: solid var(--color-accent-contrast);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.todo-checkbox input:focus-visible + span {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.todo-content {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.todo-item-done .todo-content {
+  text-decoration: line-through;
+  color: var(--color-text-tertiary);
+}
+
+.todo-edit-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.todo-item .note-actions {
+  flex-shrink: 0;
+}
+
 /* AI tab */
 .messages {
   padding: 0.85rem 1.1rem;

@@ -9,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { TimeFormatService } from '../../../../core/time-format/time-format-service';
 import { formatTimeLabel, parseTime24 } from '../../utils/date-utils';
 
 interface ClockMark {
@@ -61,6 +62,7 @@ const LIST_OPTIONS = Array.from({ length: 48 }, (_, i) => {
 })
 export class TimePicker implements ControlValueAccessor {
   private readonly host = inject(ElementRef<HTMLElement>);
+  private readonly timeFormatService = inject(TimeFormatService);
 
   readonly ariaLabel = input<string>('Chọn giờ');
 
@@ -88,10 +90,20 @@ export class TimePicker implements ControlValueAccessor {
     return h === 0 ? 12 : h;
   });
   readonly displayLabel = computed(() =>
-    formatTimeLabel(parseTime24(this.currentValue(), this.refDay)),
+    formatTimeLabel(parseTime24(this.currentValue(), this.refDay), 'vi', this.timeFormatService.format()),
   );
 
   readonly selectedHourMark = computed(() => this.hour12());
+
+  /** Chế độ 24h: mặt đồng hồ hiện số giờ thực (SA: 0-11, CH: 12-23) thay vì
+   *  lặp lại 1-12 ở cả hai buổi — tránh trường hợp "12" vừa là nửa đêm vừa
+   *  là giữa trưa. Chế độ 12h: giữ mặt đồng hồ cổ điển 1-12 + nút SA/CH.
+   *  Vị trí kim vẫn dựa trên `value` gốc (1-12). */
+  hourMarkLabel(value: number): number {
+    if (this.timeFormatService.format() === '12h') return value;
+    if (this.isPm()) return value === 12 ? 12 : value + 12;
+    return value === 12 ? 0 : value;
+  }
   readonly selectedMinuteMark = computed(() => {
     const m = this.minute();
     return MINUTE_MARKS.reduce((closest, mark) =>

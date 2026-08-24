@@ -51,7 +51,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'header.viewDay': 'Ngày',
     'header.viewWeek': 'Tuần',
     'header.viewMonth': 'Tháng',
-    'header.viewAgenda': 'Agenda',
+    'header.viewAgenda': 'Lịch biểu',
     'header.notifications': 'Thông báo',
     'header.calendarInvites': 'Lời mời tham gia lịch',
     'header.settings': 'Cài đặt',
@@ -63,6 +63,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'settings.uploadingAvatar': 'Đang tải lên...',
     'settings.displayNamePlaceholder': 'Nhập tên của bạn',
     'settings.nameSaved': 'Đã lưu tên hiển thị.',
+    'settings.sectionProfile': 'Hồ sơ',
     'settings.sectionAppearance': 'Giao diện',
     'settings.mode': 'Chế độ',
     'settings.light': 'Sáng',
@@ -74,6 +75,9 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'settings.density': 'Mật độ lịch',
     'settings.comfortable': 'Thoải mái',
     'settings.compact': 'Gọn',
+    'settings.timeFormat': 'Định dạng giờ',
+    'settings.timeFormat24h': '24 giờ (00h - 24h)',
+    'settings.timeFormat12h': '12 giờ (00h SA - 00h CH)',
     'settings.sectionLanguage': 'Ngôn ngữ',
     'settings.language': 'Ngôn ngữ hiển thị',
     'settings.langVi': 'Tiếng Việt',
@@ -135,7 +139,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'calendar.allDay': 'Cả ngày',
 
     // --- agenda view ----------------------------------------------------
-    'agenda.title': '📅 Lịch biểu {month}',
+    'agenda.title': 'Lịch biểu {month}',
     'agenda.solar': '☀️ Lịch Dương',
     'agenda.lunar': '🌙 Lịch Âm & Sự kiện Âm Lịch',
     'agenda.filterMonth': 'Tháng này',
@@ -190,6 +194,10 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'event.statusDeclined': 'Đã từ chối',
     'event.statusPending': 'Chờ phản hồi',
     'event.genericError': 'Đã xảy ra lỗi, vui lòng thử lại.',
+    'event.tabEvent': 'Sự kiện',
+    'event.tabTodo': 'Việc cần làm',
+    'event.todoHint': 'Thêm một việc cần làm — không gắn với ngày giờ cụ thể.',
+    'event.todoTitleRequired': 'Vui lòng nhập nội dung việc cần làm.',
 
     // --- group workspace ----------------------------------------------------
     'group.defaultDescription': 'Không gian làm việc nhóm',
@@ -321,6 +329,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'settings.uploadingAvatar': 'Uploading...',
     'settings.displayNamePlaceholder': 'Enter your name',
     'settings.nameSaved': 'Display name saved.',
+    'settings.sectionProfile': 'Profile',
     'settings.sectionAppearance': 'Appearance',
     'settings.mode': 'Mode',
     'settings.light': 'Light',
@@ -332,6 +341,9 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'settings.density': 'Calendar density',
     'settings.comfortable': 'Comfortable',
     'settings.compact': 'Compact',
+    'settings.timeFormat': 'Time format',
+    'settings.timeFormat24h': '24-hour (00h - 24h)',
+    'settings.timeFormat12h': '12-hour (00h AM - 00h PM)',
     'settings.sectionLanguage': 'Language',
     'settings.language': 'Display language',
     'settings.langVi': 'Tiếng Việt',
@@ -393,7 +405,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'calendar.allDay': 'All day',
 
     // --- agenda view ----------------------------------------------------
-    'agenda.title': '📅 Agenda for {month}',
+    'agenda.title': 'Agenda for {month}',
     'agenda.solar': '☀️ Solar calendar',
     'agenda.lunar': '🌙 Lunar calendar & events',
     'agenda.filterMonth': 'This month',
@@ -448,6 +460,10 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'event.statusDeclined': 'Declined',
     'event.statusPending': 'Awaiting response',
     'event.genericError': 'Something went wrong, please try again.',
+    'event.tabEvent': 'Event',
+    'event.tabTodo': 'To-do',
+    'event.todoHint': "Add a to-do — it isn't tied to a specific date or time.",
+    'event.todoTitleRequired': 'Please enter what needs to be done.',
 
     // --- group workspace ----------------------------------------------------
     'group.defaultDescription': 'Team workspace',

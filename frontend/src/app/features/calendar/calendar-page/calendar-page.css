@@ -1,6 +1,11 @@
 :host {
   display: block;
   height: 100dvh;
+  /* Mọi khu vực cần cuộn (lưới lịch, panel...) đã tự cuộn nội bộ — trang này
+     không bao giờ nên cần cuộn ở cấp document. Chặn hẳn overflow ở đây để
+     một dropdown/panel xổ ra sát mép viewport không thể khiến document bật
+     thanh cuộn rồi đẩy lệch toàn bộ layout. */
+  overflow: hidden;
 }
 
 .calendar-page {

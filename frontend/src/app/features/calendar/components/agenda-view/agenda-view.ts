@@ -12,6 +12,7 @@ import { CALENDAR_COLOR_HEX, CalendarEvent } from '../../models/calendar.models'
 import { DatePipe } from '@angular/common';
 import { convertSolarToLunar } from '../../utils/lunar-calendar';
 import { VN_HOLIDAY_CALENDAR_ID } from '../../data/vietnam-holidays';
+import { Icon } from '../../../../shared/components/icon/icon';
 
 export interface GroupedAgendaDay {
   date: Date;
@@ -27,7 +28,7 @@ export type CalendarType = 'solar' | 'lunar';
   templateUrl: './agenda-view.html',
   styleUrl: './agenda-view.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe],
+  imports: [DatePipe, Icon],
 })
 export class AgendaView {
   protected readonly store = inject(CalendarStore);

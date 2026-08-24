@@ -42,6 +42,34 @@
   border-bottom-color: var(--color-accent);
 }
 
+.create-mode-tabs {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0 1rem 0.75rem;
+}
+
+.create-mode-tab {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.create-mode-tab:hover {
+  background: var(--color-surface-hover);
+}
+
+.create-mode-tab.active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
 .icon-btn {
   border: none;
   background: none;
@@ -106,6 +134,13 @@
   display: flex;
   align-items: flex-start;
   gap: 0.9rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.field-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0.25rem;
 }
 
 .field-icon {
@@ -218,10 +253,9 @@
 }
 
 .modal-body {
-  padding: 0.5rem 1rem 1rem;
+  padding: 0.25rem 1rem 0.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
   max-height: 60vh;
   overflow-y: auto;
 }
@@ -284,18 +318,22 @@
 }
 
 .calendar-swatches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
 }
 
 .swatch-option {
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  min-width: 0;
   font-size: 0.85rem;
   color: var(--color-text-secondary);
   cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .swatch-dot {
