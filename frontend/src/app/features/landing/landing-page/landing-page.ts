@@ -95,19 +95,43 @@ export class LandingPage implements OnInit, AfterViewInit {
     });
   }
 
+  /** Nhịp chuyển cảnh, tính bằng giây trên MỘT timeline duy nhất. Gom về đây
+   *  để đọc là thấy ngay chỗ nào chồng lên chỗ nào — trước kia nằm rải trong
+   *  các setTimeout lồng nhau nên không thể chỉnh overlap. */
+  private static readonly CUE = {
+    glowFade: 0.1,
+    preloaderOut: 0.35,
+    panelsOut: 0.5,
+    ambientIn: 0.15,
+    eyebrow: 0.6,
+    title: 0.72,
+    titleStagger: 0.085,
+    sub: 1.35,
+    cta: 1.6,
+  } as const;
+
+  private get reducedMotion(): boolean {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
   private initPreloader(): void {
     const root = document.documentElement;
     root.classList.add('is-loading');
 
-    const preloader = this.host.nativeElement.querySelector('#preloader') as HTMLElement | null;
-    const word = this.host.nativeElement.querySelector('#preloaderWord') as HTMLElement | null;
-    const mark = this.host.nativeElement.querySelector('#preloaderMark') as HTMLElement | null;
-    const panelLeft = this.host.nativeElement.querySelector('.preloader-panel.left') as HTMLElement | null;
-    const panelRight = this.host.nativeElement.querySelector('.preloader-panel.right') as HTMLElement | null;
+    const el = <T extends HTMLElement>(sel: string) =>
+      this.host.nativeElement.querySelector(sel) as T | null;
+
+    const preloader = el('#preloader');
+    const word = el('#preloaderWord');
+    const mark = el('#preloaderMark');
+    const panelLeft = el('.preloader-panel.left');
+    const panelRight = el('.preloader-panel.right');
+
+    this.splitHeroText();
 
     if (!preloader || !word || !mark || !panelLeft || !panelRight) {
       root.classList.remove('is-loading');
-      this.playHeroIntro();
+      this.buildIntroTimeline(null).play();
       return;
     }
 
@@ -115,41 +139,148 @@ export class LandingPage implements OnInit, AfterViewInit {
     const WORD_HOLD = 500;
     const MARK_HOLD = 550;
 
-    const finishPreloader = () => {
-      preloader.style.transition = 'opacity .5s ease';
-      preloader.style.opacity = '0';
-
-      setTimeout(() => {
-        panelLeft.style.transition = 'transform .9s cubic-bezier(.65,0,.35,1)';
-        panelRight.style.transition = 'transform .9s cubic-bezier(.65,0,.35,1)';
-        panelLeft.style.transform = 'translateX(-100%)';
-        panelRight.style.transform = 'translateX(100%)';
-
-        setTimeout(() => {
-          preloader.style.display = 'none';
-          panelLeft.style.display = 'none';
-          panelRight.style.display = 'none';
-          root.classList.remove('is-loading');
-          ScrollTrigger.refresh();
-          this.playHeroIntro();
-        }, 950);
-      }, 480);
-    };
-
     setTimeout(() => {
       word.classList.add('hide');
       mark.classList.add('show');
-      setTimeout(finishPreloader, 550 + MARK_HOLD);
+      setTimeout(() => {
+        this.buildIntroTimeline({ preloader, mark, panelLeft, panelRight }).play();
+      }, 550 + MARK_HOLD);
     }, LETTER_REVEAL_DONE + WORD_HOLD);
   }
 
-  private playHeroIntro(): void {
-    gsap
-      .timeline({ defaults: { ease: 'power3.out' } })
-      .to(this.host.nativeElement.querySelector('.hero-eyebrow'), { opacity: 1, y: 0, duration: 0.8 }, 0)
-      .to(this.host.nativeElement.querySelectorAll('.hero h1 .line span'), { y: '0%', duration: 1, stagger: 0.12 }, 0.08)
-      .to(this.host.nativeElement.querySelector('.hero-sub'), { opacity: 1, duration: 0.9 }, 0.6)
-      .to(this.host.nativeElement.querySelector('.hero-cta'), { opacity: 1, duration: 0.9 }, 0.75);
+  /**
+   * Preloader tan vào Hero thay vì biến mất rồi Hero mới chạy.
+   *
+   * Điểm mấu chốt: Hero khởi động ở giây 0.6 trong khi preloader còn đang mờ
+   * dần tới ~1.25 — hai bên chồng nhau thật sự. Preloader chỉ bị display:none
+   * ở cuối timeline, nên không có frame trống nào ở giữa.
+   */
+  private buildIntroTimeline(
+    preloaderParts: {
+      preloader: HTMLElement;
+      mark: HTMLElement;
+      panelLeft: HTMLElement;
+      panelRight: HTMLElement;
+    } | null,
+  ): gsap.core.Timeline {
+    const host = this.host.nativeElement;
+    const CUE = LandingPage.CUE;
+    const reduced = this.reducedMotion;
+
+    // Easing riêng: vào mềm, tăng tốc, hãm chậm rồi đứng yên. Không overshoot
+    // để tránh cảm giác playful.
+    const CINEMATIC = 'cubic-bezier(0.22, 0.61, 0.24, 1)';
+    const scale = reduced ? 0.35 : 1;
+
+    const tl = gsap.timeline({
+      paused: true,
+      defaults: { ease: CINEMATIC },
+      onComplete: () => {
+        if (preloaderParts) {
+          preloaderParts.preloader.style.display = 'none';
+          preloaderParts.panelLeft.style.display = 'none';
+          preloaderParts.panelRight.style.display = 'none';
+        }
+        document.documentElement.classList.remove('is-loading');
+        ScrollTrigger.refresh();
+      },
+    });
+
+    // --- Nền Hero hiện ra TRƯỚC, ngay phía sau preloader còn đang che ---
+    tl.to(host.querySelector('.hero-ambient__glow'), { opacity: 1, duration: 1.4 * scale }, CUE.ambientIn * scale)
+      .fromTo(
+        host.querySelectorAll('.hero-ambient__ring'),
+        { opacity: 0, scale: 0.92 },
+        { opacity: 1, scale: 1, duration: 1.6 * scale, stagger: 0.12 * scale },
+        CUE.ambientIn * scale,
+      );
+
+    if (preloaderParts) {
+      const { preloader, mark, panelLeft, panelRight } = preloaderParts;
+
+      // Glow của wordmark dịu xuống + nở rất nhẹ: cảm giác tan vào nền chứ
+      // không phải bị tắt.
+      tl.to(mark, { opacity: 0.55, scale: 1.06, duration: 0.9 * scale }, CUE.glowFade * scale)
+        .to(preloader, { opacity: 0, duration: 0.9 * scale }, CUE.preloaderOut * scale)
+        .to(panelLeft, { xPercent: -100, duration: 0.9 * scale }, CUE.panelsOut * scale)
+        .to(panelRight, { xPercent: 100, duration: 0.9 * scale }, CUE.panelsOut * scale);
+    }
+
+    // --- Hero bắt đầu KHI preloader còn đang mờ dần ---
+    tl.to(host.querySelector('.hero-eyebrow'), { opacity: 1, y: 0, duration: 0.8 * scale }, CUE.eyebrow * scale)
+      .to(
+        host.querySelectorAll('.hero-word'),
+        {
+          opacity: 1,
+          y: 0,
+          filter: 'blur(0px)',
+          duration: 1.05 * scale,
+          stagger: reduced ? 0.02 : CUE.titleStagger,
+        },
+        CUE.title * scale,
+      )
+      .to(host.querySelector('.hero-sub'), { opacity: 1, duration: 0.7 * scale }, CUE.sub * scale)
+      .to(
+        host.querySelectorAll('.hero-phrase'),
+        { opacity: 1, filter: 'blur(0px)', duration: 0.8 * scale, stagger: reduced ? 0.02 : 0.11 },
+        CUE.sub * scale,
+      )
+      .to(host.querySelector('.hero-cta'), { opacity: 1, duration: 0.9 * scale }, CUE.cta * scale);
+
+    if (!reduced) this.startAmbientDrift();
+    return tl;
+  }
+
+  /** Tách tiêu đề thành TỪ và mô tả thành CỤM để reveal so le. Làm ở JS nên
+   *  HTML giữ nguyên câu chữ, dễ đọc và dễ sửa nội dung sau này. */
+  private splitHeroText(): void {
+    const host = this.host.nativeElement as HTMLElement;
+
+    host.querySelectorAll<HTMLElement>('.hero h1 .line > span').forEach((wrapper: HTMLElement) => {
+      // em (chữ nhạt màu) phải giữ nguyên thẻ, nếu không mất luôn kiểu chữ.
+      const target = wrapper.querySelector('em') ?? wrapper;
+      const words = (target.textContent ?? '').trim().split(/\s+/);
+      if (words.length === 0) return;
+      target.innerHTML = words
+        .map((w: string) => `<span class="hero-word">${w}</span>`)
+        .join(' ');
+    });
+
+    // Lớp bọc .line > span vốn bị đẩy xuống 110% để giấu chữ. Tách từ xong thì
+    // chính các .hero-word mới mang animation, nên trung hoà lớp bọc ngay bây
+    // giờ — làm việc này giữa timeline sẽ tạo một cú nhảy thấy rõ.
+    gsap.set(host.querySelectorAll('.hero h1 .line > span'), { y: '0%' });
+
+    const sub = host.querySelector<HTMLElement>('.hero-sub');
+    if (sub) {
+      // Cắt theo dấu phẩy: mỗi cụm là một ý, đọc theo nhịp tự nhiên của câu.
+      const phrases = (sub.textContent ?? '').trim().split(/(?<=,)\s+/);
+      sub.innerHTML = phrases.map((ph: string) => `<span class="hero-phrase">${ph}</span>`).join(' ');
+    }
+  }
+
+  /** Trôi rất chậm, biên độ nhỏ — người dùng chỉ nên CẢM thấy không gian có
+   *  chiều sâu, không nên nhận ra là nó đang chuyển động. */
+  private startAmbientDrift(): void {
+    const host = this.host.nativeElement as HTMLElement;
+    const rings = host.querySelectorAll<HTMLElement>('.hero-ambient__ring');
+    rings.forEach((ring: HTMLElement, index: number) => {
+      gsap.to(ring, {
+        scale: 1.03,
+        duration: 9 + index * 2,
+        repeat: -1,
+        yoyo: true,
+        ease: 'sine.inOut',
+      });
+    });
+
+    gsap.to(host.querySelector('.hero-ambient__glow'), {
+      opacity: 0.72,
+      duration: 7,
+      repeat: -1,
+      yoyo: true,
+      ease: 'sine.inOut',
+    });
   }
 
   private initScrollProgress(): void {

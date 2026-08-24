@@ -235,11 +235,6 @@ section {
   margin-bottom: 0;
 }
 
-.hero h1 .line span {
-  display: inline-block;
-  transform: translateY(110%);
-}
-
 .hero h1 em {
   font-style: normal;
   font-family: inherit;
@@ -2268,5 +2263,87 @@ html.is-loading body {
   .cmd-caret,
   .warn-badge {
     animation: none;
+  }
+}
+
+/* ===== Hero: nền có chiều sâu + reveal theo từng từ =====================
+   Các lớp nền nằm DƯỚI nội dung và không nhận chuột, nên không ảnh hưởng
+   khả năng đọc hay thao tác. */
+.hero-ambient {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Nội dung hero phải nổi lên trên lớp nền. */
+.hero > *:not(.hero-ambient) {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-ambient__glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(120vw, 1400px);
+  height: min(120vw, 1400px);
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent) 16%, transparent) 0%,
+    transparent 62%
+  );
+  opacity: 0;
+}
+
+/* Vòng tròn đồng tâm: viền cực mảnh, độ mờ thấp — gợi không gian chứ không
+   được đọc ra thành "hình tròn". */
+.hero-ambient__ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--accent) 12%, transparent);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.hero-ambient__ring--1 { width: min(58vw, 620px);  height: min(58vw, 620px); }
+.hero-ambient__ring--2 { width: min(82vw, 900px);  height: min(82vw, 900px); }
+.hero-ambient__ring--3 { width: min(106vw, 1180px); height: min(106vw, 1180px); }
+
+/* Chỉ nhắm con TRỰC TIẾP: sau khi tách từ, các <span> từ nằm bên trong và
+   phải có trạng thái riêng, không bị luật này đè lên. */
+.hero h1 .line > span {
+  display: inline-block;
+  transform: translateY(110%);
+}
+
+/* Đơn vị reveal của tiêu đề. Blur chỉ dùng trong lúc reveal ngắn rồi bỏ. */
+.hero-word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(24px);
+  filter: blur(8px);
+  will-change: transform, opacity, filter;
+}
+
+/* Mô tả tách theo CỤM, không theo từng từ: đoạn này dài, stagger từng từ sẽ
+   bắt người đọc chờ quá lâu. */
+.hero-phrase {
+  display: inline;
+  opacity: 0;
+  filter: blur(4px);
+  will-change: opacity, filter;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-word,
+  .hero-phrase {
+    filter: none;
+    transform: none;
   }
 }

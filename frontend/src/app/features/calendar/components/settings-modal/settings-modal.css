@@ -446,6 +446,16 @@
   color: var(--color-text);
 }
 
+.sound-preview-btn--chat {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.sound-preview-btn--chat:hover {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
 .setting-hint {
   margin: 0;
   padding: 0 1.25rem 0.9rem;

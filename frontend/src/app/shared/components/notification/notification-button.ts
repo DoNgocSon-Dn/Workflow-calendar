@@ -11,6 +11,7 @@ import {
 import { NotificationService } from '../../../core/services/notification.service';
 import { CalendarStore } from '../../../features/calendar/data/calendar-store';
 import { NotificationPanel, OpenGroupChatRequest } from './notification-panel';
+import { TranslationService } from '../../../core/i18n/translation.service';
 
 @Component({
   selector: 'app-notification-button',
@@ -24,6 +25,7 @@ import { NotificationPanel, OpenGroupChatRequest } from './notification-panel';
 })
 export class NotificationButton {
   private readonly service = inject(NotificationService);
+  protected readonly i18n = inject(TranslationService);
   private readonly calendarStore = inject(CalendarStore);
 
   readonly openEvent = output<string>();
