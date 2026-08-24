@@ -3,6 +3,7 @@ import { AuthStore } from '../../../../core/auth/auth-store';
 import { Density, DensityService } from '../../../../core/density/density-service';
 import { Locale, TranslationService } from '../../../../core/i18n/translation.service';
 import { HolidayPopupService } from '../../../../core/services/holiday-popup.service';
+import { NotificationSoundService } from '../../../../core/services/notification-sound.service';
 import { BrandTheme, BrandThemeService } from '../../../../core/theme/brand-theme-service';
 import { Theme, ThemeService } from '../../../../core/theme/theme-service';
 
@@ -31,6 +32,7 @@ export class SettingsModal {
   protected readonly brandThemeService = inject(BrandThemeService);
   protected readonly densityService = inject(DensityService);
   protected readonly holidayPopupService = inject(HolidayPopupService);
+  protected readonly soundService = inject(NotificationSoundService);
   protected readonly authStore = inject(AuthStore);
   protected readonly i18n = inject(TranslationService);
 
@@ -63,6 +65,14 @@ export class SettingsModal {
 
   toggleHolidayNotifications(): void {
     this.holidayPopupService.setNotificationsEnabled(!this.holidayPopupService.notificationsEnabled());
+  }
+
+  toggleNotificationSound(): void {
+    this.soundService.toggle();
+  }
+
+  previewNotificationSound(): void {
+    void this.soundService.preview();
   }
 
   onNameInput(value: string): void {

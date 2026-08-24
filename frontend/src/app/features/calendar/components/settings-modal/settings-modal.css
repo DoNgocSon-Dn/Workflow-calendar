@@ -357,3 +357,32 @@
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
+
+.setting-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sound-preview-btn {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 0.28rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sound-preview-btn:hover {
+  background: var(--color-surface-hover-strong);
+  color: var(--color-text);
+}
+
+.setting-hint--error {
+  color: var(--color-danger);
+  font-size: 0.78rem;
+  margin: 0.15rem 0 0;
+}

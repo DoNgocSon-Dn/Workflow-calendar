@@ -172,6 +172,28 @@
         <h3 class="section-label">{{ i18n.t('settings.sectionNotifications') }}</h3>
 
         <div class="setting-row">
+          <span class="setting-title" id="notification-sound-label">{{ i18n.t('settings.notificationSound') }}</span>
+          <div class="setting-inline">
+            <button type="button" class="sound-preview-btn" (click)="previewNotificationSound()">
+              Nghe thử
+            </button>
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                aria-labelledby="notification-sound-label"
+                [checked]="soundService.enabled()"
+                (change)="toggleNotificationSound()"
+              />
+              <span class="toggle-track" aria-hidden="true"></span>
+            </label>
+          </div>
+        </div>
+
+        @if (soundService.previewError(); as soundError) {
+          <p class="setting-hint setting-hint--error" role="alert">{{ soundError }}</p>
+        }
+
+        <div class="setting-row">
           <span class="setting-title" id="holiday-notif-label">{{ i18n.t('settings.holidayNotif') }}</span>
           <label class="toggle-switch">
             <input

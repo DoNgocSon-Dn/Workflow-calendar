@@ -1,0 +1,7 @@
+File âm báo thông báo: notification_alert.mp3
+
+Tên file phải khớp hằng SOUND_URL trong
+core/services/notification-sound.service.ts ("/audio/notification_alert.mp3").
+Đổi tên file thì phải sửa hằng đó theo, nếu không sẽ 404 và im tiếng.
+
+Thiếu file thì app vẫn chạy bình thường, chỉ là không có tiếng.

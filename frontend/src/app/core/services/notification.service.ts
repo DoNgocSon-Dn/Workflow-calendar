@@ -1,5 +1,6 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { buildDemoNotifications } from './notification-demo-data';
+import { NotificationSoundService } from './notification-sound.service';
 import {
   AppNotification,
   NotificationDraft,
@@ -18,6 +19,8 @@ import {
 export class NotificationService {
   // Dữ liệu demo chỉ là seed ban đầu cho các loại backend chưa phát sự kiện —
   // xoá dòng này là hết sạch dữ liệu giả, phần realtime vẫn chạy nguyên vẹn.
+  private readonly sound = inject(NotificationSoundService);
+
   private readonly notificationsState = signal<readonly AppNotification[]>(buildDemoNotifications());
 
   /** Mới nhất lên đầu, xếp theo `createdAt` của backend chứ không theo thời
@@ -43,7 +46,13 @@ export class NotificationService {
    */
   ingest(draft: NotificationDraft): boolean {
     if (this.notificationsState().some((n) => n.id === draft.id)) return false;
-    this.notificationsState.update((list) => [{ ...draft, isRead: false }, ...list]);
+
+    const notification: AppNotification = { ...draft, isRead: false };
+    this.notificationsState.update((list) => [notification, ...list]);
+
+    // Âm báo là bước CUỐI và hoàn toàn phụ: state đã cập nhật xong ở trên, nên
+    // dù âm thanh lỗi hay bị trình duyệt chặn thì thông báo vẫn hiện bình thường.
+    this.sound.notify();
     return true;
   }
 
