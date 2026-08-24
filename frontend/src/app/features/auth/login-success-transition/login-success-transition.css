@@ -25,6 +25,9 @@
      với <length>, nên khi thay vào scale() cả khai báo transform hỏng.
      Giờ dùng số cố định, thu nhỏ dần theo breakpoint. */
   --scale: 3.2;
+  /* Tinh chỉnh điểm hạ cánh (xem .lst-logo). */
+  --land-dx: 0px;
+  --land-dy: 0px;
 }
 
 .lst-veil {
@@ -70,12 +73,26 @@
   position: absolute;
   top: 50%;
   left: 50%;
+  /* flex để bọc SÁT khối logo. Trước đây đây là block, con bên trong là
+     inline-flex nên sinh ra một line box có leading theo line-height —
+     hộp ngoài cao hơn logo thật. scale() lấy tâm hộp ngoài làm gốc, tâm đó
+     không trùng tâm logo, nên càng phóng to càng đẩy logo lệch dọc. */
+  display: flex;
+  align-items: center;
+  line-height: 1;
   /* Cỡ chữ gốc lấy đúng .brand của header, phần phóng to nằm ở scale — nhờ
      vậy lúc scale về 1 là khớp tuyệt đối, không lệch nét chữ. */
   font-size: 1.35rem;
   color: var(--color-text, #f1f5f9);
 
-  transform: translate(-50%, -50%) translate(var(--fly-x, 0px), var(--fly-y, 0px))
+  /* --land-dx/dy: nhích tay điểm hạ cánh nếu vẫn thấy lệch vài pixel so với
+     logo header. Dương = sang phải / xuống dưới. Sửa ngay ở đây, không cần
+     đụng tới TypeScript. */
+  transform: translate(-50%, -50%)
+    translate(
+      calc(var(--fly-x, 0px) + var(--land-dx, 0px)),
+      calc(var(--fly-y, 0px) + var(--land-dy, 0px))
+    )
     scale(var(--fly-scale, var(--scale)));
   transform-origin: 50% 50%;
   transition: transform 0.8s cubic-bezier(0.66, 0, 0.34, 1), opacity 0.4s ease;
@@ -93,6 +110,13 @@
   }
 }
 
+/* Lúc tách đôi thì phình nhẹ một nhịp rồi trả về cỡ cũ — cộng với việc bề
+   ngang tự nở ra (translate(-50%) giữ tâm nên hai chữ W dãn đều hai bên),
+   đọc ra thành "scale + spread" chứ không phải chữ mọc thêm về một phía. */
+.lst[data-phase='split'] .lst-logo {
+  --scale: 3.45;
+}
+
 .lst[data-phase='fly'] .lst-halo,
 .lst[data-phase='out'] .lst-halo {
   opacity: 0;
@@ -104,12 +128,11 @@
   opacity: 0;
 }
 
-.lst[data-phase='out'] .lst-logo {
-  /* Logo thật trong header đã nằm đúng chỗ này, nên tắt bản đang bay đi là
-     mắt không kịp nhận ra đã đổi element. */
-  opacity: 0;
-  transition-delay: 0.3s;
-}
+/* Khối bay KHÔNG mờ dần ở chặng cuối.
+   Logo trong header đang bị giấu suốt thời gian này, nên trong lúc màn tan
+   thì chính khối bay đóng vai logo header. Cho nó mờ đi ở đây sẽ thành chỗ
+   đó trống trơn. Việc đổi tay do TS làm: hiện logo thật rồi gỡ overlay ngay
+   trong cùng một nhịp, hai bản chồng khít nên không thấy đường nối. */
 
 /* ── Giảm chuyển động: bỏ hẳn hiệu ứng ── */
 

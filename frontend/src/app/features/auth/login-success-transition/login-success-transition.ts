@@ -15,7 +15,13 @@ import {
 import { BrandLogo, BrandLogoPhase } from '../../../shared/components/brand-logo/brand-logo';
 
 /** Logo thật trong header — đích hạ cánh của hiệu ứng. */
-const HEADER_BRAND_SELECTOR = 'app-calendar-header .brand';
+/**
+ * Nhắm thẳng vào <app-brand-logo> trong header chứ không phải lớp bọc
+ * .brand: lớp bọc là flex item của .left nên hộp của nó có thể cao/rộng hơn
+ * chính khối logo, làm tâm lệch đi và hạ cánh không trùng.
+ */
+const HEADER_LOGO_SELECTOR = 'app-calendar-header .brand app-brand-logo';
+const HEADER_BRAND_FALLBACK = 'app-calendar-header .brand';
 
 /**
  * Mốc thời gian (ms) tính từ lúc overlay hiện. Tổng ~4.6s nếu dữ liệu sẵn
@@ -80,9 +86,23 @@ export class LoginSuccessTransition {
       }
     });
 
+    // Giấu logo thật suốt thời gian overlay chạy: chỉ được có MỘT logo trên
+    // màn hình tại một thời điểm. Hai bản chồng nhau, dù trùng khít, vẫn làm
+    // nét chữ dày lên do khử răng cưa cộng dồn.
+    afterNextRender(() => this.setHeaderLogoVisible(false));
+
     this.destroyRef.onDestroy(() => {
       for (const timer of this.timers) clearTimeout(timer);
+      // Lưới an toàn: overlay bị gỡ giữa chừng cũng không được để header
+      // mất logo vĩnh viễn.
+      this.setHeaderLogoVisible(true);
     });
+  }
+
+  /** Bật/tắt logo trong header bằng visibility — giữ nguyên chỗ trong bố cục. */
+  private setHeaderLogoVisible(visible: boolean): void {
+    const brand = document.querySelector<HTMLElement>(HEADER_BRAND_FALLBACK);
+    if (brand) brand.style.visibility = visible ? '' : 'hidden';
   }
 
   private at(delay: number, fn: () => void): void {
@@ -95,7 +115,12 @@ export class LoginSuccessTransition {
     this.phase.set('fly');
     // Bay xong thì kéo màn, màn tan xong mới gỡ overlay.
     this.at(T.flyDuration, () => this.phase.set('out'));
-    this.at(T.flyDuration + T.veilAfterFly, () => this.finished.emit());
+    this.at(T.flyDuration + T.veilAfterFly, () => {
+      // Hiện logo thật rồi mới gỡ overlay, trong cùng một nhịp. Hai bản đang
+      // nằm chồng khít nên mắt không thấy khoảnh khắc đổi tay.
+      this.setHeaderLogoVisible(true);
+      this.finished.emit();
+    });
   }
 
   /**
@@ -109,7 +134,11 @@ export class LoginSuccessTransition {
    */
   private measureAndFly(): void {
     const el = this.logo().nativeElement;
-    const target = document.querySelector(HEADER_BRAND_SELECTOR);
+    // So khối logo với khối logo, không so lớp bọc với lớp bọc.
+    const flying = el.querySelector('app-brand-logo') ?? el;
+    const target =
+      document.querySelector(HEADER_LOGO_SELECTOR) ??
+      document.querySelector(HEADER_BRAND_FALLBACK);
 
     // Header chưa dựng xong (hiếm): bỏ chặng bay, chỉ mờ dần cho êm.
     if (!target) {
@@ -117,25 +146,22 @@ export class LoginSuccessTransition {
       return;
     }
 
-    const from = el.getBoundingClientRect();
+    const from = flying.getBoundingClientRect();
     const to = target.getBoundingClientRect();
     if (!from.width || !to.width) {
       el.style.opacity = '0';
       return;
     }
 
-    // Tỉ lệ đích tính từ offsetWidth — bề rộng LAYOUT, chưa bị transform
-    // nhân vào. Bản trước đọc biến --scale bằng getPropertyValue rồi
-    // parseFloat: với custom property chưa đăng ký, hàm đó trả về nguyên
-    // chuỗi token chứ không phải số đã tính, nên luôn ra NaN rồi rơi về 1
-    // — logo hạ cánh sai cỡ so với logo thật trong header.
-    const naturalWidth = el.offsetWidth;
-    if (!naturalWidth) {
-      el.style.opacity = '0';
-      return;
-    }
+    // Hệ số phóng hiện tại đọc thẳng từ ma trận transform đã tính — chính
+    // xác tuyệt đối. Trước đây lấy offsetWidth làm mốc, mà offsetWidth làm
+    // tròn tới pixel: lệch chưa tới 1px ở mẫu số cũng đủ làm tỉ lệ sai vài
+    // phần nghìn, và sai số đó nhân lên dọc theo chiều dài chữ — nên hai
+    // bản logo càng về bên phải càng lệch, nhìn thành chữ đè chữ.
+    const matrix = new DOMMatrixReadOnly(getComputedStyle(el).transform);
+    const currentScale = matrix.a || 1;
     el.style.setProperty('--fly-x', `${to.left + to.width / 2 - (from.left + from.width / 2)}px`);
     el.style.setProperty('--fly-y', `${to.top + to.height / 2 - (from.top + from.height / 2)}px`);
-    el.style.setProperty('--fly-scale', `${to.width / naturalWidth}`);
+    el.style.setProperty('--fly-scale', `${(currentScale * to.width) / from.width}`);
   }
 }

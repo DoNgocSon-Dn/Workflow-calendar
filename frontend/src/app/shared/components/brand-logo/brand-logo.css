@@ -17,6 +17,10 @@
   letter-spacing: -0.02em;
   color: inherit;
   white-space: nowrap;
+  /* Ghim line-height: header không khai nên nó thừa hưởng giá trị của
+     header, còn khối bay thừa hưởng chỗ khác — hai hộp cao khác nhau thì
+     chữ bên trong lệch dọc dù tâm hộp đã trùng. */
+  line-height: 1;
   /* Chính tả chuẩn: chữ hoa/thường do nội dung quyết định, tuyệt đối
      không viết hoa toàn bộ bằng CSS. */
   text-transform: none;
@@ -55,6 +59,13 @@
 /* Ô chữ cuối chứa hai glyph chồng nhau, nên phải tự khai bề rộng. */
 .bl-last {
   position: relative;
+  /* inline-grid: hai glyph cùng nằm ô 1/1 nên chồng khít nhau, cùng một
+     dòng cơ sở. Dùng position:absolute như trước thì glyph hoa neo theo mép
+     hộp còn glyph thường theo dòng chữ — crossfade sẽ thấy chữ nhích. Grid
+     cũng bỏ qua text node khoảng trắng như flex. */
+  display: inline-grid;
+  align-items: center;
+  justify-items: start;
   width: var(--w-low, auto);
 }
 
@@ -62,10 +73,11 @@
   display: inline-block;
 }
 
+.bl-last .bl-g {
+  grid-area: 1 / 1;
+}
+
 .bl-last .bl-up {
-  position: absolute;
-  left: 0;
-  top: 0;
   opacity: 0;
 }
 
@@ -86,10 +98,21 @@
   transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1),
     margin-right 0.5s cubic-bezier(0.22, 1, 0.36, 1),
     opacity 0.32s ease,
-    translate 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    translate 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    /* Đổi màu chạy 0.42s, KHÔNG delay — trùng nhịp với lúc chữ tách đôi
+       (width 0.5s) nên hai việc đọc ra là một chuyển động, không phải hai
+       hiệu ứng nối đuôi. */
+    color 0.42s ease-in-out;
 }
 
-/* ── mark: chỉ còn chữ W đầu ── */
+/* ── mark: chỉ còn chữ W đầu, màu xanh thương hiệu ── */
+
+/* Dùng --color-text cho trạng thái sau chứ không hardcode trắng: overlay
+   lấy nền theo --color-bg nên ở giao diện sáng nền là trắng, chữ trắng sẽ
+   biến mất. --color-text tự ra trắng ở nền tối, đen ở nền sáng. */
+.bl[data-phase='mark'] .bl-first {
+  color: var(--color-accent, #2563eb);
+}
 
 .bl[data-phase='mark'] .bl-icon {
   width: 0;

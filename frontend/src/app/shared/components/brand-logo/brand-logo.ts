@@ -54,12 +54,21 @@ export class BrandLogo {
   private measure(): void {
     const root = this.host.nativeElement;
 
+    // Khối logo có thể đang bị scale (lúc chạy hiệu ứng là 3.2 lần). Thả một
+    // thước đo 100px vào chính ngữ cảnh đó để biết hệ số phóng chính xác.
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:absolute;width:100px;height:0;visibility:hidden;';
+    root.appendChild(probe);
+    const zoom = probe.getBoundingClientRect().width / 100 || 1;
+    probe.remove();
+
     for (const letter of Array.from(root.querySelectorAll<HTMLElement>('.bl-l'))) {
       // Inline style thắng rule trong stylesheet, nên tạm mở khoá để đo.
       letter.style.width = 'auto';
-      // offsetWidth chứ không phải getBoundingClientRect: khối logo đang bị
-      // scale lên nhiều lần, rect sẽ trả về số đã nhân.
-      const natural = letter.offsetWidth;
+      // getBoundingClientRect (số lẻ) rồi chia hệ số phóng, KHÔNG dùng
+      // offsetWidth: offsetWidth làm tròn tới pixel, tám chữ cộng dồn sai
+      // vài px khiến bản logo bay rộng khác bản trong header.
+      const natural = letter.getBoundingClientRect().width / zoom;
       letter.style.width = '';
       letter.style.setProperty('--w', `${natural}px`);
     }
@@ -70,8 +79,8 @@ export class BrandLogo {
     const low = root.querySelector<HTMLElement>('.bl-low');
     const last = root.querySelector<HTMLElement>('.bl-last');
     if (up && low && last) {
-      last.style.setProperty('--w-up', `${up.offsetWidth}px`);
-      last.style.setProperty('--w-low', `${low.offsetWidth}px`);
+      last.style.setProperty('--w-up', `${up.getBoundingClientRect().width / zoom}px`);
+      last.style.setProperty('--w-low', `${low.getBoundingClientRect().width / zoom}px`);
     }
   }
 }
