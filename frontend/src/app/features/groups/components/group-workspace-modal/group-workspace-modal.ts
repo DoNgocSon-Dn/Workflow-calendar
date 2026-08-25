@@ -58,6 +58,8 @@ export class GroupWorkspaceModal {
   protected readonly activeTab = computed(() => this.store.activeWorkspaceTab());
   protected readonly updatingRoleUserId = signal<string | null>(null);
   protected readonly transferringUserId = signal<string | null>(null);
+  protected readonly openRoleMenuUserId = signal<string | null>(null);
+  protected readonly inviteRoleMenuOpen = signal<boolean>(false);
 
   protected readonly currentUserId = computed(() => this.authStore.user()?.id ?? null);
 
@@ -334,6 +336,33 @@ export class GroupWorkspaceModal {
     } finally {
       this.inviting.set(false);
     }
+  }
+
+  toggleRoleMenu(userId: string): void {
+    if (this.openRoleMenuUserId() === userId) {
+      this.openRoleMenuUserId.set(null);
+    } else {
+      this.openRoleMenuUserId.set(userId);
+    }
+  }
+
+  closeRoleMenu(): void {
+    this.openRoleMenuUserId.set(null);
+  }
+
+  async selectRole(member: GroupMember, role: GroupRole): Promise<void> {
+    this.closeRoleMenu();
+    if (member.role === role) return;
+    await this.changeRole(member, role);
+  }
+
+  toggleInviteRoleMenu(): void {
+    this.inviteRoleMenuOpen.set(!this.inviteRoleMenuOpen());
+  }
+
+  selectInviteRole(role: GroupRole): void {
+    this.inviteRole.set(role);
+    this.inviteRoleMenuOpen.set(false);
   }
 
   async changeRole(member: GroupMember, role: GroupRole): Promise<void> {

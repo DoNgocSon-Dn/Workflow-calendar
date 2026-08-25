@@ -411,18 +411,60 @@
                     [value]="inviteEmail()"
                     (input)="onInviteEmailInput($any($event.target).value)"
                   />
-                  <select
-                    class="select-input"
-                    [attr.aria-label]="i18n.t('group.inviteRoleLabel')"
-                    [value]="inviteRole()"
-                    (change)="inviteRole.set($any($event.target).value)"
-                  >
-                    <!-- Trưởng nhóm KHÔNG có ở đây: không thể mời thẳng ai vào
-                         làm trưởng nhóm. -->
-                    @for (r of assignableRoles(); track r) {
-                      <option [value]="r">{{ roleLabel(r) }}</option>
+                  <div class="role-menu-wrapper">
+                    <button
+                      type="button"
+                      class="role-select-btn"
+                      [class]="inviteRole().toLowerCase()"
+                      [attr.aria-expanded]="inviteRoleMenuOpen()"
+                      (click)="toggleInviteRoleMenu()"
+                    >
+                      <span class="role-pill__mark" aria-hidden="true">
+                        @switch (inviteRole()) {
+                          @case ('LEADER') { ★ }
+                          @case ('ADMIN') { ◆ }
+                          @case ('GUEST') { ◌ }
+                          @default { ● }
+                        }
+                      </span>
+                      <span>{{ roleLabel(inviteRole()) }}</span>
+                      <svg class="role-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </button>
+
+                    @if (inviteRoleMenuOpen()) {
+                      <div class="menu-backdrop" (click)="inviteRoleMenuOpen.set(false)"></div>
+                      <div class="role-dropdown-menu" role="listbox">
+                        @for (r of assignableRoles(); track r) {
+                          <button
+                            type="button"
+                            class="role-dropdown-item"
+                            [class]="r.toLowerCase()"
+                            [class.active]="inviteRole() === r"
+                            role="option"
+                            [attr.aria-selected]="inviteRole() === r"
+                            (click)="selectInviteRole(r)"
+                          >
+                            <span class="role-dropdown-icon">
+                              @switch (r) {
+                                @case ('LEADER') { ★ }
+                                @case ('ADMIN') { ◆ }
+                                @case ('GUEST') { ◌ }
+                                @default { ● }
+                              }
+                            </span>
+                            <span class="role-dropdown-label">{{ roleLabel(r) }}</span>
+                            @if (inviteRole() === r) {
+                              <svg class="role-checkmark" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            }
+                          </button>
+                        }
+                      </div>
                     }
-                  </select>
+                  </div>
                   <button
                     type="button"
                     class="btn btn-primary"
@@ -455,18 +497,61 @@
                        với nhau bất kể tên dài ngắn khác nhau. -->
                   <div class="member-right">
                     @if (canManageMember(m)) {
-                      <select
-                        class="role-select"
-                        [class]="m.role.toLowerCase()"
-                        [value]="m.role"
-                        [disabled]="updatingRoleUserId() === m.userId"
-                        [attr.aria-label]="i18n.t('group.inviteRoleLabel')"
-                        (change)="changeRole(m, $any($event.target).value)"
-                      >
-                        @for (r of assignableRoles(); track r) {
-                          <option [value]="r">{{ roleLabel(r) }}</option>
+                      <div class="role-menu-wrapper">
+                        <button
+                          type="button"
+                          class="role-select-btn"
+                          [class]="m.role.toLowerCase()"
+                          [disabled]="updatingRoleUserId() === m.userId"
+                          [attr.aria-expanded]="openRoleMenuUserId() === m.userId"
+                          (click)="toggleRoleMenu(m.userId)"
+                        >
+                          <span class="role-pill__mark" aria-hidden="true">
+                            @switch (m.role) {
+                              @case ('LEADER') { ★ }
+                              @case ('ADMIN') { ◆ }
+                              @case ('GUEST') { ◌ }
+                              @default { ● }
+                            }
+                          </span>
+                          <span>{{ roleLabel(m.role) }}</span>
+                          <svg class="role-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
+                        </button>
+
+                        @if (openRoleMenuUserId() === m.userId) {
+                          <div class="menu-backdrop" (click)="closeRoleMenu()"></div>
+                          <div class="role-dropdown-menu" role="listbox">
+                            @for (r of assignableRoles(); track r) {
+                              <button
+                                type="button"
+                                class="role-dropdown-item"
+                                [class]="r.toLowerCase()"
+                                [class.active]="m.role === r"
+                                role="option"
+                                [attr.aria-selected]="m.role === r"
+                                (click)="selectRole(m, r)"
+                              >
+                                <span class="role-dropdown-icon">
+                                  @switch (r) {
+                                    @case ('LEADER') { ★ }
+                                    @case ('ADMIN') { ◆ }
+                                    @case ('GUEST') { ◌ }
+                                    @default { ● }
+                                  }
+                                </span>
+                                <span class="role-dropdown-label">{{ roleLabel(r) }}</span>
+                                @if (m.role === r) {
+                                  <svg class="role-checkmark" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
+                                }
+                              </button>
+                            }
+                          </div>
                         }
-                      </select>
+                      </div>
                     } @else {
                       <!-- Badge phân biệt bằng CẢ ký hiệu lẫn màu — người
                            không phân biệt được màu vẫn đọc ra cấp bậc. -->
