@@ -949,31 +949,40 @@ export class GroupsService {
       );
     }
 
-    // Đổi cột owner_id TRƯỚC: đây là nguồn xác định trưởng nhóm, nên nếu hai
-    // lệnh dưới có hỏng thì nhóm vẫn có đúng một người lãnh đạo, không rơi vào
-    // trạng thái không ai làm chủ.
-    const { error: ownerErr } = await supabase
-      .from('groups')
-      .update({ owner_id: targetUserId })
-      .eq('id', groupId);
+    // Một RPC nguyên tử thay vì ba lệnh UPDATE rời.
+    //
+    // Ba lệnh rời buộc phải nới policy RLS group_members_update từ > xuống >=
+    // để chúng đi lọt, mà nới thế là mở đường cho một quản trị viên hạ quyền
+    // quản trị viên khác. Hàm SECURITY DEFINER giữ policy ở mức chặt nhất, và
+    // nếu hỏng giữa chừng thì cả ba thay đổi cùng rollback — nhóm không bao
+    // giờ rơi vào cảnh có hai trưởng nhóm hoặc không có ai.
+    const { error: rpcError } = await supabase.rpc('transfer_group_leadership', {
+      p_group_id: groupId,
+      p_new_leader: targetUserId,
+    });
 
-    if (ownerErr) {
+    if (rpcError) {
+      const msg = rpcError.message || '';
+      if (msg.includes('not authorized')) {
+        throw new ForbiddenException(
+          'Chỉ trưởng nhóm mới được chuyển quyền trưởng nhóm',
+        );
+      }
+      if (msg.includes('already leader')) {
+        throw new ConflictException('Bạn đã là trưởng nhóm');
+      }
+      if (msg.includes('not a group member')) {
+        throw new NotFoundException(
+          'Chỉ có thể chuyển quyền cho người đã ở trong nhóm',
+        );
+      }
+      if (msg.includes('group not found')) {
+        throw new NotFoundException('Không tìm thấy nhóm');
+      }
       throw new InternalServerErrorException(
-        ownerErr.message || 'Không thể chuyển quyền trưởng nhóm',
+        msg || 'Không thể chuyển quyền trưởng nhóm',
       );
     }
-
-    await supabase
-      .from('group_members')
-      .update({ role: toDbGroupRole(GroupRole.LEADER) })
-      .eq('group_id', groupId)
-      .eq('user_id', targetUserId);
-
-    await supabase
-      .from('group_members')
-      .update({ role: toDbGroupRole(GroupRole.ADMIN) })
-      .eq('group_id', groupId)
-      .eq('user_id', actor.id);
 
     if (group.calendar_id) {
       await supabase
@@ -982,7 +991,6 @@ export class GroupsService {
         .eq('calendar_id', group.calendar_id)
         .eq('user_id', targetUserId);
     }
-
     const members = await this.getMembers(supabase, groupId);
     if (group.calendar_id) {
       this.realtimeGateway.emitToCalendar(group.calendar_id, 'group:leadershipTransferred', {
