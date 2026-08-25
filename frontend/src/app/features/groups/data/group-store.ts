@@ -609,7 +609,9 @@ export class GroupStore {
 
   async updateMemberRole(groupId: string, userId: string, role: string): Promise<GroupMember> {
     const updated = await this.api.updateMemberRole(groupId, userId, role);
-    this.members.update((prev) => prev.map((m) => (m.userId === userId ? updated : m)));
+    this.members.update((prev) =>
+      prev.map((m) => (m.userId === userId ? { ...m, ...updated } : m)),
+    );
     return updated;
   }
 

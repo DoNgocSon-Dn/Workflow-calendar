@@ -480,37 +480,52 @@
   flex-shrink: 0;
 }
 
-/* Role badges & select controls */
-.role-pill,
-.role-select {
+/* Role static pill badge (Non-editable) */
+.role-pill {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 600;
-  line-height: 1.3;
-  padding: 0.32rem 0.8rem;
-  border-radius: var(--radius-full);
+  line-height: 1;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
   border: 1px solid transparent;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  white-space: nowrap;
+  user-select: none;
 }
 
+.role-pill__mark {
+  font-size: 0.7rem;
+  line-height: 1;
+  opacity: 0.9;
+}
+
+/* Role select control (Editable dropdown) */
 .role-select {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  padding-right: 1.85rem;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.35rem 1.65rem 0.35rem 0.75rem;
+  border-radius: 9999px;
+  border: 1px solid transparent;
   cursor: pointer;
-  background-repeat: no-repeat;
-  background-position: right 0.6rem center;
-  background-size: 11px 11px;
+  white-space: nowrap;
+  background-repeat: no-repeat !important;
+  background-position: right 0.55rem center !important;
+  background-size: 10px 10px !important;
+  transition: all 0.15s ease;
 }
 
 .role-select:hover:not(:disabled) {
   transform: translateY(-1px);
-  filter: brightness(1.08);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  filter: brightness(1.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .role-select:focus-visible {
@@ -532,74 +547,105 @@
 }
 
 /* ============================================================
-   Role-specific color themes: Soft Pill Palette
-   High-contrast, elegant translucent tint + border for light & dark
+   Role Colors: Elegant Solid or Soft Pill Palette
    ============================================================ */
 
-/* LEADER (Trưởng nhóm) - Purple / Violet */
-.role-pill.leader,
+/* LEADER (Trưởng nhóm) - Violet/Purple */
+.role-pill.leader {
+  background-color: rgba(139, 92, 246, 0.18);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #c4b5fd;
+}
 .role-select.leader {
-  background: color-mix(in srgb, #8b5cf6 18%, var(--color-surface));
-  border-color: color-mix(in srgb, #8b5cf6 42%, transparent);
+  background-color: rgba(139, 92, 246, 0.18);
+  border-color: rgba(139, 92, 246, 0.4);
   color: #c4b5fd;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c4b5fd' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
 
 /* ADMIN (Quản trị viên) - Royal Blue */
-.role-pill.admin,
+.role-pill.admin {
+  background-color: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #93c5fd;
+}
 .role-select.admin {
-  background: color-mix(in srgb, #3b82f6 18%, var(--color-surface));
-  border-color: color-mix(in srgb, #3b82f6 42%, transparent);
+  background-color: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.4);
   color: #93c5fd;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2393c5fd' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
 
 /* MEMBER (Thành viên) - Emerald Green */
-.role-pill.member,
+.role-pill.member {
+  background-color: rgba(16, 185, 129, 0.18);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+}
 .role-select.member {
-  background: color-mix(in srgb, #10b981 18%, var(--color-surface));
-  border-color: color-mix(in srgb, #10b981 42%, transparent);
+  background-color: rgba(16, 185, 129, 0.18);
+  border-color: rgba(16, 185, 129, 0.4);
   color: #6ee7b7;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236ee7b7' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
 
 /* GUEST (Khách) - Warm Amber / Orange */
-.role-pill.guest,
+.role-pill.guest {
+  background-color: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fde047;
+}
 .role-select.guest {
-  background: color-mix(in srgb, #f59e0b 18%, var(--color-surface));
-  border-color: color-mix(in srgb, #f59e0b 42%, transparent);
+  background-color: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.4);
   color: #fde047;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fde047' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
 
 /* Light mode adjustments */
-:root:not(.dark) .role-pill.leader,
+:root:not(.dark) .role-pill.leader {
+  background-color: #f3e8ff;
+  border-color: #d8b4fe;
+  color: #7e22ce;
+}
 :root:not(.dark) .role-select.leader {
-  background: #f3e8ff;
+  background-color: #f3e8ff;
   border-color: #d8b4fe;
   color: #7e22ce;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237e22ce' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
 
-:root:not(.dark) .role-pill.admin,
+:root:not(.dark) .role-pill.admin {
+  background-color: #dbeafe;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
 :root:not(.dark) .role-select.admin {
-  background: #dbeafe;
+  background-color: #dbeafe;
   border-color: #93c5fd;
   color: #1d4ed8;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231d4ed8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
 
-:root:not(.dark) .role-pill.member,
+:root:not(.dark) .role-pill.member {
+  background-color: #d1fae5;
+  border-color: #6ee7b7;
+  color: #047857;
+}
 :root:not(.dark) .role-select.member {
-  background: #d1fae5;
+  background-color: #d1fae5;
   border-color: #6ee7b7;
   color: #047857;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23047857' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
 
-:root:not(.dark) .role-pill.guest,
+:root:not(.dark) .role-pill.guest {
+  background-color: #fef3c7;
+  border-color: #fde047;
+  color: #b45309;
+}
 :root:not(.dark) .role-select.guest {
-  background: #fef3c7;
+  background-color: #fef3c7;
   border-color: #fde047;
   color: #b45309;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b45309' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
