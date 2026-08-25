@@ -36,6 +36,7 @@
   position: fixed;
   z-index: 150;
   width: min(350px, calc(100vw - 2.5rem));
+  height: min(520px, calc(100vh - 4rem));
   max-height: 70vh;
   background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
