@@ -1184,6 +1184,15 @@ footer a {
 
 /* PRELOADER */
 #preloader {
+  /* Hình học của splash gom về một chỗ. Cả icon lẫn wordmark cùng đọc ba biến
+     này nên chúng không thể lệch pha nhau được.
+     --icon-rise PHẢI khớp trị tuyệt đối của SPLASH.riseY trong landing-page.ts
+     (bước 2 của kịch bản splash). Đổi một bên mà quên bên kia thì khoảng hở
+     giữa logo và chữ sai đúng bằng phần chênh. */
+  --icon-size: 92px;
+  --icon-rise: 22px;
+  --icon-gap: 22px;
+
   position: fixed;
   inset: 0;
   z-index: 9999;
@@ -1224,8 +1233,8 @@ footer a {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 92px;
-  height: 92px;
+  width: var(--icon-size);
+  height: var(--icon-size);
   border-radius: 24px;
   background: #ffffff;
   border: 1px solid rgba(59, 130, 246, 0.4);
@@ -1236,13 +1245,18 @@ footer a {
   animation: preloaderIconPulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
 }
 
+/* CHỈ đập theo quầng sáng, TUYỆT ĐỐI không đụng tới `transform`.
+   Keyframe của CSS animation nằm ở tầng cascade CAO HƠN cả inline style, nên
+   mọi thuộc tính xuất hiện ở đây sẽ đè chết giá trị GSAP ghi ra. Bản trước có
+   `transform: scale(1.04) translateY(-3px)` trong keyframe: nó nuốt sạch cả cú
+   phóng 0.85→1 của bước 1 lẫn cú trượt lên 22px của bước 2 — icon đứng nguyên
+   tại tâm, còn wordmark thì vẫn được đặt theo giả định "icon đã trượt lên",
+   nên đè thẳng lên logo. Một thuộc tính chỉ được có MỘT chủ. */
 @keyframes preloaderIconPulse {
   0% {
-    transform: scale(1) translateY(0);
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 40px rgba(37, 99, 235, 0.45);
   }
   100% {
-    transform: scale(1.04) translateY(-3px);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 60px rgba(37, 99, 235, 0.75);
   }
 }
@@ -1260,11 +1274,14 @@ footer a {
   position: absolute;
   left: 0;
   right: 0;
-  /* Icon cao 76px, tâm nằm giữa khung nhìn rồi trượt lên 22px, nên đáy icon ở
-     50% + 16px. Cộng 10px khoảng hở ra 26px. line-height ghim bằng 1 để con
-     số này là khoảng hở THẬT, không bị phần leading của dòng cộng thêm vào. */
-  top: 50%;
-  margin-top: 26px;
+  /* Vị trí SUY RA từ cỡ icon, không ghi cứng nữa. Icon tâm ở giữa khung nhìn
+     rồi trượt lên --icon-rise, nên đáy nó ở 50% + nửa icon − độ trượt; cộng
+     thêm khoảng hở là ra đây. Trước kia chỗ này là `margin-top: 26px` tính tay
+     cho icon 76px — icon đổi lên 92px là con số đó sai ngay, chữ leo lên đè
+     logo mà không có gì báo. Giờ đổi cỡ icon thì khoảng hở tự khớp lại.
+     line-height ghim bằng 1 để khoảng hở là khoảng hở THẬT, không bị phần
+     leading của dòng cộng thêm vào. */
+  top: calc(50% + var(--icon-size) / 2 - var(--icon-rise) + var(--icon-gap));
   line-height: 1;
   text-align: center;
   font-family: var(--font-heading);
