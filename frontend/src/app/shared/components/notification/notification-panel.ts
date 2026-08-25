@@ -103,7 +103,7 @@ export class NotificationPanel {
 
   protected readonly filtered = computed<readonly AppNotification[]>(() => {
     const tab = this.activeTab();
-    const all = this.service.notifications().filter((n) => !n.id.startsWith('calendar-invite-'));
+    const all = this.service.notifications();
     if (tab === 'all') return all;
     if (tab === 'unread') return all.filter((n) => !n.isRead);
     if (tab === 'group') return all.filter((n) => n.type === 'group_invitation' || notificationCategory(n.type) === 'group');

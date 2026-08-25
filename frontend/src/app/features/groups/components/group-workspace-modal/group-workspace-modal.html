@@ -390,7 +390,7 @@
                       }
                     </div>
                   </div>
-                  @if (m.role !== 'owner') {
+                  @if (isOwner() && m.role !== 'owner') {
                     <button
                       type="button"
                       class="btn-danger-sm"
