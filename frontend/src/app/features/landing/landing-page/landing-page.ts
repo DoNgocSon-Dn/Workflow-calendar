@@ -64,6 +64,8 @@ export class LandingPage implements OnInit, AfterViewInit {
   /** Bảo đảm finishIntro() chỉ chạy một lần dù bị gọi từ mấy nguồn. */
   private introDone = false;
   private introTimeline: gsap.core.Timeline | null = null;
+  /** Ba bước đầu của splash. Giữ tham chiếu để kết thúc sớm còn dừng được nó. */
+  private splashTimeline: gsap.core.Timeline | null = null;
 
   ngOnInit(): void {
     const savedTheme = localStorage.getItem('workflow-theme') || 'dark';
@@ -112,17 +114,35 @@ export class LandingPage implements OnInit, AfterViewInit {
     }
   }
 
+  /** Khoảng hở giữa đáy thanh nav và dòng chữ đầu tiên của section. */
+  private static readonly SCROLL_GAP = 28;
+
   scrollToSection(event: Event, id: string): void {
     // Bấm một mục trong drawer thì drawer phải đóng lại, nếu không nó che mất
     // đúng cái section vừa cuộn tới.
     this.closeMobileMenu();
 
-    const target = this.host.nativeElement.querySelector(`#${id}`);
+    const target = this.host.nativeElement.querySelector(`#${id}`) as HTMLElement | null;
     if (!target) return;
     event.preventDefault();
-    target.scrollIntoView({
+
+    // KHÔNG dùng scrollIntoView({block:'start'}): nó neo MÉP HỘP của section
+    // vào đầu khung nhìn, mà .section-pad có padding-top 128px nên chỗ được
+    // neo lại đúng vùng trống. Tiêu đề section bị đẩy xuống tận ~215px, người
+    // dùng tưởng chưa tới nơi và phải tự cuộn thêm một đoạn.
+    //
+    // Neo theo NỘI DUNG mới đúng: trừ padding-top ra khỏi điểm dừng, rồi chừa
+    // lại đúng chiều cao nav cộng một khoảng hở. Đo nav bằng getBoundingClient-
+    // Rect chứ không ghi cứng 88px như trước — nav thật chỉ cao ~65px, phần dư
+    // 23px chính là một nửa cảm giác "chưa tới hẳn".
+    const nav = this.host.nativeElement.querySelector('.landing-nav') as HTMLElement | null;
+    const navHeight = nav?.getBoundingClientRect().height ?? 72;
+    const padTop = parseFloat(getComputedStyle(target).paddingTop) || 0;
+    const absoluteTop = target.getBoundingClientRect().top + window.scrollY;
+
+    window.scrollTo({
+      top: Math.max(0, absoluteTop + padTop - navHeight - LandingPage.SCROLL_GAP),
       behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-      block: 'start',
     });
   }
 
@@ -247,6 +267,11 @@ export class LandingPage implements OnInit, AfterViewInit {
     this.introTimeline?.progress(1);
     this.introTimeline = null;
 
+    // Splash thì kill chứ không progress(1): nó sắp bị display:none ngay dưới
+    // đây, chạy nốt để rồi không ai nhìn thấy là phí frame vô ích.
+    this.splashTimeline?.kill();
+    this.splashTimeline = null;
+
     const host = this.host.nativeElement as HTMLElement;
     host.querySelectorAll<HTMLElement>('#preloader, .preloader-panel').forEach((el) => {
       el.style.display = 'none';
@@ -264,19 +289,45 @@ export class LandingPage implements OnInit, AfterViewInit {
     ScrollTrigger.refresh();
   }
 
-  /** Nhịp chuyển cảnh, tính bằng giây trên MỘT timeline duy nhất. Gom về đây
-   *  để đọc là thấy ngay chỗ nào chồng lên chỗ nào — trước kia nằm rải trong
-   *  các setTimeout lồng nhau nên không thể chỉnh overlap. */
+  /**
+   * Kịch bản splash 4 bước, tính bằng GIÂY (đơn vị của GSAP).
+   *
+   *   B1  0.0 ─► 0.6   icon hiện ngay chính giữa màn hình (mờ + phóng 0.85→1)
+   *   B2  0.6 ─► 1.0   icon trượt lên 22px, wordmark vẫn ẩn hoàn toàn
+   *   B3  1.0 ─► 1.5   wordmark hiện dần từ dưới lên, ngay dưới icon
+   *       1.5 ─► 1.8   giữ nguyên khối hoàn chỉnh cho người dùng nhìn rõ
+   *   B4  1.8 ─► 2.22  cả màn splash mờ dần, hero đã hiện sẵn phía sau
+   */
+  private static readonly SPLASH = {
+    iconIn: 0.6,
+    riseAt: 0.6,
+    riseDur: 0.4,
+    riseY: -22,
+    wordAt: 1.0,
+    wordDur: 0.5,
+    /** Mốc bàn giao: timeline intro khởi động, cũng là lúc bước 4 bắt đầu. */
+    handoff: 1800,
+  } as const;
+
+  /** Nhịp chuyển cảnh, tính bằng giây trên MỘT timeline duy nhất, gốc thời
+   *  gian là mốc SPLASH.handoff. Gom về đây để đọc là thấy ngay chỗ nào chồng
+   *  lên chỗ nào — trước kia nằm rải trong các setTimeout lồng nhau nên không
+   *  thể chỉnh overlap.
+   *
+   *  Toàn bộ mốc đã dời sớm 0.3s so với bản trước: bước 4 giờ bắt đầu ngay ở
+   *  giây 0 (trước là 0.35) nên hero cũng phải nhích lên tương ứng, nếu không
+   *  splash kéo dài thêm bao nhiêu thì trang vào chậm thêm bấy nhiêu. */
   private static readonly CUE = {
-    glowFade: 0.1,
-    preloaderOut: 0.35,
-    panelsOut: 0.5,
-    ambientIn: 0.15,
-    eyebrow: 0.6,
-    title: 0.72,
+    /** Bước 4 — mờ toàn màn splash. Bắt đầu ngay tại mốc bàn giao. */
+    preloaderOut: 0,
+    preloaderOutDur: 0.42,
+    panelsOut: 0.2,
+    ambientIn: 0,
+    eyebrow: 0.3,
+    title: 0.42,
     titleStagger: 0.085,
-    sub: 1.35,
-    cta: 1.6,
+    sub: 1.05,
+    cta: 1.3,
   } as const;
 
   private get reducedMotion(): boolean {
@@ -291,7 +342,6 @@ export class LandingPage implements OnInit, AfterViewInit {
       this.host.nativeElement.querySelector(sel) as T | null;
 
     const preloader = el('#preloader');
-    const word = el('#preloaderWord');
     const mark = el('#preloaderMark');
     const panelLeft = el('.preloader-panel.left');
     const panelRight = el('.preloader-panel.right');
@@ -313,27 +363,47 @@ export class LandingPage implements OnInit, AfterViewInit {
       if (document.visibilityState === 'hidden') this.finishIntro();
     });
 
-    if (!preloader || !word || !mark || !panelLeft || !panelRight) {
+    if (!preloader || !mark || !panelLeft || !panelRight) {
       root.classList.remove('is-loading');
       this.playIntro(this.buildIntroTimeline(null));
       return;
     }
 
-    // Rút từ 2500ms xuống 900ms trước khi timeline hero bắt đầu. Preloader là
-    // thuế thu trên MỌI lượt truy cập; giữ nó ở mức "một nhịp thở", không phải
-    // "một đoạn phim".
-    const LETTER_REVEAL_DONE = 480;
-    const WORD_HOLD = 120;
-    const MARK_HOLD = 180;
+    const wordmark = el('.preloader-wordmark');
+    const S = LandingPage.SPLASH;
+
+    // Ba bước đầu chạy trên MỘT timeline riêng, tách khỏi timeline intro. Hai
+    // bên có hai mốc gốc khác nhau (splash tính từ lúc vào trang, intro tính
+    // từ mốc bàn giao) — nhét chung một timeline là mọi con số phải cộng trừ
+    // theo nhau, sửa một chỗ hỏng cả dây.
+    //
+    // `mark` chính là khung icon. Wordmark KHÔNG đi theo nó: nó có vị trí cuối
+    // cố định tính sẵn trong CSS, và chỉ hiện ra sau khi icon đã trượt xong.
+    if (wordmark) {
+      this.splashTimeline = gsap
+        .timeline()
+        // B1 — icon hiện tại chính giữa. power3.out hãm rất gắt ở cuối nên
+        // icon "đáp" xuống chứ không trôi tới, mắt bắt được điểm dừng ngay.
+        .fromTo(
+          mark,
+          { opacity: 0, scale: 0.85 },
+          { opacity: 1, scale: 1, duration: S.iconIn, ease: 'power3.out' },
+          0,
+        )
+        // B2 — trượt lên. GSAP giữ nguyên scale đã đặt ở B1 và chỉ thêm y.
+        .to(mark, { y: S.riseY, duration: S.riseDur, ease: 'power2.out' }, S.riseAt)
+        // B3 — wordmark dâng lên từ dưới.
+        .fromTo(
+          wordmark,
+          { opacity: 0, y: 10 },
+          { opacity: 1, y: 0, duration: S.wordDur, ease: 'power2.out' },
+          S.wordAt,
+        );
+    }
 
     const startAt = window.setTimeout(() => {
-      word.classList.add('hide');
-      mark.classList.add('show');
-      const thenAt = window.setTimeout(() => {
-        this.playIntro(this.buildIntroTimeline({ preloader, mark, panelLeft, panelRight }));
-      }, 120 + MARK_HOLD);
-      this.teardown.push(() => clearTimeout(thenAt));
-    }, LETTER_REVEAL_DONE + WORD_HOLD);
+      this.playIntro(this.buildIntroTimeline({ preloader, panelLeft, panelRight }));
+    }, LandingPage.SPLASH.handoff);
     this.teardown.push(() => clearTimeout(startAt));
   }
 
@@ -351,14 +421,14 @@ export class LandingPage implements OnInit, AfterViewInit {
   /**
    * Preloader tan vào Hero thay vì biến mất rồi Hero mới chạy.
    *
-   * Điểm mấu chốt: Hero khởi động ở giây 0.6 trong khi preloader còn đang mờ
-   * dần tới ~1.25 — hai bên chồng nhau thật sự. Preloader chỉ bị display:none
-   * ở cuối timeline, nên không có frame trống nào ở giữa.
+   * Điểm mấu chốt: nền hero dựng ngay từ giây 0 và chữ hero vào ở giây 0.3,
+   * trong khi preloader mờ từ 0 tới 0.42 — hai bên chồng nhau thật sự, người
+   * xem không thấy một khoảnh khắc nào trang trống. Preloader chỉ bị
+   * display:none ở cuối timeline.
    */
   private buildIntroTimeline(
     preloaderParts: {
       preloader: HTMLElement;
-      mark: HTMLElement;
       panelLeft: HTMLElement;
       panelRight: HTMLElement;
     } | null,
@@ -388,12 +458,19 @@ export class LandingPage implements OnInit, AfterViewInit {
       );
 
     if (preloaderParts) {
-      const { preloader, mark, panelLeft, panelRight } = preloaderParts;
+      const { preloader, panelLeft, panelRight } = preloaderParts;
 
-      // Glow của wordmark dịu xuống + nở rất nhẹ: cảm giác tan vào nền chứ
-      // không phải bị tắt.
-      tl.to(mark, { opacity: 0.55, scale: 1.06, duration: 0.9 * scale }, CUE.glowFade * scale)
-        .to(preloader, { opacity: 0, duration: 0.9 * scale }, CUE.preloaderOut * scale)
+      // BƯỚC 4 — mờ NGUYÊN màn splash bằng một tween duy nhất trên #preloader.
+      // Trước đây còn một tween riêng làm khối logo mờ xuống 0.55 song song;
+      // hai lớp mờ chồng nhau khiến logo tụt nhanh hơn nền, giữa chừng lộ ra
+      // một khoảnh khắc "nền còn mà chữ đã bay". Một lớp là đủ và đúng.
+      //
+      // power1.inOut = ease-in-out: rời đi chậm, giữa nhanh, tới nơi chậm.
+      tl.to(
+        preloader,
+        { opacity: 0, duration: CUE.preloaderOutDur * scale, ease: 'power1.inOut' },
+        CUE.preloaderOut * scale,
+      )
         .to(panelLeft, { xPercent: -100, duration: 0.9 * scale }, CUE.panelsOut * scale)
         .to(panelRight, { xPercent: 100, duration: 0.9 * scale }, CUE.panelsOut * scale);
     }

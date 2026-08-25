@@ -667,8 +667,15 @@ section {
 .section-pad {
   /* 180px trên+dưới cho ra gần một màn hình trắng giữa hai section. 128px
      vẫn thoáng nhưng không còn khiến trang trông như bị thiếu nội dung. */
-  padding: 128px 6vw;
-  scroll-margin-top: 88px;
+  --pad-y: 128px;
+  padding: var(--pad-y) 6vw;
+  /* ÂM là có chủ đích. scroll-margin-top dời điểm dừng LÊN TRÊN, mà vấn đề ở
+     đây ngược lại: mép hộp section nằm trên tiêu đề tận --pad-y, nên dừng ở
+     mép hộp là dừng giữa vùng trống. Trừ --pad-y đi rồi cộng lại chiều cao
+     nav (~65px) và một khoảng hở 28px thì tiêu đề rơi đúng dưới nav.
+     Chỉ dùng cho điều hướng bằng #fragment (link từ trang đăng nhập); click
+     trên nav đi qua scrollToSection() vì hàm đó đo được nav thật. */
+  scroll-margin-top: calc(65px + 28px - var(--pad-y));
 }
 
 /* Section chỉ đóng vai tiêu đề mở đầu cho khối ngay dưới nó. */
@@ -1181,7 +1188,11 @@ footer a {
   inset: 0;
   z-index: 9999;
   background: var(--bg);
-  display: flex;
+  /* MẶC ĐỊNH ẨN, chỉ hiện khi JS đã gắn .js-anim (xem hai luật ngay dưới).
+     Preloader là tấm nền ĐẶC phủ kín màn hình và chỉ có JS mới gỡ nó xuống —
+     JS chết trước khi chạy thì người dùng ngồi nhìn một màn trống vĩnh viễn.
+     Cùng một nguyên tắc với cổng .js-anim của phần nội dung. */
+  display: none;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -1200,48 +1211,66 @@ footer a {
   min-height: 120px;
 }
 
-.preloader-word {
+/* Trạng thái vào do GSAP đặt và GSAP gỡ — TUYỆT ĐỐI không khai transition ở
+   đây. Sau khi vào xong, timeline intro còn tween tiếp chính khối này; nếu
+   còn transition thì mỗi frame GSAP ghi ra lại bị trình duyệt nội suy thêm
+   một lần nữa, animation thành nhão và trễ nhịp. */
+.js-anim .preloader-icon,
+.js-anim .preloader-wordmark {
+  opacity: 0;
+}
+
+.preloader-icon {
   display: flex;
-  transition: opacity 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 18px;
+  /* Thân trắng + viền xanh + chữ xanh: đúng bộ nhận diện mới của tờ lịch, chỉ
+     khác ở chỗ khung vuông bo góc kiểu icon ứng dụng. */
+  background: #fff;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
 }
 
-.preloader-word.hide {
-  opacity: 0;
-  transform: translateY(-16px);
-}
-
-.preloader-word .letter {
-  display: inline-block;
-  font-size: clamp(34px, 6.4vw, 78px);
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-  opacity: 0;
-  transform: translateY(26px);
-  animation: letterIn 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-}
-
-@keyframes letterIn {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.preloader-mark {
-  position: absolute;
-  font-size: clamp(64px, 11vw, 130px);
+.preloader-icon span {
+  font-family: var(--font-heading);
+  font-size: 40px;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: var(--accent);
-  opacity: 0;
-  transform: scale(0.55);
-  transition: opacity 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Ghim line-height: không có nó thì chữ W ăn theo line-height thừa kế của
+     trang và bị lệch xuống dưới tâm khung. */
+  line-height: 1;
+  color: #1a73e8;
 }
 
-.preloader-mark.show {
-  opacity: 1;
-  transform: scale(1);
+.preloader-wordmark {
+  /* Neo vào #preloader (khung nhìn), KHÔNG neo vào icon. left/right 0 +
+     text-align thay cho translateX(-50%): GSAP tween `y` của chính phần tử
+     này ở bước 3, mà GSAP ghi đè cả thuộc tính transform — căn giữa bằng
+     transform là bị nuốt mất, chữ văng sang trái. */
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* Icon cao 76px, tâm nằm giữa khung nhìn rồi trượt lên 22px, nên đáy icon ở
+     50% + 16px. Cộng 20px khoảng hở ra 36px. line-height ghim bằng 1 để con
+     số này là khoảng hở THẬT, không bị phần leading của dòng cộng thêm vào. */
+  top: 50%;
+  margin-top: 36px;
+  line-height: 1;
+  text-align: center;
+  font-family: var(--font-heading);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  /* letter-spacing cộng một khoảng vào SAU chữ cuối, nên text-align: center
+     căn cả khoảng thừa đó và khối chữ lệch trái đúng MỘT NỬA letter-spacing.
+     Bù lại bằng nửa, không phải cả — bù cả là lệch ngược sang phải. */
+  text-indent: 0.15em;
+  /* "Trắng/xám bạc" ở giao diện tối. Đi qua --ink nên ở giao diện sáng nó tự
+     thành xám than — chữ trắng thật sẽ biến mất trên nền sáng. */
+  color: color-mix(in srgb, var(--ink) 78%, transparent);
 }
 
 .preloader-panel {
@@ -1252,6 +1281,16 @@ footer a {
   background: var(--bg);
   z-index: 9998;
   pointer-events: none;
+  /* Cùng lý do với #preloader: nền đặc, chỉ JS mới kéo ra. */
+  display: none;
+}
+
+.js-anim #preloader {
+  display: flex;
+}
+
+.js-anim .preloader-panel {
+  display: block;
 }
 
 .preloader-panel.left {
@@ -1332,10 +1371,14 @@ footer a {
     display: none;
   }
   .section-pad {
-    padding: 96px 6vw;
+    /* Đổi qua biến chứ không ghi đè padding trực tiếp: scroll-margin-top được
+       tính từ --pad-y nên sửa một chỗ là điểm dừng tự khớp lại. */
+    --pad-y: 96px;
   }
-  /* Phải nhắc lại trong media query: luật ngoài kia cùng độ đặc hiệu nhưng
-     nằm TRƯỚC, nên .section-pad ở đây sẽ trả lại padding đáy nếu không ghi. */
+  /* Giữ lại cho chắc. Trước đây luật trên ghi đè cả shorthand `padding` nên
+     nó xoá mất padding đáy 0 của --lead; giờ chỉ còn đổi --pad-y nên dòng này
+     đã thành thừa, nhưng bỏ đi thì lần sau ai quay lại dùng shorthand là lỗi
+     cũ sống lại ngay. */
   .section-pad--lead {
     padding-bottom: 0;
   }

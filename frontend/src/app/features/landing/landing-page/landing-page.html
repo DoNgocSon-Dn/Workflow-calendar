@@ -5,18 +5,22 @@
   <!-- PRELOADER -->
   <div id="preloader" aria-hidden="true">
     <div class="preloader-stage">
-      <div class="preloader-word" id="preloaderWord">
-        <span class="letter" style="animation-delay: 0ms">W</span>
-        <span class="letter" style="animation-delay: 50ms">O</span>
-        <span class="letter" style="animation-delay: 100ms">R</span>
-        <span class="letter" style="animation-delay: 150ms">K</span>
-        <span class="letter" style="animation-delay: 200ms">F</span>
-        <span class="letter" style="animation-delay: 250ms">L</span>
-        <span class="letter" style="animation-delay: 300ms">O</span>
-        <span class="letter" style="animation-delay: 350ms">W</span>
-      </div>
-      <div class="preloader-mark" id="preloaderMark">W</div>
+      <!-- Một khối duy nhất: khung icon + wordmark. Trước đây là hai cảnh nối
+           nhau (8 chữ cái chạy vào rồi bị thay bằng một chữ W khổng lồ), nên
+           mỗi cảnh chỉ kịp đứng vài trăm mili giây và chẳng cảnh nào đọng lại.
+           Gộp làm một thì cùng thời lượng đó dồn hết cho một hình. -->
+      <div class="preloader-icon" id="preloaderMark"><span>W</span></div>
     </div>
+
+    <!-- Wordmark nằm NGOÀI khối icon, neo thẳng vào #preloader. Trước đây nó
+         treo trong hộp 76px của icon nên hai bên căn giữa theo hai hộp khác
+         nhau và lệch tâm nhau. Giờ cả hai cùng lấy khung nhìn làm gốc: icon
+         được flex canh giữa, wordmark trải left:0/right:0 rồi text-align —
+         hai tâm trùng nhau về mặt toán học, không còn chỗ cho sai lệch.
+
+         Viết hoa ngay trong nội dung, KHÔNG dùng text-transform: trình đọc
+         màn hình và thao tác copy đều lấy đúng thứ đang hiển thị. -->
+    <div class="preloader-wordmark">WORKFLOW</div>
   </div>
   <div class="preloader-panel left" aria-hidden="true"></div>
   <div class="preloader-panel right" aria-hidden="true"></div>
