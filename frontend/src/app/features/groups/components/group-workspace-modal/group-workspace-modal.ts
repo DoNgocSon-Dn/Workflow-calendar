@@ -375,6 +375,11 @@ export class GroupWorkspaceModal {
     return msg.senderName || msg.senderEmail?.split('@')[0] || 'Thành viên';
   }
 
+  senderAvatarInitial(msg: GroupMessage): string {
+    const name = this.senderDisplayName(msg);
+    return (name ? name[0] : 'U').toUpperCase();
+  }
+
   /** Mỗi người 1 màu ổn định (dựa trên senderId, không đổi giữa các lần
    *  render) để phân biệt người gửi trong chat nhiều thành viên bằng mắt,
    *  không cần đọc tên. Palette lấy từ cùng bộ màu nhóm (GROUP_COLOR_HEX) để

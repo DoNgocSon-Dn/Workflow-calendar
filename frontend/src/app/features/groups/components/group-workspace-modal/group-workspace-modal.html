@@ -411,63 +411,70 @@
             <div class="chat-messages">
               @for (msg of store.messages(); track msg.id) {
                 <div class="chat-msg-row" [id]="'chat-msg-' + msg.id" [class.deleted]="msg.deletedAt">
-                  <div class="chat-msg-main">
-                    <span class="chat-sender" [style.color]="senderColor(msg)">{{ senderDisplayName(msg) }}:</span>
-                    @if (msg.deletedAt) {
-                      <span class="chat-text chat-text-deleted">Tin nhắn đã bị xóa</span>
-                    } @else if (editingMessageId() === msg.id) {
-                      <div class="chat-edit-box">
-                        <input
-                          type="text"
-                          class="text-input"
-                          [value]="editingText()"
-                          (input)="editingText.set($any($event.target).value)"
-                          (keydown.enter)="saveEditMessage(msg)"
-                          (keydown.escape)="cancelEditMessage()"
-                        />
-                        <button type="button" class="btn-mini" (click)="saveEditMessage(msg)">Lưu</button>
-                        <button type="button" class="btn-mini btn-mini-ghost" (click)="cancelEditMessage()">Hủy</button>
-                      </div>
-                    } @else {
-                      @if (msg.message) {
-                        <span class="chat-text">{{ msg.message }}</span>
-                      }
-                      @if (msg.attachmentUrl) {
-                        <div class="chat-attachment">
-                          @if (isImageAttachment(msg)) {
-                            <a [href]="msg.attachmentUrl" target="_blank" rel="noopener">
-                              <img [src]="msg.attachmentUrl" [alt]="msg.attachmentName || 'Đính kèm'" class="chat-attachment-img" />
-                            </a>
-                          } @else {
-                            <a [href]="msg.attachmentUrl" target="_blank" rel="noopener" class="chat-attachment-file">
-                              <app-icon name="paperclip" /> {{ msg.attachmentName || 'Tệp đính kèm' }}
-                              @if (msg.attachmentSize) {
-                                <span class="attachment-size">({{ formatFileSize(msg.attachmentSize) }})</span>
-                              }
-                            </a>
+                  <div class="chat-avatar" [style.background-color]="senderColor(msg)">
+                    {{ senderAvatarInitial(msg) }}
+                  </div>
+                  <div class="chat-msg-body">
+                    <div class="chat-msg-header">
+                      <span class="chat-sender" [style.color]="senderColor(msg)">{{ senderDisplayName(msg) }}</span>
+                      <span class="chat-time">{{ msg.createdAt | date: 'HH:mm dd/MM' }}</span>
+                      @if (!msg.deletedAt && editingMessageId() !== msg.id && (canEditMessage(msg) || canDeleteMessage(msg))) {
+                        <div class="chat-msg-actions">
+                          @if (canEditMessage(msg)) {
+                            <button type="button" class="btn-icon" (click)="startEditMessage(msg)" aria-label="Sửa tin nhắn">
+                              <app-icon name="pencil" />
+                            </button>
+                          }
+                          @if (canDeleteMessage(msg)) {
+                            <button type="button" class="btn-icon" (click)="deleteMessage(msg)" aria-label="Xóa tin nhắn">
+                              <app-icon name="trash" />
+                            </button>
                           }
                         </div>
                       }
-                      @if (msg.editedAt) {
-                        <span class="chat-edited-tag">(đã chỉnh sửa)</span>
-                      }
-                    }
-                    <span class="chat-time">{{ msg.createdAt | date: 'HH:mm dd/MM' }}</span>
-                  </div>
-                  @if (!msg.deletedAt && editingMessageId() !== msg.id && (canEditMessage(msg) || canDeleteMessage(msg))) {
-                    <div class="chat-msg-actions">
-                      @if (canEditMessage(msg)) {
-                        <button type="button" class="btn-icon" (click)="startEditMessage(msg)" aria-label="Sửa tin nhắn">
-                          <app-icon name="pencil" />
-                        </button>
-                      }
-                      @if (canDeleteMessage(msg)) {
-                        <button type="button" class="btn-icon" (click)="deleteMessage(msg)" aria-label="Xóa tin nhắn">
-                          <app-icon name="trash" />
-                        </button>
+                    </div>
+                    <div class="chat-msg-content">
+                      @if (msg.deletedAt) {
+                        <p class="chat-text chat-text-deleted">Tin nhắn đã bị xóa</p>
+                      } @else if (editingMessageId() === msg.id) {
+                        <div class="chat-edit-box">
+                          <input
+                            type="text"
+                            class="text-input"
+                            [value]="editingText()"
+                            (input)="editingText.set($any($event.target).value)"
+                            (keydown.enter)="saveEditMessage(msg)"
+                            (keydown.escape)="cancelEditMessage()"
+                          />
+                          <button type="button" class="btn-mini" (click)="saveEditMessage(msg)">Lưu</button>
+                          <button type="button" class="btn-mini btn-mini-ghost" (click)="cancelEditMessage()">Hủy</button>
+                        </div>
+                      } @else {
+                        @if (msg.message) {
+                          <p class="chat-text">{{ msg.message }}</p>
+                        }
+                        @if (msg.attachmentUrl) {
+                          <div class="chat-attachment">
+                            @if (isImageAttachment(msg)) {
+                              <a [href]="msg.attachmentUrl" target="_blank" rel="noopener">
+                                <img [src]="msg.attachmentUrl" [alt]="msg.attachmentName || 'Đính kèm'" class="chat-attachment-img" />
+                              </a>
+                            } @else {
+                              <a [href]="msg.attachmentUrl" target="_blank" rel="noopener" class="chat-attachment-file">
+                                <app-icon name="paperclip" /> {{ msg.attachmentName || 'Tệp đính kèm' }}
+                                @if (msg.attachmentSize) {
+                                  <span class="attachment-size">({{ formatFileSize(msg.attachmentSize) }})</span>
+                                }
+                              </a>
+                            }
+                          </div>
+                        }
+                        @if (msg.editedAt) {
+                          <span class="chat-edited-tag">(đã chỉnh sửa)</span>
+                        }
                       }
                     </div>
-                  }
+                  </div>
                 </div>
               } @empty {
                 <p class="empty-text">Chưa có tin nhắn nào trong nhóm. Hãy gửi tin nhắn đầu tiên!</p>
