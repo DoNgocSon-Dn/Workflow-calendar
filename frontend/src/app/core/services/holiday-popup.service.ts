@@ -1,6 +1,8 @@
-import { Injectable, computed, effect, signal } from '@angular/core';
-import { HOLIDAYS } from '../../data/holidays.data';
-import { Holiday, HolidayDateRule } from '../../models/holiday-theme.model';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Clock } from '../clock';
+import { Holiday } from '../../models/holiday-theme.model';
+import { resolveHolidaysForDate } from '../../features/calendar/utils/holiday-resolver';
+import { scheduleVietnamMidnightTick, todayInVietnam } from '../utils/vietnam-time';
 
 const DISMISS_KEY_PREFIX = 'holiday-popup-dismissed:';
 const NOTIFICATIONS_ENABLED_KEY = 'holiday-notifications-enabled';
@@ -31,34 +33,29 @@ function formatDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-function matchesDateRule(rule: HolidayDateRule, today: Date): boolean {
-  if (rule.kind === 'fixed') {
-    return today.getMonth() + 1 === rule.month && today.getDate() === rule.day;
-  }
-  const todayKey = formatDateKey(today);
-  return rule.ranges.some(
-    (range) => range.year === today.getFullYear() && todayKey >= range.start && todayKey <= range.end,
-  );
-}
-
-function resolveActiveHoliday(today: Date): Holiday | null {
-  const matches = HOLIDAYS.filter((holiday) => matchesDateRule(holiday.dateRule, today));
-  if (matches.length === 0) return null;
-  return matches.reduce((best, candidate) => (candidate.priority < best.priority ? candidate : best));
+function resolveActivePopupHoliday(today: Date): Holiday | null {
+  return resolveHolidaysForDate(today).find((h) => h.popupEnabled) ?? null;
 }
 
 /**
  * Resolves which holiday (if any) is active today, and whether its popup
- * should currently be visible. The dismissal state is remembered per holiday
- * per calendar day in localStorage, so closing the popup does not bring it
- * back on every navigation within the same day, but it reappears next year
- * (or the next matching day).
+ * should currently be visible. Only holidays with `popupEnabled: true` are
+ * candidates — most holidays only get a calendar badge/theme, not a popup.
+ * The dismissal state is remembered per holiday per calendar day in
+ * localStorage, so closing the popup does not bring it back on every
+ * navigation within the same day, but it reappears next year (or the next
+ * matching day).
  */
 @Injectable({ providedIn: 'root' })
 export class HolidayPopupService {
-  private readonly today = new Date();
+  private readonly clock = inject(Clock);
 
-  readonly activeHoliday = computed<Holiday | null>(() => resolveActiveHoliday(this.today));
+  /** Theo giờ VN, cập nhật lại quanh nửa đêm — không phải giá trị tính một
+   *  lần lúc service khởi tạo (bug cũ: tab mở xuyên nửa đêm sẽ đứng ở ngày
+   *  hôm qua mãi mãi cho tới khi F5). */
+  private readonly today = signal(todayInVietnam(this.clock.now()));
+
+  readonly activeHoliday = computed<Holiday | null>(() => resolveActivePopupHoliday(this.today()));
 
   private readonly dismissedManually = signal(false);
 
@@ -81,6 +78,11 @@ export class HolidayPopupService {
         // Ignore write failures (private browsing quota, etc.).
       }
     });
+
+    scheduleVietnamMidnightTick(this.clock, () => {
+      this.dismissedManually.set(false);
+      this.today.set(todayInVietnam(this.clock.now()));
+    });
   }
 
   setNotificationsEnabled(enabled: boolean): void {
@@ -89,7 +91,7 @@ export class HolidayPopupService {
 
   /** Replaces `{year}` / `{nextYear}` placeholders using today's date. */
   resolveText(text: string): string {
-    const year = this.today.getFullYear();
+    const year = this.today().getFullYear();
     return text.replace('{year}', String(year)).replace('{nextYear}', String(year + 1));
   }
 
@@ -106,7 +108,7 @@ export class HolidayPopupService {
   }
 
   private storageKeyFor(holiday: Holiday): string {
-    return `${DISMISS_KEY_PREFIX}${holiday.id}:${formatDateKey(this.today)}`;
+    return `${DISMISS_KEY_PREFIX}${holiday.id}:${formatDateKey(this.today())}`;
   }
 
   private isDismissedInStorage(holiday: Holiday): boolean {

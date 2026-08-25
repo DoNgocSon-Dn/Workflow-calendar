@@ -8,6 +8,7 @@ import {
   monthYearLabel,
   startOfMonth,
 } from '../../utils/date-utils';
+import { resolveTopHolidayForDate } from '../../utils/holiday-resolver';
 
 @Component({
   selector: 'app-mini-calendar',
@@ -46,6 +47,15 @@ export class MiniCalendar {
 
   isCurrentMonth(day: Date): boolean {
     return isSameMonth(day, this.viewMonth());
+  }
+
+  isHoliday(day: Date): boolean {
+    return resolveTopHolidayForDate(day) !== null;
+  }
+
+  holidayTooltip(day: Date): string {
+    const holiday = resolveTopHolidayForDate(day);
+    return holiday ? this.i18n.t('holiday.badgeTooltip', { name: holiday.name }) : '';
   }
 
   prevMonth(): void {

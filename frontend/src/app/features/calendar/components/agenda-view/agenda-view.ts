@@ -11,6 +11,7 @@ import { TranslationService } from '../../../../core/i18n/translation.service';
 import { CALENDAR_COLOR_HEX, CalendarEvent } from '../../models/calendar.models';
 import { DatePipe } from '@angular/common';
 import { convertSolarToLunar } from '../../utils/lunar-calendar';
+import { resolveTopHolidayForDate } from '../../utils/holiday-resolver';
 import { VN_HOLIDAY_CALENDAR_ID } from '../../data/vietnam-holidays';
 import { Icon } from '../../../../shared/components/icon/icon';
 
@@ -52,6 +53,12 @@ export class AgendaView {
 
   loadMore(): void {
     this.maxDisplayedDays.update((prev) => prev + 10);
+  }
+
+  holidayTagFor(date: Date): string | null {
+    const holiday = resolveTopHolidayForDate(date);
+    if (!holiday) return null;
+    return holiday.icon ? `${holiday.icon} ${holiday.name}` : holiday.name;
   }
 
   protected colorFor(event: CalendarEvent & { isLunarEvent?: boolean }): string {
@@ -134,23 +141,24 @@ export class AgendaView {
       }
 
       for (const d of dateList) {
-        const lunar = convertSolarToLunar(d);
-        if (lunar.holidayTitle) {
+        const holiday = resolveTopHolidayForDate(d);
+        if (holiday) {
           const year = d.getFullYear();
           const month = String(d.getMonth() + 1).padStart(2, '0');
           const day = String(d.getDate()).padStart(2, '0');
           const dayKey = `${year}-${month}-${day}`;
+          const title = holiday.icon ? `${holiday.icon} ${holiday.name}` : holiday.name;
 
           if (!map.has(dayKey)) {
             map.set(dayKey, { date: d, events: [] });
           }
           const group = map.get(dayKey)!;
-          const exists = group.events.some((ev) => ev.title === lunar.holidayTitle);
+          const exists = group.events.some((ev) => ev.title === title);
           if (!exists) {
             group.events.unshift({
               id: `lunar-evt-${dayKey}`,
               calendarId: 'lunar-sys',
-              title: lunar.holidayTitle,
+              title,
               start: d,
               end: d,
               allDay: true,

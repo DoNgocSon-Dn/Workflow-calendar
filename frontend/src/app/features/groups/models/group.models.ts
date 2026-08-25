@@ -76,6 +76,7 @@ export interface GroupMessage {
   attachmentType?: string;
   attachmentSize?: number;
   senderEmail?: string;
+  senderName?: string;
 }
 
 export interface GroupMessageAttachment {

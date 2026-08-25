@@ -2,7 +2,8 @@
   <div class="day-header-row" [style.padding-right.px]="scrollbarWidth()">
     <div class="gutter-spacer"></div>
     @for (day of days(); track day.getTime()) {
-      <div class="day-header-cell">
+      @let holiday = holidayFor(day);
+      <div class="day-header-cell" [class.holiday]="!!holiday">
         <span class="wd">{{ weekdayShort(day) }}</span>
         <div class="dn-row">
           <span class="dn" [class.today]="isToday(day)">{{ day.getDate() }}</span>
@@ -15,6 +16,14 @@
             {{ getLunarInfo(day).displayText }}
           </span>
         </div>
+        @if (holiday; as h) {
+          <span class="holiday-badge" [title]="holidayTooltip(day)" [attr.aria-label]="holidayTooltip(day)">
+            @if (h.icon) {
+              {{ h.icon }}
+            }
+            {{ h.name }}
+          </span>
+        }
       </div>
     }
   </div>

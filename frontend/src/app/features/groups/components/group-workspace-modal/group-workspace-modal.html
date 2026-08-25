@@ -336,7 +336,7 @@
                   class="text-input"
                   placeholder="Email người muốn mời..."
                   [value]="inviteEmail()"
-                  (input)="inviteEmail.set($any($event.target).value)"
+                  (input)="onInviteEmailInput($any($event.target).value)"
                 />
                 <select
                   class="select-input"
@@ -350,7 +350,7 @@
                 <button
                   type="button"
                   class="btn btn-primary"
-                  [disabled]="!inviteEmail().trim() || inviting()"
+                  [disabled]="!inviteEmailValid() || inviting()"
                   (click)="invite()"
                 >
                   Mời vào nhóm
@@ -358,6 +358,8 @@
               </div>
               @if (inviteError(); as err) {
                 <p class="error-msg">{{ err }}</p>
+              } @else if (inviteSuccess(); as ok) {
+                <p class="success-msg">{{ ok }}</p>
               }
             </div>
 
@@ -408,7 +410,7 @@
               @for (msg of store.messages(); track msg.id) {
                 <div class="chat-msg-row" [id]="'chat-msg-' + msg.id" [class.deleted]="msg.deletedAt">
                   <div class="chat-msg-main">
-                    <span class="chat-sender">{{ msg.senderEmail || 'Thành viên' }}:</span>
+                    <span class="chat-sender" [style.color]="senderColor(msg)">{{ senderDisplayName(msg) }}:</span>
                     @if (msg.deletedAt) {
                       <span class="chat-text chat-text-deleted">Tin nhắn đã bị xóa</span>
                     } @else if (editingMessageId() === msg.id) {

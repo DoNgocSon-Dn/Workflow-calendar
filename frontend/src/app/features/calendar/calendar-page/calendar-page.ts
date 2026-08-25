@@ -16,6 +16,8 @@ import { ImportModalComponent } from '../components/import-modal/import-modal';
 import { SettingsModal } from '../components/settings-modal/settings-modal';
 import { TrashModal } from '../components/trash-modal/trash-modal';
 import { CalendarStore } from '../data/calendar-store';
+import { HolidayThemeService } from '../data/holiday-theme.service';
+import { findHolidayById } from '../utils/holiday-resolver';
 import { VN_HOLIDAY_CALENDAR_ID } from '../data/vietnam-holidays';
 import { CalendarEvent } from '../models/calendar.models';
 import { addMinutes, buildWeekDays } from '../utils/date-utils';
@@ -66,8 +68,17 @@ export class CalendarPage {
   protected readonly store = inject(CalendarStore);
   protected readonly groupStore = inject(GroupStore);
   protected readonly authStore = inject(AuthStore);
+  protected readonly holidayThemeService = inject(HolidayThemeService);
   private readonly notificationQueue = inject(NotificationQueue);
   private readonly densityService = inject(DensityService);
+
+  /** Icon lễ đang active, phóng to làm watermark mờ phía sau lưới lịch (spec:
+   *  vẫn nhìn xuyên qua được, không che nội dung). null khi không có lễ nào
+   *  hoặc holiday đó không có icon. */
+  protected readonly holidayWatermarkIcon = computed(() => {
+    const id = this.holidayThemeService.activeHolidayId();
+    return id ? (findHolidayById(id)?.icon ?? null) : null;
+  });
 
   protected readonly weekDays = computed(() => buildWeekDays(this.store.focusedDate()));
   protected readonly dayViewDays = computed(() => [this.store.focusedDate()]);

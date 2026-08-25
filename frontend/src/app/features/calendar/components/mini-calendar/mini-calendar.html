@@ -25,6 +25,9 @@
         [class.outside]="!isCurrentMonth(day)"
         [class.today]="isToday(day)"
         [class.selected]="isSelected(day)"
+        [class.holiday]="isHoliday(day)"
+        [title]="holidayTooltip(day)"
+        [attr.aria-label]="holidayTooltip(day) || null"
         (click)="selectDay(day)"
       >
         {{ day.getDate() }}

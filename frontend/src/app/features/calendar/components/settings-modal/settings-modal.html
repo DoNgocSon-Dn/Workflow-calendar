@@ -106,6 +106,30 @@
                 </div>
               </div>
 
+              <div class="setting-row">
+                <span class="setting-title">{{ i18n.t('settings.holidayTheme') }}</span>
+                <div class="segmented" role="radiogroup" [attr.aria-label]="i18n.t('settings.holidayTheme')">
+                  <button
+                    type="button"
+                    role="radio"
+                    [attr.aria-checked]="holidayThemeService.mode() === 'auto'"
+                    [class.active]="holidayThemeService.mode() === 'auto'"
+                    (click)="setHolidayThemeMode('auto')"
+                  >
+                    {{ i18n.t('settings.holidayThemeAuto') }}
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    [attr.aria-checked]="holidayThemeService.mode() === 'off'"
+                    [class.active]="holidayThemeService.mode() === 'off'"
+                    (click)="setHolidayThemeMode('off')"
+                  >
+                    {{ i18n.t('settings.holidayThemeOff') }}
+                  </button>
+                </div>
+              </div>
+
               <div class="setting-row setting-row-stack">
                 <span class="setting-title">{{ i18n.t('settings.accentColor') }}</span>
                 <div class="theme-swatch-row" role="radiogroup" [attr.aria-label]="i18n.t('settings.accentColor')">
@@ -255,6 +279,26 @@
                 <span class="setting-title">{{ i18n.t('settings.printCalendar') }}</span>
                 <button type="button" class="action-btn" (click)="print()">{{ i18n.t('header.print') }}</button>
               </div>
+            </section>
+          }
+
+          @case ('developer') {
+            <section class="setting-group">
+              <div class="setting-row">
+                <span class="setting-title" id="holiday-debug-label">{{ i18n.t('settings.holidayDebugPreview') }}</span>
+                <select
+                  class="select-input"
+                  aria-labelledby="holiday-debug-label"
+                  [value]="holidayThemeService.debugOverrideId() ?? ''"
+                  (change)="onHolidayDebugChange($any($event.target).value)"
+                >
+                  <option value="">{{ i18n.t('settings.holidayDebugNormal') }}</option>
+                  @for (holiday of holidayDebugOptions; track holiday.id) {
+                    <option [value]="holiday.id">{{ holiday.icon }} {{ holiday.name }}</option>
+                  }
+                </select>
+              </div>
+              <p class="setting-hint">{{ i18n.t('settings.holidayDebugHint') }}</p>
             </section>
           }
         }

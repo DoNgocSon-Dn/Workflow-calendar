@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
+import { environment } from '../../../../../environments/environment';
 import { AuthStore } from '../../../../core/auth/auth-store';
 import { Density, DensityService } from '../../../../core/density/density-service';
 import { Locale, TranslationService } from '../../../../core/i18n/translation.service';
@@ -8,6 +9,8 @@ import { TimeFormatService } from '../../../../core/time-format/time-format-serv
 import { TimeFormat } from '../../utils/date-utils';
 import { BrandTheme, BrandThemeService } from '../../../../core/theme/brand-theme-service';
 import { Theme, ThemeService } from '../../../../core/theme/theme-service';
+import { HolidayThemeMode, HolidayThemeService } from '../../data/holiday-theme.service';
+import { HOLIDAYS } from '../../../../data/holidays.data';
 
 interface BrandThemeOption {
   readonly value: BrandTheme;
@@ -23,7 +26,7 @@ const BRAND_THEME_OPTIONS: readonly BrandThemeOption[] = [
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
-type SettingsSection = 'profile' | 'appearance' | 'language' | 'notifications' | 'other';
+type SettingsSection = 'profile' | 'appearance' | 'language' | 'notifications' | 'other' | 'developer';
 
 interface SettingsNavItem {
   readonly id: SettingsSection;
@@ -38,6 +41,10 @@ const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
   { id: 'other', labelKey: 'settings.sectionOther' },
 ];
 
+/** Chỉ hiện trong build development — bảng xem trước theme ngày lễ mà
+ *  không cần đợi đúng ngày (spec: Debug Mode). */
+const DEVELOPER_NAV_ITEM: SettingsNavItem = { id: 'developer', labelKey: 'settings.sectionDeveloper' };
+
 @Component({
   selector: 'app-settings-modal',
   templateUrl: './settings-modal.html',
@@ -50,12 +57,15 @@ export class SettingsModal {
   protected readonly densityService = inject(DensityService);
   protected readonly timeFormatService = inject(TimeFormatService);
   protected readonly holidayPopupService = inject(HolidayPopupService);
+  protected readonly holidayThemeService = inject(HolidayThemeService);
   protected readonly soundService = inject(NotificationSoundService);
   protected readonly authStore = inject(AuthStore);
   protected readonly i18n = inject(TranslationService);
 
   protected readonly brandThemeOptions = BRAND_THEME_OPTIONS;
-  protected readonly navItems = SETTINGS_NAV_ITEMS;
+  protected readonly isDev = !environment.production;
+  protected readonly navItems = this.isDev ? [...SETTINGS_NAV_ITEMS, DEVELOPER_NAV_ITEM] : SETTINGS_NAV_ITEMS;
+  protected readonly holidayDebugOptions = HOLIDAYS;
   protected readonly activeSection = signal<SettingsSection>('profile');
 
   readonly closed = output<void>();
@@ -89,6 +99,14 @@ export class SettingsModal {
 
   toggleHolidayNotifications(): void {
     this.holidayPopupService.setNotificationsEnabled(!this.holidayPopupService.notificationsEnabled());
+  }
+
+  setHolidayThemeMode(mode: HolidayThemeMode): void {
+    this.holidayThemeService.setMode(mode);
+  }
+
+  onHolidayDebugChange(value: string): void {
+    this.holidayThemeService.setDebugOverride(value || null);
   }
 
   toggleNotificationSound(): void {

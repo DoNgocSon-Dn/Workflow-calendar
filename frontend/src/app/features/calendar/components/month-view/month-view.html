@@ -11,10 +11,12 @@
 
   <div class="month-grid">
     @for (day of days(); track day.getTime()) {
+      @let holiday = holidayFor(day);
       <div
         class="day-cell"
         [class.outside]="!isCurrentMonth(day)"
         [class.drag-selecting]="isInDragRange(day)"
+        [class.holiday]="!!holiday"
         (mousedown)="onCellMouseDown(day, $event)"
         (mouseenter)="onCellMouseEnter(day)"
         (dragover)="onDragOver($event)"
@@ -22,6 +24,14 @@
       >
         <div class="day-number-header">
           <span class="day-number" [class.today]="isToday(day)">{{ day.getDate() }}</span>
+          @if (holiday; as h) {
+            <span class="holiday-badge" [title]="holidayTooltip(day)" [attr.aria-label]="holidayTooltip(day)">
+              @if (h.icon) {
+                {{ h.icon }}
+              }
+              {{ h.name }}
+            </span>
+          }
           <span
             class="lunar-day"
             [class.lunar-first]="getLunarInfo(day).day === 1"

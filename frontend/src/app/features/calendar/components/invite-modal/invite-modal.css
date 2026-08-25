@@ -103,8 +103,8 @@
 }
 
 .segmented button.active {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--holiday-accent-soft);
+  color: var(--holiday-accent);
   font-weight: 600;
 }
 
@@ -124,8 +124,8 @@
   align-self: flex-end;
   border: none;
   border-radius: var(--radius-sm);
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
   padding: 0.5rem 1.1rem;
   font-size: 0.85rem;
   font-weight: 600;

@@ -153,12 +153,12 @@
   bottom: -1px;
   height: 2px;
   border-radius: 2px;
-  background: var(--color-accent);
+  background: var(--holiday-accent);
 }
 
 .tab-btn.active .tab-badge {
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
 }
 
 .modal-body {
@@ -257,7 +257,7 @@
 }
 
 .col-title.todo { color: var(--color-warning); }
-.col-title.in-progress { color: var(--color-accent); }
+.col-title.in-progress { color: var(--holiday-accent); }
 .col-title.done { color: var(--color-success); }
 
 .kanban-col-body {
@@ -327,8 +327,8 @@
 }
 
 .action-badge.in-progress {
-  background: color-mix(in srgb, var(--color-accent) 20%, transparent);
-  color: var(--color-accent);
+  background: color-mix(in srgb, var(--holiday-accent) 20%, transparent);
+  color: var(--holiday-accent);
 }
 .action-badge.done {
   background: color-mix(in srgb, var(--color-success) 20%, transparent);
@@ -489,8 +489,8 @@
 
 /* Nhấn nhẹ tin nhắn vừa được mở từ thông báo rồi tự tắt sau ~2s. */
 .chat-msg-row--focused {
-  box-shadow: inset 0 0 0 1px var(--color-accent);
-  background: color-mix(in srgb, var(--color-accent) 14%, #1e1f24);
+  box-shadow: inset 0 0 0 1px var(--holiday-accent);
+  background: color-mix(in srgb, var(--holiday-accent) 14%, #1e1f24);
   transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -505,7 +505,7 @@
 
 .chat-sender {
   font-weight: 600;
-  color: var(--color-accent);
+  color: var(--holiday-accent);
   font-size: 0.85rem;
   flex: 0 0 auto;
 }
@@ -585,8 +585,8 @@
   border-radius: 4px;
   border: none;
   cursor: pointer;
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
   font-weight: 500;
   flex: 0 0 auto;
 }
@@ -613,7 +613,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--color-accent);
+  color: var(--holiday-accent);
   font-size: 0.85rem;
   text-decoration: none;
   background: var(--color-surface-input);
@@ -673,7 +673,7 @@
 }
 
 .btn-attach:hover {
-  border-color: var(--color-accent);
+  border-color: var(--holiday-accent);
 }
 
 .file-input-hidden {
@@ -746,7 +746,7 @@
   border: 1px solid var(--color-border);
   padding: 2px 8px;
   border-radius: 6px;
-  color: var(--color-accent);
+  color: var(--holiday-accent);
 }
 
 /* Shared Components */
@@ -762,7 +762,7 @@
 
 .text-input:focus, .select-input:focus {
   outline: none;
-  border-color: var(--color-accent);
+  border-color: var(--holiday-accent);
 }
 
 .select-input option {
@@ -854,8 +854,8 @@
 }
 
 .assignee-dropdown-item.active {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--holiday-accent-soft);
+  color: var(--holiday-accent);
   font-weight: 600;
 }
 
@@ -870,11 +870,11 @@
 }
 
 .btn-primary {
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
 }
 .btn-primary:hover:not(:disabled) {
-  background: var(--color-accent-hover);
+  background: var(--holiday-accent-hover);
   transform: translateY(-1px);
 }
 .btn-primary:disabled {
@@ -893,6 +893,12 @@
 
 .error-msg {
   color: var(--color-danger);
+  font-size: 0.85rem;
+  margin-top: 6px;
+}
+
+.success-msg {
+  color: var(--color-success);
   font-size: 0.85rem;
   margin-top: 6px;
 }

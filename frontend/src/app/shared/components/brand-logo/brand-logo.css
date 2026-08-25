@@ -111,7 +111,7 @@
    lấy nền theo --color-bg nên ở giao diện sáng nền là trắng, chữ trắng sẽ
    biến mất. --color-text tự ra trắng ở nền tối, đen ở nền sáng. */
 .bl[data-phase='mark'] .bl-first {
-  color: var(--color-accent, #2563eb);
+  color: var(--holiday-accent, #2563eb);
 }
 
 .bl[data-phase='mark'] .bl-icon {

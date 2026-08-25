@@ -13,12 +13,25 @@ export type HolidayPriority = number;
 /**
  * When a holiday should be considered "active":
  * - `fixed`: recurs every year on the same Gregorian month/day (most holidays).
- * - `explicit`: a per-year curated list of date ranges. Used for lunar-based
- *   holidays (Tết Nguyên Đán) where the Gregorian date shifts every year and
- *   must never be guessed — only dates explicitly configured here are used.
+ * - `explicit`: a per-year curated list of date ranges. Kept for edge cases
+ *   that still need manual override — normal lunar holidays should use
+ *   `lunar`/`lunar-range` instead (computed, never hand-typed per year).
+ * - `lunar`: recurs every year on the same lunar month/day, resolved to a
+ *   Gregorian date via `findLunarDateInSolarYear` (see `utils/lunar-calendar.ts`).
+ *   `isLeap` restricts the match to a leap month occurrence only (rare —
+ *   omit for the normal case).
+ * - `lunar-range`: like `lunar`, but spans `days` Gregorian days forward from
+ *   the resolved date (e.g. Tết Nguyên Đán's multi-day window).
  */
 export type HolidayDateRule =
   | { readonly kind: 'fixed'; readonly month: number; readonly day: number }
+  | {
+      /** Recurring Gregorian range, e.g. Christmas Eve + Christmas Day. */
+      readonly kind: 'fixed-range';
+      readonly month: number;
+      readonly day: number;
+      readonly days: number;
+    }
   | {
       readonly kind: 'explicit';
       readonly ranges: ReadonlyArray<{
@@ -28,6 +41,27 @@ export type HolidayDateRule =
         /** Inclusive, format YYYY-MM-DD. */
         readonly end: string;
       }>;
+    }
+  | {
+      readonly kind: 'lunar';
+      readonly month: number;
+      readonly day: number;
+      readonly isLeap?: boolean;
+    }
+  | {
+      readonly kind: 'lunar-range';
+      readonly month: number;
+      readonly day: number;
+      /** Total days in the window, including the resolved start date. */
+      readonly days: number;
+      readonly isLeap?: boolean;
+    }
+  | {
+      /** The last day of a lunar month (29 or 30, whichever the month
+       *  actually has that cycle) — used for Tất niên (tháng Chạp = 12). */
+      readonly kind: 'lunar-month-end';
+      readonly month: number;
+      readonly isLeap?: boolean;
     };
 
 /** How the (few, small) foreground decorative shapes drift. */
@@ -104,7 +138,10 @@ export interface HolidayContent {
 export interface Holiday {
   /** Stable identifier, also used as the localStorage dismissal key. */
   readonly id: string;
-  /** Human-readable label for maintainers (not shown to end users). */
+  /** Plain descriptive label (e.g. "Tết Nguyên Đán", "Giỗ Tổ Hùng Vương") —
+   *  used for calendar badges/agenda rows/tooltips. Distinct from
+   *  `content.title`, which is festive popup copy (e.g. "Chúc Mừng Năm
+   *  Mới") and not always suitable outside the popup. */
   readonly name: string;
   readonly priority: HolidayPriority;
   readonly dateRule: HolidayDateRule;
@@ -112,6 +149,14 @@ export interface Holiday {
   /** Falls back to `DEFAULT_HOLIDAY_THEME` when omitted. */
   readonly theme?: HolidayTheme;
   readonly content: HolidayContent;
+  /** Short emoji shown in calendar-grid badges (month/week/mini-calendar). */
+  readonly icon?: string;
+  /** Nghỉ lễ chính thức — surfaced on the read-only "Ngày lễ ở Việt Nam"
+   *  reference calendar and the ⭐ badge in agenda-view (spec §29). */
+  readonly officialHoliday?: boolean;
+  /** Only these holidays show the auto full-screen popup; the rest still get
+   *  a theme + calendar badge. Defaults to `false` when omitted. */
+  readonly popupEnabled?: boolean;
 }
 
 /** Used when a `Holiday` entry doesn't define its own `theme`. */
@@ -125,3 +170,31 @@ export const DEFAULT_HOLIDAY_THEME: HolidayTheme = {
     particleAnimation: 'twinkle',
   },
 };
+
+/**
+ * Solid, single-accent theme for the ~30 "minor" holidays that don't warrant
+ * a bespoke composition/decoration (spec: "ngày ít quan trọng hơn không cần
+ * theme cực kỳ phức tạp — Base UI + Accent color + icon nhỏ"). Colors are
+ * grouped by `HolidayType` rather than per-holiday so the palette stays small
+ * and predictable; `background`/text stay on the normal surface tokens so
+ * these never look like a full re-theme, only a colored accent + icon.
+ */
+const GENERIC_THEME_ACCENT: Record<HolidayType, string> = {
+  'le-lon': '#b91c1c',
+  'ky-niem': '#92400e',
+  'quoc-te': '#0e7490',
+  'le-hoi': '#a21caf',
+};
+
+export function resolveGenericHolidayTheme(type?: HolidayType): HolidayTheme {
+  const accent = type ? GENERIC_THEME_ACCENT[type] : undefined;
+  if (!accent) return DEFAULT_HOLIDAY_THEME;
+  return {
+    background: 'var(--color-surface)',
+    accent,
+    textColor: 'var(--color-text)',
+    subtitleColor: 'var(--color-text-secondary)',
+    composition: { archetype: 'geometric-abstract' },
+    decoration: { particleAnimation: 'twinkle' },
+  };
+}

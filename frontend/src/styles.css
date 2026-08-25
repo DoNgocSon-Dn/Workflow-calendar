@@ -76,6 +76,25 @@
 
   --month-row-min-height: 5.5rem;
   --chip-padding-block: 0.12rem;
+
+  /* Holiday theme layer — an accent-only overlay applied app-wide (any
+     component may use var(--holiday-accent) etc. exactly like
+     var(--color-accent)), toggled via [data-holiday] on <html> by
+     HolidayThemeService. Base values resolve to the normal tokens (no-op
+     when no holiday is active); each [data-holiday='id'] block below
+     overrides only --holiday-accent/-soft/-surface-tint/-border. Solid
+     colors only — no gradients, per the holiday theme's design requirement.
+     --holiday-accent-hover is derived (darkens slightly) rather than
+     hand-picked per holiday. --holiday-accent-contrast intentionally reuses
+     --color-accent-contrast (already tuned per light/dark mode: white text
+     on the dark light-mode holiday accents, a dark contrast color on the
+     bright dark-mode ones) rather than a 20th hand-picked value. */
+  --holiday-accent: var(--color-accent);
+  --holiday-accent-hover: color-mix(in srgb, var(--holiday-accent) 88%, black);
+  --holiday-accent-soft: var(--color-accent-soft);
+  --holiday-accent-contrast: var(--color-accent-contrast);
+  --holiday-surface-tint: transparent;
+  --holiday-border: var(--color-border-strong);
 }
 
 :root.density-compact {
@@ -180,6 +199,136 @@
   --color-accent-contrast: #17092e;
 }
 
+/* ==========================================================================
+   Holiday themes — 10 hero palettes (of ~45 holidays; the rest use a plain
+   generic accent, see resolveGenericHolidayTheme() in holiday-theme.model.ts).
+   Same compound-selector pattern as the brand blocks above. Solid colors
+   only. --holiday-surface-tint is a very low-alpha wash (day-cell background
+   in the calendar grid), never a full background swap.
+   ========================================================================== */
+
+:root[data-holiday='tet-nguyen-dan'] {
+  --holiday-accent: #b91c1c;
+  --holiday-accent-soft: color-mix(in srgb, #b91c1c 12%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #b91c1c 6%, transparent);
+  --holiday-border: color-mix(in srgb, #b91c1c 35%, var(--color-border-strong));
+}
+:root.dark[data-holiday='tet-nguyen-dan'] {
+  --holiday-accent: #d14b4b;
+  --holiday-accent-soft: color-mix(in srgb, #d14b4b 20%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #d14b4b 10%, transparent);
+}
+
+:root[data-holiday='national-day'] {
+  --holiday-accent: #b91c1c;
+  --holiday-accent-soft: color-mix(in srgb, #b91c1c 12%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #b91c1c 6%, transparent);
+  --holiday-border: color-mix(in srgb, #b91c1c 35%, var(--color-border-strong));
+}
+:root.dark[data-holiday='national-day'] {
+  --holiday-accent: #ef4444;
+  --holiday-accent-soft: color-mix(in srgb, #ef4444 20%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #ef4444 10%, transparent);
+}
+
+:root[data-holiday='reunification-day'] {
+  --holiday-accent: #9a1f1f;
+  --holiday-accent-soft: color-mix(in srgb, #9a1f1f 12%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #9a1f1f 6%, transparent);
+  --holiday-border: color-mix(in srgb, #9a1f1f 35%, var(--color-border-strong));
+}
+:root.dark[data-holiday='reunification-day'] {
+  --holiday-accent: #e2574f;
+  --holiday-accent-soft: color-mix(in srgb, #e2574f 20%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #e2574f 10%, transparent);
+}
+
+:root[data-holiday='labor-day'] {
+  --holiday-accent: #b45309;
+  --holiday-accent-soft: color-mix(in srgb, #b45309 12%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #b45309 6%, transparent);
+  --holiday-border: color-mix(in srgb, #b45309 35%, var(--color-border-strong));
+}
+:root.dark[data-holiday='labor-day'] {
+  --holiday-accent: #f59e0b;
+  --holiday-accent-soft: color-mix(in srgb, #f59e0b 20%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #f59e0b 10%, transparent);
+}
+
+:root[data-holiday='teachers-day'] {
+  --holiday-accent: #115e59;
+  --holiday-accent-soft: color-mix(in srgb, #115e59 12%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #115e59 6%, transparent);
+  --holiday-border: color-mix(in srgb, #115e59 35%, var(--color-border-strong));
+}
+:root.dark[data-holiday='teachers-day'] {
+  --holiday-accent: #2dd4bf;
+  --holiday-accent-soft: color-mix(in srgb, #2dd4bf 20%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #2dd4bf 10%, transparent);
+}
+
+:root[data-holiday='womens-day'],
+:root[data-holiday='vietnamese-womens-day'] {
+  --holiday-accent: #9d174d;
+  --holiday-accent-soft: color-mix(in srgb, #9d174d 12%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #9d174d 6%, transparent);
+  --holiday-border: color-mix(in srgb, #9d174d 35%, var(--color-border-strong));
+}
+:root.dark[data-holiday='womens-day'],
+:root.dark[data-holiday='vietnamese-womens-day'] {
+  --holiday-accent: #e879f9;
+  --holiday-accent-soft: color-mix(in srgb, #e879f9 20%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #e879f9 10%, transparent);
+}
+
+:root[data-holiday='valentine'] {
+  --holiday-accent: #9f1239;
+  --holiday-accent-soft: color-mix(in srgb, #9f1239 12%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #9f1239 6%, transparent);
+  --holiday-border: color-mix(in srgb, #9f1239 35%, var(--color-border-strong));
+}
+:root.dark[data-holiday='valentine'] {
+  --holiday-accent: #fb7185;
+  --holiday-accent-soft: color-mix(in srgb, #fb7185 20%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #fb7185 10%, transparent);
+}
+
+:root[data-holiday='mid-autumn'] {
+  --holiday-accent: #a16207;
+  --holiday-accent-soft: color-mix(in srgb, #a16207 12%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #a16207 6%, transparent);
+  --holiday-border: color-mix(in srgb, #a16207 35%, var(--color-border-strong));
+}
+:root.dark[data-holiday='mid-autumn'] {
+  --holiday-accent: #f0b429;
+  --holiday-accent-soft: color-mix(in srgb, #f0b429 20%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #f0b429 10%, transparent);
+}
+
+:root[data-holiday='christmas'] {
+  --holiday-accent: #14532d;
+  --holiday-accent-soft: color-mix(in srgb, #14532d 12%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #14532d 6%, transparent);
+  --holiday-border: color-mix(in srgb, #14532d 35%, var(--color-border-strong));
+}
+:root.dark[data-holiday='christmas'] {
+  --holiday-accent: #4ade80;
+  --holiday-accent-soft: color-mix(in srgb, #4ade80 20%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #4ade80 10%, transparent);
+}
+
+:root[data-holiday='halloween'] {
+  --holiday-accent: #c2410c;
+  --holiday-accent-soft: color-mix(in srgb, #c2410c 12%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #c2410c 6%, transparent);
+  --holiday-border: color-mix(in srgb, #c2410c 35%, var(--color-border-strong));
+}
+:root.dark[data-holiday='halloween'] {
+  --holiday-accent: #fb923c;
+  --holiday-accent-soft: color-mix(in srgb, #fb923c 20%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #fb923c 10%, transparent);
+}
+
 html,
 body {
   height: 100%;
@@ -222,8 +371,8 @@ h1, h2, h3, h4, .font-heading {
    below: ::selection is a document-level pseudo-element, so a component
    stylesheet would have it rewritten into a selector that never matches. */
 ::selection {
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
 }
 
 /* Theme-toggle view transition (landing + login pages).

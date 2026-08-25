@@ -39,7 +39,7 @@
 }
 
 .title-input:focus {
-  border-bottom-color: var(--color-accent);
+  border-bottom-color: var(--holiday-accent);
 }
 
 .create-mode-tabs {
@@ -65,9 +65,9 @@
 }
 
 .create-mode-tab.active {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--holiday-accent);
+  border-color: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
 }
 
 .icon-btn {
@@ -100,8 +100,8 @@
   margin: 0.35rem 0 0;
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--color-accent);
-  background: var(--color-accent-soft);
+  color: var(--holiday-accent);
+  background: var(--holiday-accent-soft);
   padding: 0.25rem 0.6rem;
   border-radius: var(--radius-sm);
   display: inline-block;
@@ -354,7 +354,23 @@
 }
 
 .calendar-picker-toggle {
+  justify-content: space-between;
   gap: 0.5rem;
+}
+
+.calendar-picker-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-toggle-chevron {
+  flex-shrink: 0;
+  color: var(--color-text-tertiary);
 }
 
 .swatch-skeleton {
@@ -395,7 +411,7 @@
 .text-btn {
   border: none;
   background: none;
-  color: var(--color-accent);
+  color: var(--holiday-accent);
   font-weight: 600;
   font-size: 0.875rem;
   padding: 0.5rem 0.75rem;
@@ -418,8 +434,8 @@
 
 .primary-btn {
   border: none;
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
   font-weight: 600;
   font-size: 0.875rem;
   padding: 0.5rem 1rem;
@@ -428,6 +444,6 @@
 }
 
 .primary-btn:hover {
-  background: var(--color-accent-hover);
+  background: var(--holiday-accent-hover);
 }
 
