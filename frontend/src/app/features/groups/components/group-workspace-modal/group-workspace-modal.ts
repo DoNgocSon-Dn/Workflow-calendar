@@ -111,26 +111,6 @@ export class GroupWorkspaceModal {
     return this.canTransfer() && m.role !== GroupRole.LEADER;
   }
 
-  /**
-   * Bảng "được phép / không thể" hiện dưới ô chọn vai trò.
-   *
-   * Đọc từ i18n theo khoá dựng từ chính vai trò, nên thêm ngôn ngữ chỉ cần
-   * thêm bản dịch — không phải sửa component.
-   */
-  protected readonly rolePermissions = computed(() => {
-    const role = this.inviteRole();
-    const key = role.toLowerCase();
-    const list = (kind: string, count: number) =>
-      Array.from({ length: count }, (_, i) =>
-        this.i18n.t(`groupRole.${key}.${kind}${i + 1}`),
-      );
-    return {
-      title: this.i18n.t('groupRole.permTitle', { role: this.roleLabel(role) }),
-      can: list('can', 4),
-      cannot: list('cannot', 3),
-    };
-  });
-
   /** Tên hiển thị cho một thành viên — ưu tiên tên thật, rồi mới tới phần
    *  trước "@" của email (KHÔNG BAO GIỜ email đầy đủ: lộ cả @gmail.com trong
    *  danh sách chọn người phụ trách thì vừa dài dòng vừa không phải là tên).

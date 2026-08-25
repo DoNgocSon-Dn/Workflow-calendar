@@ -106,26 +106,68 @@
                   </div>
 
                   @if (editingDob()) {
-                    <div class="name-input-row" style="margin-top: 0.75rem;">
-                      <input
-                        id="dob-input"
-                        type="date"
-                        class="name-input"
-                        [value]="dobDraft()"
-                        (change)="dobDraft.set($any($event.target).value)"
-                      />
-                      <button
-                        type="button"
-                        class="save-name-btn"
-                        [disabled]="savingDob()"
-                        (click)="saveDob()"
-                      >
-                        {{ savingDob() ? 'Đang lưu…' : 'Lưu lại' }}
-                      </button>
+                    <div class="dob-picker-container" style="margin-top: 0.75rem; background: var(--color-surface); padding: 0.85rem; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md);">
+                      <div class="dob-select-grid" style="display: grid; grid-template-columns: 1fr 1.2fr 1.1fr; gap: 0.5rem; margin-bottom: 0.75rem;">
+                        <div class="select-wrapper">
+                          <label for="dob-day-select" style="font-size: 0.75rem; font-weight: 600; color: var(--color-text-secondary); display: block; margin-bottom: 0.25rem;">Ngày</label>
+                          <select
+                            id="dob-day-select"
+                            class="dob-select"
+                            [value]="selectedDobDay()"
+                            (change)="onDobDayChange($any($event.target).value)"
+                          >
+                            @for (d of daysOptions(); track d) {
+                              <option [value]="d">{{ d < 10 ? '0' + d : d }}</option>
+                            }
+                          </select>
+                        </div>
+
+                        <div class="select-wrapper">
+                          <label for="dob-month-select" style="font-size: 0.75rem; font-weight: 600; color: var(--color-text-secondary); display: block; margin-bottom: 0.25rem;">Tháng</label>
+                          <select
+                            id="dob-month-select"
+                            class="dob-select"
+                            [value]="selectedDobMonth()"
+                            (change)="onDobMonthChange($any($event.target).value)"
+                          >
+                            @for (m of monthsOptions; track m.value) {
+                              <option [value]="m.value">{{ m.label }}</option>
+                            }
+                          </select>
+                        </div>
+
+                        <div class="select-wrapper">
+                          <label for="dob-year-select" style="font-size: 0.75rem; font-weight: 600; color: var(--color-text-secondary); display: block; margin-bottom: 0.25rem;">Năm</label>
+                          <select
+                            id="dob-year-select"
+                            class="dob-select"
+                            [value]="selectedDobYear()"
+                            (change)="onDobYearChange($any($event.target).value)"
+                          >
+                            @for (y of yearsOptions; track y) {
+                              <option [value]="y">{{ y }}</option>
+                            }
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
+                        <span style="font-size: 0.82rem; font-weight: 600; color: var(--color-text-secondary);">
+                          Đã chọn: <strong style="color: var(--holiday-accent, #2563eb);">{{ formattedDobDraft() }}</strong>
+                        </span>
+                        <button
+                          type="button"
+                          class="save-name-btn"
+                          [disabled]="savingDob()"
+                          (click)="saveDob()"
+                        >
+                          {{ savingDob() ? 'Đang lưu…' : 'Lưu lại' }}
+                        </button>
+                      </div>
+                      @if (dobSaved()) {
+                        <span class="profile-success" style="display: block; margin-top: 0.4rem;">Đã lưu ngày sinh thành công!</span>
+                      }
                     </div>
-                    @if (dobSaved()) {
-                      <span class="profile-success" style="display: block; margin-top: 0.35rem;">Đã lưu ngày sinh thành công!</span>
-                    }
                   }
                 </div>
 

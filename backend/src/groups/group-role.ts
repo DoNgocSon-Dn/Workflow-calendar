@@ -11,6 +11,7 @@ export const GroupRole = {
   LEADER: 'LEADER',
   ADMIN: 'ADMIN',
   MEMBER: 'MEMBER',
+  GUEST: 'GUEST',
 } as const;
 
 export type GroupRole = (typeof GroupRole)[keyof typeof GroupRole];
@@ -21,6 +22,7 @@ export type GroupRole = (typeof GroupRole)[keyof typeof GroupRole];
 export const ASSIGNABLE_GROUP_ROLES: readonly GroupRole[] = [
   GroupRole.ADMIN,
   GroupRole.MEMBER,
+  GroupRole.GUEST,
 ];
 
 /** Vai trò mặc định khi mời người mới. */
@@ -32,10 +34,16 @@ export const DEFAULT_GROUP_ROLE: GroupRole = GroupRole.MEMBER;
  * nghĩa lại "cao hơn" một kiểu.
  */
 const RANK: Readonly<Record<GroupRole, number>> = {
-  [GroupRole.LEADER]: 3,
-  [GroupRole.ADMIN]: 2,
-  [GroupRole.MEMBER]: 1,
+  [GroupRole.LEADER]: 4,
+  [GroupRole.ADMIN]: 3,
+  [GroupRole.MEMBER]: 2,
+  [GroupRole.GUEST]: 1,
 };
+
+/** GUEST chỉ được xem — không nhắn tin, không tạo/sửa task. */
+export function canChat(actor: GroupRole): boolean {
+  return actor !== GroupRole.GUEST;
+}
 
 /**
  * Chuẩn hoá giá trị role đọc từ database về đúng ba khoá trên.
@@ -53,6 +61,8 @@ export function normalizeGroupRole(raw: string | null | undefined): GroupRole {
       return GroupRole.LEADER;
     case 'admin':
       return GroupRole.ADMIN;
+    case 'guest':
+      return GroupRole.GUEST;
     default:
       return GroupRole.MEMBER;
   }

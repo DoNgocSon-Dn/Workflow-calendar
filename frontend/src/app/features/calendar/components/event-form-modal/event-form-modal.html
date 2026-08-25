@@ -63,12 +63,12 @@
 
           @if (dateTimeOpen()) {
           <div class="row date-row">
-            <input class="date-input" type="date" formControlName="startDate" />
+            <input class="date-input" type="date" lang="vi" formControlName="startDate" />
             @if (!form.controls.allDay.value) {
             <app-time-picker formControlName="startTime" [ariaLabel]="i18n.t('event.startTime')" />
             }
             <span class="to-label">{{ i18n.t('event.to') }}</span>
-            <input class="date-input" type="date" formControlName="endDate" />
+            <input class="date-input" type="date" lang="vi" formControlName="endDate" />
             @if (!form.controls.allDay.value) {
             <app-time-picker formControlName="endTime" [ariaLabel]="i18n.t('event.endTime')" />
             }
@@ -339,7 +339,7 @@
         @if (todoDueDateOpen()) {
         <div class="field-content">
           <div class="row date-row">
-            <input class="date-input" type="date" formControlName="startDate" />
+            <input class="date-input" type="date" lang="vi" formControlName="startDate" />
             <app-time-picker formControlName="startTime" [ariaLabel]="i18n.t('event.startTime')" />
           </div>
           <button type="button" class="text-btn compact" (click)="todoDueDateOpen.set(false)">

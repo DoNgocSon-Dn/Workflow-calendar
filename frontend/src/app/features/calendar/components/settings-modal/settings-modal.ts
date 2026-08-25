@@ -7,7 +7,7 @@ import { HolidayPopupService } from '../../../../core/services/holiday-popup.ser
 import { BirthdayPopupService } from '../../../../core/services/birthday-popup.service';
 import { NotificationSoundService } from '../../../../core/services/notification-sound.service';
 import { TimeFormatService } from '../../../../core/time-format/time-format-service';
-import { TimeFormat } from '../../utils/date-utils';
+import { TimeFormat, dateInputValue } from '../../utils/date-utils';
 import { BrandTheme, BrandThemeService } from '../../../../core/theme/brand-theme-service';
 import { Theme, ThemeService } from '../../../../core/theme/theme-service';
 import { HolidayThemeMode, HolidayThemeService } from '../../data/holiday-theme.service';
@@ -71,12 +71,96 @@ export class SettingsModal {
   protected readonly savingName = signal(false);
   protected readonly nameSaved = signal(false);
   protected readonly dobDraft = signal(this.birthdayPopupService.getUserDob() ?? '');
+  protected readonly maxDob = dateInputValue(new Date());
   protected readonly formattedDob = computed(() => this.birthdayPopupService.getFormattedDobDisplay());
   protected readonly editingDob = signal(false);
   protected readonly savingDob = signal(false);
   protected readonly dobSaved = signal(false);
   protected readonly uploadingAvatar = signal(false);
   protected readonly profileError = signal<string | null>(null);
+
+  protected readonly monthsOptions = [
+    { value: 1, label: 'Tháng 1' },
+    { value: 2, label: 'Tháng 2' },
+    { value: 3, label: 'Tháng 3' },
+    { value: 4, label: 'Tháng 4' },
+    { value: 5, label: 'Tháng 5' },
+    { value: 6, label: 'Tháng 6' },
+    { value: 7, label: 'Tháng 7' },
+    { value: 8, label: 'Tháng 8' },
+    { value: 9, label: 'Tháng 9' },
+    { value: 10, label: 'Tháng 10' },
+    { value: 11, label: 'Tháng 11' },
+    { value: 12, label: 'Tháng 12' },
+  ];
+
+  protected readonly yearsOptions = Array.from(
+    { length: new Date().getFullYear() - 1920 + 1 },
+    (_, i) => new Date().getFullYear() - i
+  );
+
+  protected readonly selectedDobDay = computed(() => {
+    const parts = (this.dobDraft() || '').split('-');
+    return parts.length === 3 ? parseInt(parts[2], 10) || 1 : 1;
+  });
+
+  protected readonly selectedDobMonth = computed(() => {
+    const parts = (this.dobDraft() || '').split('-');
+    return parts.length === 3 ? parseInt(parts[1], 10) || 1 : 1;
+  });
+
+  protected readonly selectedDobYear = computed(() => {
+    const parts = (this.dobDraft() || '').split('-');
+    return parts.length === 3 ? parseInt(parts[0], 10) || 2000 : 2000;
+  });
+
+  protected readonly daysOptions = computed(() => {
+    const m = this.selectedDobMonth();
+    const y = this.selectedDobYear();
+    const daysInMonth = new Date(y, m, 0).getDate();
+    return Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  });
+
+  protected readonly formattedDobDraft = computed(() => {
+    const parts = (this.dobDraft() || '').split('-');
+    if (parts.length === 3) {
+      const d = parseInt(parts[2], 10);
+      const m = parseInt(parts[1], 10);
+      const y = parts[0];
+      return `${parts[2]}/${parts[1]}/${y} (Ngày ${d} tháng ${m} năm ${y})`;
+    }
+    return this.dobDraft();
+  });
+
+  onDobDayChange(val: string | number): void {
+    const d = parseInt(String(val), 10) || 1;
+    this.updateDobDraft(this.selectedDobYear(), this.selectedDobMonth(), d);
+  }
+
+  onDobMonthChange(val: string | number): void {
+    const m = parseInt(String(val), 10) || 1;
+    const y = this.selectedDobYear();
+    let d = this.selectedDobDay();
+    const maxD = new Date(y, m, 0).getDate();
+    if (d > maxD) d = maxD;
+    this.updateDobDraft(y, m, d);
+  }
+
+  onDobYearChange(val: string | number): void {
+    const y = parseInt(String(val), 10) || 2000;
+    const m = this.selectedDobMonth();
+    let d = this.selectedDobDay();
+    const maxD = new Date(y, m, 0).getDate();
+    if (d > maxD) d = maxD;
+    this.updateDobDraft(y, m, d);
+  }
+
+  private updateDobDraft(year: number, month: number, day: number): void {
+    const yStr = String(year);
+    const mStr = String(month).padStart(2, '0');
+    const dStr = String(day).padStart(2, '0');
+    this.dobDraft.set(`${yStr}-${mStr}-${dStr}`);
+  }
 
   async saveDob(): Promise<void> {
     const dob = this.dobDraft().trim();

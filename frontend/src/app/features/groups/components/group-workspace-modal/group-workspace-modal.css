@@ -464,8 +464,15 @@
   flex-shrink: 0;
 }
 
-/* Cột hành động luôn giữ bề rộng cố định, không co giãn theo tên/email —
-   đây là thứ khiến badge vai trò của mọi hàng thẳng cột với nhau. */
+/* Cột phải cố định, không co giãn theo tên/email — đây là thứ khiến badge
+   vai trò của mọi hàng thẳng cột với nhau bất kể tên dài ngắn. */
+.member-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
 .member-actions {
   display: flex;
   align-items: center;
@@ -489,6 +496,7 @@
 .role-pill.leader { background: var(--color-role-owner); color: #ffffff; }
 .role-pill.admin { background: var(--color-role-admin); color: #ffffff; }
 .role-pill.member { background: var(--color-role-member); color: #ffffff; }
+.role-pill.guest { background: var(--color-role-guest); color: #ffffff; }
 
 .role-select {
   font-size: 0.75rem;
@@ -1184,55 +1192,3 @@
   cursor: not-allowed;
 }
 
-/* Bảng "được phép / không thể" dưới ô chọn vai trò khi mời. */
-.role-perms {
-  margin-top: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-surface-hover);
-}
-
-.role-perms__title {
-  margin: 0 0 8px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.role-perms__cols {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 24px;
-}
-
-.role-perms__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  font-size: 0.75rem;
-  min-width: 160px;
-}
-
-.role-perms__list li {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  color: var(--color-text-secondary);
-}
-
-.role-perms__mark {
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.role-perms__list--can .role-perms__mark {
-  color: #16a34a;
-}
-
-.role-perms__list--cannot .role-perms__mark {
-  color: var(--color-danger);
-}

@@ -22,6 +22,14 @@ export function addMinutes(date: Date, amount: number): Date {
   return new Date(date.getTime() + amount * 60_000);
 }
 
+/** "YYYY-MM-DD" theo giờ ĐỊA PHƯƠNG, đúng định dạng `<input type="date">`
+ *  cần cho `value`/`max`/`min`. KHÔNG dùng `toISOString()` cho việc này — nó
+ *  quy về UTC, nên vào khoảng nửa đêm ở múi giờ UTC+7 sẽ lùi mất một ngày. */
+export function dateInputValue(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
 export function isSameDay(a: Date, b: Date): boolean {
   return (
     a.getFullYear() === b.getFullYear() &&

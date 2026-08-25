@@ -4,12 +4,15 @@
 -- auth.users.raw_user_meta_data ->> 'full_name') — cùng vấn đề đã xử lý cho
 -- chat ở 14_group_messages_sender_name.sql, giờ áp dụng tương tự cho RPC này.
 --
--- create or replace ĐỦ DÙNG ở đây (khác 14_...): chỉ THÊM cột mới vào cuối
--- danh sách cột trả về, không đổi/xoá cột cũ nào, nên không vướng lỗi 42P13.
+-- Postgres chặn create or replace khi kiểu trả về "returns table" đổi, kể cả
+-- chỉ THÊM cột vào cuối (lỗi 42P13: cannot change return type of existing
+-- function) — phải drop function trước rồi tạo lại.
 --
 -- Chạy 1 lần trong Supabase SQL Editor, sau 03_group_members_with_email.sql.
 
-create or replace function public.list_group_members(p_group_id uuid)
+drop function if exists public.list_group_members(uuid);
+
+create function public.list_group_members(p_group_id uuid)
 returns table (
   id uuid,
   group_id uuid,

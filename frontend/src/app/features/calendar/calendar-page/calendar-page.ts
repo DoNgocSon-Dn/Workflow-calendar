@@ -19,7 +19,7 @@ import { CalendarStore } from '../data/calendar-store';
 import { HolidayThemeService } from '../data/holiday-theme.service';
 import { VN_HOLIDAY_CALENDAR_ID } from '../data/vietnam-holidays';
 import { CalendarEvent } from '../models/calendar.models';
-import { addMinutes, buildWeekDays } from '../utils/date-utils';
+import { addMinutes, buildWeekDays, dateInputValue } from '../utils/date-utils';
 import { CreateGroupModal } from '../../groups/components/create-group-modal/create-group-modal';
 import { GroupWorkspaceModal } from '../../groups/components/group-workspace-modal/group-workspace-modal';
 import { GroupStore } from '../../groups/data/group-store';
@@ -104,6 +104,9 @@ export class CalendarPage {
   protected readonly namePromptOpen = signal(false);
   protected readonly nameDraft = signal('');
   protected readonly dobDraft = signal('');
+  /** Chặn chọn ngày sinh trong tương lai ngay ở bộ chọn ngày gốc của trình
+   *  duyệt — "date of birth" mà sau hôm nay thì luôn là dữ liệu sai. */
+  protected readonly maxDob = dateInputValue(new Date());
   protected readonly savingName = signal(false);
   protected readonly onboardingCanSubmit = computed(
     () => !!this.nameDraft().trim() && !!this.dobDraft(),

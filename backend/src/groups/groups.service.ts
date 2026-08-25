@@ -22,6 +22,7 @@ import {
   DEFAULT_GROUP_ROLE,
   GroupRole,
   canAssignRole,
+  canChat,
   canInvite,
   canManage,
   normalizeGroupRole,
@@ -1183,6 +1184,11 @@ export class GroupsService {
     groupId: string,
     dto: SendGroupMessageDto,
   ): Promise<GroupMessageDto> {
+    const senderRole = await this.requireRole(supabase, user, groupId);
+    if (!canChat(senderRole)) {
+      throw new ForbiddenException('Khách chỉ được xem, không thể nhắn tin');
+    }
+
     const text = dto.message?.trim();
     if (!text && !dto.attachmentUrl) {
       throw new BadRequestException('Tin nhắn không được để trống');

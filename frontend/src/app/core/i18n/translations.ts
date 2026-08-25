@@ -316,13 +316,15 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'group.removeMemberConfirm': 'Bạn có chắc chắn muốn xóa {member} khỏi nhóm?',
 
     // --- vai trò trong nhóm -------------------------------------------------
-    // Ba cấp: Trưởng nhóm > Quản trị viên > Thành viên. Không còn Khách.
+    // Bốn cấp: Trưởng nhóm > Quản trị viên > Thành viên > Khách (chỉ xem).
     'groupRole.leader': 'Trưởng nhóm',
     'groupRole.admin': 'Quản trị viên',
     'groupRole.member': 'Thành viên',
+    'groupRole.guest': 'Khách',
     'groupRole.leaderHint': 'Người tạo nhóm, có toàn quyền quản lý.',
     'groupRole.adminHint': 'Hỗ trợ quản lý thành viên, lịch và công việc.',
     'groupRole.memberHint': 'Tham gia hoạt động và thực hiện công việc trong nhóm.',
+    'groupRole.guestHint': 'Chỉ xem lịch và công việc, không nhắn tin được.',
 
     // Bảng giải thích quyền hiện ngay dưới ô chọn vai trò.
     'groupRole.permTitle': 'Quyền của {role}',
@@ -673,8 +675,10 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'groupRole.leader': 'Leader',
     'groupRole.admin': 'Administrator',
     'groupRole.member': 'Member',
+    'groupRole.guest': 'Guest',
     'groupRole.leaderHint': 'Created the group and has full control.',
     'groupRole.adminHint': 'Helps manage members, the calendar and tasks.',
+    'groupRole.guestHint': 'View-only — can see the calendar and tasks but cannot chat.',
     'groupRole.memberHint': 'Takes part in the group and works on assigned tasks.',
 
     'groupRole.permTitle': '{role} permissions',

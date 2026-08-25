@@ -11,6 +11,7 @@ export const GroupRole = {
   LEADER: 'LEADER',
   ADMIN: 'ADMIN',
   MEMBER: 'MEMBER',
+  GUEST: 'GUEST',
 } as const;
 
 export type GroupRole = (typeof GroupRole)[keyof typeof GroupRole];
@@ -20,14 +21,16 @@ export type GroupRole = (typeof GroupRole)[keyof typeof GroupRole];
 export const ASSIGNABLE_GROUP_ROLES: readonly GroupRole[] = [
   GroupRole.ADMIN,
   GroupRole.MEMBER,
+  GroupRole.GUEST,
 ];
 
 export const DEFAULT_GROUP_ROLE: GroupRole = GroupRole.MEMBER;
 
 const RANK: Readonly<Record<GroupRole, number>> = {
-  [GroupRole.LEADER]: 3,
-  [GroupRole.ADMIN]: 2,
-  [GroupRole.MEMBER]: 1,
+  [GroupRole.LEADER]: 4,
+  [GroupRole.ADMIN]: 3,
+  [GroupRole.MEMBER]: 2,
+  [GroupRole.GUEST]: 1,
 };
 
 /**
@@ -44,6 +47,8 @@ export function normalizeGroupRole(raw: string | null | undefined): GroupRole {
       return GroupRole.LEADER;
     case 'admin':
       return GroupRole.ADMIN;
+    case 'guest':
+      return GroupRole.GUEST;
     default:
       return GroupRole.MEMBER;
   }

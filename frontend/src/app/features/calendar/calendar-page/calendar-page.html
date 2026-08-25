@@ -146,6 +146,7 @@
           type="date"
           class="name-prompt-input"
           [value]="dobDraft()"
+          [max]="maxDob"
           (input)="dobDraft.set($any($event.target).value)"
           (keyup.enter)="completeOnboarding()"
         />
