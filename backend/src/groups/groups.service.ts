@@ -840,7 +840,8 @@ export class GroupsService {
         .eq('user_id', targetUserId);
     }
 
-    const memberDto: GroupMemberDto = {
+    const members = await this.getMembers(supabase, groupId);
+    const memberDto: GroupMemberDto = members.find((m) => m.userId === targetUserId) || {
       id: updated.id,
       groupId: updated.group_id,
       userId: updated.user_id,
