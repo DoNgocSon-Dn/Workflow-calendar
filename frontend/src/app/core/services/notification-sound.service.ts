@@ -6,7 +6,7 @@ const STORAGE_KEY = 'notification-sound';
  *  ngó màn hình mới rõ. Thêm loại tiếng mới chỉ cần thêm một dòng ở đây. */
 const SOUND_URLS = {
   default: '/audio/notification_alert.mp3',
-  chat: '/audio/chat-notification-sound.mp3',
+  chat: '/audio/notification_alert.mp3',
 } as const;
 
 export type SoundKind = keyof typeof SOUND_URLS;

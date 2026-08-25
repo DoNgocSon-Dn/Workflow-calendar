@@ -103,12 +103,11 @@ export class NotificationPanel {
 
   protected readonly filtered = computed<readonly AppNotification[]>(() => {
     const tab = this.activeTab();
-    // Lời mời chia sẻ lịch có mục riêng ở trên (đã nối đúng
-    // CalendarStore.respondToCalendarInvite) — lọc bỏ bản ghi thông báo cũ ở
-    // đây để tránh một nút Đồng ý/Từ chối thứ hai chỉ đổi trạng thái cục bộ.
     const all = this.service.notifications().filter((n) => !n.id.startsWith('calendar-invite-'));
     if (tab === 'all') return all;
     if (tab === 'unread') return all.filter((n) => !n.isRead);
+    if (tab === 'group') return all.filter((n) => n.type === 'group_invitation' || notificationCategory(n.type) === 'group');
+    if (tab === 'task') return all.filter((n) => notificationCategory(n.type) === 'task' || n.type === 'group_invitation');
     return all.filter((n) => notificationCategory(n.type) === tab);
   });
 

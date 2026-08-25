@@ -177,6 +177,8 @@ export class GroupStore {
     this.realtime.onReconnect(() => {
       void this.loadPendingInvites();
       void this.scanMyTaskDeadlines();
+      const activeId = this.activeGroupId();
+      if (activeId) void this.loadMessages(activeId);
     });
 
     this.realtime.on<{ groupId: string; message: GroupMessage }>('group:messageSent', (payload) => {
@@ -319,8 +321,16 @@ export class GroupStore {
   }
 
   private isActiveGroup(groupId: string, altGroupId?: string): boolean {
-    const currentActiveId = this.activeGroupId();
-    return groupId === currentActiveId || altGroupId === currentActiveId;
+    const active = this.activeGroup();
+    if (!active) return false;
+    const g1 = (groupId || '').trim().toLowerCase();
+    const g2 = (altGroupId || '').trim().toLowerCase();
+    const activeId = (active.id || '').trim().toLowerCase();
+    const activeCalId = (active.calendarId || '').trim().toLowerCase();
+    return (
+      (!!activeId && (g1 === activeId || g2 === activeId)) ||
+      (!!activeCalId && (g1 === activeCalId || g2 === activeCalId))
+    );
   }
 
   /** Joins every group's socket room so realtime events (messages, tasks...)
