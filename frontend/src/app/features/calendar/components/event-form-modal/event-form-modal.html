@@ -293,16 +293,25 @@
             <span class="swatch-skeleton"></span>
             <span class="swatch-skeleton"></span>
           </div>
-          } @else {
+          } @else if (calendarPickerOpen()) {
           <div class="calendar-swatches">
             @for (cal of calendars(); track cal.id) {
             <label class="swatch-option">
-              <input type="radio" formControlName="calendarId" [value]="cal.id" />
+              <input type="radio" formControlName="calendarId" [value]="cal.id" (change)="calendarPickerOpen.set(false)" />
               <span class="swatch-dot" [style.background]="colorHex[cal.color]"></span>
               {{ cal.name }}
             </label>
             }
           </div>
+          } @else {
+          <button type="button" class="field-toggle has-value calendar-picker-toggle" (click)="calendarPickerOpen.set(true)">
+            @if (selectedCalendar(); as cal) {
+              <span class="swatch-dot" [style.background]="colorHex[cal.color]"></span>
+              {{ cal.name }}
+            } @else {
+              {{ i18n.t('event.selectCalendar') }}
+            }
+          </button>
           }
         </div>
       </div>

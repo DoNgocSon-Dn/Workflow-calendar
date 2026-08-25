@@ -60,6 +60,11 @@ export class RealtimeGateway implements OnGatewayConnection {
     client.data.user = data.user;
     client.data.supabase = this.supabaseService.getClientForToken(token);
     await client.join(userRoomName(data.user.id));
+    console.log(`[realtime] connected user=${data.user.email} socket=${client.id}`);
+
+    client.on('disconnect', (reason) => {
+      console.log(`[realtime] disconnected user=${data.user.email} socket=${client.id} reason=${reason}`);
+    });
   }
 
   @SubscribeMessage('joinCalendar')
@@ -93,6 +98,9 @@ export class RealtimeGateway implements OnGatewayConnection {
     }
 
     await client.join(roomName(payload.calendarId));
+    console.log(
+      `[realtime] user=${client.data.user?.email} joined room=${roomName(payload.calendarId)}`,
+    );
     return { ok: true };
   }
 
@@ -105,7 +113,10 @@ export class RealtimeGateway implements OnGatewayConnection {
   }
 
   emitToCalendar(calendarId: string, event: string, payload: unknown): void {
-    this.server.to(roomName(calendarId)).emit(event, payload);
+    const room = roomName(calendarId);
+    const size = this.server.sockets.adapter.rooms.get(room)?.size ?? 0;
+    console.log(`[realtime] emit "${event}" -> room=${room} (${size} socket(s))`);
+    this.server.to(room).emit(event, payload);
   }
 
   emitToUser(userId: string, event: string, payload: unknown): void {

@@ -237,6 +237,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'event.addDueDate': 'Thêm thời hạn',
     'event.removeDueDate': 'Xoá thời hạn',
     'event.selectListAria': 'Chọn danh sách',
+    'event.selectCalendar': 'Chọn lịch',
 
     // --- group workspace ----------------------------------------------------
     'group.defaultDescription': 'Không gian làm việc nhóm',
@@ -542,6 +543,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'event.addDueDate': 'Add deadline',
     'event.removeDueDate': 'Remove deadline',
     'event.selectListAria': 'Select list',
+    'event.selectCalendar': 'Select calendar',
 
     // --- group workspace ----------------------------------------------------
     'group.defaultDescription': 'Team workspace',

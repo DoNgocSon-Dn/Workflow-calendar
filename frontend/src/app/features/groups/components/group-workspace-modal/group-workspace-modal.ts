@@ -72,6 +72,30 @@ export class GroupWorkspaceModal {
   protected readonly taskDueDate = signal('');
   protected readonly creatingTask = signal(false);
 
+  // Ô chọn người phụ trách khi tạo task — dropdown tự build (không dùng
+  // <select> gốc của trình duyệt) vì phần danh sách xổ ra của <select> do hệ
+  // điều hành vẽ, CSS không đổi màu/theme được, luôn ra nền sáng lạc quẻ.
+  protected readonly assigneeMenuOpen = signal(false);
+  protected readonly assigneeLabel = computed(() => {
+    const id = this.taskAssignedTo();
+    if (!id) return '-- Chọn thành viên phụ trách --';
+    const member = this.store.members().find((m) => m.userId === id);
+    return member?.email || id;
+  });
+
+  toggleAssigneeMenu(): void {
+    this.assigneeMenuOpen.update((open) => !open);
+  }
+
+  closeAssigneeMenu(): void {
+    this.assigneeMenuOpen.set(false);
+  }
+
+  selectAssignee(userId: string): void {
+    this.taskAssignedTo.set(userId);
+    this.closeAssigneeMenu();
+  }
+
   // Chat form
   protected readonly chatMessage = signal('');
   protected readonly sendingChat = signal(false);

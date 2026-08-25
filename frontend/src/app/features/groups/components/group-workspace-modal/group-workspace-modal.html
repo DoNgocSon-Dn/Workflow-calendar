@@ -148,16 +148,41 @@
                   (input)="taskDescription.set($any($event.target).value)"
                 />
                 <div class="form-row">
-                  <select
-                    class="select-input"
-                    [value]="taskAssignedTo()"
-                    (change)="taskAssignedTo.set($any($event.target).value)"
-                  >
-                    <option value="">-- Chọn thành viên phụ trách --</option>
-                    @for (m of store.members(); track m.id) {
-                      <option [value]="m.userId">{{ m.email || m.userId }}</option>
+                  <div class="assignee-picker">
+                    <button type="button" class="assignee-picker-btn" aria-haspopup="listbox" [attr.aria-expanded]="assigneeMenuOpen()" (click)="toggleAssigneeMenu()">
+                      <span class="assignee-picker-label">{{ assigneeLabel() }}</span>
+                      <svg viewBox="0 0 24 24" width="16" height="16">
+                        <path fill="currentColor" d="M7 10l5 5 5-5z" />
+                      </svg>
+                    </button>
+                    @if (assigneeMenuOpen()) {
+                      <div class="menu-backdrop" (click)="closeAssigneeMenu()"></div>
+                      <div class="assignee-dropdown" role="listbox">
+                        <button
+                          type="button"
+                          class="assignee-dropdown-item"
+                          role="option"
+                          [class.active]="!taskAssignedTo()"
+                          [attr.aria-selected]="!taskAssignedTo()"
+                          (click)="selectAssignee('')"
+                        >
+                          -- Chọn thành viên phụ trách --
+                        </button>
+                        @for (m of store.members(); track m.id) {
+                          <button
+                            type="button"
+                            class="assignee-dropdown-item"
+                            role="option"
+                            [class.active]="taskAssignedTo() === m.userId"
+                            [attr.aria-selected]="taskAssignedTo() === m.userId"
+                            (click)="selectAssignee(m.userId)"
+                          >
+                            {{ m.email || m.userId }}
+                          </button>
+                        }
+                      </div>
                     }
-                  </select>
+                  </div>
                   <input
                     type="date"
                     class="text-input"

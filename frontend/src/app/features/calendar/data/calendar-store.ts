@@ -342,13 +342,24 @@ export class CalendarStore {
     return conflicts;
   });
 
+  private loadedUserId: string | null = null;
+
   constructor() {
     this.notificationQueue.onSnoozeReminder = (reminderId, minutes) => {
       void this.snoozeReminder(reminderId, minutes);
     };
 
     effect(() => {
-      if (this.authStore.user()) {
+      const userId = this.authStore.user()?.id ?? null;
+      // Supabase tự refresh session khi tab được focus lại, tạo ra object
+      // session/user mới (đổi reference) dù vẫn cùng một người dùng — nếu
+      // gọi loadAll() mỗi lần effect này chạy thì cả trang sẽ load lại (hiện
+      // skeleton) mỗi khi người dùng chuyển tab qua lại. Chỉ load lại khi id
+      // người dùng thực sự đổi (đăng nhập / đăng xuất / đổi tài khoản).
+      if (userId === this.loadedUserId) return;
+      this.loadedUserId = userId;
+
+      if (userId) {
         void this.loadAll();
       } else {
         this.calendars.set([]);

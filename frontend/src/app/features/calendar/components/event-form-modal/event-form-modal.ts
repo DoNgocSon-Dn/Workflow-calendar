@@ -18,6 +18,7 @@ import { CalendarStore } from '../../data/calendar-store';
 import {
   Attendee,
   CALENDAR_COLOR_HEX,
+  CalendarColor,
   CalendarEvent,
   ConflictEvent,
   ReminderDraft,
@@ -129,6 +130,7 @@ export class EventFormModal {
   readonly saveError = signal<string | null>(null);
 
   readonly dateTimeOpen = signal(false);
+  readonly calendarPickerOpen = signal(false);
   readonly locationOpen = signal(false);
   readonly descriptionOpen = signal(false);
   readonly attendeesOpen = signal(false);
@@ -223,6 +225,7 @@ export class EventFormModal {
       this.todoDueDateOpen.set(false);
       this.todoListId.set(null);
       this.dateTimeOpen.set(false);
+      this.calendarPickerOpen.set(false);
       this.attendeesOpen.set(false);
       // Mở sẵn cho sự kiện mới để lời nhắc mặc định NHÌN THẤY được và bỏ tick
       // được ngay — thêm lời nhắc ngầm sau lưng người dùng còn tệ hơn không thêm.
@@ -627,6 +630,14 @@ export class EventFormModal {
     if (!evt) return;
     const updated = await this.store.respondToInvite(evt.id, status);
     this.attendees.update((list) => list.map((a) => (a.id === updated.id ? updated : a)));
+  }
+
+  /** Đọc trực tiếp giá trị FormControl thay vì computed() — calendarId không
+   *  phải signal nên computed() sẽ không tự chạy lại khi nó đổi; phương thức
+   *  thường được template gọi lại mỗi vòng change detection là đủ. */
+  protected selectedCalendar(): { name: string; color: CalendarColor } | null {
+    const id = this.form.controls.calendarId.value;
+    return this.calendars().find((c) => c.id === id) ?? null;
   }
 
   protected statusLabel(status: Attendee['status']): string {
