@@ -242,7 +242,7 @@ returns void
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   v_current_owner uuid;
 begin
@@ -279,7 +279,8 @@ begin
   update public.group_members set role = 'admin'
     where group_id = p_group_id and user_id = v_current_owner;
 end;
-$;
+$$;
+
 -- THÊM: người tự nhận lời mời (hàng của chính mình), hoặc quản trị viên/trưởng
 -- nhóm thêm người khác. Policy cũ cho phép mọi thành viên thêm bất kỳ ai.
 drop policy if exists group_members_insert on public.group_members;
