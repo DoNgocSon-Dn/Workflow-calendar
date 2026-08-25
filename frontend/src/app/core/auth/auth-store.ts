@@ -48,7 +48,6 @@ export class AuthStore {
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/calendar`,
-        scopes: 'openid profile email https://www.googleapis.com/auth/user.birthday.read',
       },
     });
     return error;
