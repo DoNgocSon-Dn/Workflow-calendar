@@ -101,6 +101,7 @@ export interface GroupMessageDto {
   attachmentType?: string;
   attachmentSize?: number;
   senderEmail?: string;
+  senderName?: string;
 }
 
 @Injectable()
@@ -204,6 +205,7 @@ export class GroupsService {
       attachmentType: row.attachment_type ?? undefined,
       attachmentSize: row.attachment_size ?? undefined,
       senderEmail: row.sender_email,
+      senderName: row.sender_name ?? undefined,
     };
   }
 
@@ -914,6 +916,9 @@ export class GroupsService {
     const msgDto: GroupMessageDto = {
       ...this.mapMessageRow(data),
       senderEmail: user.email,
+      senderName: (user.user_metadata as Record<string, unknown> | undefined)?.[
+        'full_name'
+      ] as string | undefined,
     };
 
     await this.emitToGroupRooms(supabase, groupId, 'group:messageSent', {

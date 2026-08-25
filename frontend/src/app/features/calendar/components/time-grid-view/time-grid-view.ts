@@ -33,6 +33,8 @@ import { isEventOnDay } from '../../utils/event-utils';
 import { PositionedEvent, layoutDayEvents } from '../../utils/time-grid-layout';
 
 import { convertSolarToLunar, LunarDate } from '../../utils/lunar-calendar';
+import { resolveTopHolidayForDate } from '../../utils/holiday-resolver';
+import { Holiday } from '../../../../models/holiday-theme.model';
 
 const HOUR_HEIGHT = 48;
 const SNAP_MINUTES = 15;
@@ -72,6 +74,15 @@ export class TimeGridView {
   lunarTooltip(day: Date): string {
     const info = this.getLunarInfo(day);
     return this.i18n.t('calendar.lunarTooltip', { day: info.day, month: info.month });
+  }
+
+  holidayFor(day: Date): Holiday | null {
+    return resolveTopHolidayForDate(day);
+  }
+
+  holidayTooltip(day: Date): string {
+    const holiday = this.holidayFor(day);
+    return holiday ? this.i18n.t('holiday.badgeTooltip', { name: holiday.name }) : '';
   }
 
   conflictTooltip(eventId: string): string {

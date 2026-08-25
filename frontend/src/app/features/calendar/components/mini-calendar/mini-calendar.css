@@ -64,6 +64,7 @@
 }
 
 .day-cell {
+  position: relative;
   border: none;
   background: none;
   border-radius: var(--radius-full);
@@ -90,14 +91,28 @@
 }
 
 .day-cell.today {
-  color: var(--color-accent);
+  color: var(--holiday-accent);
   font-weight: 800;
-  background: var(--color-accent-soft);
+  background: var(--holiday-accent-soft);
 }
 
 .day-cell.selected {
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
   font-weight: 700;
   transform: scale(1.05);
+}
+
+.day-cell.holiday::after {
+  content: '';
+  position: absolute;
+  bottom: 0.15rem;
+  width: 0.25rem;
+  height: 0.25rem;
+  border-radius: var(--radius-full);
+  background: var(--holiday-accent);
+}
+
+.day-cell.holiday.selected::after {
+  background: var(--holiday-accent-contrast);
 }

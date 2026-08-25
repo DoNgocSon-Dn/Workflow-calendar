@@ -92,8 +92,8 @@
 }
 
 .view-toggle-btn.active {
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
   cursor: default;
 }
 
@@ -105,9 +105,9 @@
   width: 2.35rem;
   height: 2.35rem;
   border-radius: var(--radius-full);
-  border: 2px solid var(--color-accent-soft);
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  border: 2px solid var(--holiday-accent-soft);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
   font-size: 0.9rem;
   font-weight: 700;
   font-family: var(--font-heading);
@@ -122,7 +122,7 @@
 }
 
 .avatar-btn:hover {
-  background: var(--color-accent-hover);
+  background: var(--holiday-accent-hover);
 }
 
 .avatar-img {
@@ -235,8 +235,8 @@
 }
 
 .filter-nav-item.active {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--holiday-accent-soft);
+  color: var(--holiday-accent);
   font-weight: 700;
 }
 
@@ -324,7 +324,7 @@
 .new-list-input:focus {
   outline: none;
   border-style: solid;
-  border-color: var(--color-accent);
+  border-color: var(--holiday-accent);
   color: var(--color-text);
 }
 
@@ -415,7 +415,7 @@
 .add-todo-input:focus,
 .todo-edit-input:focus {
   outline: none;
-  border-color: var(--color-accent);
+  border-color: var(--holiday-accent);
 }
 
 .add-todo-input {
@@ -449,7 +449,7 @@
 
 .todo-item input[type='checkbox'] {
   flex-shrink: 0;
-  accent-color: var(--color-accent);
+  accent-color: var(--holiday-accent);
 }
 
 .todo-content {
@@ -478,8 +478,8 @@
   align-self: flex-start;
   font-size: 0.7rem;
   font-weight: 600;
-  color: var(--color-accent);
-  background: var(--color-accent-soft);
+  color: var(--holiday-accent);
+  background: var(--holiday-accent-soft);
   padding: 0.05rem 0.4rem;
   border-radius: var(--radius-sm);
 }

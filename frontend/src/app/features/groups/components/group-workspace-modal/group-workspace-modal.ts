@@ -60,10 +60,15 @@ export class GroupWorkspaceModal {
   protected readonly doneTasks = computed(() => this.store.tasks().filter((t) => t.status === 'done'));
 
   // Member invite form
+  private static readonly EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   protected readonly inviteEmail = signal('');
   protected readonly inviteRole = signal<'admin' | 'member' | 'guest'>('member');
   protected readonly inviting = signal(false);
   protected readonly inviteError = signal<string | null>(null);
+  protected readonly inviteSuccess = signal<string | null>(null);
+  protected readonly inviteEmailValid = computed(() =>
+    GroupWorkspaceModal.EMAIL_PATTERN.test(this.inviteEmail().trim()),
+  );
 
   // Task form
   protected readonly taskTitle = signal('');
@@ -71,6 +76,30 @@ export class GroupWorkspaceModal {
   protected readonly taskAssignedTo = signal('');
   protected readonly taskDueDate = signal('');
   protected readonly creatingTask = signal(false);
+
+  // Ô chọn người phụ trách khi tạo task — dropdown tự build (không dùng
+  // <select> gốc của trình duyệt) vì phần danh sách xổ ra của <select> do hệ
+  // điều hành vẽ, CSS không đổi màu/theme được, luôn ra nền sáng lạc quẻ.
+  protected readonly assigneeMenuOpen = signal(false);
+  protected readonly assigneeLabel = computed(() => {
+    const id = this.taskAssignedTo();
+    if (!id) return '-- Chọn thành viên phụ trách --';
+    const member = this.store.members().find((m) => m.userId === id);
+    return member?.email || id;
+  });
+
+  toggleAssigneeMenu(): void {
+    this.assigneeMenuOpen.update((open) => !open);
+  }
+
+  closeAssigneeMenu(): void {
+    this.assigneeMenuOpen.set(false);
+  }
+
+  selectAssignee(userId: string): void {
+    this.taskAssignedTo.set(userId);
+    this.closeAssigneeMenu();
+  }
 
   // Chat form
   protected readonly chatMessage = signal('');
@@ -210,16 +239,28 @@ export class GroupWorkspaceModal {
     }
   }
 
+  onInviteEmailInput(value: string): void {
+    this.inviteEmail.set(value);
+    this.inviteSuccess.set(null);
+  }
+
   async invite(): Promise<void> {
     const group = this.store.activeGroup();
     const email = this.inviteEmail().trim();
     if (!group || !email || this.inviting()) return;
 
-    this.inviting.set(true);
     this.inviteError.set(null);
+    this.inviteSuccess.set(null);
+    if (!this.inviteEmailValid()) {
+      this.inviteError.set('Vui lòng nhập một địa chỉ email hợp lệ');
+      return;
+    }
+
+    this.inviting.set(true);
     try {
       await this.store.inviteMember(group.id, email, this.inviteRole());
       this.inviteEmail.set('');
+      this.inviteSuccess.set(`Đã gửi lời mời tới ${email}`);
     } catch (err: any) {
       this.inviteError.set(err?.error?.message || this.i18n.t('group.inviteError'));
     } finally {
@@ -322,6 +363,30 @@ export class GroupWorkspaceModal {
 
   isImageAttachment(msg: GroupMessage): boolean {
     return !!msg.attachmentType?.startsWith('image/');
+  }
+
+  /** Tên hiển thị chưa chắc có (chưa từng đặt ở Cài đặt tài khoản) — rơi về
+   *  phần trước @ của email, rồi mới tới placeholder chung. */
+  senderDisplayName(msg: GroupMessage): string {
+    return msg.senderName || msg.senderEmail?.split('@')[0] || 'Thành viên';
+  }
+
+  /** Mỗi người 1 màu ổn định (dựa trên senderId, không đổi giữa các lần
+   *  render) để phân biệt người gửi trong chat nhiều thành viên bằng mắt,
+   *  không cần đọc tên. Palette lấy từ cùng bộ màu nhóm (GROUP_COLOR_HEX) để
+   *  đồng nhất với phần còn lại của app, mở rộng thêm vài tông cho đỡ trùng. */
+  private static readonly SENDER_COLOR_PALETTE: readonly string[] = [
+    '#2563eb', '#16a34a', '#ea580c', '#dc2626', '#7c3aed', '#0891b2',
+    '#db2777', '#ca8a04', '#059669', '#4f46e5',
+  ];
+
+  senderColor(msg: GroupMessage): string {
+    let hash = 0;
+    for (let i = 0; i < msg.senderId.length; i++) {
+      hash = (hash * 31 + msg.senderId.charCodeAt(i)) | 0;
+    }
+    const index = Math.abs(hash) % GroupWorkspaceModal.SENDER_COLOR_PALETTE.length;
+    return GroupWorkspaceModal.SENDER_COLOR_PALETTE[index];
   }
 
   canEditMessage(msg: GroupMessage): boolean {

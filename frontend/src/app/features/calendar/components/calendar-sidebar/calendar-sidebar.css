@@ -76,10 +76,11 @@
   justify-content: center;
   gap: 0.6rem;
   padding: 0.7rem 1.25rem;
+  line-height: 1;
   border-radius: var(--radius-full);
   border: 1px solid transparent;
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
   box-shadow: var(--shadow-sm);
   font-family: var(--font-heading);
   font-size: 0.9rem;
@@ -90,7 +91,7 @@
 }
 
 .create-btn:hover {
-  background: var(--color-accent-hover);
+  background: var(--holiday-accent-hover);
   box-shadow: var(--shadow-sm-hover);
 }
 
@@ -150,8 +151,8 @@
 }
 
 .add-calendar-btn:hover {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--holiday-accent-soft);
+  color: var(--holiday-accent);
 }
 
 .calendar-items-wrapper {
@@ -217,8 +218,8 @@
 }
 
 .invite-btn:hover {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--holiday-accent-soft);
+  color: var(--holiday-accent);
 }
 
 .group-item {
@@ -321,20 +322,20 @@
 .empty-groups-hint {
   font-size: 0.78rem;
   font-weight: 500;
-  color: var(--color-accent);
+  color: var(--holiday-accent);
   padding: 8px 12px;
-  border: 1px dashed var(--color-accent);
+  border: 1px dashed var(--holiday-accent);
   border-radius: var(--radius-md);
   cursor: pointer;
   margin-top: 6px;
   text-align: center;
-  background: var(--color-accent-soft);
+  background: var(--holiday-accent-soft);
   transition: all 0.15s ease;
 }
 
 .empty-groups-hint:hover {
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
 }
 
 /* Icon-rail mode is a desktop affordance — the mobile drawer (see

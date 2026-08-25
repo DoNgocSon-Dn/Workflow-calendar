@@ -61,8 +61,8 @@
 }
 
 .day-cell.drag-selecting {
-  background: var(--color-accent-soft);
-  outline: 2px dashed var(--color-accent);
+  background: var(--holiday-accent-soft);
+  outline: 2px dashed var(--holiday-accent);
   outline-offset: -2px;
 }
 
@@ -74,8 +74,23 @@
 .day-number-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.25rem;
   width: 100%;
+}
+
+.day-cell.holiday {
+  background: var(--holiday-surface-tint);
+}
+
+.holiday-badge {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--holiday-accent);
 }
 
 .day-number {
@@ -94,12 +109,13 @@
 }
 
 .day-number.today {
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
   font-weight: 700;
 }
 
 .lunar-day {
+  margin-left: auto;
   font-size: 0.68rem;
   font-weight: 500;
   color: var(--color-text-tertiary);
@@ -188,7 +204,7 @@
 
 .more-btn:hover {
   background: var(--color-surface-hover);
-  color: var(--color-accent);
+  color: var(--holiday-accent);
   border-radius: var(--radius-xs);
 }
 

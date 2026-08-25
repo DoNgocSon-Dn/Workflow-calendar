@@ -282,12 +282,12 @@
 }
 
 .toast__btn--primary {
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
 }
 
 .toast__btn--primary:hover {
-  background: var(--color-accent-hover);
+  background: var(--holiday-accent-hover);
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm-hover);
 }
@@ -353,8 +353,8 @@
 }
 
 .toast__snooze-option:hover {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--holiday-accent-soft);
+  color: var(--holiday-accent);
 }
 
 .toast__close {

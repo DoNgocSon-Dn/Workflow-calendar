@@ -11,8 +11,25 @@ import {
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { AuthStore } from '../../../core/auth/auth-store';
-import { AiChatHistoryEntry, CalendarStore } from '../../../features/calendar/data/calendar-store';
+import {
+  AiChatHistoryEntry,
+  AiFileAnalysis,
+  AiFileEvent,
+  AiSuggestedTodo,
+  CalendarStore,
+} from '../../../features/calendar/data/calendar-store';
+import {
+  fromDateInputValue,
+  parseTime24,
+  toDateInputValue,
+} from '../../../features/calendar/utils/date-utils';
 import { Note, Todo } from '../../../features/calendar/models/calendar.models';
+import {
+  hasMeaningfulText,
+  pickSingleFile,
+  signalsFiles,
+  skippedFilesMessage,
+} from '../../utils/clipboard-files';
 
 /** Số lượt chat gần nhất gửi kèm lên backend làm ngữ cảnh — đủ để AI hiểu các
  *  câu hỏi tiếp nối ("còn ngày mai thì sao?") mà không làm phình prompt. */
@@ -35,6 +52,90 @@ interface ChatMessage {
   text: string;
   suggestManualForm?: boolean;
   guessedTitle?: string;
+  /** Tên file người dùng đã gửi kèm câu này, hiện lại trong lịch sử chat. */
+  attachmentName?: string;
+}
+
+/**
+ * Một dòng trong bảng xem trước việc cần làm do AI đề xuất.
+ *
+ * Đây là bản nháp SỐNG trong bộ nhớ, chưa hề chạm tới danh sách thật: người
+ * dùng bỏ chọn, sửa tên, đổi ngày thoải mái rồi mới bấm thêm.
+ */
+interface TodoDraftRow {
+  readonly id: string;
+  content: string;
+  readonly description?: string;
+  /** Chuỗi 'YYYY-MM-DD' cho <input type="date">, rỗng nghĩa là không có hạn. */
+  dueDate: string;
+  selected: boolean;
+  /** Đã có một việc chưa xong trùng tên trong danh sách hiện tại. */
+  readonly duplicate: boolean;
+}
+
+interface TodoProposal {
+  readonly goal: string;
+  readonly rows: readonly TodoDraftRow[];
+}
+
+/** Giờ mặc định khi người dùng tự chọn NGÀY nhưng ô ngày không có giờ. Đây là
+ *  hệ quả của việc dùng <input type="date">, không phải AI bịa thời gian. */
+const TODO_DEFAULT_TIME = '09:00';
+
+/** Bỏ dấu, gộp khoảng trắng, hạ chữ thường — để "Viết mở bài" và "viết  mở
+ *  bài" được coi là một việc khi dò trùng. */
+function normalizeTodoContent(content: string): string {
+  return content
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+/** Đúng các định dạng Smart Import AI cũ hỗ trợ, nay đi qua khung chat. */
+const ACCEPTED_FILE_EXT = ['.xlsx', '.xls', '.docx', '.doc', '.pdf'] as const;
+const ACCEPT_ATTR = ACCEPTED_FILE_EXT.join(',');
+
+/** Khớp giới hạn phía backend để báo lỗi ngay, khỏi tải lên rồi mới bị từ chối. */
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
+
+/**
+ * Một dòng sự kiện trong bảng xem trước.
+ *
+ * `startLocal` rỗng nghĩa là file không cho biết ngày giờ. Dòng đó vẫn hiện
+ * đầy đủ kèm lời giải thích, người dùng tự điền — KHÔNG đắp sẵn một mốc bịa.
+ */
+interface EventDraftRow {
+  readonly id: string;
+  title: string;
+  startLocal: string;
+  endLocal: string;
+  readonly allDay: boolean;
+  location: string;
+  readonly description?: string;
+  readonly missing?: string;
+  selected: boolean;
+}
+
+interface EventProposal {
+  readonly fileName: string;
+  readonly rows: readonly EventDraftRow[];
+}
+
+/** Date -> chuỗi cho <input type="datetime-local"> (giờ địa phương). */
+function toDatetimeLocal(iso?: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return (
+    d.getFullYear() +
+    '-' + pad(d.getMonth() + 1) +
+    '-' + pad(d.getDate()) +
+    'T' + pad(d.getHours()) +
+    ':' + pad(d.getMinutes())
+  );
 }
 
 const POS_STORAGE_KEY = 'floating-hub-pos';
@@ -95,6 +196,14 @@ function extractErrorMessage(err: unknown): string {
 
 function isDeleteIntent(text: string): boolean {
   return /\b(xóa|xoá|hủy|huỷ)\b/i.test(text);
+}
+
+/** Dấu hiệu người dùng đang nêu một MỤC TIÊU cần chia nhỏ, chứ không phải một
+ *  cuộc hẹn tại một thời điểm. */
+function isPlanIntent(text: string): boolean {
+  return /(k[eế] ho[aạ]ch|l[eê]n k[eế]|chia nh[oỏ]|danh s[aá]ch vi[eệ]c|vi[eệ]c c[aầ]n l[aà]m|to.?do|c[aá]c b[uư][oớ]c|chu[aẩ]n b[iị]|[oô]n (thi|t[aậ]p))/i.test(
+    text,
+  );
 }
 
 function formatDateLabel(date: Date): string {
@@ -381,16 +490,18 @@ export class FloatingHub {
    * bước backend không hề thực hiện. Nói "đang kiểm tra lịch trống" trong khi
    * server không làm việc đó là nói dối người dùng.
    */
-  private static readonly THINKING_LINES: Readonly<Record<'create' | 'delete' | 'generic', readonly string[]>> = {
+  private static readonly THINKING_LINES: Readonly<Record<'create' | 'delete' | 'plan' | 'file' | 'generic', readonly string[]>> = {
     create: ['Đang đọc yêu cầu của bạn…', 'Đang xác định thời gian…', 'Đang chuẩn bị phản hồi…'],
     delete: ['Đang xem lại sự kiện vừa tạo…', 'Đang chuẩn bị phản hồi…'],
+    plan: ['Đang đọc mục tiêu của bạn…', 'Đang chia nhỏ thành các bước…', 'Đang chuẩn bị danh sách…'],
+    file: ['Đang mở file…', 'Đang đọc nội dung…', 'Đang tìm lịch và công việc…', 'Đang chuẩn bị danh sách…'],
     generic: ['Đang hiểu yêu cầu…', 'Đang xử lý thông tin…', 'Đang chuẩn bị phản hồi…'],
   };
 
   /** Đổi câu sau mỗi nhịp này. Đủ chậm để đọc kịp, đủ nhanh để không thấy đứng. */
   private static readonly THINKING_STEP_MS = 1400;
 
-  private readonly thinkingKind = signal<'create' | 'delete' | 'generic'>('generic');
+  private readonly thinkingKind = signal<'create' | 'delete' | 'plan' | 'file' | 'generic'>('generic');
   private readonly thinkingStep = signal(0);
   private thinkingTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -411,13 +522,20 @@ export class FloatingHub {
   readonly suggestions = [
     'Họp team 9h sáng mai',
     'Ăn tối 19:30 ngày mai',
-    'Chạy bộ 6h sáng mai trong 30 phút',
-    'Gặp đối tác thứ 2 tuần sau 14h',
+    'Lập kế hoạch hoàn thành bài thuyết trình thứ Sáu',
+    'Chia nhỏ việc ôn thi Java trong 7 ngày',
   ];
 
   async send(): Promise<void> {
     const text = this.draft().trim();
-    if (!text || this.sending()) return;
+    const file = this.pendingFile();
+    // Chỉ đính kèm file mà không gõ gì cũng là một yêu cầu hợp lệ.
+    if ((!text && !file) || this.sending()) return;
+
+    if (file) {
+      await this.handleFileSend(file, text);
+      return;
+    }
 
     const calendarId = this.store.calendars()[0]?.id;
     if (!calendarId) {
@@ -430,6 +548,13 @@ export class FloatingHub {
     const history: AiChatHistoryEntry[] = this.messages()
       .slice(-CHAT_HISTORY_TURNS * 2)
       .map((m) => ({ role: m.role, content: m.text }));
+
+    // Bảng đề xuất trước đó thuộc về câu hỏi cũ; giữ lại sẽ khiến người dùng
+    // bấm "thêm" cho một danh sách không còn liên quan.
+    this.todoProposal.set(null);
+    this.proposalError.set(null);
+    this.eventProposal.set(null);
+    this.eventProposalError.set(null);
 
     this.pushMessage('user', text);
     this.draft.set('');
@@ -449,6 +574,18 @@ export class FloatingHub {
       if (result.intent === 'create_event') {
         this.lastCreatedEventId.set(result.event.id);
         this.pushMessage('assistant', `Đã tạo sự kiện:\n${formatEventPreview(result.event)}`);
+      } else if (result.intent === 'create_todos') {
+        const proposal = this.buildProposal(result.goal, result.todos);
+        if (proposal.rows.length) {
+          this.todoProposal.set(proposal);
+          this.proposalError.set(null);
+          this.pushMessage(
+            'assistant',
+            'Mình đã chia nhỏ thành các việc dưới đây. Xem lại rồi bấm thêm — mình chưa lưu gì cả.',
+          );
+        } else {
+          this.pushMessage('assistant', 'Mình chưa tách được việc nào từ yêu cầu này.');
+        }
       } else if (result.intent === 'chat') {
         this.pushMessage('assistant', result.reply);
       } else {
@@ -467,10 +604,48 @@ export class FloatingHub {
     }
   }
 
+  /**
+   * Gửi file cho AI đọc.
+   *
+   * Tách khỏi send() vì luồng khác hẳn: không có lịch sử hội thoại, không
+   * phân tích ý định, và kết quả luôn là bảng xem trước chứ không phải một
+   * câu trả lời.
+   */
+  private async handleFileSend(file: File, text: string): Promise<void> {
+    this.todoProposal.set(null);
+    this.proposalError.set(null);
+    this.eventProposal.set(null);
+    this.eventProposalError.set(null);
+
+    this.pushMessage('user', text || 'Đọc giúp mình file này.', undefined, undefined, file.name);
+    this.draft.set('');
+    this.pendingFile.set(null);
+    this.sending.set(true);
+    this.aiError.set(null);
+    this.thinkingKind.set('file');
+    this.thinkingStep.set(0);
+    this.thinkingTimer = setInterval(() => {
+      this.thinkingStep.update((n) => n + 1);
+    }, FloatingHub.THINKING_STEP_MS);
+
+    try {
+      const analysis = await this.store.analyzeAiFile(file, text);
+      this.applyFileAnalysis(analysis);
+    } catch (err) {
+      this.aiError.set(extractErrorMessage(err));
+    } finally {
+      this.stopThinking();
+      this.sending.set(false);
+    }
+  }
+
   /** Chọn nhóm câu theo ý định ĐÃ nhận diện được bằng chính hàm có sẵn, không
    *  đoán thêm gì mới. */
   private startThinking(text: string): void {
-    this.thinkingKind.set(isDeleteIntent(text) ? 'delete' : 'create');
+    // Chỉ đoán để chọn CÂU CHỜ cho bớt lệch; ý định thật do backend quyết.
+    if (isDeleteIntent(text)) this.thinkingKind.set('delete');
+    else if (isPlanIntent(text)) this.thinkingKind.set('plan');
+    else this.thinkingKind.set('create');
     this.thinkingStep.set(0);
     this.thinkingTimer = setInterval(() => {
       this.thinkingStep.update((n) => n + 1);
@@ -501,15 +676,446 @@ export class FloatingHub {
     this.send();
   }
 
+  // --- Việc cần làm do AI đề xuất (bảng xem trước, CHƯA lưu) -------------
+
+  /**
+   * Danh sách đang chờ người dùng duyệt. Chừng nào signal này còn khác null
+   * thì chưa có gì được ghi vào "Việc cần làm" — mọi thao tác thêm đều đi qua
+   * confirmTodoProposal().
+   */
+  protected readonly todoProposal = signal<TodoProposal | null>(null);
+  protected readonly savingProposal = signal(false);
+  protected readonly proposalError = signal<string | null>(null);
+
+  protected readonly selectedProposalCount = computed(
+    () => this.todoProposal()?.rows.filter((r) => r.selected).length ?? 0,
+  );
+
+  protected readonly duplicateProposalCount = computed(
+    () => this.todoProposal()?.rows.filter((r) => r.duplicate).length ?? 0,
+  );
+
+  /**
+   * Dựng bảng xem trước từ đề xuất của AI.
+   *
+   * Dò trùng so với các việc CHƯA XONG: việc đã xong trùng tên thường là lần
+   * lặp trước của một thói quen ("chạy bộ"), chặn nó sẽ chặn nhầm.
+   */
+  /** `goal` là nhãn hiển thị trên đầu bảng — mục tiêu người dùng nêu, hoặc
+   *  tên file khi danh sách đến từ file đính kèm. */
+  private buildProposal(goal: string, todos: readonly AiSuggestedTodo[]): TodoProposal {
+    const existing = new Set(
+      this.todos()
+        .filter((t) => !t.done)
+        .map((t) => normalizeTodoContent(t.content)),
+    );
+    const seen = new Set<string>();
+
+    const rows = todos
+      .map((t) => t.content.trim())
+      .filter((content) => content.length > 0)
+      .map((content, index) => {
+        const key = normalizeTodoContent(content);
+        // Trùng với danh sách sẵn có, HOẶC trùng ngay trong chính đề xuất này.
+        const duplicate = existing.has(key) || seen.has(key);
+        seen.add(key);
+
+        const source = todos[index];
+        const due = source.due_at ? new Date(source.due_at) : null;
+        return {
+          id: crypto.randomUUID(),
+          content,
+          ...(source.description?.trim() ? { description: source.description.trim() } : {}),
+          // Ngày chỉ hiện khi AI thực sự suy ra được từ điều người dùng nói.
+          dueDate: due && !Number.isNaN(due.getTime()) ? toDateInputValue(due) : '',
+          // Bỏ chọn sẵn việc trùng — người dùng vẫn tick lại được nếu muốn.
+          selected: !duplicate,
+          duplicate,
+        } satisfies TodoDraftRow;
+      });
+
+    return { goal: goal.trim(), rows };
+  }
+
+  private updateProposalRow(id: string, patch: Partial<TodoDraftRow>): void {
+    this.todoProposal.update((proposal) =>
+      proposal
+        ? { ...proposal, rows: proposal.rows.map((r) => (r.id === id ? { ...r, ...patch } : r)) }
+        : proposal,
+    );
+  }
+
+  toggleProposalRow(id: string, selected: boolean): void {
+    this.updateProposalRow(id, { selected });
+  }
+
+  setProposalRowContent(id: string, content: string): void {
+    this.updateProposalRow(id, { content });
+  }
+
+  setProposalRowDate(id: string, dueDate: string): void {
+    this.updateProposalRow(id, { dueDate });
+  }
+
+  removeProposalRow(id: string): void {
+    this.todoProposal.update((proposal) => {
+      if (!proposal) return proposal;
+      const rows = proposal.rows.filter((r) => r.id !== id);
+      // Xoá hết dòng thì bảng không còn lý do tồn tại.
+      return rows.length ? { ...proposal, rows } : null;
+    });
+  }
+
+  dismissTodoProposal(): void {
+    this.todoProposal.set(null);
+    this.proposalError.set(null);
+    this.pushMessage('assistant', 'Đã bỏ qua danh sách đề xuất. Không có việc nào được thêm.');
+  }
+
+  /** Chỉ ở ĐÂY mới thực sự ghi vào danh sách — sau khi người dùng bấm nút. */
+  async confirmTodoProposal(): Promise<void> {
+    const proposal = this.todoProposal();
+    if (!proposal || this.savingProposal()) return;
+
+    const picked = proposal.rows
+      .filter((r) => r.selected && r.content.trim().length > 0)
+      .map((r) => ({ ...r, content: r.content.trim() }));
+    if (!picked.length) {
+      this.proposalError.set('Hãy chọn ít nhất một việc để thêm.');
+      return;
+    }
+
+    this.savingProposal.set(true);
+    this.proposalError.set(null);
+    try {
+      const list = await this.store.ensureDefaultTodoList();
+      // Tuần tự chứ không Promise.all: thứ tự AI xếp ra là thứ tự làm việc,
+      // gửi song song sẽ khiến chúng về đích lộn xộn.
+      for (const row of picked) {
+        await this.store.createTodo(row.content, list.id, {
+          ...(row.description ? { description: row.description } : {}),
+          ...(row.dueDate
+            ? { dueAt: parseTime24(TODO_DEFAULT_TIME, fromDateInputValue(row.dueDate)) }
+            : {}),
+        });
+      }
+      this.todoProposal.set(null);
+      this.pushMessage(
+        'assistant',
+        `Đã thêm ${picked.length} việc vào "Việc cần làm". Mở tab Việc cần làm để xem nhé.`,
+      );
+    } catch (err) {
+      this.proposalError.set(extractErrorMessage(err));
+    } finally {
+      this.savingProposal.set(false);
+    }
+  }
+
+  // --- File đính kèm cho AI (.xlsx/.docx/.pdf) --------------------------
+
+  protected readonly acceptAttr = ACCEPT_ATTR;
+
+  /** File đã chọn nhưng CHƯA gửi — hiện dưới dạng thẻ trên ô nhập. */
+  protected readonly pendingFile = signal<File | null>(null);
+
+  protected readonly pendingFileExt = computed(() => {
+    const name = this.pendingFile()?.name ?? "";
+    const dot = name.lastIndexOf('.');
+    return dot === -1 ? '' : name.slice(dot).toLowerCase();
+  });
+
+  protected readonly pendingFileSizeLabel = computed(() => {
+    const size = this.pendingFile()?.size ?? 0;
+    return size ? (size / 1024).toFixed(1) + ' KB' : '';
+  });
+
+  onFilePicked(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    // Reset ngay để chọn lại đúng file vừa xoá vẫn kích hoạt change.
+    input.value = '';
+    this.handleFile(file);
+  }
+
+  /**
+   * Dán file bằng Ctrl+V / Cmd+V ngay trong khung chat.
+   *
+   * KHÔNG chặn thao tác dán thông thường: chỉ can thiệp khi clipboard thật sự
+   * mang theo file và KHÔNG có chữ nào để dán. Người dùng copy một đoạn text
+   * (kể cả text lấy từ trong file PDF) thì đó vẫn là text — dán vào ô nhập như
+   * mọi khi, vì trình duyệt không hề đưa ra đối tượng File nào.
+   */
+  onComposerPaste(event: ClipboardEvent): void {
+    // Panel dùng chung cho cả Ghi chú và Việc cần làm; chỉ tab AI mới nhận file.
+    if (this.activeTab() !== 'ai' || this.sending()) return;
+
+    const data = event.clipboardData;
+    const picked = pickSingleFile(data);
+    if (!picked.file) return;
+
+    // Trình duyệt đã khai đây là lần dán FILE thì tin nó. Chỉ khi tín hiệu mơ
+    // hồ (có đối tượng File nhưng types không có "Files") mới ưu tiên giữ chữ
+    // để không cướp mất thao tác dán văn bản thông thường.
+    if (!signalsFiles(data) && hasMeaningfulText(data)) return;
+
+    // Tới đây chắc chắn là dán file. Chặn hành vi mặc định để đường dẫn file
+    // không bị dán thành chữ vào ô nhập.
+    event.preventDefault();
+    this.handleFile(picked.file, picked.skipped);
+  }
+
+  /**
+   * Điểm vào DUY NHẤT cho mọi file, bất kể đến từ nút đính kèm, clipboard hay
+   * kéo-thả. Nhờ vậy validation không thể lệch nhau giữa các cách đưa file vào.
+   */
+  private handleFile(file: File | null | undefined, skipped = 0): void {
+    if (!file) return;
+
+    const name = file.name.toLowerCase();
+    if (!ACCEPTED_FILE_EXT.some((ext) => name.endsWith(ext))) {
+      this.aiError.set(
+        'Chỉ đọc được file .xlsx, .docx hoặc .pdf. File .ics và .csv hãy dùng chức năng Import Lịch.',
+      );
+      return;
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      this.aiError.set('File vượt quá giới hạn 10 MB, vui lòng chọn file nhỏ hơn.');
+      return;
+    }
+
+    this.pendingFile.set(file);
+    // Câu thông báo lấy từ utility chung nên ba nguồn file nói giống hệt nhau.
+    this.aiError.set(skippedFilesMessage(skipped));
+  }
+
+  // --- Kéo-thả file vào khung chat --------------------------------------
+
+  protected readonly dragActive = signal(false);
+
+  /**
+   * Đếm dragenter trừ dragleave.
+   *
+   * Kéo qua các phần tử con bên trong panel sinh ra một cặp leave/enter mỗi
+   * lần, nên nếu tắt highlight ngay ở dragleave đầu tiên thì trạng thái sẽ
+   * nhấp nháy rồi kẹt. Chỉ tắt khi bộ đếm về 0, tức là đã rời hẳn panel.
+   */
+  private dragDepth = 0;
+
+  /** Lần kéo này có thật sự mang file không — dựa vào chính khai báo của
+   *  trình duyệt, không đoán từ việc có hay không có text. */
+  private isFileDrag(event: DragEvent): boolean {
+    return this.activeTab() === 'ai' && !this.sending() && signalsFiles(event.dataTransfer);
+  }
+
+  onDragEnter(event: DragEvent): void {
+    if (!this.isFileDrag(event)) return;
+    this.dragDepth += 1;
+    this.dragActive.set(true);
+  }
+
+  onDragOver(event: DragEvent): void {
+    if (!this.isFileDrag(event)) return;
+    // Bắt buộc phải chặn mặc định ở dragover, nếu không trình duyệt sẽ không
+    // phát sự kiện drop. Chỉ chặn trong vùng này chứ không chặn toàn trang.
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+  }
+
+  onDragLeave(event: DragEvent): void {
+    if (!this.isFileDrag(event)) return;
+    this.dragDepth = Math.max(this.dragDepth - 1, 0);
+    if (this.dragDepth === 0) this.dragActive.set(false);
+  }
+
+  onDrop(event: DragEvent): void {
+    if (!this.isFileDrag(event)) return;
+
+    // Không chặn thì trình duyệt sẽ mở thẳng file, rời khỏi ứng dụng.
+    event.preventDefault();
+    this.dragDepth = 0;
+    this.dragActive.set(false);
+
+    const picked = pickSingleFile(event.dataTransfer);
+    // Kéo chữ hay đường dẫn vào thì không có File thật — không dựng file giả.
+    if (!picked.file) return;
+    this.handleFile(picked.file, picked.skipped);
+  }
+
+  clearPendingFile(): void {
+    this.pendingFile.set(null);
+  }
+
+  // --- Sự kiện do AI đọc từ file (bảng xem trước, CHƯA lưu) -------------
+
+  protected readonly eventProposal = signal<EventProposal | null>(null);
+  protected readonly savingEvents = signal(false);
+  protected readonly eventProposalError = signal<string | null>(null);
+
+  protected readonly selectedEventCount = computed(
+    () => this.eventProposal()?.rows.filter((r) => r.selected).length ?? 0,
+  );
+
+  /** Số dòng file không nêu đủ ngày giờ — hiện thành lời nhắc trên bảng. */
+  protected readonly incompleteEventCount = computed(
+    () => this.eventProposal()?.rows.filter((r) => !r.startLocal).length ?? 0,
+  );
+
+  private buildEventProposal(fileName: string, events: readonly AiFileEvent[]): EventProposal {
+    const rows = events.map((e) => {
+      const startLocal = toDatetimeLocal(e.start);
+      // Thiếu giờ kết thúc thì mặc định 1 tiếng — chỉ khi ĐÃ có giờ bắt đầu
+      // thật từ file, nên đây là quy ước hiển thị chứ không phải bịa dữ liệu.
+      const endLocal =
+        toDatetimeLocal(e.end) ||
+        (e.start ? toDatetimeLocal(new Date(new Date(e.start).getTime() + 3_600_000).toISOString()) : "");
+      return {
+        id: crypto.randomUUID(),
+        title: e.title,
+        startLocal,
+        endLocal,
+        allDay: e.allDay ?? false,
+        location: e.location ?? "",
+        ...(e.description ? { description: e.description } : {}),
+        ...(e.missing ? { missing: e.missing } : {}),
+        // Dòng thiếu ngày giờ KHÔNG tick sẵn: lưu lúc này là lưu dữ liệu rỗng.
+        selected: !!startLocal,
+      } satisfies EventDraftRow;
+    });
+    return { fileName, rows };
+  }
+
+  private updateEventRow(id: string, patch: Partial<EventDraftRow>): void {
+    this.eventProposal.update((proposal) =>
+      proposal
+        ? { ...proposal, rows: proposal.rows.map((r) => (r.id === id ? { ...r, ...patch } : r)) }
+        : proposal,
+    );
+  }
+
+  toggleEventRow(id: string, selected: boolean): void {
+    this.updateEventRow(id, { selected });
+  }
+
+  setEventRowTitle(id: string, title: string): void {
+    this.updateEventRow(id, { title });
+  }
+
+  setEventRowStart(id: string, startLocal: string): void {
+    this.updateEventRow(id, { startLocal });
+  }
+
+  setEventRowEnd(id: string, endLocal: string): void {
+    this.updateEventRow(id, { endLocal });
+  }
+
+  setEventRowLocation(id: string, location: string): void {
+    this.updateEventRow(id, { location });
+  }
+
+  removeEventRow(id: string): void {
+    this.eventProposal.update((proposal) => {
+      if (!proposal) return proposal;
+      const rows = proposal.rows.filter((r) => r.id !== id);
+      return rows.length ? { ...proposal, rows } : null;
+    });
+  }
+
+  /** Chọn tất cả — trừ dòng thiếu ngày giờ, vì lưu chúng sẽ tạo sự kiện rỗng. */
+  selectAllEvents(selected: boolean): void {
+    this.eventProposal.update((proposal) =>
+      proposal
+        ? {
+            ...proposal,
+            rows: proposal.rows.map((r) => ({ ...r, selected: selected && !!r.startLocal })),
+          }
+        : proposal,
+    );
+  }
+
+  dismissEventProposal(): void {
+    this.eventProposal.set(null);
+    this.eventProposalError.set(null);
+    this.pushMessage('assistant', 'Đã bỏ qua danh sách sự kiện. Không có sự kiện nào được thêm vào lịch.');
+  }
+
+  /** Chỉ ở ĐÂY mới thực sự ghi vào lịch — sau khi người dùng bấm nút. */
+  async confirmEventProposal(): Promise<void> {
+    const proposal = this.eventProposal();
+    if (!proposal || this.savingEvents()) return;
+
+    const picked = proposal.rows.filter((r) => r.selected && r.title.trim() && r.startLocal);
+    if (!picked.length) {
+      this.eventProposalError.set('Hãy chọn ít nhất một sự kiện đã có đủ ngày giờ.');
+      return;
+    }
+
+    this.savingEvents.set(true);
+    this.eventProposalError.set(null);
+    try {
+      const calendar = await this.store.ensureCalendarExists();
+      for (const row of picked) {
+        const start = new Date(row.startLocal);
+        const end = row.endLocal ? new Date(row.endLocal) : new Date(start.getTime() + 3_600_000);
+        await this.store.createEvent({
+          title: row.title.trim(),
+          calendarId: calendar.id,
+          start,
+          end: end > start ? end : new Date(start.getTime() + 3_600_000),
+          allDay: row.allDay,
+          ...(row.location.trim() ? { location: row.location.trim() } : {}),
+          ...(row.description ? { description: row.description } : {}),
+        });
+      }
+      this.eventProposal.set(null);
+      this.pushMessage(
+        'assistant',
+        `Đã thêm ${picked.length} sự kiện vào lịch của bạn.`,
+      );
+    } catch (err) {
+      this.eventProposalError.set(extractErrorMessage(err));
+    } finally {
+      this.savingEvents.set(false);
+    }
+  }
+
+  /** Chọn/bỏ chọn tất cả cho bảng việc cần làm. */
+  selectAllTodos(selected: boolean): void {
+    this.todoProposal.update((proposal) =>
+      proposal ? { ...proposal, rows: proposal.rows.map((r) => ({ ...r, selected })) } : proposal,
+    );
+  }
+
+  /** Dựng bảng xem trước từ kết quả đọc file. Không lưu gì. */
+  private applyFileAnalysis(analysis: AiFileAnalysis): void {
+    const lines = [analysis.summary];
+
+    if (analysis.events.length) {
+      this.eventProposal.set(this.buildEventProposal(analysis.fileName, analysis.events));
+      this.eventProposalError.set(null);
+    }
+    if (analysis.todos.length) {
+      this.todoProposal.set(this.buildProposal(analysis.fileName, analysis.todos));
+      this.proposalError.set(null);
+    }
+
+    if (analysis.kind === 'none') {
+      lines.push('Bạn có thể mô tả rõ hơn muốn lấy gì từ file này nhé.');
+    } else {
+      lines.push('Xem lại rồi bấm thêm — mình chưa lưu gì cả.');
+    }
+    this.pushMessage('assistant', lines.join('\n'));
+  }
+
   private pushMessage(
     role: ChatMessage['role'],
     text: string,
     suggestManualForm?: boolean,
     guessedTitle?: string,
+    attachmentName?: string,
   ): void {
     this.messages.update((list) => [
       ...list,
-      { id: crypto.randomUUID(), role, text, suggestManualForm, guessedTitle },
+      { id: crypto.randomUUID(), role, text, suggestManualForm, guessedTitle, attachmentName },
     ]);
   }
 }

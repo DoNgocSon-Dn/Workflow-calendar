@@ -103,41 +103,49 @@ export interface LunarDate {
   year: number;
   isLeap: boolean;
   displayText: string;
-  holidayTitle?: string | null;
 }
 
-export interface LunarHoliday {
-  lunarDay: number;
-  lunarMonth: number;
-  title: string;
-  description: string;
-}
-
-export const VIETNAM_LUNAR_HOLIDAYS: LunarHoliday[] = [
-  { lunarDay: 1, lunarMonth: 1, title: '🧧 Mùng 1 Tết Nguyên Đán', description: 'Tết Âm lịch - Khởi đầu năm mới' },
-  { lunarDay: 2, lunarMonth: 1, title: '🧧 Mùng 2 Tết Nguyên Đán', description: 'Tết Âm lịch' },
-  { lunarDay: 3, lunarMonth: 1, title: '🧧 Mùng 3 Tết Nguyên Đán', description: 'Tết Cần Cáo / Tết Thầy Cô' },
-  { lunarDay: 15, lunarMonth: 1, title: '🏮 Tết Nguyên Tiêu (Rằm Tháng Giêng)', description: 'Lễ Phật & Cầu an đầu năm' },
-  { lunarDay: 3, lunarMonth: 3, title: '🍡 Tết Hàn Thực', description: 'Bánh trôi bánh chay (3/3 Âm lịch)' },
-  { lunarDay: 10, lunarMonth: 3, title: '👑 Giỗ Tổ Hùng Vương', description: 'Ngày Quốc lễ Âm lịch (10/3 Âm lịch)' },
-  { lunarDay: 15, lunarMonth: 4, title: '🪷 Lễ Phật Đản', description: 'Rằm tháng 4 - Kỷ niệm Đức Phật đản sinh' },
-  { lunarDay: 5, lunarMonth: 5, title: '🌾 Tết Đoan Ngọ', description: 'Tết diệt sâu bọ (5/5 Âm lịch)' },
-  { lunarDay: 15, lunarMonth: 7, title: '🕯️ Lễ Vu Lan & Xá Tội Vong Nhân', description: 'Rằm tháng 7 - Báo hiếu cha mẹ' },
-  { lunarDay: 15, lunarMonth: 8, title: '🥮 Tết Trung Thu', description: 'Rằm tháng 8 - Tết Đoàn Viên & Trông trăng' },
-  { lunarDay: 9, lunarMonth: 9, title: '🌼 Tết Trùng Cửu', description: 'Tết Song Cửu (9/9 Âm lịch)' },
-  { lunarDay: 15, lunarMonth: 10, title: '🌾 Tết Hạ Nguyên', description: 'Rằm tháng 10 - Cơm mới tạ ơn' },
-  { lunarDay: 23, lunarMonth: 12, title: '🐟 Tết Ông Công Ông Táo', description: 'Cúng Táo Quân về trời (23/12 Âm lịch)' },
-  { lunarDay: 30, lunarMonth: 12, title: '🎆 Đêm Giao Thừa Âm Lịch', description: 'Đón mừng năm mới Âm lịch' },
-];
-
-export function getLunarHoliday(lunarDay: number, lunarMonth: number): string | null {
-  const found = VIETNAM_LUNAR_HOLIDAYS.find(
-    (h) => h.lunarDay === lunarDay && h.lunarMonth === lunarMonth,
-  );
-  if (found) return found.title;
-  if (lunarDay === 1) return `🌱 Mùng 1 Tháng ${lunarMonth} (Âm lịch)`;
-  if (lunarDay === 15) return `🌕 Ngày Rằm Tháng ${lunarMonth} (Âm lịch)`;
+/**
+ * Tìm ngày dương lịch của một ngày âm lịch (tháng/ngày, có thể là tháng
+ * nhuận) rơi vào năm dương lịch cho trước. Thuật toán new-moon chỉ có chiều
+ * dương→âm nên phải duyệt tuần tự — rẻ vì mỗi lần gọi tối đa ~366 lượt
+ * convertSolarToLunar(), và kết quả được cache theo năm ở tầng gọi
+ * (holiday-resolver.ts) nên chỉ tính một lần cho mỗi (năm, ngày lễ).
+ * Trả về null nếu ngày đó không xuất hiện trong năm dương lịch này (ví dụ
+ * tháng nhuận không rơi vào năm được yêu cầu).
+ */
+export function findLunarDateInSolarYear(
+  solarYear: number,
+  lunarMonth: number,
+  lunarDay: number,
+  isLeap = false,
+): Date | null {
+  const cursor = new Date(solarYear, 0, 1);
+  const end = new Date(solarYear, 11, 31);
+  while (cursor <= end) {
+    const lunar = convertSolarToLunar(cursor);
+    if (lunar.month === lunarMonth && lunar.day === lunarDay && lunar.isLeap === isLeap) {
+      return new Date(cursor);
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
   return null;
+}
+
+/**
+ * Ngày cuối cùng của một tháng âm lịch trong năm dương lịch cho trước — dùng
+ * cho Tất niên (30 tháng Chạp nếu tháng đủ, 29 nếu tháng thiếu). Thử ngày 30
+ * trước, không có thì lùi về 29.
+ */
+export function findLastDayOfLunarMonth(
+  solarYear: number,
+  lunarMonth: number,
+  isLeap = false,
+): Date | null {
+  return (
+    findLunarDateInSolarYear(solarYear, lunarMonth, 30, isLeap) ??
+    findLunarDateInSolarYear(solarYear, lunarMonth, 29, isLeap)
+  );
 }
 
 export function convertSolarToLunar(date: Date, timeZone = 7): LunarDate {
@@ -194,14 +202,11 @@ export function convertSolarToLunar(date: Date, timeZone = 7): LunarDate {
     displayText = `15 (Rằm)`;
   }
 
-  const holidayTitle = getLunarHoliday(lunarDay, lunarMonth);
-
   return {
     day: lunarDay,
     month: lunarMonth,
     year: lunarYear,
     isLeap,
     displayText,
-    holidayTitle,
   };
 }

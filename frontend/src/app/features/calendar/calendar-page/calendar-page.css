@@ -22,12 +22,38 @@
 }
 
 .view-area {
+  position: relative;
   flex: 1;
   min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
   background: var(--color-bg);
+}
+
+/* Watermark lễ đang active — icon phóng to, rất mờ, nằm SAU lưới lịch (vẫn
+   đọc được nội dung xuyên qua). z-index thấp hơn view content bên dưới,
+   pointer-events tắt để không chặn kéo-chọn/click trên lịch. */
+.holiday-watermark {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: min(28vw, 22rem);
+  line-height: 1;
+  opacity: 0.05;
+  pointer-events: none;
+  user-select: none;
+  overflow: hidden;
+}
+
+.view-area > app-month-view,
+.view-area > app-time-grid-view,
+.view-area > app-agenda-view {
+  position: relative;
+  z-index: 1;
 }
 
 /* Directional slide when stepping week/month/day — targets the switched
@@ -186,8 +212,8 @@
   width: 4rem;
   height: 4rem;
   border-radius: var(--radius-full);
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--holiday-accent-soft);
+  color: var(--holiday-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -230,8 +256,8 @@
 }
 
 .name-prompt-input:focus {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-soft);
+  border-color: var(--holiday-accent);
+  box-shadow: 0 0 0 3px var(--holiday-accent-soft);
   background: var(--color-surface);
 }
 
@@ -246,8 +272,8 @@
 .name-prompt-submit-btn {
   width: 100%;
   border: none;
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
   font-family: var(--font-heading);
   font-weight: 700;
   font-size: 0.95rem;
@@ -258,7 +284,7 @@
 }
 
 .name-prompt-submit-btn:hover:not(:disabled) {
-  background: var(--color-accent-hover);
+  background: var(--holiday-accent-hover);
 }
 
 .name-prompt-submit-btn:disabled {

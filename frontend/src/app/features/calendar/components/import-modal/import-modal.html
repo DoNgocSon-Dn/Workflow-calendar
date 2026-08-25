@@ -11,42 +11,55 @@
       </div>
     } @else {
       <div class="modal-body">
-        <div class="mode-tabs">
-          <button
-            type="button"
-            class="tab-btn"
-            [class.active]="mode() === 'standard'"
-            (click)="setMode('standard')"
-          >
-            📄 Import Chuẩn (.ics, .csv)
-          </button>
-          <button
-            type="button"
-            class="tab-btn"
-            [class.active]="mode() === 'smart'"
-            (click)="setMode('smart')"
-          >
-            ✨ Smart Import AI (.xlsx, .docx, .pdf)
-          </button>
-        </div>
+        <p class="mode-note">
+          📄 Hỗ trợ file <strong>.ics</strong> và <strong>.csv</strong>.
+          File .xlsx, .docx hoặc .pdf hãy đính kèm cho <strong>Trợ lý AI</strong> ở bong bóng ✨.
+        </p>
 
         <div class="upload-section">
-          <label class="dropzone">
+          <label
+            class="dropzone"
+            [class.drag-over]="dragActive()"
+            (dragenter)="onDragEnter($event)"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)"
+          >
             <input
               type="file"
               class="file-input"
-              [accept]="mode() === 'standard' ? '.ics,.csv' : '.xlsx,.xls,.docx,.doc,.pdf,.txt'"
+              accept=".ics,.csv"
               (change)="onFileSelected($event)"
             />
-            <span class="upload-icon">📁</span>
-            @if (selectedFile(); as f) {
-              <span class="file-name">{{ f.name }} ({{ (f.size / 1024).toFixed(1) }} KB)</span>
+            @if (dragActive()) {
+              <span class="upload-icon">📄</span>
+              <span class="upload-text">Thả file để import</span>
             } @else {
-              <span class="upload-text">
-                Nhấn để chọn file {{ mode() === 'standard' ? '.ics hoặc .csv' : '.xlsx, .docx hoặc .pdf' }}
-              </span>
+              <span class="upload-icon">📁</span>
+              <span class="upload-text">Nhấn để chọn file .ics hoặc .csv</span>
+              <span class="upload-hint">hoặc kéo file vào đây, hoặc nhấn Ctrl + V</span>
             }
           </label>
+
+          <!-- File đã chọn, dù chọn bằng nút hay dán bằng Ctrl+V. -->
+          @if (selectedFile(); as f) {
+            <div class="import-file-chip">
+              <span class="import-file-chip__icon" aria-hidden="true">📄</span>
+              <span class="import-file-chip__info">
+                <span class="import-file-chip__name">{{ f.name }}</span>
+                <span class="import-file-chip__meta">{{ selectedFileExt() }} • {{ selectedFileSizeLabel() }}</span>
+              </span>
+              <button
+                type="button"
+                class="import-file-chip__remove"
+                [disabled]="parsing() || importing()"
+                aria-label="Bỏ file đã chọn"
+                (click)="clearSelectedFile()"
+              >
+                ×
+              </button>
+            </div>
+          }
 
           <button
             type="button"

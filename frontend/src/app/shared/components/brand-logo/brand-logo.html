@@ -1,10 +1,17 @@
 <span class="bl" [attr.data-phase]="phase()">
   <span class="bl-icon" aria-hidden="true">
     <svg viewBox="0 0 24 24" width="26" height="26">
-      <rect x="3" y="4" width="18" height="17" rx="2" fill="#1a73e8" />
-      <rect x="3" y="4" width="18" height="4" rx="2" fill="#185abc" />
+      <rect x="3" y="4" width="18" height="17" rx="2" fill="var(--holiday-accent, #1a73e8)" />
+      <rect x="3" y="4" width="18" height="4" rx="2" fill="var(--holiday-accent-hover, #185abc)" />
       @if (dayNumber() !== null) {
-        <text x="12" y="17" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">
+        <text
+          x="12"
+          y="17"
+          text-anchor="middle"
+          font-size="9"
+          fill="var(--holiday-accent-contrast, #fff)"
+          font-weight="700"
+        >
           {{ dayNumber() }}
         </text>
       } @else {

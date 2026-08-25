@@ -10,6 +10,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { NotificationService } from '../../../core/services/notification.service';
 import {
   AppNotification,
@@ -279,8 +280,16 @@ export class NotificationPanel {
     this.respondError.set(null);
     try {
       await this.groupStore.respondToInvite(inviteId, payload.status);
-    } catch {
-      this.respondError.set(this.i18n.t('notif.respondError'));
+    } catch (err) {
+      // 404 nghĩa là lời mời không còn tồn tại ở backend (đã bị xử lý/rút lại
+      // từ nơi khác, hoặc là thông báo cũ sống sót qua localStorage) — xoá
+      // thẳng thông báo, không có gì để "thử lại" cả.
+      if (err instanceof HttpErrorResponse && err.status === 404) {
+        this.service.remove(payload.id);
+      } else {
+        console.error('[notification-panel] respond lời mời nhóm thất bại:', err);
+        this.respondError.set(this.i18n.t('notif.respondError'));
+      }
     } finally {
       this.respondingId.set(null);
     }

@@ -8,7 +8,20 @@
     [style.right.px]="panelRight()"
     [style.top.px]="panelTop()"
     [style.bottom.px]="panelBottom()"
+    (paste)="onComposerPaste($event)"
+    (dragenter)="onDragEnter($event)"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave($event)"
+    (drop)="onDrop($event)"
   >
+    <!-- Lớp phủ khi kéo file vào. Chỉ hiện khi trình duyệt khai là có file,
+         nên kéo chữ hay ảnh từ trang web sẽ không làm nó bật lên. -->
+    @if (dragActive()) {
+      <div class="drop-overlay" aria-hidden="true">
+        <span class="drop-overlay__icon">📎</span>
+        <span class="drop-overlay__text">Thả file để đính kèm</span>
+      </div>
+    }
     <!-- MỘT vòng sóng duy nhất, và chỉ tồn tại trong lượt mở: @if gỡ hẳn nó
          khỏi DOM sau ~900ms nên card không còn lớp phủ nào nằm trên nội dung. -->
     @if (rippleActive()) {
@@ -166,7 +179,9 @@
 
             <h3 class="ai-welcome__title">Hôm nay bạn muốn sắp xếp gì?</h3>
             <p class="ai-welcome__sub">
-              Viết bằng câu tiếng Việt bình thường — mình đọc được ngày giờ và tạo sự kiện thẳng vào lịch.
+              Viết bằng câu tiếng Việt bình thường — mình tạo sự kiện vào lịch, hoặc chia một mục tiêu
+              thành danh sách việc cần làm để bạn duyệt.
+              Có file .xlsx, .docx hay .pdf thì bấm 📎 — hoặc copy file rồi nhấn Ctrl + V.
             </p>
 
             <div class="ai-suggestions">
@@ -191,6 +206,9 @@
 
         @for (m of messages(); track m.id) {
           <div class="message" [class]="'role-' + m.role">
+            @if (m.attachmentName) {
+              <span class="message-file">📄 {{ m.attachmentName }}</span>
+            }
             <p>{{ m.text }}</p>
             @if (m.suggestManualForm) {
               <button
@@ -202,6 +220,234 @@
               </button>
             }
           </div>
+        }
+
+        <!-- Sự kiện AI đọc được từ file. CHƯA lưu gì — người dùng duyệt rồi
+             mới bấm thêm vào lịch. -->
+        @if (eventProposal(); as proposal) {
+          <section class="event-proposal" aria-label="Sự kiện AI đọc được từ file">
+            <header class="event-proposal__head">
+              <div class="event-proposal__heading">
+                <h4 class="event-proposal__title">AI đã tìm thấy {{ proposal.rows.length }} sự kiện</h4>
+                <p class="event-proposal__hint">Từ {{ proposal.fileName }} — chưa có sự kiện nào được lưu.</p>
+              </div>
+              <span class="event-proposal__badge">Bản nháp</span>
+            </header>
+
+            <div class="event-proposal__bulk">
+              <button type="button" class="text-btn" [disabled]="savingEvents()" (click)="selectAllEvents(true)">
+                Chọn tất cả
+              </button>
+              <button type="button" class="text-btn" [disabled]="savingEvents()" (click)="selectAllEvents(false)">
+                Bỏ chọn tất cả
+              </button>
+            </div>
+
+            @if (incompleteEventCount() > 0) {
+              <p class="event-proposal__warn">
+                {{ incompleteEventCount() }} mục thiếu ngày giờ nên chưa được chọn. Hãy điền thời gian trước khi thêm.
+              </p>
+            }
+
+            <ul class="event-proposal__list">
+              @for (row of proposal.rows; track row.id) {
+                <li class="event-proposal__row" [class.is-incomplete]="!row.startLocal">
+                  <label class="event-proposal__check">
+                    <input
+                      type="checkbox"
+                      [checked]="row.selected"
+                      [disabled]="savingEvents() || !row.startLocal"
+                      (change)="toggleEventRow(row.id, $any($event.target).checked)"
+                    />
+                    <span class="sr-only">Chọn sự kiện {{ row.title }}</span>
+                  </label>
+
+                  <div class="event-proposal__body">
+                    <input
+                      class="event-proposal__name"
+                      type="text"
+                      [value]="row.title"
+                      [disabled]="savingEvents()"
+                      aria-label="Tên sự kiện"
+                      (input)="setEventRowTitle(row.id, $any($event.target).value)"
+                    />
+
+                    @if (row.missing) {
+                      <p class="event-proposal__missing">{{ row.missing }}</p>
+                    }
+
+                    <div class="event-proposal__times">
+                      <label class="event-proposal__field">
+                        <span>Bắt đầu</span>
+                        <input
+                          type="datetime-local"
+                          [value]="row.startLocal"
+                          [disabled]="savingEvents()"
+                          (change)="setEventRowStart(row.id, $any($event.target).value)"
+                        />
+                      </label>
+                      <label class="event-proposal__field">
+                        <span>Kết thúc</span>
+                        <input
+                          type="datetime-local"
+                          [value]="row.endLocal"
+                          [disabled]="savingEvents()"
+                          (change)="setEventRowEnd(row.id, $any($event.target).value)"
+                        />
+                      </label>
+                    </div>
+
+                    <input
+                      class="event-proposal__location"
+                      type="text"
+                      [value]="row.location"
+                      [disabled]="savingEvents()"
+                      placeholder="Địa điểm (không bắt buộc)"
+                      aria-label="Địa điểm"
+                      (input)="setEventRowLocation(row.id, $any($event.target).value)"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    class="event-proposal__remove"
+                    [disabled]="savingEvents()"
+                    [attr.aria-label]="'Bỏ sự kiện ' + row.title"
+                    (click)="removeEventRow(row.id)"
+                  >
+                    ×
+                  </button>
+                </li>
+              }
+            </ul>
+
+            @if (eventProposalError()) {
+              <p class="field-error">{{ eventProposalError() }}</p>
+            }
+
+            <div class="event-proposal__actions">
+              <button
+                type="button"
+                class="primary-btn"
+                [disabled]="savingEvents() || selectedEventCount() === 0"
+                (click)="confirmEventProposal()"
+              >
+                {{ savingEvents() ? 'Đang thêm…' : 'Thêm ' + selectedEventCount() + ' sự kiện vào lịch' }}
+              </button>
+              <button type="button" class="text-btn" [disabled]="savingEvents()" (click)="dismissEventProposal()">
+                Bỏ qua
+              </button>
+            </div>
+          </section>
+        }
+        <!-- Bảng xem trước: CHƯA có gì được lưu ở bước này. Người dùng bỏ chọn,
+             sửa tên, đặt ngày rồi mới bấm thêm. -->
+        @if (todoProposal(); as proposal) {
+          <section class="todo-proposal" aria-label="Việc cần làm do AI đề xuất">
+            <header class="todo-proposal__head">
+              <div class="todo-proposal__heading">
+                <h4 class="todo-proposal__title">{{ proposal.goal || 'Việc cần làm đề xuất' }}</h4>
+                <p class="todo-proposal__hint">
+                  {{ proposal.rows.length }} việc đề xuất — chưa có việc nào được lưu.
+                </p>
+              </div>
+              <span class="todo-proposal__badge">Bản nháp</span>
+            </header>
+
+            <div class="todo-proposal__bulk">
+              <button type="button" class="text-btn" [disabled]="savingProposal()" (click)="selectAllTodos(true)">
+                Chọn tất cả
+              </button>
+              <button type="button" class="text-btn" [disabled]="savingProposal()" (click)="selectAllTodos(false)">
+                Bỏ chọn tất cả
+              </button>
+            </div>
+
+            @if (duplicateProposalCount() > 0) {
+              <p class="todo-proposal__dup-note">
+                {{ duplicateProposalCount() }} việc đã có trong danh sách nên được bỏ chọn sẵn.
+              </p>
+            }
+
+            <ul class="todo-proposal__list">
+              @for (row of proposal.rows; track row.id) {
+                <li class="todo-proposal__row" [class.is-duplicate]="row.duplicate">
+                  <label class="todo-proposal__check">
+                    <input
+                      type="checkbox"
+                      [checked]="row.selected"
+                      [disabled]="savingProposal()"
+                      (change)="toggleProposalRow(row.id, $any($event.target).checked)"
+                    />
+                    <span class="sr-only">Chọn việc {{ row.content }}</span>
+                  </label>
+
+                  <div class="todo-proposal__body">
+                    <input
+                      class="todo-proposal__name"
+                      type="text"
+                      [value]="row.content"
+                      [disabled]="savingProposal()"
+                      aria-label="Tên việc"
+                      (input)="setProposalRowContent(row.id, $any($event.target).value)"
+                    />
+                    @if (row.description) {
+                      <p class="todo-proposal__desc">{{ row.description }}</p>
+                    }
+                    <div class="todo-proposal__meta">
+                      <input
+                        class="todo-proposal__date"
+                        type="date"
+                        [value]="row.dueDate"
+                        [disabled]="savingProposal()"
+                        aria-label="Ngày thực hiện (không bắt buộc)"
+                        (change)="setProposalRowDate(row.id, $any($event.target).value)"
+                      />
+                      @if (!row.dueDate) {
+                        <span class="todo-proposal__nodate">Chưa đặt hạn</span>
+                      }
+                      @if (row.duplicate) {
+                        <span class="todo-proposal__dup">Đã có việc tương tự</span>
+                      }
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="todo-proposal__remove"
+                    [disabled]="savingProposal()"
+                    [attr.aria-label]="'Bỏ việc ' + row.content"
+                    (click)="removeProposalRow(row.id)"
+                  >
+                    ×
+                  </button>
+                </li>
+              }
+            </ul>
+
+            @if (proposalError()) {
+              <p class="field-error">{{ proposalError() }}</p>
+            }
+
+            <div class="todo-proposal__actions">
+              <button
+                type="button"
+                class="primary-btn"
+                [disabled]="savingProposal() || selectedProposalCount() === 0"
+                (click)="confirmTodoProposal()"
+              >
+                {{ savingProposal() ? 'Đang thêm…' : 'Thêm ' + selectedProposalCount() + ' việc đã chọn' }}
+              </button>
+              <button
+                type="button"
+                class="text-btn"
+                [disabled]="savingProposal()"
+                (click)="dismissTodoProposal()"
+              >
+                Bỏ qua
+              </button>
+            </div>
+          </section>
         }
 
         <!-- Trạng thái đang nghĩ: nằm NGAY dưới tin nhắn cuối nên không bao giờ
@@ -228,17 +474,58 @@
         WorkflowAI có thể mắc lỗi. Hãy kiểm tra các thông tin quan trọng.
       </p>
 
+      <!-- File đã chọn nhưng chưa gửi. Xoá được trước khi gửi. -->
+      @if (pendingFile(); as f) {
+        <div class="attachment-chip">
+          <span class="attachment-chip__icon" aria-hidden="true">📄</span>
+          <span class="attachment-chip__info">
+            <span class="attachment-chip__name">{{ f.name }}</span>
+            <span class="attachment-chip__meta">{{ pendingFileExt() }} · {{ pendingFileSizeLabel() }}</span>
+          </span>
+          <button
+            type="button"
+            class="attachment-chip__remove"
+            [disabled]="sending()"
+            aria-label="Bỏ file đính kèm"
+            (click)="clearPendingFile()"
+          >
+            ×
+          </button>
+        </div>
+      }
+
       <div class="input-row">
+        <label class="attach-btn" [class.disabled]="sending()" title="Đính kèm .xlsx, .docx hoặc .pdf — hoặc copy file rồi nhấn Ctrl + V">
+          <input
+            type="file"
+            class="attach-input"
+            [accept]="acceptAttr"
+            [disabled]="sending()"
+            (change)="onFilePicked($event)"
+          />
+          <span class="sr-only">Đính kèm file</span>
+          <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M16.5 6v11.5a4.5 4.5 0 0 1-9 0V5a3 3 0 0 1 6 0v10.5a1.5 1.5 0 0 1-3 0V6H10v9.5a3 3 0 0 0 6 0V5a4.5 4.5 0 0 0-9 0v12.5a6 6 0 0 0 12 0V6z"
+            />
+          </svg>
+        </label>
         <input
           class="text-input"
           type="text"
           [ngModel]="draft()"
           (ngModelChange)="draft.set($event)"
-          placeholder="Nhập yêu cầu…"
+          [placeholder]="pendingFile() ? 'Muốn lấy gì từ file này? (không bắt buộc)' : 'Nhập yêu cầu…'"
           [disabled]="sending()"
           (keydown.enter)="$event.preventDefault(); send()"
         />
-        <button type="button" class="primary-btn" [disabled]="sending()" (click)="send()">
+        <button
+          type="button"
+          class="primary-btn"
+          [disabled]="sending() || (!draft().trim() && !pendingFile())"
+          (click)="send()"
+        >
           Gửi
         </button>
       </div>

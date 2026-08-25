@@ -47,7 +47,7 @@
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    color-mix(in srgb, var(--color-accent, #2563eb) 34%, transparent) 0%,
+    color-mix(in srgb, var(--holiday-accent, #2563eb) 34%, transparent) 0%,
     transparent 62%
   );
   filter: blur(60px);

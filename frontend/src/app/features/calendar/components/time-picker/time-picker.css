@@ -22,7 +22,7 @@
 }
 
 .trigger:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--holiday-accent);
   outline-offset: 1px;
 }
 
@@ -55,8 +55,8 @@
 }
 
 .tab.active {
-  color: var(--color-accent);
-  box-shadow: inset 0 -2px 0 var(--color-accent);
+  color: var(--holiday-accent);
+  box-shadow: inset 0 -2px 0 var(--holiday-accent);
 }
 
 .list {
@@ -84,8 +84,8 @@
 }
 
 .list-option.selected {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--holiday-accent-soft);
+  color: var(--holiday-accent);
   font-weight: 600;
 }
 
@@ -116,9 +116,9 @@
 }
 
 .ampm-btn.active {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--holiday-accent);
+  border-color: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
 }
 
 .clock-step-hint {
@@ -136,12 +136,12 @@
 }
 
 .clock-hand {
-  stroke: var(--color-accent);
+  stroke: var(--holiday-accent);
   stroke-width: 2;
 }
 
 .clock-center {
-  fill: var(--color-accent);
+  fill: var(--holiday-accent);
 }
 
 .clock-mark circle {
@@ -158,18 +158,18 @@
 }
 
 .clock-mark.selected circle {
-  fill: var(--color-accent);
+  fill: var(--holiday-accent);
 }
 
 .clock-mark.selected text {
-  fill: var(--color-accent-contrast);
+  fill: var(--holiday-accent-contrast);
 }
 
 .back-btn {
   align-self: flex-start;
   background: none;
   border: 0;
-  color: var(--color-accent);
+  color: var(--holiday-accent);
   font-size: 0.75rem;
   cursor: pointer;
   padding: 0.25rem 0;

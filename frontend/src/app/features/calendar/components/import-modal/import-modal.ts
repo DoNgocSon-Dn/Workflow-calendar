@@ -1,15 +1,56 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   output,
   signal,
 } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../../environments/environment';
 import { CalendarStore } from '../../data/calendar-store';
 import { FormsModule } from '@angular/forms';
+import {
+  hasMeaningfulText,
+  pickSingleFile,
+  signalsFiles,
+  skippedFilesMessage,
+} from '../../../../shared/utils/clipboard-files';
+
+/**
+ * Khớp với `MAX_UPLOAD_BYTES` / `ALLOWED_IMPORT_EXTENSIONS` ở backend
+ * (backend/src/common/limits.ts).
+ *
+ * Kiểm tra ở đây CHỈ để báo lỗi sớm cho người dùng, không phải lớp bảo vệ:
+ * backend vẫn kiểm lại độc lập ở multer và ở service.
+ */
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const MAX_UPLOAD_LABEL = '10 MB';
+const ALLOWED_EXTENSIONS = ['.ics', '.csv'] as const;
+
+/**
+ * Server có CHỦ ĐÍCH từ chối request này hay không.
+ *
+ * Quan trọng vì màn hình import có sẵn một bộ đọc file cục bộ làm phương án
+ * dự phòng khi mất mạng. Nếu dự phòng đó chạy cả khi server trả 400/413/429
+ * thì mọi giới hạn phía backend (dung lượng, số sự kiện, hạn mức gọi) đều bị
+ * đi vòng ngay trên trình duyệt — và tệ hơn, người dùng không thấy lỗi gì.
+ * Chỉ coi là "không gọi được" khi status 0 (mất mạng/CORS) hoặc 5xx.
+ */
+function isServerRejection(err: unknown): err is HttpErrorResponse {
+  return err instanceof HttpErrorResponse && err.status > 0 && err.status < 500;
+}
+
+function serverErrorMessage(err: HttpErrorResponse, fallback: string): string {
+  const body = err.error as { message?: string | string[] } | undefined;
+  const msg = body?.message;
+  if (Array.isArray(msg)) return msg.join(", ");
+  if (typeof msg === 'string' && msg.trim()) return msg;
+  if (err.status === 429) return 'Bạn đã vượt quá giới hạn import. Vui lòng thử lại sau.';
+  if (err.status === 413) return 'File vượt quá giới hạn cho phép.';
+  return fallback;
+}
 
 export interface ParsedImportEvent {
   title: string;
@@ -58,6 +99,10 @@ function fromDatetimeLocal(dtLocalStr: string): string {
   styleUrl: './import-modal.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule],
+  // Nghe ở cấp document vì vùng thả file là một <label>, không nhận được
+  // focus nên sự kiện paste không bao giờ bay tới nó. Đây là hộp thoại modal
+  // và component chỉ tồn tại khi popup đang mở, nên phạm vi này là đúng.
+  host: { '(document:paste)': 'onPaste($event)' },
 })
 export class ImportModalComponent {
   private readonly http = inject(HttpClient);
@@ -65,7 +110,6 @@ export class ImportModalComponent {
 
   readonly closed = output<void>();
 
-  readonly mode = signal<'standard' | 'smart'>('standard');
   readonly selectedFile = signal<File | null>(null);
   readonly parsing = signal(false);
   readonly parseError = signal<string | null>(null);
@@ -83,18 +127,134 @@ export class ImportModalComponent {
     }
   }
 
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-      this.selectedFile.set(input.files[0]);
-      this.parseError.set(null);
-    }
-  }
+  protected readonly selectedFileExt = computed(() => {
+    const name = this.selectedFile()?.name ?? '';
+    const dot = name.lastIndexOf('.');
+    return dot === -1 ? '' : name.slice(dot + 1).toUpperCase();
+  });
 
-  setMode(m: 'standard' | 'smart'): void {
-    this.mode.set(m);
+  protected readonly selectedFileSizeLabel = computed(() => {
+    const size = this.selectedFile()?.size ?? 0;
+    if (!size) return '';
+    return size >= 1024 * 1024
+      ? (size / 1024 / 1024).toFixed(1) + ' MB'
+      : (size / 1024).toFixed(1) + ' KB';
+  });
+
+  clearSelectedFile(): void {
+    this.selectedFile.set(null);
     this.parseError.set(null);
   }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    // Reset để lần chọn sau vẫn kích hoạt change, kể cả chọn lại đúng file cũ.
+    input.value = '';
+    this.handleFile(file);
+  }
+
+  /**
+   * Dán file .ics/.csv bằng Ctrl+V / Cmd+V khi popup đang mở.
+   *
+   * Không đụng tới thao tác dán chữ: bảng xem trước có nhiều ô nhập (tiêu đề,
+   * địa điểm, thời gian) và người dùng phải dán chữ vào đó được như thường.
+   * Chỉ can thiệp khi clipboard mang file thật và không có chữ nào.
+   */
+  onPaste(event: ClipboardEvent): void {
+    if (this.importSuccess() || this.parsing() || this.importing()) return;
+
+    const data = event.clipboardData;
+    const picked = pickSingleFile(data);
+    if (!picked.file) return;
+    // Trình duyệt đã khai đây là lần dán FILE thì tin nó. Chỉ khi tín hiệu mơ
+    // hồ (có đối tượng File nhưng types không có "Files") mới ưu tiên giữ chữ
+    // để không cướp mất thao tác dán văn bản thông thường.
+    if (!signalsFiles(data) && hasMeaningfulText(data)) return;
+
+    event.preventDefault();
+    this.handleFile(picked.file, picked.skipped);
+  }
+
+  /**
+   * Điểm vào DUY NHẤT cho mọi file, bất kể chọn bằng nút hay dán từ clipboard.
+   * Một chỗ kiểm tra nghĩa là không thể có đường nào lọt qua mà chưa validate.
+   */
+  private handleFile(file: File | null | undefined, skipped = 0): void {
+    if (!file) return;
+
+    const problem = this.validateFile(file);
+    if (problem) {
+      this.selectedFile.set(null);
+      this.parseError.set(problem);
+      return;
+    }
+
+    this.selectedFile.set(file);
+    // Câu thông báo lấy từ utility chung nên ba nguồn file nói giống hệt nhau.
+    this.parseError.set(skippedFilesMessage(skipped));
+  }
+
+  // --- Kéo-thả file vào vùng chọn file ----------------------------------
+
+  readonly dragActive = signal(false);
+
+  /** Xem chú thích cùng tên bên FloatingHub: đếm enter/leave để highlight
+   *  không bị kẹt khi con trỏ đi qua các phần tử con. */
+  private dragDepth = 0;
+
+  private isFileDrag(event: DragEvent): boolean {
+    if (this.importSuccess() || this.parsing() || this.importing()) return false;
+    return signalsFiles(event.dataTransfer);
+  }
+
+  onDragEnter(event: DragEvent): void {
+    if (!this.isFileDrag(event)) return;
+    this.dragDepth += 1;
+    this.dragActive.set(true);
+  }
+
+  onDragOver(event: DragEvent): void {
+    if (!this.isFileDrag(event)) return;
+    // Không chặn mặc định ở dragover thì trình duyệt sẽ không phát drop.
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+  }
+
+  onDragLeave(event: DragEvent): void {
+    if (!this.isFileDrag(event)) return;
+    this.dragDepth = Math.max(this.dragDepth - 1, 0);
+    if (this.dragDepth === 0) this.dragActive.set(false);
+  }
+
+  onDrop(event: DragEvent): void {
+    if (!this.isFileDrag(event)) return;
+
+    event.preventDefault();
+    this.dragDepth = 0;
+    this.dragActive.set(false);
+
+    const picked = pickSingleFile(event.dataTransfer);
+    if (!picked.file) return;
+    // Chỉ đưa file vào trạng thái đã chọn. KHÔNG tự import — người dùng vẫn
+    // phải bấm "Đọc file sự kiện" rồi "Xác nhận Lưu vào Lịch" như cũ.
+    this.handleFile(picked.file, picked.skipped);
+  }
+
+  /** Trả về câu lỗi, hoặc null nếu file dùng được. */
+  private validateFile(file: File): string | null {
+    const name = file.name.toLowerCase();
+    // Thuộc tính `accept` chỉ lọc hộp thoại chọn file — kéo-thả hoặc chọn
+    // "Tất cả tệp" vẫn lọt, nên phải tự kiểm.
+    if (!ALLOWED_EXTENSIONS.some((ext) => name.endsWith(ext))) {
+      return 'Chỉ hỗ trợ file .ics hoặc .csv. File .xlsx, .docx hoặc .pdf hãy gửi cho Trợ lý AI.';
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return `File vượt quá giới hạn ${MAX_UPLOAD_LABEL} (file của bạn ${(file.size / 1024 / 1024).toFixed(1)} MB).`;
+    }
+    return null;
+  }
+
 
   async parseFile(): Promise<void> {
     const file = this.selectedFile();
@@ -103,12 +263,19 @@ export class ImportModalComponent {
       return;
     }
 
+    const problem = this.validateFile(file);
+    if (problem) {
+      this.parseError.set(problem);
+      return;
+    }
+
     this.parsing.set(true);
     this.parseError.set(null);
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('mode', this.mode());
+    // Popup chỉ còn import chuẩn; chế độ 'smart' đã chuyển sang Trợ lý AI.
+    formData.append('mode', 'standard');
 
     try {
       const res = await firstValueFrom(
@@ -132,7 +299,16 @@ export class ImportModalComponent {
         this.parsing.set(false);
         return;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      if (isServerRejection(err)) {
+        // Server đã xem file và từ chối (quá lớn, quá nhiều sự kiện, sai định
+        // dạng, hết hạn mức). Hiện đúng lý do, KHÔNG tự parse cục bộ để lách.
+        this.parseError.set(
+          serverErrorMessage(err, 'Không import được file. Vui lòng kiểm tra lại nội dung file.'),
+        );
+        this.parsing.set(false);
+        return;
+      }
       console.warn('Import qua Backend không phản hồi, tự động dùng bộ đọc file cục bộ:', err);
     }
 
@@ -272,7 +448,19 @@ export class ImportModalComponent {
             events: dtos,
           }),
         );
-      } catch (backendErr) {
+      } catch (backendErr: unknown) {
+        if (isServerRejection(backendErr)) {
+          // Cùng lý do như trên: server từ chối thì dừng, không vòng qua
+          // đường tạo từng sự kiện một để lách giới hạn số lượng.
+          this.parseError.set(
+            serverErrorMessage(
+              backendErr,
+              'Không lưu được danh sách sự kiện. Vui lòng thử lại.',
+            ),
+          );
+          this.importing.set(false);
+          return;
+        }
         console.warn('Lưu bulk lên backend thất bại, tự động tạo sự kiện cục bộ:', backendErr);
         for (const e of events) {
           await this.store.createEvent({

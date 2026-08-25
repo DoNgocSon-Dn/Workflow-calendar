@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { CalendarEvent } from '../../models/calendar.models';
-import { resolveHolidayThemeId } from '../../data/vietnam-holidays';
+import { resolveHolidayIdFromEvent } from '../../data/vietnam-holidays';
 import { HOLIDAYS } from '../../../../data/holidays.data';
 import { DEFAULT_HOLIDAY_THEME } from '../../../../models/holiday-theme.model';
 
@@ -41,8 +41,8 @@ export class HolidayInfoModal {
   );
 
   private readonly matchedHoliday = computed(() => {
-    const themeId = resolveHolidayThemeId(this.event());
-    return themeId ? (HOLIDAYS.find((h) => h.id === themeId) ?? null) : null;
+    const holidayId = resolveHolidayIdFromEvent(this.event());
+    return holidayId ? (HOLIDAYS.find((h) => h.id === holidayId) ?? null) : null;
   });
 
   protected readonly theme = computed(() => this.matchedHoliday()?.theme ?? DEFAULT_HOLIDAY_THEME);

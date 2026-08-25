@@ -52,8 +52,8 @@
 
 .today-btn:hover {
   background: var(--color-surface-hover);
-  border-color: var(--color-accent);
-  color: var(--color-accent);
+  border-color: var(--holiday-accent);
+  color: var(--holiday-accent);
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm-hover);
 }
@@ -126,9 +126,9 @@
 }
 
 .search-input:focus {
-  border-color: var(--color-accent);
+  border-color: var(--holiday-accent);
   background: var(--color-surface);
-  box-shadow: 0 0 0 3px var(--color-accent-soft);
+  box-shadow: 0 0 0 3px var(--holiday-accent-soft);
 }
 
 .user-menu {
@@ -139,9 +139,9 @@
   width: 2.35rem;
   height: 2.35rem;
   border-radius: var(--radius-full);
-  border: 2px solid var(--color-accent-soft);
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  border: 2px solid var(--holiday-accent-soft);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
   font-size: 0.9rem;
   font-weight: 700;
   font-family: var(--font-heading);
@@ -156,7 +156,7 @@
 }
 
 .avatar-btn:hover {
-  background: var(--color-accent-hover);
+  background: var(--holiday-accent-hover);
 }
 
 .avatar-img {
@@ -259,8 +259,8 @@
 }
 
 .app-switch-btn.active {
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
   cursor: default;
 }
 
@@ -286,7 +286,7 @@
 
 .view-dropdown-btn:hover {
   background: var(--color-surface-hover);
-  border-color: var(--color-accent);
+  border-color: var(--holiday-accent);
   transform: translateY(-1px);
 }
 
@@ -326,8 +326,8 @@
 }
 
 .view-dropdown-item.active {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--holiday-accent-soft);
+  color: var(--holiday-accent);
   font-weight: 700;
 }
 

@@ -71,7 +71,7 @@
 .text-btn {
   border: none;
   background: none;
-  color: var(--color-accent);
+  color: var(--holiday-accent);
   font-weight: 600;
   font-size: 0.875rem;
   padding: 0.5rem 0.75rem;

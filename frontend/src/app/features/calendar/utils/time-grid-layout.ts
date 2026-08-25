@@ -32,7 +32,13 @@ export function layoutDayEvents(
   const flush = () => {
     if (!cluster.length) return;
     const columnEndTimes: number[] = [];
-    const columnOf = new Map<string, number>();
+    // Đánh số cột theo VỊ TRÍ trong cluster, không theo id.
+    //
+    // Trước đây dùng Map<id, cột>: hai bản ghi trùng id (xảy ra khi cùng một
+    // sự kiện lọt vào danh sách hai lần) sẽ ghi đè nhau, nên cả hai cùng nhận
+    // số cột của bản ghi sau — kết quả là MỘT khối vẽ lệch sang nửa phải như
+    // thể đang trùng giờ, dù người dùng chỉ thấy một sự kiện.
+    const columnOfIndex: number[] = [];
     for (const e of cluster) {
       let col = columnEndTimes.findIndex((end) => end <= e.start.getTime());
       if (col === -1) {
@@ -41,11 +47,11 @@ export function layoutDayEvents(
       } else {
         columnEndTimes[col] = e.end.getTime();
       }
-      columnOf.set(e.id, col);
+      columnOfIndex.push(col);
     }
     const colCount = columnEndTimes.length;
-    for (const e of cluster) {
-      const col = columnOf.get(e.id) ?? 0;
+    cluster.forEach((e, index) => {
+      const col = columnOfIndex[index];
       const top = (minutesSinceMidnight(e.start) / 60) * hourHeight;
       const height = Math.max((diffMinutes(e.start, e.end) / 60) * hourHeight, MIN_BLOCK_HEIGHT);
       result.push({
@@ -55,7 +61,7 @@ export function layoutDayEvents(
         leftPct: (col / colCount) * 100,
         widthPct: (1 / colCount) * 100,
       });
-    }
+    });
     cluster = [];
     clusterEnd = -Infinity;
   };

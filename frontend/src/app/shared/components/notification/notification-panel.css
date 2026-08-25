@@ -55,8 +55,8 @@
 .notif-panel__unread-pill {
   font-size: 0.72rem;
   font-weight: 700;
-  color: var(--color-accent);
-  background: var(--color-accent-soft);
+  color: var(--holiday-accent);
+  background: var(--holiday-accent-soft);
   padding: 0.12rem 0.55rem;
   border-radius: var(--radius-full);
 }
@@ -80,11 +80,11 @@
 }
 
 .notif-panel__mark-all {
-  color: var(--color-accent);
+  color: var(--holiday-accent);
 }
 
 .notif-panel__mark-all:hover {
-  color: var(--color-accent-hover);
+  color: var(--holiday-accent-hover);
   text-decoration: underline;
 }
 
@@ -104,7 +104,7 @@
   gap: 0.4rem;
   padding: 0.7rem 1rem;
   border-bottom: 1px solid var(--color-border);
-  background: var(--color-accent-soft);
+  background: var(--holiday-accent-soft);
 }
 
 .notif-panel__invites-title {
@@ -113,7 +113,7 @@
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: var(--color-accent);
+  color: var(--holiday-accent);
 }
 
 .notif-panel__invite-item {
@@ -140,8 +140,8 @@
 
 .notif-panel__invite-btn {
   border: none;
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
   padding: 0.3rem 0.75rem;
   border-radius: var(--radius-sm);
   font-size: 0.78rem;
@@ -151,7 +151,7 @@
 }
 
 .notif-panel__invite-btn:hover:not(:disabled) {
-  background: var(--color-accent-hover);
+  background: var(--holiday-accent-hover);
 }
 
 .notif-panel__invite-btn:disabled {
@@ -240,8 +240,8 @@
 }
 
 .notif-panel__tab--active {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--holiday-accent-soft);
+  color: var(--holiday-accent);
 }
 
 .notif-panel__error {
@@ -265,8 +265,8 @@
   border: none;
   border-radius: var(--radius-full);
   padding: 0.3rem 0.8rem;
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
   font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
@@ -422,10 +422,10 @@
   width: 1.65rem;
   height: 1.65rem;
   border-radius: 0.55rem;
-  background: linear-gradient(140deg, var(--color-accent-soft), transparent 80%),
-    var(--color-accent-soft);
-  border: 1px solid color-mix(in srgb, var(--color-accent) 22%, transparent);
-  color: var(--color-accent);
+  background: linear-gradient(140deg, var(--holiday-accent-soft), transparent 80%),
+    var(--holiday-accent-soft);
+  border: 1px solid color-mix(in srgb, var(--holiday-accent) 22%, transparent);
+  color: var(--holiday-accent);
 }
 
 /* Badge "N mới" thở nhẹ một nhịp khi số đổi — đủ để mắt bắt được, không nhấp
@@ -522,7 +522,7 @@
   height: 3.4rem;
   margin-bottom: 0.55rem;
   border-radius: var(--radius-full);
-  background: radial-gradient(circle at 50% 35%, var(--color-accent-soft), transparent 72%);
+  background: radial-gradient(circle at 50% 35%, var(--holiday-accent-soft), transparent 72%);
   border: 1px solid var(--color-border);
   color: var(--color-text-muted);
   animation: bellIdle 5s ease-in-out infinite;

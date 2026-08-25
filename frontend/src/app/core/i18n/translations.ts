@@ -90,6 +90,13 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'settings.sectionOther': 'Khác',
     'settings.deletedEvents': 'Sự kiện đã xoá',
     'settings.printCalendar': 'In lịch',
+    'settings.holidayTheme': 'Chủ đề ngày lễ',
+    'settings.holidayThemeAuto': 'Tự động',
+    'settings.holidayThemeOff': 'Tắt',
+    'settings.sectionDeveloper': 'Nhà phát triển',
+    'settings.holidayDebugPreview': 'Xem trước theme ngày lễ',
+    'settings.holidayDebugNormal': 'Bình thường (theo ngày thật)',
+    'settings.holidayDebugHint': 'Chỉ hiện ở bản development, dùng để kiểm tra theme mà không cần đợi đúng ngày.',
 
     // --- notifications ------------------------------------------------------
     'notif.title': 'Thông báo',
@@ -156,6 +163,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'holiday.typeLeHoi': 'Lễ hội',
     'holiday.viewOnlyBadge': 'Ngày lễ · Chỉ xem',
     'holiday.closeNotification': 'Đóng thông báo',
+    'holiday.badgeTooltip': '{name}',
 
     // --- weekday short labels (Monday-first, matches the calendar grid) -----
     'weekday.mon': 'T2',
@@ -237,6 +245,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'event.addDueDate': 'Thêm thời hạn',
     'event.removeDueDate': 'Xoá thời hạn',
     'event.selectListAria': 'Chọn danh sách',
+    'event.selectCalendar': 'Chọn lịch',
 
     // --- group workspace ----------------------------------------------------
     'group.defaultDescription': 'Không gian làm việc nhóm',
@@ -395,6 +404,13 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'settings.sectionOther': 'Other',
     'settings.deletedEvents': 'Deleted events',
     'settings.printCalendar': 'Print calendar',
+    'settings.holidayTheme': 'Holiday theme',
+    'settings.holidayThemeAuto': 'Auto',
+    'settings.holidayThemeOff': 'Off',
+    'settings.sectionDeveloper': 'Developer',
+    'settings.holidayDebugPreview': 'Preview holiday theme',
+    'settings.holidayDebugNormal': 'Normal (real date)',
+    'settings.holidayDebugHint': 'Development builds only — lets you check a theme without waiting for the real date.',
 
     // --- notifications ------------------------------------------------------
     'notif.title': 'Notifications',
@@ -461,6 +477,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'holiday.typeLeHoi': 'Festival',
     'holiday.viewOnlyBadge': 'Holiday · View only',
     'holiday.closeNotification': 'Close notification',
+    'holiday.badgeTooltip': '{name}',
 
     // --- weekday short labels (Monday-first, matches the calendar grid) -----
     'weekday.mon': 'Mon',
@@ -542,6 +559,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'event.addDueDate': 'Add deadline',
     'event.removeDueDate': 'Remove deadline',
     'event.selectListAria': 'Select list',
+    'event.selectCalendar': 'Select calendar',
 
     // --- group workspace ----------------------------------------------------
     'group.defaultDescription': 'Team workspace',
