@@ -163,7 +163,7 @@
       }
 
       @default {
-      <div class="ai-chat-container">
+      <div class="ai-chat-container" [style.--composer-height.px]="composerHeight()">
         <div class="messages">
         @if (messages().length === 0) {
           <div class="ai-welcome">
@@ -467,7 +467,7 @@
         }
       </div>
 
-        <div class="composer-area">
+        <div class="composer-area" #composerEl>
           @if (aiError()) {
             <p class="field-error">{{ aiError() }}</p>
           }

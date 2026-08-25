@@ -2,6 +2,8 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
+  ViewChild,
   computed,
   effect,
   inject,
@@ -259,6 +261,24 @@ export class FloatingHub {
   private readonly store = inject(CalendarStore);
   private readonly authStore = inject(AuthStore);
 
+  private composerObserver?: ResizeObserver;
+  protected readonly composerHeight = signal<number>(90);
+
+  @ViewChild('composerEl') set composerEl(ref: ElementRef<HTMLElement> | undefined) {
+    this.composerObserver?.disconnect();
+    if (ref?.nativeElement && typeof ResizeObserver !== 'undefined') {
+      this.composerObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const h = entry.borderBoxSize?.[0]?.blockSize ?? entry.target.getBoundingClientRect().height;
+          if (h > 0) {
+            this.composerHeight.set(Math.round(h));
+          }
+        }
+      });
+      this.composerObserver.observe(ref.nativeElement);
+    }
+  }
+
   protected readonly fabSize = FAB_SIZE;
   protected readonly panelGap = PANEL_GAP;
 
@@ -388,6 +408,7 @@ export class FloatingHub {
     this.hubDestroyRef.onDestroy(() => {
       this.stopThinking();
       if (this.rippleTimer) clearTimeout(this.rippleTimer);
+      this.composerObserver?.disconnect();
     });
 
     effect(() => {
