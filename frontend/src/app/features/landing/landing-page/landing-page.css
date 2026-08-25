@@ -1254,23 +1254,28 @@ footer a {
   left: 0;
   right: 0;
   /* Icon cao 76px, tâm nằm giữa khung nhìn rồi trượt lên 22px, nên đáy icon ở
-     50% + 16px. Cộng 20px khoảng hở ra 36px. line-height ghim bằng 1 để con
+     50% + 16px. Cộng 10px khoảng hở ra 26px. line-height ghim bằng 1 để con
      số này là khoảng hở THẬT, không bị phần leading của dòng cộng thêm vào. */
   top: 50%;
-  margin-top: 36px;
+  margin-top: 26px;
   line-height: 1;
   text-align: center;
   font-family: var(--font-heading);
   font-size: 19px;
-  font-weight: 600;
+  /* 700 chứ không hơn: Plus Jakarta Sans được nạp sẵn các nét 400–800 nên 700
+     là nét THẬT, không phải nét giả do trình duyệt bôi đậm thêm. Nét giả ở cỡ
+     chữ nhỏ kèm giãn cách rộng sẽ thấy rõ chỗ dày chỗ mỏng. */
+  font-weight: 700;
   letter-spacing: 0.3em;
   /* letter-spacing cộng một khoảng vào SAU chữ cuối, nên text-align: center
      căn cả khoảng thừa đó và khối chữ lệch trái đúng MỘT NỬA letter-spacing.
      Bù lại bằng nửa, không phải cả — bù cả là lệch ngược sang phải. */
   text-indent: 0.15em;
   /* "Trắng/xám bạc" ở giao diện tối. Đi qua --ink nên ở giao diện sáng nó tự
-     thành xám than — chữ trắng thật sẽ biến mất trên nền sáng. */
-  color: color-mix(in srgb, var(--ink) 78%, transparent);
+     thành xám than — chữ trắng thật sẽ biến mất trên nền sáng.
+     Nâng 78% -> 88%: nét dày mà màu vẫn nhạt thì mắt vẫn đọc ra là mỏng, vì
+     cảm giác "dày" đến từ lượng mực trên nền chứ không riêng bề rộng nét. */
+  color: color-mix(in srgb, var(--ink) 88%, transparent);
 }
 
 .preloader-panel {
