@@ -52,8 +52,9 @@ export class HolidayInfoModal {
    *  fixed holidays that don't have a themed entry). */
   protected readonly displayTitle = computed(() => {
     const content = this.matchedHoliday()?.content;
-    if (this.i18n.locale() === 'en' && content?.titleEn) return content.titleEn;
-    return content?.title ?? this.event().title;
+    const raw = (this.i18n.locale() === 'en' && content?.titleEn) ? content.titleEn : (content?.title ?? this.event().title);
+    const year = this.event().start.getFullYear();
+    return raw.replace(/\{year\}/g, String(year)).replace(/\{nextYear\}/g, String(year + 1));
   });
 
   protected readonly badgeLabel = computed(() => {

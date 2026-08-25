@@ -56,7 +56,7 @@ export const HOLIDAYS: readonly Holiday[] = [
     popupEnabled: true,
     dateRule: { kind: 'fixed', month: 9, day: 2 },
     theme: {
-      background: 'linear-gradient(160deg, #3a0a0a 0%, #8a1414 55%, #b8860b 100%)',
+      background: '#7f1d1d',
       accent: '#fbd063',
       textColor: '#fffbeb',
       subtitleColor: 'rgba(255, 251, 235, 0.8)',
@@ -82,7 +82,7 @@ export const HOLIDAYS: readonly Holiday[] = [
     popupEnabled: true,
     dateRule: { kind: 'fixed', month: 4, day: 30 },
     theme: {
-      background: 'linear-gradient(160deg, #34090c 0%, #7a1414 60%, #9a1f1f 100%)',
+      background: '#831843',
       accent: '#e8b34a',
       textColor: '#fff7ed',
       subtitleColor: 'rgba(255, 247, 237, 0.78)',
@@ -108,7 +108,7 @@ export const HOLIDAYS: readonly Holiday[] = [
     popupEnabled: true,
     dateRule: { kind: 'fixed', month: 5, day: 1 },
     theme: {
-      background: 'linear-gradient(160deg, #7c2d12 0%, #b45309 55%, #d97706 100%)',
+      background: '#92400e',
       accent: '#fed7aa',
       textColor: '#fff7ed',
       subtitleColor: 'rgba(255, 247, 237, 0.8)',
@@ -133,7 +133,7 @@ export const HOLIDAYS: readonly Holiday[] = [
     popupEnabled: true,
     dateRule: { kind: 'fixed', month: 11, day: 20 },
     theme: {
-      background: 'linear-gradient(160deg, #451a03 0%, #92400e 55%, #b45309 100%)',
+      background: '#78350f',
       accent: '#fde9c4',
       textColor: '#fffbeb',
       subtitleColor: 'rgba(255, 251, 235, 0.8)',
@@ -157,7 +157,7 @@ export const HOLIDAYS: readonly Holiday[] = [
     icon: '🌷',
     dateRule: { kind: 'fixed', month: 3, day: 8 },
     theme: {
-      background: 'linear-gradient(160deg, #4a0d24 0%, #9d174d 55%, #db2777 100%)',
+      background: '#9d174d',
       accent: '#fbcfe8',
       textColor: '#fdf2f8',
       subtitleColor: 'rgba(253, 242, 248, 0.82)',
@@ -181,7 +181,7 @@ export const HOLIDAYS: readonly Holiday[] = [
     icon: '🌺',
     dateRule: { kind: 'fixed', month: 10, day: 20 },
     theme: {
-      background: 'linear-gradient(160deg, #3f0f2e 0%, #6b214f 55%, #9d3b6b 100%)',
+      background: '#831843',
       accent: '#e8b4d8',
       textColor: '#fdf4fa',
       subtitleColor: 'rgba(253, 244, 250, 0.8)',
@@ -204,7 +204,7 @@ export const HOLIDAYS: readonly Holiday[] = [
     icon: '❤️',
     dateRule: { kind: 'fixed', month: 2, day: 14 },
     theme: {
-      background: 'linear-gradient(160deg, #3f0512 0%, #9f1239 55%, #fb7185 100%)',
+      background: '#9f1239',
       accent: '#fecdd3',
       textColor: '#fff1f2',
       subtitleColor: 'rgba(255, 241, 242, 0.8)',
@@ -248,7 +248,7 @@ export const HOLIDAYS: readonly Holiday[] = [
     icon: '🎄',
     dateRule: { kind: 'fixed-range', month: 12, day: 24, days: 2 },
     theme: {
-      background: 'linear-gradient(160deg, #052e1c 0%, #14532d 55%, #7f1d1d 100%)',
+      background: '#14532d',
       accent: '#eac96a',
       textColor: '#f8fafc',
       subtitleColor: 'rgba(248, 250, 252, 0.78)',
@@ -271,7 +271,7 @@ export const HOLIDAYS: readonly Holiday[] = [
     icon: '🎃',
     dateRule: { kind: 'fixed', month: 10, day: 31 },
     theme: {
-      background: 'linear-gradient(160deg, #0a0713 0%, #2e1065 55%, #c2410c 100%)',
+      background: '#2e1065',
       accent: '#fb923c',
       textColor: '#fde68a',
       subtitleColor: 'rgba(253, 230, 138, 0.75)',
@@ -294,7 +294,7 @@ export const HOLIDAYS: readonly Holiday[] = [
     icon: '🎈',
     dateRule: { kind: 'fixed', month: 6, day: 1 },
     theme: {
-      background: 'linear-gradient(160deg, #0c4a6e 0%, #0369a1 55%, #eab308 100%)',
+      background: '#0369a1',
       accent: '#fde68a',
       textColor: '#f0f9ff',
       subtitleColor: 'rgba(240, 249, 255, 0.82)',
@@ -318,7 +318,7 @@ export const HOLIDAYS: readonly Holiday[] = [
     officialHoliday: true,
     dateRule: { kind: 'fixed', month: 1, day: 1 },
     theme: {
-      background: 'linear-gradient(160deg, #1e1b4b 0%, #4c1d95 55%, #a16207 100%)',
+      background: '#1e1b4b',
       accent: '#f5d78e',
       textColor: '#ffffff',
       subtitleColor: 'rgba(255, 255, 255, 0.75)',
@@ -341,7 +341,7 @@ export const HOLIDAYS: readonly Holiday[] = [
     icon: '🥂',
     dateRule: { kind: 'fixed', month: 12, day: 31 },
     theme: {
-      background: 'linear-gradient(160deg, #0f172a 0%, #312e81 55%, #86198f 100%)',
+      background: '#0f172a',
       accent: '#f0abfc',
       textColor: '#ffffff',
       subtitleColor: 'rgba(255, 255, 255, 0.75)',
@@ -364,7 +364,7 @@ export const HOLIDAYS: readonly Holiday[] = [
     icon: '⭐',
     dateRule: { kind: 'fixed', month: 12, day: 22 },
     theme: {
-      background: 'linear-gradient(160deg, #052e16 0%, #14532d 55%, #7f1d1d 100%)',
+      background: '#14532d',
       accent: '#facc15',
       textColor: '#f0fdf4',
       subtitleColor: 'rgba(240, 253, 244, 0.8)',

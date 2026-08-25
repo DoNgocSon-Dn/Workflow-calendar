@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { AuthStore } from '../../../core/auth/auth-store';
 import { DensityService } from '../../../core/density/density-service';
 import { NotificationQueue } from '../../../core/realtime/notification-queue';
@@ -28,6 +28,8 @@ import { OpenGroupChatRequest } from '../../../shared/components/notification/no
 import { HolidayPopup } from '../../../shared/components/holiday-popup/holiday-popup';
 import { FloatingHub } from '../../../shared/components/floating-hub/floating-hub';
 import { LoginSuccessTransition } from '../../auth/login-success-transition/login-success-transition';
+import { BirthdayPopup } from '../../../shared/components/birthday-popup/birthday-popup';
+import { BirthdayPopupService } from '../../../core/services/birthday-popup.service';
 import { consumeOauthRedirect } from '../../../core/auth/oauth-redirect-flag';
 
 interface ModalState {
@@ -60,11 +62,13 @@ interface ModalState {
     NotificationPopup,
     FloatingHub,
     HolidayPopup,
+    BirthdayPopup,
     HolidayInfoModal,
     LoginSuccessTransition,
   ],
 })
 export class CalendarPage {
+  private readonly birthdayService = inject(BirthdayPopupService);
   protected readonly store = inject(CalendarStore);
   protected readonly groupStore = inject(GroupStore);
   protected readonly authStore = inject(AuthStore);
@@ -106,6 +110,12 @@ export class CalendarPage {
 
   constructor() {
     this.notificationQueue.requestPermission();
+
+    effect(() => {
+      if (this.authStore.session()) {
+        this.birthdayService.checkAndTriggerBirthday();
+      }
+    });
 
     // Check if user needs to set a display name after logging in
     const currentName = this.authStore.displayName();

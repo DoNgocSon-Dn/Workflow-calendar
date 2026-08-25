@@ -11,7 +11,7 @@ import { TranslationService } from '../../../../core/i18n/translation.service';
 import { CALENDAR_COLOR_HEX, CalendarEvent } from '../../models/calendar.models';
 import { DatePipe } from '@angular/common';
 import { convertSolarToLunar } from '../../utils/lunar-calendar';
-import { resolveTopHolidayForDate } from '../../utils/holiday-resolver';
+import { resolveHolidaysForDate, resolveTopHolidayForDate } from '../../utils/holiday-resolver';
 import { VN_HOLIDAY_CALENDAR_ID } from '../../data/vietnam-holidays';
 import { Icon } from '../../../../shared/components/icon/icon';
 
@@ -101,7 +101,7 @@ export class AgendaView {
       });
     }
 
-    // Khi chọn Lịch Âm: Lọc bỏ hoàn toàn các sự kiện Lễ Dương lịch cố định (Tết Dương lịch, 30/4, 1/5...)
+    // Khi chọn Lịch Âm: Lọc bỏ các sự kiện Lễ Dương lịch để nhường chỗ cho ngày Lễ Âm Lịch
     if (calType === 'lunar') {
       filtered = filtered.filter((e) => e.calendarId !== VN_HOLIDAY_CALENDAR_ID);
     }
@@ -126,9 +126,11 @@ export class AgendaView {
       });
     }
 
-    // Khi ở chế độ Lịch Âm: Tự động tính toán & chèn các Sự kiện Âm lịch chuẩn xác (Tết Nguyên Đán, Rằm, Mùng 1, Giỗ Tổ...)
+    // Khi ở chế độ Lịch Âm: Tự động tính toán & chèn các Sự kiện Âm lịch (Tết Nguyên Đán, Rằm, Mùng 1, Giỗ Tổ...)
     if (calType === 'lunar') {
       const dateList: Date[] = [];
+      const baseDate = new Date(focused.getFullYear(), focused.getMonth(), focused.getDate());
+
       if (mode === 'month') {
         const year = focused.getFullYear();
         const month = focused.getMonth();
@@ -136,19 +138,63 @@ export class AgendaView {
         for (let d = 1; d <= daysInMonth; d++) {
           dateList.push(new Date(year, month, d));
         }
+      } else if (mode === 'next30') {
+        for (let i = 0; i < 30; i++) {
+          const d = new Date(baseDate);
+          d.setDate(d.getDate() + i);
+          dateList.push(d);
+        }
       } else {
-        map.forEach((val) => dateList.push(val.date));
+        // Mode 'all': Gom các ngày có sự kiện + 365 ngày của năm để Lịch Âm luôn có đầy đủ Tết Trung Thu, Tết Nguyên Đán, Rằm...
+        const dateSet = new Set<string>();
+        for (let i = 0; i < 365; i++) {
+          const d = new Date(baseDate);
+          d.setDate(d.getDate() + i);
+          const k = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+          dateSet.add(k);
+          dateList.push(d);
+        }
+
+        for (const e of allEvents) {
+          const d = new Date(e.start);
+          const k = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+          if (!dateSet.has(k)) {
+            dateSet.add(k);
+            dateList.push(d);
+          }
+        }
       }
 
       for (const d of dateList) {
-        const holiday = resolveTopHolidayForDate(d);
-        if (holiday) {
-          const year = d.getFullYear();
-          const month = String(d.getMonth() + 1).padStart(2, '0');
-          const day = String(d.getDate()).padStart(2, '0');
-          const dayKey = `${year}-${month}-${day}`;
-          const title = holiday.name;
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const dayKey = `${year}-${month}-${day}`;
 
+        const holidays = resolveHolidaysForDate(d);
+        const lunar = convertSolarToLunar(d);
+
+        const titles: string[] = [];
+
+        for (const h of holidays) {
+          if (!titles.includes(h.name)) {
+            titles.push(h.name);
+          }
+        }
+
+        // Bổ sung Tết Trung Thu nếu trùng 15/8 âm lịch mà chưa có
+        if (lunar.month === 8 && lunar.day === 15 && !titles.includes('Tết Trung Thu')) {
+          titles.push('Tết Trung Thu');
+        }
+
+        // Bổ sung Mùng 1 & Rằm hàng tháng (không icon emoji)
+        if (lunar.day === 1 && !titles.some((t) => t.includes('Mùng 1'))) {
+          titles.push(`Mùng 1 Tháng ${lunar.month} Âm Lịch`);
+        } else if (lunar.day === 15 && !titles.some((t) => t.includes('Rằm'))) {
+          titles.push(`Ngày Rằm Tháng ${lunar.month} Âm Lịch`);
+        }
+
+        for (const title of titles) {
           if (!map.has(dayKey)) {
             map.set(dayKey, { date: d, events: [] });
           }
@@ -156,7 +202,7 @@ export class AgendaView {
           const exists = group.events.some((ev) => ev.title === title);
           if (!exists) {
             group.events.unshift({
-              id: `lunar-evt-${dayKey}`,
+              id: `lunar-evt-${dayKey}-${title}`,
               calendarId: 'lunar-sys',
               title,
               start: d,

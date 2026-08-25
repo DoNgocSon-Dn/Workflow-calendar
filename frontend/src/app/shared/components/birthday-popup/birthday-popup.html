@@ -1,0 +1,89 @@
+@if (visible()) {
+  <div
+    class="birthday-backdrop"
+    [class.birthday-backdrop--closing]="closing()"
+    (click)="onBackdropClick($event)"
+    role="dialog"
+    aria-modal="true"
+  >
+    <!-- Floating Particle Shower -->
+    <div class="birthday-particles" aria-hidden="true">
+      @for (p of particles(); track $index) {
+        <span
+          class="birthday-particle"
+          [style.left.%]="p.leftPercent"
+          [style.animation-delay.s]="p.delaySeconds"
+          [style.animation-duration.s]="p.durationSeconds"
+          [style.font-size.px]="p.sizePx"
+        >
+          {{ p.emoji }}
+        </span>
+      }
+    </div>
+
+    <!-- Birthday Glass Card Container -->
+    <div class="birthday-card">
+      <div class="birthday-card__header">
+        <span class="birthday-badge">🎂 HÔM NAY LÀ SINH NHẬT BẠN</span>
+        @if (data()?.isPreview) {
+          <span class="birthday-preview-badge">Chế độ xem thử</span>
+        }
+      </div>
+
+      <!-- Animated Cake Container -->
+      <div class="birthday-cake-wrap">
+        <div class="birthday-cake" [class.candle-off]="candleBlownOut()">
+          <!-- Candles & Flame -->
+          <div class="cake-candle">
+            <div class="candle-flame" [class.flame-extinguished]="candleBlownOut()"></div>
+            <div class="candle-wick"></div>
+            <div class="candle-wax"></div>
+          </div>
+          <!-- Cake Layers -->
+          <div class="cake-layer cake-layer--top">
+            <div class="icing"></div>
+            <div class="cherry">🍒</div>
+          </div>
+          <div class="cake-layer cake-layer--middle">
+            <div class="drip-decoration"></div>
+          </div>
+          <div class="cake-layer cake-layer--bottom">
+            <div class="cream-dots">
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+          <div class="cake-plate"></div>
+        </div>
+      </div>
+
+      <!-- Birthday Wishes Content -->
+      <div class="birthday-content">
+        <h1 class="birthday-title">
+          Chúc mừng sinh nhật, <span class="user-highlight">{{ data()?.userName }}</span>! 🎉
+        </h1>
+
+        <p class="birthday-wish">
+          {{ wishText() }}
+        </p>
+
+        @if (wishMade()) {
+          <div class="birthday-sparkle-box">
+            ✨ <strong>Điều ước của bạn đã được ghi lại!</strong> Chúc ước mơ sớm thành hiện thực! ✨
+          </div>
+        }
+
+        <!-- Interactive Action Buttons -->
+        <div class="birthday-actions">
+          @if (!candleBlownOut()) {
+            <button type="button" class="btn-blow-candle" (click)="blowCandle()">
+              🕯️ Ước một điều & Thổi nến!
+            </button>
+          }
+          <button type="button" class="btn-start-app" (click)="close()">
+            🚀 Cảm ơn! Bắt đầu ngày mới
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

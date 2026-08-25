@@ -73,7 +73,7 @@
   position: relative;
   height: 320px;
   overflow: hidden;
-  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--holiday-bg) 40%, transparent) 92%);
+  background: transparent;
 }
 
 /* Ambient sparkle layer — small tinted dots only, never the motif shape
