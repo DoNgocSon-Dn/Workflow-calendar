@@ -206,6 +206,24 @@ function isPlanIntent(text: string): boolean {
   );
 }
 
+/**
+ * Câu người dùng vừa gõ có đang nói về FILE đính kèm hay không.
+ *
+ * Đính kèm một file không có nghĩa là muốn đọc nó ngay. Người dùng hoàn toàn
+ * có thể kẹp sẵn file rồi hỏi một việc khác ("sắp xếp lịch mai đi học từ 9h
+ * đến 17h") — lúc đó đem file đi trích xuất là làm sai việc, và nếu file lỗi
+ * thì còn nuốt mất luôn yêu cầu thật của họ.
+ *
+ * Chỉ nhận diện những từ CHỈ ĐÍCH DANH tài liệu. Động từ chung như "phân
+ * tích" hay "đọc" đứng một mình thì bỏ qua, vì chúng xuất hiện tự nhiên
+ * trong tên sự kiện ("họp phân tích dữ liệu").
+ */
+function mentionsAttachedFile(text: string): boolean {
+  return /(file|t[eệ]p|t[aà]i li[eệ]u|[dđ][ií]nh k[eè]m|b[aả]ng t[ií]nh|excel|word|pdf|docx?|xlsx?|tr[ií]ch xu[aấ]t|n[oộ]i dung (n[aà]y|tr[eê]n)|trong (n[aà]y|đ[oó])|[dđ][oọ]c (c[aá]i )?(n[aà]y|gi[uú]p))/i.test(
+    text,
+  );
+}
+
 function formatDateLabel(date: Date): string {
   const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const diffDays = Math.round((startOfDay(date) - startOfDay(new Date())) / 86_400_000);
@@ -532,7 +550,9 @@ export class FloatingHub {
     // Chỉ đính kèm file mà không gõ gì cũng là một yêu cầu hợp lệ.
     if ((!text && !file) || this.sending()) return;
 
-    if (file) {
+    // Có file thì CHỈ đọc file khi người dùng thật sự nói về nó — hoặc khi họ
+    // không gõ gì, lúc đó đính kèm chính là toàn bộ yêu cầu.
+    if (file && (!text || mentionsAttachedFile(text))) {
       await this.handleFileSend(file, text);
       return;
     }
@@ -556,6 +576,9 @@ export class FloatingHub {
     this.eventProposal.set(null);
     this.eventProposalError.set(null);
 
+    // File (nếu có) CỐ Ý được giữ nguyên trong ô đính kèm: câu này không nói
+    // gì về nó nên chưa dùng tới, nhưng vứt đi thì người dùng phải chọn lại từ
+    // đầu. Đính kèm vẫn nằm đó để câu sau chỉ cần bảo "đọc file này".
     this.pushMessage('user', text);
     this.draft.set('');
     this.sending.set(true);
@@ -601,6 +624,13 @@ export class FloatingHub {
     } finally {
       this.stopThinking();
       this.sending.set(false);
+      // Không im lặng bỏ qua file: nói rõ là chưa đụng tới nó.
+      if (file) {
+        this.pushMessage(
+          'assistant',
+          `Mình chưa đọc "${file.name}" vì câu vừa rồi không nhắc tới nó. File vẫn còn đính kèm — muốn mình đọc thì nhắn "đọc file này" nhé.`,
+        );
+      }
     }
   }
 
