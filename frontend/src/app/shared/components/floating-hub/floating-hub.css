@@ -423,7 +423,13 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0.85rem 1.1rem calc(var(--composer-height, 116) * 1px + 0.75rem);
+  /* .composer-area giờ là một anh em flex bình thường (flex-shrink: 0), không
+     còn position:absolute đè lên .messages nữa, nên KHÔNG cần dành riêng chỗ
+     ở đáy cho nó — flexbox tự nhường đúng phần còn lại. Trước đây khu vực này
+     dùng calc(var(--composer-height) ...) cho kiểu overlay cũ; giữ lại biến đó
+     sau khi bỏ overlay chỉ tạo một khoảng trống chết ~130px dưới tin nhắn cuối
+     mà không phục vụ mục đích gì. */
+  padding: 0.85rem 1.1rem;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
