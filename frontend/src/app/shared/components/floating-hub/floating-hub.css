@@ -423,7 +423,7 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0.85rem 1.1rem 1rem;
+  padding: 0.85rem 1.1rem calc(var(--composer-height, 116) * 1px + 0.75rem);
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
