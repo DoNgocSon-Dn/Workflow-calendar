@@ -574,6 +574,25 @@ export class GroupStore {
     return updated;
   }
 
+  /**
+   * Chuyển quyền trưởng nhóm.
+   *
+   * Backend trả về TOÀN BỘ danh sách thành viên đã cập nhật vì thao tác này
+   * đổi vai trò của HAI người cùng lúc (người nhận lên trưởng nhóm, người
+   * giao xuống quản trị viên) — vá từng hàng một sẽ có khoảnh khắc danh sách
+   * hiển thị hai trưởng nhóm.
+   */
+  async transferLeadership(groupId: string, userId: string): Promise<void> {
+    const members = await this.api.transferLeadership(groupId, userId);
+    this.members.set(members);
+
+    // ownerId trên nhóm là nguồn xác định trưởng nhóm — không cập nhật thì
+    // giao diện vẫn tưởng người cũ đang giữ ghế.
+    this.groups.update((list) =>
+      list.map((g) => (g.id === groupId ? { ...g, ownerId: userId } : g)),
+    );
+  }
+
   async removeMember(groupId: string, userId: string): Promise<void> {
     await this.api.removeMember(groupId, userId);
     this.members.update((prev) => prev.filter((m) => m.userId !== userId));

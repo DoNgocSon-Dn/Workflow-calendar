@@ -14,6 +14,16 @@ import { TranslationService } from '../../../../core/i18n/translation.service';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { GroupStore } from '../../data/group-store';
 import {
+  ASSIGNABLE_GROUP_ROLES,
+  DEFAULT_GROUP_ROLE,
+  GroupRole,
+  canAssignRole,
+  canInvite,
+  canManage,
+  canTransferLeadership,
+  groupRoleLabelKey,
+} from '../../models/group-role';
+import {
   GROUP_COLOR_HEX,
   GROUP_COLORS,
   GroupColor,
@@ -40,18 +50,80 @@ export class GroupWorkspaceModal {
   readonly closed = output<void>();
 
   protected readonly activeTab = signal<WorkspaceTab>('tasks');
-  protected readonly isOwner = computed(
-    () => this.store.activeGroup()?.ownerId === this.authStore.user()?.id,
-  );
   protected readonly updatingRoleUserId = signal<string | null>(null);
+  protected readonly transferringUserId = signal<string | null>(null);
 
   protected readonly currentUserId = computed(() => this.authStore.user()?.id ?? null);
-  protected readonly currentRole = computed(
-    () => this.store.members().find((m) => m.userId === this.currentUserId())?.role ?? null,
+
+  /**
+   * Vai trò của người đang xem.
+   *
+   * `ownerId` của nhóm được ưu tiên hơn hàng trong danh sách thành viên: nếu
+   * hai chỗ lệch nhau thì giao diện vẫn khớp với thứ bậc mà backend dùng để
+   * kiểm tra quyền, thay vì hiện nút rồi bị API từ chối.
+   */
+  protected readonly currentRole = computed<GroupRole | null>(() => {
+    const userId = this.currentUserId();
+    if (!userId) return null;
+    if (this.store.activeGroup()?.ownerId === userId) return GroupRole.LEADER;
+    return this.store.members().find((m) => m.userId === userId)?.role ?? null;
+  });
+
+  protected readonly isLeader = computed(() => this.currentRole() === GroupRole.LEADER);
+  protected readonly canInviteMembers = computed(() => canInvite(this.currentRole()));
+  protected readonly canTransfer = computed(() => canTransferLeadership(this.currentRole()));
+
+  /** Có hiện cột thao tác trong danh sách thành viên không. Thành viên thường
+   *  không quản lý được ai nên cả cột bị ẩn. */
+  protected readonly canManageAnyone = computed(() =>
+    canManage(this.currentRole(), GroupRole.MEMBER),
   );
-  protected readonly canModerateChat = computed(
-    () => this.currentRole() === 'owner' || this.currentRole() === 'admin',
+
+  protected readonly canModerateChat = computed(() => canInvite(this.currentRole()));
+
+  /** Vai trò chọn được — luôn là ADMIN/MEMBER, và lọc thêm theo cấp người dùng. */
+  protected readonly assignableRoles = computed(() =>
+    ASSIGNABLE_GROUP_ROLES.filter((r) => canAssignRole(this.currentRole(), r)),
   );
+
+  protected roleLabel(role: GroupRole): string {
+    return this.i18n.t(groupRoleLabelKey(role));
+  }
+
+  protected roleHint(role: GroupRole): string {
+    return this.i18n.t(`groupRole.${role.toLowerCase()}Hint`);
+  }
+
+  /** `m` có nằm dưới quyền của người đang xem không. */
+  protected canManageMember(m: GroupMember): boolean {
+    if (m.userId === this.currentUserId()) return false;
+    return canManage(this.currentRole(), m.role);
+  }
+
+  /** Chuyển quyền chỉ dành cho trưởng nhóm, và chỉ nhắm vào người khác. */
+  protected canTransferTo(m: GroupMember): boolean {
+    return this.canTransfer() && m.role !== GroupRole.LEADER;
+  }
+
+  /**
+   * Bảng "được phép / không thể" hiện dưới ô chọn vai trò.
+   *
+   * Đọc từ i18n theo khoá dựng từ chính vai trò, nên thêm ngôn ngữ chỉ cần
+   * thêm bản dịch — không phải sửa component.
+   */
+  protected readonly rolePermissions = computed(() => {
+    const role = this.inviteRole();
+    const key = role.toLowerCase();
+    const list = (kind: string, count: number) =>
+      Array.from({ length: count }, (_, i) =>
+        this.i18n.t(`groupRole.${key}.${kind}${i + 1}`),
+      );
+    return {
+      title: this.i18n.t('groupRole.permTitle', { role: this.roleLabel(role) }),
+      can: list('can', 4),
+      cannot: list('cannot', 3),
+    };
+  });
 
   protected readonly todoTasks = computed(() => this.store.tasks().filter((t) => t.status === 'todo'));
   protected readonly inProgressTasks = computed(() =>
@@ -62,7 +134,7 @@ export class GroupWorkspaceModal {
   // Member invite form
   private static readonly EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   protected readonly inviteEmail = signal('');
-  protected readonly inviteRole = signal<'admin' | 'member' | 'guest'>('member');
+  protected readonly inviteRole = signal<GroupRole>(DEFAULT_GROUP_ROLE);
   protected readonly inviting = signal(false);
   protected readonly inviteError = signal<string | null>(null);
   protected readonly inviteSuccess = signal<string | null>(null);
@@ -272,9 +344,17 @@ export class GroupWorkspaceModal {
     }
   }
 
-  async changeRole(member: GroupMember, role: 'admin' | 'member' | 'guest'): Promise<void> {
+  async changeRole(member: GroupMember, role: GroupRole): Promise<void> {
     const group = this.store.activeGroup();
     if (!group || this.updatingRoleUserId()) return;
+
+    // Kiểm lại ngay trước khi gọi API. Backend vẫn là chốt chặn thật, nhưng
+    // chặn ở đây tránh việc người dùng thấy lỗi đỏ cho một thao tác mà giao
+    // diện lẽ ra không cho phép.
+    if (!this.canManageMember(member) || !canAssignRole(this.currentRole(), role)) {
+      alert(this.i18n.t('group.noManagePermission'));
+      return;
+    }
 
     this.updatingRoleUserId.set(member.userId);
     try {
@@ -289,8 +369,36 @@ export class GroupWorkspaceModal {
   async removeMember(member: GroupMember): Promise<void> {
     const group = this.store.activeGroup();
     if (!group) return;
+
+    if (member.role === GroupRole.LEADER) {
+      alert(this.i18n.t('group.leaderCannotBeRemoved'));
+      return;
+    }
+    if (!this.canManageMember(member)) {
+      alert(this.i18n.t('group.noManagePermission'));
+      return;
+    }
+
     if (confirm(this.i18n.t('group.removeMemberConfirm', { member: member.email || member.userId }))) {
       await this.store.removeMember(group.id, member.userId);
+    }
+  }
+
+  async transferLeadership(member: GroupMember): Promise<void> {
+    const group = this.store.activeGroup();
+    if (!group || this.transferringUserId()) return;
+    if (!this.canTransferTo(member)) return;
+
+    const name = member.email || member.userId;
+    if (!confirm(this.i18n.t('group.transferConfirm', { member: name }))) return;
+
+    this.transferringUserId.set(member.userId);
+    try {
+      await this.store.transferLeadership(group.id, member.userId);
+    } catch (err: any) {
+      alert(err?.error?.message || this.i18n.t('group.transferError'));
+    } finally {
+      this.transferringUserId.set(null);
     }
   }
 

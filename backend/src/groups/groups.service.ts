@@ -18,6 +18,15 @@ import { UpdateGroupTaskDto } from './dto/update-group-task.dto';
 import { SendGroupMessageDto } from './dto/send-group-message.dto';
 import { UpdateGroupMessageDto } from './dto/update-group-message.dto';
 import { RespondGroupInviteDto } from './dto/respond-group-invite.dto';
+import {
+  DEFAULT_GROUP_ROLE,
+  GroupRole,
+  canAssignRole,
+  canInvite,
+  canManage,
+  normalizeGroupRole,
+  toDbGroupRole,
+} from './group-role';
 
 export interface GroupInviteDto {
   id: string;
@@ -169,6 +178,80 @@ export class GroupsService {
       createdAt: row.created_at,
       hidden,
     };
+  }
+
+  /**
+   * Vai trò hiệu lực của một người trong nhóm.
+   *
+   * `groups.owner_id` là nguồn xác định trưởng nhóm; hàng trong
+   * `group_members` chỉ là bản sao. Ưu tiên owner_id để nếu hai chỗ lệch nhau
+   * thì mọi đường kiểm tra quyền vẫn ra cùng một kết quả.
+   *
+   * Trả về `null` khi người này không ở trong nhóm.
+   */
+  private async getEffectiveRole(
+    supabase: SupabaseClient,
+    groupId: string,
+    userId: string,
+  ): Promise<GroupRole | null> {
+    const { data: group, error } = await supabase
+      .from('groups')
+      .select('owner_id')
+      .eq('id', groupId)
+      .maybeSingle<{ owner_id: string }>();
+
+    if (error || !group) throw new NotFoundException('Không tìm thấy nhóm');
+    if (group.owner_id === userId) return GroupRole.LEADER;
+
+    const { data: member } = await supabase
+      .from('group_members')
+      .select('role')
+      .eq('group_id', groupId)
+      .eq('user_id', userId)
+      .maybeSingle<{ role: string }>();
+
+    return member ? normalizeGroupRole(member.role) : null;
+  }
+
+  /** Vai trò của người đang gọi API, ném lỗi nếu họ không thuộc nhóm. */
+  private async requireRole(
+    supabase: SupabaseClient,
+    user: User,
+    groupId: string,
+  ): Promise<GroupRole> {
+    const role = await this.getEffectiveRole(supabase, groupId, user.id);
+    if (!role) throw new ForbiddenException('Bạn không thuộc nhóm này');
+    return role;
+  }
+
+  /**
+   * Chốt chặn thứ bậc cho mọi thao tác lên một thành viên khác.
+   *
+   * Đây là nơi DUY NHẤT quyết định "ai quản lý được ai", để giao diện và API
+   * không thể lệch nhau. Trước đây removeMember không kiểm tra gì cả — ẩn nút
+   * trên UI nhưng gọi thẳng API thì vẫn xoá được cả trưởng nhóm.
+   */
+  private async assertCanManageMember(
+    supabase: SupabaseClient,
+    actor: User,
+    groupId: string,
+    targetUserId: string,
+  ): Promise<{ actorRole: GroupRole; targetRole: GroupRole }> {
+    const actorRole = await this.requireRole(supabase, actor, groupId);
+    const targetRole = await this.getEffectiveRole(supabase, groupId, targetUserId);
+    if (!targetRole) throw new NotFoundException('Người này không ở trong nhóm');
+
+    if (targetRole === GroupRole.LEADER) {
+      throw new ForbiddenException(
+        'Không thể thao tác lên trưởng nhóm. Trưởng nhóm phải chuyển quyền trước.',
+      );
+    }
+    if (!canManage(actorRole, targetRole)) {
+      throw new ForbiddenException(
+        'Bạn không có quyền quản lý thành viên này',
+      );
+    }
+    return { actorRole, targetRole };
   }
 
   private async assertOwner(
@@ -468,15 +551,50 @@ export class GroupsService {
 
     return {
       group: this.mapGroupRow(group),
-      members: (members || []).map((m) => ({
-        id: m.id,
-        groupId: m.group_id,
-        userId: m.user_id,
-        role: m.role,
-        createdAt: m.created_at,
-        email: m.email,
-      })),
+      members: this.mapMemberRows(members, group.owner_id),
     };
+  }
+
+  /** Danh sách thành viên kèm vai trò đã chuẩn hoá. */
+  async getMembers(
+    supabase: SupabaseClient,
+    groupId: string,
+  ): Promise<GroupMemberDto[]> {
+    const { data: group } = await supabase
+      .from('groups')
+      .select('owner_id')
+      .eq('id', groupId)
+      .maybeSingle<{ owner_id: string }>();
+
+    if (!group) throw new NotFoundException('Không tìm thấy nhóm');
+
+    const { data, error } = await supabase.rpc('list_group_members', {
+      p_group_id: groupId,
+    });
+    if (error) throw new InternalServerErrorException(error.message);
+
+    return this.mapMemberRows(data, group.owner_id);
+  }
+
+  /**
+   * Chuyển hàng thô từ DB sang DTO, và ép vai trò về đúng ba khoá ứng dụng.
+   *
+   * `owner_id` được ưu tiên hơn cột role: nếu hai chỗ lệch nhau (dữ liệu cũ,
+   * hoặc migration chưa chạy) thì giao diện vẫn chỉ ra đúng một trưởng nhóm,
+   * khớp với thứ bậc mà backend dùng để kiểm tra quyền.
+   */
+  private mapMemberRows(rows: any[] | null, ownerId: string): GroupMemberDto[] {
+    return (rows || []).map((m) => ({
+      id: m.id,
+      groupId: m.group_id,
+      userId: m.user_id,
+      role:
+        m.user_id === ownerId
+          ? GroupRole.LEADER
+          : normalizeGroupRole(m.role),
+      createdAt: m.created_at,
+      email: m.email,
+    }));
   }
 
   async inviteMember(
@@ -485,6 +603,22 @@ export class GroupsService {
     groupId: string,
     dto: InviteGroupMemberDto,
   ): Promise<GroupInviteDto> {
+    // Trước đây route này không kiểm tra gì: bất kỳ thành viên nào cũng mời
+    // được người khác vào nhóm.
+    const inviterRole = await this.requireRole(supabase, inviter, groupId);
+    if (!canInvite(inviterRole)) {
+      throw new ForbiddenException(
+        'Chỉ trưởng nhóm và quản trị viên mới được mời thành viên',
+      );
+    }
+
+    const role = normalizeGroupRole(dto.role ?? DEFAULT_GROUP_ROLE);
+    if (!canAssignRole(inviterRole, role)) {
+      throw new ForbiddenException(
+        'Bạn không thể mời người khác với vai trò cao hơn hoặc ngang bằng mình',
+      );
+    }
+
     const { data: invitedUserId, error: lookupError } = await supabase.rpc(
       'find_user_id_by_email',
       { p_email: dto.email },
@@ -492,6 +626,10 @@ export class GroupsService {
 
     if (lookupError || !invitedUserId) {
       throw new NotFoundException('Không tìm thấy người dùng với email này');
+    }
+
+    if (invitedUserId === inviter.id) {
+      throw new ConflictException('Bạn đã ở trong nhóm này rồi');
     }
 
     const { data: group } = await supabase
@@ -514,7 +652,7 @@ export class GroupsService {
       throw new ConflictException('Người này đã là thành viên trong nhóm');
     }
 
-    const role = dto.role || 'member';
+
 
     // Tạo LỜI MỜI ở trạng thái pending thay vì thêm thẳng vào nhóm — người được
     // mời tự quyết định Chấp nhận / Từ chối (giống luồng calendar_invites).
@@ -525,7 +663,7 @@ export class GroupsService {
           group_id: groupId,
           invited_user_id: invitedUserId,
           invited_by: inviter.id,
-          role,
+          role: toDbGroupRole(role),
           status: 'pending',
         },
         { onConflict: 'group_id,invited_user_id' },
@@ -555,7 +693,7 @@ export class GroupsService {
       groupId,
       groupName: groupRow?.name ?? 'Nhóm',
       groupColor: groupRow?.color ?? 'blue',
-      role: inviteRow.role,
+      role: normalizeGroupRole(inviteRow.role),
       status: inviteRow.status,
       createdAt: inviteRow.created_at,
       inviterEmail: inviter.email ?? null,
@@ -659,18 +797,26 @@ export class GroupsService {
       .single();
 
     if (groupErr || !group) throw new NotFoundException('Không tìm thấy nhóm');
-    if (group.owner_id !== requester.id) {
+
+    const nextRole = normalizeGroupRole(dto.role);
+    const { actorRole } = await this.assertCanManageMember(
+      supabase,
+      requester,
+      groupId,
+      targetUserId,
+    );
+
+    // Chặn cả việc TỰ NÂNG mình lên và việc nâng người khác lên ngang/cao hơn
+    // mình — nếu không, một quản trị viên có thể tự phong trưởng nhóm.
+    if (!canAssignRole(actorRole, nextRole)) {
       throw new ForbiddenException(
-        'Chỉ chủ nhóm mới có quyền phân quyền thành viên',
+        'Bạn không thể gán vai trò này. Quyền trưởng nhóm chỉ đổi qua chức năng chuyển quyền.',
       );
-    }
-    if (targetUserId === group.owner_id) {
-      throw new ConflictException('Không thể đổi quyền của chủ nhóm');
     }
 
     const { data: updated, error } = await supabase
       .from('group_members')
-      .update({ role: dto.role })
+      .update({ role: toDbGroupRole(nextRole) })
       .eq('group_id', groupId)
       .eq('user_id', targetUserId)
       .select('*')
@@ -686,7 +832,7 @@ export class GroupsService {
     if (group.calendar_id) {
       await supabase
         .from('calendar_members')
-        .update({ role: dto.role === 'admin' ? 'editor' : 'viewer' })
+        .update({ role: nextRole === GroupRole.ADMIN ? 'editor' : 'viewer' })
         .eq('calendar_id', group.calendar_id)
         .eq('user_id', targetUserId);
     }
@@ -695,7 +841,7 @@ export class GroupsService {
       id: updated.id,
       groupId: updated.group_id,
       userId: updated.user_id,
-      role: updated.role,
+      role: normalizeGroupRole(updated.role),
       createdAt: updated.created_at,
     };
 
@@ -711,16 +857,39 @@ export class GroupsService {
     return memberDto;
   }
 
+  /**
+   * Xoá một người khỏi nhóm, hoặc tự rời nhóm.
+   *
+   * Trước đây hàm này KHÔNG nhận người gọi và KHÔNG kiểm tra gì — ẩn nút trên
+   * giao diện nhưng gọi thẳng API thì thành viên thường vẫn xoá được cả trưởng
+   * nhóm.
+   */
   async removeMember(
     supabase: SupabaseClient,
+    actor: User,
     groupId: string,
     userId: string,
   ): Promise<void> {
     const { data: group } = await supabase
       .from('groups')
-      .select('calendar_id')
+      .select('owner_id, calendar_id')
       .eq('id', groupId)
-      .single();
+      .maybeSingle<{ owner_id: string; calendar_id: string | null }>();
+
+    if (!group) throw new NotFoundException('Không tìm thấy nhóm');
+
+    if (userId === actor.id) {
+      // Tự rời nhóm. Trưởng nhóm rời đi mà chưa chuyển quyền sẽ để lại một
+      // nhóm không ai quản lý được, nên phải chặn.
+      if (group.owner_id === actor.id) {
+        throw new ConflictException(
+          'Bạn đang là trưởng nhóm. Hãy chuyển quyền trưởng nhóm cho người khác trước khi rời nhóm.',
+        );
+      }
+      await this.requireRole(supabase, actor, groupId);
+    } else {
+      await this.assertCanManageMember(supabase, actor, groupId, userId);
+    }
 
     await supabase
       .from('group_members')
@@ -728,13 +897,102 @@ export class GroupsService {
       .eq('group_id', groupId)
       .eq('user_id', userId);
 
-    if (group?.calendar_id) {
+    if (group.calendar_id) {
       await supabase
         .from('calendar_members')
         .delete()
         .eq('calendar_id', group.calendar_id)
         .eq('user_id', userId);
     }
+
+    if (group.calendar_id) {
+      this.realtimeGateway.emitToCalendar(group.calendar_id, 'group:memberRemoved', {
+        groupId,
+        userId,
+      });
+    }
+  }
+
+  /**
+   * Chuyển ghế trưởng nhóm sang một thành viên khác.
+   *
+   * Đây là đường DUY NHẤT để đổi trưởng nhóm — cố ý tách khỏi updateMemberRole
+   * để không ai vô tình (hoặc cố ý) tự phong bằng cách gán role LEADER.
+   * Người đang giữ ghế bị hạ xuống quản trị viên chứ không bị đẩy khỏi nhóm.
+   */
+  async transferLeadership(
+    supabase: SupabaseClient,
+    actor: User,
+    groupId: string,
+    targetUserId: string,
+  ): Promise<GroupMemberDto[]> {
+    const { data: group, error: groupErr } = await supabase
+      .from('groups')
+      .select('owner_id, calendar_id')
+      .eq('id', groupId)
+      .maybeSingle<{ owner_id: string; calendar_id: string | null }>();
+
+    if (groupErr || !group) throw new NotFoundException('Không tìm thấy nhóm');
+    if (group.owner_id !== actor.id) {
+      throw new ForbiddenException(
+        'Chỉ trưởng nhóm mới được chuyển quyền trưởng nhóm',
+      );
+    }
+    if (targetUserId === actor.id) {
+      throw new ConflictException('Bạn đã là trưởng nhóm');
+    }
+
+    const targetRole = await this.getEffectiveRole(supabase, groupId, targetUserId);
+    if (!targetRole) {
+      throw new NotFoundException(
+        'Chỉ có thể chuyển quyền cho người đã ở trong nhóm',
+      );
+    }
+
+    // Đổi cột owner_id TRƯỚC: đây là nguồn xác định trưởng nhóm, nên nếu hai
+    // lệnh dưới có hỏng thì nhóm vẫn có đúng một người lãnh đạo, không rơi vào
+    // trạng thái không ai làm chủ.
+    const { error: ownerErr } = await supabase
+      .from('groups')
+      .update({ owner_id: targetUserId })
+      .eq('id', groupId);
+
+    if (ownerErr) {
+      throw new InternalServerErrorException(
+        ownerErr.message || 'Không thể chuyển quyền trưởng nhóm',
+      );
+    }
+
+    await supabase
+      .from('group_members')
+      .update({ role: toDbGroupRole(GroupRole.LEADER) })
+      .eq('group_id', groupId)
+      .eq('user_id', targetUserId);
+
+    await supabase
+      .from('group_members')
+      .update({ role: toDbGroupRole(GroupRole.ADMIN) })
+      .eq('group_id', groupId)
+      .eq('user_id', actor.id);
+
+    if (group.calendar_id) {
+      await supabase
+        .from('calendar_members')
+        .update({ role: 'editor' })
+        .eq('calendar_id', group.calendar_id)
+        .eq('user_id', targetUserId);
+    }
+
+    const members = await this.getMembers(supabase, groupId);
+    if (group.calendar_id) {
+      this.realtimeGateway.emitToCalendar(group.calendar_id, 'group:leadershipTransferred', {
+        groupId,
+        newLeaderId: targetUserId,
+        previousLeaderId: actor.id,
+        members,
+      });
+    }
+    return members;
   }
 
   // Task Management
