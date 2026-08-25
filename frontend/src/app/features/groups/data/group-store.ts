@@ -186,7 +186,8 @@ export class GroupStore {
       const currentUser = this.authStore.user();
       const isFromOther = currentUser && payload.message.senderId !== currentUser.id;
 
-      if (this.isActiveGroup(payload.groupId, payload.message.groupId)) {
+      const targetGroupId = payload.groupId || payload.message.groupId;
+      if (this.isActiveGroup(targetGroupId, payload.message.groupId)) {
         this.messages.update((list) => {
           if (list.some((m) => m.id === payload.message.id)) return list;
           return [...list, payload.message];
@@ -195,8 +196,51 @@ export class GroupStore {
           this.unreadChatCount.update((count) => count + 1);
         }
       }
-      this.notifyIncomingMessage(payload.groupId, payload.message);
+      this.notifyIncomingMessage(targetGroupId, payload.message);
     });
+
+    // Supabase Realtime làm kênh dự phòng trực tiếp từ Cloud CSDL cho môi trường chạy nhiều backend local:
+    // Vì CSDL Supabase là duy nhất, khi bất kỳ máy nào INSERT tin nhắn vào CSDL Supabase,
+    // Supabase Cloud sẽ đẩy sự kiện trực tiếp về cho các client đang mở ở mọi máy.
+    this.supabase
+      .channel('supabase-realtime:group_messages')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'group_messages' },
+        (payload) => {
+          const row = payload.new as any;
+          if (!row || !row.id || !row.group_id) return;
+          const msg: GroupMessage = {
+            id: row.id,
+            groupId: row.group_id,
+            senderId: row.sender_id,
+            message: row.message ?? undefined,
+            createdAt: row.created_at,
+            editedAt: row.edited_at ?? undefined,
+            deletedAt: row.deleted_at ?? undefined,
+            attachmentUrl: row.attachment_url ?? undefined,
+            attachmentName: row.attachment_name ?? undefined,
+            attachmentType: row.attachment_type ?? undefined,
+            attachmentSize: row.attachment_size ?? undefined,
+            senderEmail: row.sender_email,
+            senderName: row.sender_name ?? undefined,
+          };
+          const currentUser = this.authStore.user();
+          const isFromOther = currentUser && msg.senderId !== currentUser.id;
+
+          if (this.isActiveGroup(msg.groupId)) {
+            this.messages.update((list) => {
+              if (list.some((m) => m.id === msg.id)) return list;
+              return [...list, msg];
+            });
+            if (isFromOther && (!this.activeWorkspaceModalOpen() || this.activeWorkspaceTab() !== 'chat')) {
+              this.unreadChatCount.update((count) => count + 1);
+            }
+          }
+          this.notifyIncomingMessage(msg.groupId, msg);
+        },
+      )
+      .subscribe();
 
     this.realtime.on<{ groupId: string; message: GroupMessage }>('group:messageUpdated', (payload) => {
       if (!payload?.message) return;
@@ -320,16 +364,20 @@ export class GroupStore {
     }
   }
 
-  private isActiveGroup(groupId: string, altGroupId?: string): boolean {
+  private isActiveGroup(groupId?: string, altGroupId?: string): boolean {
     const active = this.activeGroup();
     if (!active) return false;
     const g1 = (groupId || '').trim().toLowerCase();
     const g2 = (altGroupId || '').trim().toLowerCase();
     const activeId = (active.id || '').trim().toLowerCase();
     const activeCalId = (active.calendarId || '').trim().toLowerCase();
+
+    if (!g1 && !g2) return true;
+
     return (
       (!!activeId && (g1 === activeId || g2 === activeId)) ||
-      (!!activeCalId && (g1 === activeCalId || g2 === activeCalId))
+      (!!activeCalId && (g1 === activeCalId || g2 === activeCalId)) ||
+      (this.activeWorkspaceModalOpen() && (!g1 || g1 === activeId || g1 === activeCalId))
     );
   }
 

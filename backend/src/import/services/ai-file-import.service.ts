@@ -3,9 +3,20 @@ import { ConfigService } from '@nestjs/config';
 import { AppConfig } from '../../config/configuration';
 import { ParsedImportEvent } from './ics-import.service';
 import * as xlsx from 'xlsx';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require('pdf-parse');
+// pdf-parse v2 KHÔNG còn xuất ra một hàm gọi thẳng như v1 — nó xuất lớp
+// PDFParse. Code cũ gọi pdfParse(buffer) nên ném TypeError với MỌI file PDF,
+// và lỗi đó bị catch bên dưới nuốt thành một câu chung chung.
+import { PDFParse } from 'pdf-parse';
+import { getPath } from 'pdf-parse/worker';
+import { pathToFileURL } from 'url';
 import * as mammoth from 'mammoth';
+
+// Khởi tạo worker path cho pdf-parse v2 tương thích trên môi trường Windows / Node ESM
+try {
+  PDFParse.setWorker(pathToFileURL(getPath()).href);
+} catch (err) {
+  // Bỏ qua nếu worker đã được khởi tạo trước đó
+}
 
 @Injectable()
 export class AiFileImportService {
@@ -26,8 +37,7 @@ export class AiFileImportService {
         }
         return fullText;
       } else if (filename.endsWith('.pdf')) {
-        const pdfData = await pdfParse(file.buffer);
-        return pdfData.text;
+        return await this.extractPdfText(file.buffer);
       } else if (filename.endsWith('.docx') || filename.endsWith('.doc')) {
         const result = await mammoth.extractRawText({ buffer: file.buffer });
         return result.value;
@@ -36,7 +46,27 @@ export class AiFileImportService {
       }
     } catch (err) {
       this.logger.error(`Lỗi đọc file ${file.originalname}:`, err);
-      throw new BadRequestException(`Không thể trích xuất nội dung văn bản từ file ${file.originalname}`);
+      throw new BadRequestException(
+        `Không thể trích xuất nội dung văn bản từ file ${file.originalname}. ` +
+          'File có thể bị hỏng, đặt mật khẩu, hoặc là bản scan chỉ có ảnh chứ không có chữ.',
+      );
+    }
+  }
+
+  /**
+   * Đọc chữ trong file PDF.
+   *
+   * Tách riêng vì phải giải phóng tài nguyên: mỗi lần parse dựng một document
+   * pdf.js giữ buffer và worker, không destroy thì rò rỉ dần qua từng lần
+   * người dùng gửi file.
+   */
+  private async extractPdfText(buffer: Buffer): Promise<string> {
+    const parser = new PDFParse({ data: new Uint8Array(buffer) });
+    try {
+      const result = await parser.getText();
+      return result.text;
+    } finally {
+      await parser.destroy().catch(() => {});
     }
   }
 
