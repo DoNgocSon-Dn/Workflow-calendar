@@ -23,12 +23,16 @@ export class BirthdayPopupService {
    * Tự động trích xuất ngày sinh từ tài khoản Google OAuth / Supabase metadata / LocalStorage
    */
   getUserDob(): string {
+    // 1. Nếu người dùng đã thiết lập hoặc lưu từ trước
+    const local = localStorage.getItem(DOB_STORAGE_KEY);
+    if (local && local.trim()) return local.trim();
+
+    // 2. Trích xuất từ metadata đăng nhập Google / Supabase Auth
     const user = this.authStore.user();
     if (user) {
       const metadata = (user.user_metadata || {}) as Record<string, any>;
       const identityData = (user.identities?.[0]?.identity_data || {}) as Record<string, any>;
 
-      // 1. Thử đọc từ các trường metadata chuẩn của Google & Supabase
       const possibleDob =
         metadata['date_of_birth'] ||
         metadata['birthday'] ||
@@ -41,7 +45,6 @@ export class BirthdayPopupService {
         return possibleDob.trim();
       }
 
-      // 2. Thử đọc từ mảng birthdays của Google People API
       const birthdaysArr = metadata['birthdays'] || identityData['birthdays'];
       if (Array.isArray(birthdaysArr) && birthdaysArr.length > 0) {
         const bDate = birthdaysArr[0]?.date;
@@ -54,7 +57,7 @@ export class BirthdayPopupService {
       }
     }
 
-    return localStorage.getItem(DOB_STORAGE_KEY) || '';
+    return '';
   }
 
   /**
