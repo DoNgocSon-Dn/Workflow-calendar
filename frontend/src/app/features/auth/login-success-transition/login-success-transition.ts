@@ -35,6 +35,10 @@ const T = {
   veilAfterFly: 600,
 } as const;
 
+/** Chờ font tối đa bấy nhiêu rồi bay bất kể. Font hỏng hoặc mạng chết thì
+ *  thà hạ cánh lệch còn hơn treo overlay vĩnh viễn trước mặt người dùng. */
+const FONT_WAIT_MAX_MS = 1200;
+
 type Phase = 'mark' | 'split' | 'word' | 'fly' | 'out';
 
 @Component({
@@ -69,6 +73,8 @@ export class LoginSuccessTransition {
   });
 
   private readonly canFly = signal(false);
+  /** Font chữ đã tải xong chưa — xem giải thích ở constructor. */
+  private readonly fontsReady = signal(false);
   private flown = false;
   private readonly timers: ReturnType<typeof setTimeout>[] = [];
 
@@ -79,9 +85,23 @@ export class LoginSuccessTransition {
       this.at(T.flyEarliest, () => this.canFly.set(true));
     });
 
-    // Bay khi hội đủ hai điều kiện: hết thời gian giữ nhịp VÀ dữ liệu sẵn sàng.
+    /*
+     * Chặng bay đo bề rộng chữ "Workflow" để tính tỉ lệ thu nhỏ. Đo trước khi
+     * web font về thì đo trúng font dự phòng — bề rộng khác hẳn, tỉ lệ sai, và
+     * logo hạ cánh LỆCH khỏi ô header. Đây đúng là loại lỗi lúc có lúc không:
+     * font đã nằm trong cache thì đo đúng, lần đầu vào trang thì đo sai.
+     */
+    const markFontsReady = (): void => this.fontsReady.set(true);
+    if (typeof document !== 'undefined' && 'fonts' in document) {
+      void document.fonts.ready.then(markFontsReady, markFontsReady);
+      this.at(FONT_WAIT_MAX_MS, markFontsReady);
+    } else {
+      markFontsReady();
+    }
+
+    // Bay khi hội đủ BA điều kiện: hết nhịp giữ, dữ liệu sẵn sàng, font đã về.
     effect(() => {
-      if (this.canFly() && this.ready() && !this.flown) {
+      if (this.canFly() && this.ready() && this.fontsReady() && !this.flown) {
         this.startFly();
       }
     });

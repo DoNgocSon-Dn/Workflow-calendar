@@ -29,6 +29,11 @@
 .bl-icon {
   display: inline-flex;
   flex: none;
+  /* Ô lịch bị overflow cắt trong lúc width chạy 0 -> 1.2em. Mặc định flex neo
+     con về BÊN TRÁI, nên icon lộ dần từ trái sang và số ngày (nằm giữa SVG)
+     chui ra từ mép cắt rồi trượt vào chỗ — nhìn thành số văng ra góc. Căn
+     giữa thì icon mở đối xứng ra hai bên, số nằm yên ngay từ đầu. */
+  justify-content: center;
   overflow: hidden;
   /* em chứ không px: header dùng font 1.35rem, login dùng 15px — icon phải
      co theo cỡ chữ thì hai nơi mới cân. */
@@ -183,10 +188,27 @@
   transition-delay: 0.18s;
 }
 
+/* Mờ dần cùng lúc mở: chỉ riêng cắt theo bề rộng sẽ để lộ một lát ô lịch
+   cụt ở khung hình đầu. */
+.bl:not([data-phase='idle']) .bl-icon svg {
+  transition: opacity 0.34s ease;
+}
+
+.bl[data-phase='mark'] .bl-icon svg,
+.bl[data-phase='split'] .bl-icon svg {
+  opacity: 0;
+}
+
+.bl[data-phase='word'] .bl-icon svg {
+  opacity: 1;
+  transition-delay: 0.18s;
+}
+
 /* ─────────── Giảm chuyển động ─────────── */
 
 @media (prefers-reduced-motion: reduce) {
   .bl-icon,
+  .bl-icon svg,
   .bl-l,
   .bl-g {
     transition: none !important;
