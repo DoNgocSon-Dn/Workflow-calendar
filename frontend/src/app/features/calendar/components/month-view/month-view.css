@@ -80,6 +80,8 @@
 }
 
 .day-number-header {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -88,6 +90,19 @@
 
 .day-cell.holiday {
   background: var(--holiday-surface-tint);
+}
+
+/* Ảnh của lễ đang active cho riêng NGÀY này (không phải cả tháng) — mờ nhẹ,
+   nằm sau nội dung ô. pointer-events tắt để không chặn kéo-chọn/click. */
+.day-cell__bg-image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(10px) saturate(1.15);
+  opacity: 0.35;
+  pointer-events: none;
 }
 
 /* Nhãn ngày lễ là phần tử DUY NHẤT trong hàng đầu ô được phép co lại: số ngày
@@ -157,6 +172,8 @@
 }
 
 .chip-list {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 3px;

@@ -28,7 +28,7 @@ const DEPARTURE_EASE = 'cubic-bezier(0.45, 0, 0.7, 0.35)';
 /** Mọi thứ animation có ghi inline style lên. Gom lại một chỗ để lúc khôi
  *  phục còn biết đường xoá cho đúng và cho đủ. */
 const ANIMATED_SELECTORS =
-  '.auth-card, .auth-footer, .auth-card .sub, .auth-card h1, .auth-kicker,' +
+  '.auth-card, .auth-card .sub, .auth-card h1, .auth-kicker,' +
   ' .btn-oauth, .login-nav, .auth-halo, .orb, .orb--offset, .orbit-motif,' +
   ' .grid-ring, .particle, .card-ignition';
 
@@ -248,7 +248,7 @@ export class LoginPage implements OnInit, AfterViewInit {
 
     // Lớp 4-6: nội dung lắp vào sau khi thẻ đã đứng yên
     tl.to(
-      [q('.auth-kicker'), q('.auth-card h1'), q('.auth-card .sub'), q('.btn-oauth'), q('.auth-footer')],
+      [q('.auth-kicker'), q('.auth-card h1'), q('.auth-card .sub'), q('.btn-oauth')],
       {
         opacity: 1,
         y: 0,
@@ -352,8 +352,8 @@ export class LoginPage implements OnInit, AfterViewInit {
       }, 0.21);
 
       // Chữ bị giải phóng khỏi thẻ trong lúc thẻ đang lao tới.
-      tl.to([q('.auth-footer'), q('.auth-card .sub')], {
-        opacity: 0, y: 12, duration: 0.14, stagger: 0.03, ease: 'power2.in',
+      tl.to(q('.auth-card .sub'), {
+        opacity: 0, y: 12, duration: 0.14, ease: 'power2.in',
       }, 0.24)
         .to(q('.auth-card h1'), {
           opacity: 0, scale: 0.92, filter: 'blur(4px)', duration: 0.16, ease: 'power2.in',
@@ -421,7 +421,7 @@ export class LoginPage implements OnInit, AfterViewInit {
 
     gsap.to(
       host.querySelectorAll(
-        '.auth-card, .auth-footer, .auth-card .sub, .auth-card h1, .auth-kicker,' +
+        '.auth-card, .auth-card .sub, .auth-card h1, .auth-kicker,' +
           ' .btn-oauth, .login-nav, .auth-halo, .orb, .orb--offset, .orbit-motif,' +
           ' .grid-ring, .particle',
       ),

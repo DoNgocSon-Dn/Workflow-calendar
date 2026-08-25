@@ -31,24 +31,6 @@
   background: var(--color-bg);
 }
 
-/* Watermark lễ đang active — icon phóng to, rất mờ, nằm SAU lưới lịch (vẫn
-   đọc được nội dung xuyên qua). z-index thấp hơn view content bên dưới,
-   pointer-events tắt để không chặn kéo-chọn/click trên lịch. */
-.holiday-watermark {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: min(28vw, 22rem);
-  line-height: 1;
-  opacity: 0.05;
-  pointer-events: none;
-  user-select: none;
-  overflow: hidden;
-}
-
 .view-area > app-month-view,
 .view-area > app-time-grid-view,
 .view-area > app-agenda-view {

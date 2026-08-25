@@ -14,6 +14,11 @@
         aria-live="polite"
         [attr.aria-label]="title()"
       >
+        @if (theme().backgroundImage; as bgImage) {
+          <div class="holiday-popup__bg-image" [style.background-image]="'url(' + bgImage + ')'" aria-hidden="true"></div>
+          <div class="holiday-popup__bg-scrim" aria-hidden="true"></div>
+        }
+
         <button type="button" class="holiday-popup__close" (click)="close()" [attr.aria-label]="i18n.t('holiday.closeNotification')">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
             <line x1="5" y1="5" x2="19" y2="19" />

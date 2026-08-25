@@ -71,6 +71,7 @@
    so decorations never overlap the text below. */
 .holiday-popup__stage {
   position: relative;
+  z-index: 1;
   height: 320px;
   overflow: hidden;
   background: transparent;
@@ -174,6 +175,31 @@
     opacity: 1;
     transform: scale(1.15);
   }
+}
+
+/* Optional per-holiday photo, blurred and dimmed behind everything else.
+   Oversized + inset negative so the blur never shows a sharp edge inside the
+   popup's rounded corners (which clip it via .holiday-popup's overflow: hidden). */
+.holiday-popup__bg-image {
+  position: absolute;
+  inset: -24px;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(8px) saturate(1.15) brightness(0.92);
+  transform: scale(1.08);
+}
+
+/* Tints the photo toward the holiday's own background color and darkens the
+   lower half so title/subtitle stay readable regardless of the photo. Kept
+   light at the top (stage) so the photo's own color reads clearly instead of
+   washing out toward --holiday-bg; still opaque enough at the bottom for
+   title/subtitle contrast. */
+.holiday-popup__bg-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(180deg, transparent 0%, transparent 55%, var(--holiday-bg) 92%);
 }
 
 .holiday-popup__close {

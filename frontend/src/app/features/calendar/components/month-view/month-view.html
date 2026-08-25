@@ -22,6 +22,10 @@
         (dragover)="onDragOver($event)"
         (drop)="onDrop($event, day)"
       >
+        @if (holiday?.theme?.backgroundImage; as bgImage) {
+          <div class="day-cell__bg-image" [style.background-image]="'url(' + bgImage + ')'" aria-hidden="true"></div>
+        }
+
         <div class="day-number-header">
           <span class="day-number" [class.today]="isToday(day)">{{ day.getDate() }}</span>
           @if (holiday; as h) {

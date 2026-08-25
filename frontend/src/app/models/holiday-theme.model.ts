@@ -102,7 +102,9 @@ export interface HolidayComposition {
 }
 
 export interface HolidayTheme {
-  /** CSS `background` value (solid color or gradient) for the content area. */
+  /** CSS `background` value (solid color or gradient) for the content area.
+   *  Still used as the base color behind `backgroundImage` (visible while it
+   *  loads, and through its scrim) and as the only background when omitted. */
   readonly background: string;
   /** Accent color used for the focal shape and small highlights. */
   readonly accent: string;
@@ -110,6 +112,11 @@ export interface HolidayTheme {
   readonly subtitleColor: string;
   readonly composition: HolidayComposition;
   readonly decoration: HolidayDecoration;
+  /** Optional photo shown blurred behind the popup content (path under
+   *  `public/`, e.g. `/assets/holidays/tet-nguyen-dan.jpg`). Missing file =
+   *  broken `background-image` = silently falls back to `background`, so
+   *  it's safe to set before the file exists. */
+  readonly backgroundImage?: string;
 }
 
 /** Optional badge shown under the motif. */
@@ -149,8 +156,6 @@ export interface Holiday {
   /** Falls back to `DEFAULT_HOLIDAY_THEME` when omitted. */
   readonly theme?: HolidayTheme;
   readonly content: HolidayContent;
-  /** Short emoji shown in calendar-grid badges (month/week/mini-calendar). */
-  readonly icon?: string;
   /** Nghỉ lễ chính thức — surfaced on the read-only "Ngày lễ ở Việt Nam"
    *  reference calendar and the ⭐ badge in agenda-view (spec §29). */
   readonly officialHoliday?: boolean;
