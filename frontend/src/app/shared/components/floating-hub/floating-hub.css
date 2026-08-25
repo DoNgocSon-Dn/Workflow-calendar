@@ -405,6 +405,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  overscroll-behavior: contain;
 }
 
 .messages > * {
@@ -414,7 +415,7 @@
 .composer-area {
   position: absolute;
   left: 0;
-  right: 0;
+  right: 6px;
   bottom: 0;
   z-index: 10;
   pointer-events: none;
@@ -430,6 +431,14 @@
 }
 
 .composer-area > * {
+  pointer-events: none;
+}
+
+.composer-area .text-input,
+.composer-area .primary-btn,
+.composer-area .attach-btn,
+.composer-area .attachment-chip__remove,
+.composer-area .field-error {
   pointer-events: auto;
 }
 
