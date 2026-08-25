@@ -378,7 +378,7 @@ export class CalendarStore {
     });
   }
 
-  private async loadAll(): Promise<void> {
+  async loadAll(): Promise<void> {
     this.calendarsLoading.set(true);
     try {
       const [calendars, events] = await Promise.all([
@@ -414,6 +414,7 @@ export class CalendarStore {
     }
 
     void this.refreshPendingInvites();
+    void this.groupStore.loadGroups();
     void this.loadTodosState();
 
     this.realtime.connect();
@@ -898,6 +899,8 @@ export class CalendarStore {
     const result = await firstValueFrom(
       this.http.post<AttendeeApiDto>(`${this.apiUrl}/events/${eventId}/respond`, { status }),
     );
+    this.notifications.respond(`event-invite-${eventId}`, status);
+    await this.refreshEvents();
     return toAttendee(result);
   }
 
@@ -905,9 +908,22 @@ export class CalendarStore {
     const result = await firstValueFrom(
       this.http.get<CalendarInviteApiDto[]>(`${this.apiUrl}/calendars/invites/mine`),
     );
-    this.pendingInvites.set(
-      result.filter((dto) => dto.status === 'pending').map(toCalendarInvite),
-    );
+    const pendingList = result
+      .filter((dto) => dto.status === 'pending')
+      .map(toCalendarInvite);
+    this.pendingInvites.set(pendingList);
+
+    for (const invite of pendingList) {
+      this.notifications.ingest(
+        calendarInvitationDraft({
+          inviteId: invite.id,
+          calendarId: invite.calendarId,
+          calendarName: invite.calendarName,
+          inviterEmail: invite.inviterEmail ?? null,
+          createdAt: invite.createdAt.toISOString(),
+        }),
+      );
+    }
   }
 
   async inviteToCalendar(
@@ -936,18 +952,10 @@ export class CalendarStore {
     );
     const invite = toCalendarInvite(result);
     this.pendingInvites.update((list) => list.filter((i) => i.id !== inviteId));
+    this.notifications.respond(`calendar-invite-${inviteId}`, status);
 
     if (status === 'accepted') {
-      const alreadyKnown = this.calendars().some((c) => c.id === invite.calendarId);
-      if (!alreadyKnown) {
-        this.calendars.update((list) => [
-          ...list,
-          { id: invite.calendarId, name: invite.calendarName, color: invite.calendarColor },
-        ]);
-      }
-      this.visibleCalendarIds.update((set) => new Set([...set, invite.calendarId]));
-      this.realtime.joinCalendar(invite.calendarId);
-      await this.refreshEvents();
+      await this.loadAll();
     }
 
     return invite;

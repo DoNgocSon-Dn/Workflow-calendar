@@ -289,6 +289,7 @@ export function calendarInvitationDraft(input: CalendarInviteDraftInput): Notifi
     sender: input.inviterEmail ? { name: input.inviterEmail, email: input.inviterEmail } : undefined,
     relatedId: input.calendarId,
     actionStatus: 'pending',
+    metadata: { inviteId: input.inviteId },
   };
 }
 

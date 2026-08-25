@@ -58,6 +58,8 @@ export class GroupStore {
   /** Đặt bởi các luồng mở workspace từ bên ngoài (ví dụ click thông báo tin
    *  nhắn) để yêu cầu modal mở đúng tab thay vì tab mặc định. */
   readonly requestedWorkspaceTab = signal<WorkspaceTabRequest | null>(null);
+  readonly activeWorkspaceTab = signal<WorkspaceTabRequest>('tasks');
+  readonly unreadChatCount = signal<number>(0);
   /** Tin nhắn cần cuộn tới sau khi mở tab Trò chuyện. */
   readonly pendingChatMessageId = signal<string | null>(null);
 
@@ -115,7 +117,22 @@ export class GroupStore {
     if (!this.authStore.session()) return;
     try {
       const invites = await this.api.getMyInvites();
-      this.pendingInvites.set(invites.filter((i) => i.status === 'pending'));
+      const pendingList = invites.filter((i) => i.status === 'pending');
+      this.pendingInvites.set(pendingList);
+
+      for (const inv of pendingList) {
+        this.notifications.ingest(
+          groupInvitationDraft({
+            inviteId: inv.id,
+            groupId: inv.groupId,
+            groupName: inv.groupName,
+            inviterEmail: inv.inviterEmail,
+            role: inv.role,
+            status: inv.status,
+            createdAt: inv.createdAt,
+          }),
+        );
+      }
     } catch (err) {
       console.error('Không tải được lời mời nhóm:', err);
     }
@@ -164,11 +181,17 @@ export class GroupStore {
 
     this.realtime.on<{ groupId: string; message: GroupMessage }>('group:messageSent', (payload) => {
       if (!payload?.message) return;
+      const currentUser = this.authStore.user();
+      const isFromOther = currentUser && payload.message.senderId !== currentUser.id;
+
       if (this.isActiveGroup(payload.groupId, payload.message.groupId)) {
         this.messages.update((list) => {
           if (list.some((m) => m.id === payload.message.id)) return list;
           return [...list, payload.message];
         });
+        if (isFromOther && (!this.activeWorkspaceModalOpen() || this.activeWorkspaceTab() !== 'chat')) {
+          this.unreadChatCount.update((count) => count + 1);
+        }
       }
       this.notifyIncomingMessage(payload.groupId, payload.message);
     });
@@ -445,9 +468,9 @@ export class GroupStore {
   async openGroupChat(groupId: string, messageId?: string): Promise<void> {
     const group = this.groups().find((g) => g.id === groupId);
     if (!group) return;
-    // Đặt trước selectGroup: modal được tạo mới khi workspace mở nên nó phải
-    // đọc được yêu cầu ngay ở lần khởi tạo đầu tiên.
     this.requestedWorkspaceTab.set('chat');
+    this.activeWorkspaceTab.set('chat');
+    this.unreadChatCount.set(0);
     this.pendingChatMessageId.set(messageId ?? null);
     await this.selectGroup(group);
   }
@@ -455,6 +478,12 @@ export class GroupStore {
   async selectGroup(group: Group): Promise<void> {
     this.activeGroup.set(group);
     this.activeWorkspaceModalOpen.set(true);
+    if (this.requestedWorkspaceTab() === 'chat') {
+      this.unreadChatCount.set(0);
+      this.activeWorkspaceTab.set('chat');
+    } else {
+      this.activeWorkspaceTab.set('tasks');
+    }
 
     this.initRealtime();
     this.realtime.joinCalendar(group.id);

@@ -114,7 +114,9 @@
           (click)="setTab('chat')"
         >
           <app-icon class="tab-icon" name="message" /> Trò chuyện
-          <span class="tab-badge">{{ store.messages().length }}</span>
+          @if (store.unreadChatCount() > 0) {
+            <span class="tab-badge">{{ store.unreadChatCount() }}</span>
+          }
         </button>
         <button
           type="button"

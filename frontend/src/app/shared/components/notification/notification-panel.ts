@@ -269,25 +269,32 @@ export class NotificationPanel {
     const notification = this.service.notifications().find((n) => n.id === payload.id);
     const inviteId = notification?.metadata?.['inviteId'];
 
-    // Chưa nối được với lời mời thật ở backend (vd. dữ liệu demo) thì chỉ đổi
-    // trạng thái cục bộ, không giả vờ đã gọi API.
-    if (!inviteId) {
-      this.service.respond(payload.id, payload.status);
-      return;
-    }
-
     this.respondingId.set(payload.id);
     this.respondError.set(null);
     try {
-      await this.groupStore.respondToInvite(inviteId, payload.status);
+      if (notification?.type === 'group_invitation') {
+        if (inviteId) {
+          await this.groupStore.respondToInvite(inviteId, payload.status);
+          if (payload.status === 'accepted') {
+            await this.calendarStore.loadAll();
+          }
+        } else {
+          this.service.respond(payload.id, payload.status);
+        }
+      } else if (payload.id.startsWith('calendar-invite-') || (notification?.type === 'event_invitation' && inviteId)) {
+        const targetId = inviteId || payload.id.replace('calendar-invite-', '');
+        await this.calendarStore.respondToCalendarInvite(targetId, payload.status);
+      } else if (payload.id.startsWith('event-invite-') || (notification?.type === 'event_invitation' && notification?.relatedId)) {
+        const eventId = notification?.relatedId || payload.id.replace('event-invite-', '');
+        await this.calendarStore.respondToInvite(eventId, payload.status);
+      } else {
+        this.service.respond(payload.id, payload.status);
+      }
     } catch (err) {
-      // 404 nghĩa là lời mời không còn tồn tại ở backend (đã bị xử lý/rút lại
-      // từ nơi khác, hoặc là thông báo cũ sống sót qua localStorage) — xoá
-      // thẳng thông báo, không có gì để "thử lại" cả.
       if (err instanceof HttpErrorResponse && err.status === 404) {
         this.service.remove(payload.id);
       } else {
-        console.error('[notification-panel] respond lời mời nhóm thất bại:', err);
+        console.error('[notification-panel] respond lời mời thất bại:', err);
         this.respondError.set(this.i18n.t('notif.respondError'));
       }
     } finally {

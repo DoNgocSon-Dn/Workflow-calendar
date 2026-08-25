@@ -166,6 +166,10 @@ export class GroupWorkspaceModal {
 
   setTab(tab: WorkspaceTab): void {
     this.activeTab.set(tab);
+    this.store.activeWorkspaceTab.set(tab);
+    if (tab === 'chat') {
+      this.store.unreadChatCount.set(0);
+    }
   }
 
   startEditGroup(): void {
