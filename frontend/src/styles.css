@@ -136,11 +136,10 @@
   --color-live: #f472b6;
   --color-success: #22c55e;
 
-  --color-role-owner: #a78bfa;
-  --color-role-admin: #60a5fa;
-  /* Không đổi theo dark — xem ghi chú ở :root, cùng giá trị #0f766e. */
-  --color-role-member: #0f766e;
-  --color-role-guest: #fcd34d;
+  --color-role-owner: #8b5cf6;
+  --color-role-admin: #3b82f6;
+  --color-role-member: #10b981;
+  --color-role-guest: #ea580c;
 
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
   --shadow-sm-hover: 0 4px 16px rgba(0, 0, 0, 0.5);

@@ -53,6 +53,10 @@ create policy group_members_update on public.group_members
 -- group_messages_all cũ dùng is_group_member cho mọi thao tác); tách INSERT
 -- riêng ra để thêm điều kiện cấp bậc, và giữ UPDATE/DELETE/SELECT như cũ.
 drop policy if exists group_messages_all on public.group_messages;
+drop policy if exists group_messages_select on public.group_messages;
+drop policy if exists group_messages_insert on public.group_messages;
+drop policy if exists group_messages_update on public.group_messages;
+drop policy if exists group_messages_delete on public.group_messages;
 
 create policy group_messages_select on public.group_messages
   for select using (public.is_group_member(group_id, auth.uid()));

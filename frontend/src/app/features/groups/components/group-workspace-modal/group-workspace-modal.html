@@ -484,27 +484,31 @@
                     }
 
                     <!-- Thành viên thường không quản lý được ai nên cả cụm nút
-                         này không tồn tại với họ. -->
+                         này không tồn tại với họ. Icon-only thay vì nút chữ dài
+                         để mọi hàng cùng độ rộng, không tạo cảm giác rối mắt. -->
                     @if (canManageMember(m) || canTransferTo(m)) {
                       <div class="member-actions">
                         @if (canTransferTo(m)) {
                           <button
                             type="button"
-                            class="btn-ghost-sm"
+                            class="icon-btn-sm"
                             [disabled]="transferringUserId() === m.userId"
+                            [attr.aria-label]="i18n.t('group.transferLeadership')"
                             [title]="i18n.t('group.transferLeadership')"
                             (click)="transferLeadership(m)"
                           >
-                            {{ i18n.t('group.transferLeadership') }}
+                            <app-icon name="star" />
                           </button>
                         }
                         @if (canManageMember(m)) {
                           <button
                             type="button"
-                            class="btn-danger-sm"
+                            class="icon-btn-sm icon-btn-sm--danger"
+                            [attr.aria-label]="i18n.t('common.delete')"
+                            [title]="i18n.t('common.delete')"
                             (click)="removeMember(m)"
                           >
-                            {{ i18n.t('common.delete') }}
+                            <app-icon name="trash" />
                           </button>
                         }
                       </div>
