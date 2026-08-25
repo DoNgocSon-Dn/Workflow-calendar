@@ -7,6 +7,14 @@
         <text x="12" y="17" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">
           {{ dayNumber() }}
         </text>
+      } @else {
+        <!-- Không có ngày để hiển thị (trang đăng nhập) thì mặt lịch mang chữ W.
+             Vẽ bằng path chứ không dùng <text>: <text> phải chờ font tải xong nên
+             sẽ thấy chữ nhảy cỡ, mà logo thì nằm ngay khung hình đầu tiên. -->
+        <path
+          d="M7.6 11 9 16.8h1.6l1.4-3.6 1.4 3.6h1.6l1.4-5.8h-1.6l-.8 3.6-1.3-3.6h-1.4l-1.3 3.6-.8-3.6z"
+          fill="#fff"
+        />
       }
     </svg>
   </span>

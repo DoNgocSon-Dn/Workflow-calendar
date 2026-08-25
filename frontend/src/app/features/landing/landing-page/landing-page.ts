@@ -40,6 +40,27 @@ export class LandingPage implements OnInit, AfterViewInit {
   /** Menu điều hướng trên mobile (<=860px). */
   protected readonly mobileMenuOpen = signal(false);
 
+  /** Id của section đang chiếm phần trên khung nhìn. Null khi đang ở hero. */
+  protected readonly activeSection = signal<string | null>(null);
+
+  /**
+   * Ánh xạ mục nav sang các section thuộc về nó, theo đúng thứ tự trên trang.
+   *
+   * "Tính năng" trải ra HAI section: #features chỉ là đoạn dẫn ngắn, còn nội
+   * dung thật là #scrolly (cao 640svh, phần trình diễn 4 chức năng). Nếu chỉ
+   * theo dõi #features thì cuộn qua khỏi đoạn dẫn là nav tắt sáng suốt cả
+   * phần trình diễn.
+   */
+  private static readonly SPY_MAP: ReadonlyArray<{
+    readonly nav: string;
+    readonly sections: readonly string[];
+  }> = [
+    { nav: 'features', sections: ['features', 'scrolly'] },
+    { nav: 'showcase', sections: ['showcase'] },
+    { nav: 'process', sections: ['process'] },
+    { nav: 'trust', sections: ['trust'] },
+  ];
+
   /** Bảo đảm finishIntro() chỉ chạy một lần dù bị gọi từ mấy nguồn. */
   private introDone = false;
   private introTimeline: gsap.core.Timeline | null = null;
@@ -117,6 +138,10 @@ export class LandingPage implements OnInit, AfterViewInit {
     // trang vẫn đọc được và nút CTA vẫn bấm được.
     container?.classList.add('js-anim');
 
+    // Đặt ngoài zone.runOutsideAngular bên dưới: observer cần cập nhật
+    // signal, mà signal phải chạy trong zone thì template mới vẽ lại.
+    this.initSectionSpy();
+
     this.zone.runOutsideAngular(() => {
       const ctx = gsap.context(() => {
         try {
@@ -141,6 +166,49 @@ export class LandingPage implements OnInit, AfterViewInit {
         this.teardown = [];
       });
     });
+  }
+
+  /**
+   * Làm sáng mục nav ứng với section đang xem.
+   *
+   * Dùng IntersectionObserver thay vì nghe scroll: trình duyệt tự tính giao
+   * cắt ngoài luồng chính, không phải đo getBoundingClientRect mỗi frame.
+   *
+   * rootMargin cắt khung quan sát còn một dải ngang ở phần trên màn hình
+   * (dưới thanh nav, trên giữa màn). Section nào phủ dải đó là section người
+   * dùng đang đọc, chứ không phải section chỉ vừa ló lên từ mép dưới.
+   */
+  private initSectionSpy(): void {
+    const host = this.host.nativeElement as HTMLElement;
+    const targets = LandingPage.SPY_MAP.flatMap((entry) =>
+      entry.sections
+        .map((id) => host.querySelector(`#${id}`))
+        .filter((el): el is Element => el !== null),
+    );
+    if (!targets.length) return;
+
+    const visible = new Set<string>();
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const id = entry.target.id;
+          if (entry.isIntersecting) visible.add(id);
+          else visible.delete(id);
+        }
+        // Nhiều section có thể cùng cắt dải quan sát; lấy mục nav nằm trên
+        // cùng theo thứ tự trang để nó không nhảy qua lại khi cuộn chậm.
+        const top =
+          LandingPage.SPY_MAP.find((entry) =>
+            entry.sections.some((id) => visible.has(id)),
+          )?.nav ?? null;
+        this.activeSection.set(top);
+      },
+      { rootMargin: '-88px 0px -55% 0px', threshold: 0 },
+    );
+
+    targets.forEach((el) => observer.observe(el));
+    this.teardown.push(() => observer.disconnect());
   }
 
   /** Các hàm gỡ listener gắn ngoài phạm vi gsap.context() (window/document).
@@ -708,33 +776,14 @@ export class LandingPage implements OnInit, AfterViewInit {
 
   private initCursorAndInteractiveEffects(): void {
     // Nút bám chuột và thẻ nghiêng 3D đều là chuyển động do con trỏ điều
-    // khiển — đúng loại mà prefers-reduced-motion muốn tắt.
+    // khiển, đúng loại mà prefers-reduced-motion muốn tắt.
     if (!window.matchMedia('(pointer:fine)').matches || this.reducedMotion) return;
 
-    const dot = this.host.nativeElement.querySelector('#cursorDot') as HTMLElement | null;
-    const ring = this.host.nativeElement.querySelector('#cursorRing') as HTMLElement | null;
-    if (!dot || !ring) return;
-
-    // Vòng ngoài đuổi theo trong 0.4s khiến trang có cảm giác lag ngay cả khi
-    // không lag. 0.16s vẫn còn độ trễ mềm nhưng bám sát con trỏ thật.
-    const moveDot = gsap.quickTo(dot, 'x', { duration: 0.1, ease: 'power3.out' });
-    const moveDotY = gsap.quickTo(dot, 'y', { duration: 0.1, ease: 'power3.out' });
-    const moveRing = gsap.quickTo(ring, 'x', { duration: 0.16, ease: 'power3.out' });
-    const moveRingY = gsap.quickTo(ring, 'y', { duration: 0.16, ease: 'power3.out' });
-
-    this.on<MouseEvent>(window, 'mousemove', (e) => {
-      moveDot(e.clientX);
-      moveDotY(e.clientY);
-      moveRing(e.clientX);
-      moveRingY(e.clientY);
-    });
-
-    this.host.nativeElement
-      .querySelectorAll('a, button, .gallery-card, .theme-toggle')
-      .forEach((el: Element) => {
-        el.addEventListener('mouseenter', () => ring.classList.add('hovered'));
-        el.addEventListener('mouseleave', () => ring.classList.remove('hovered'));
-      });
+    // Con trỏ chuột tuỳ biến (chấm + vòng đuổi theo) đã gỡ: nó che con trỏ
+    // thật của hệ thống nên người dùng mất tín hiệu hình dạng con trỏ (I-beam
+    // trên chữ, bàn tay trên link), và chạy một cặp tween theo mọi lần
+    // mousemove là chi phí thường trực cho một thứ thuần trang trí.
+    // Ba hiệu ứng bên dưới KHÔNG liên quan tới nó và vẫn giữ nguyên.
 
     this.host.nativeElement.querySelectorAll('.btn-primary, .btn-ghost, .nav-cta').forEach((btn: Element) => {
       btn.addEventListener('mousemove', (e: Event) => {

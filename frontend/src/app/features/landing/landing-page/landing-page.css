@@ -10,6 +10,11 @@
   --ink: #f6f5f1;
   --ink-dim: #9ca3af;
   --accent: #2563eb;
+  /* Biến thể ĐỌC ĐƯỢC của accent. Chính #2563eb trên nền tối chỉ đạt
+     tương phản 3.92:1, dưới ngưỡng WCAG AA (4.5) cho chữ thường — mọi nhãn
+     nhỏ màu xanh vì thế đọc ra mờ và mảnh. #60a5fa đạt 7.96:1.
+     Nền và viền vẫn dùng --accent; chỉ CHỮ mới dùng biến này. */
+  --accent-text: #60a5fa;
   --accent-ink: #ffffff;
   --accent-dim: rgba(37, 99, 235, 0.2);
   --line: rgba(246, 245, 241, 0.13);
@@ -26,6 +31,8 @@
   --ink: #0f172a;
   --ink-dim: #475569;
   --accent: #2563eb;
+  /* Nền sáng thì chính #2563eb đã đạt 5.17:1, không cần đổi. */
+  --accent-text: #2563eb;
   --accent-ink: #ffffff;
   --accent-dim: rgba(37, 99, 235, 0.1);
   --line: rgba(15, 23, 42, 0.12);
@@ -186,6 +193,47 @@ h1, h2, h3, h4, h5,
 
 .landing-nav .links a:hover {
   color: var(--ink);
+}
+
+/* Mục ứng với section đang xem. Đơn sắc, không gradient: chữ sáng lên hết
+   mức cộng một gạch chân mảnh màu accent. Gạch chân dùng scaleX nên khi
+   chuyển mục nó trượt ra/thu vào chứ không nhấp nháy. */
+.landing-nav .links a {
+  position: relative;
+  padding-bottom: 4px;
+}
+
+.landing-nav .links a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: 50% 50%;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.landing-nav .links a.is-active {
+  color: var(--ink);
+}
+
+.landing-nav .links a.is-active::after {
+  transform: scaleX(1);
+}
+
+/* Drawer mobile: không có chỗ cho gạch chân, dùng màu accent là đủ. */
+.mobile-menu a.is-active {
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-nav .links a::after {
+    transition: none;
+  }
 }
 
 .nav-cta {
@@ -384,8 +432,11 @@ section {
   text-align: center;
   position: relative;
   /* padding trên chừa chỗ cho thanh nav cố định, dưới chừa lề cho dòng
-     "Kéo xuống". Cả hai đều là mục thật trong luồng nên không thể đè nhau. */
-  padding: clamp(88px, 9vh, 104px) 6vw 28px;
+     "Kéo xuống". Cả hai đều là mục thật trong luồng nên không thể đè nhau.
+
+     Thanh nav cao ~103px. Mức cũ (tối đa 104px) vừa đúng bằng nó nên dòng
+     eyebrow dính sát mép nav. Nâng lên để có khoảng thở thật. */
+  padding: clamp(112px, 12vh, 142px) 6vw 28px;
 }
 
 /* Chiếm hết phần không gian còn lại rồi tự căn giữa bên trong — nhờ vậy
@@ -401,30 +452,39 @@ section {
 
 .hero-eyebrow {
   font-size: 12px;
+  /* 600 chứ không để mặc định 400: chữ hoa + giãn 0.28em ở cỡ 12px thì
+     nét 400 mảnh tới mức gần như tan vào nền. */
+  font-weight: 600;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
   margin-bottom: 28px;
   opacity: 0;
 }
 
 .hero h1 {
-  font-size: clamp(38px, 7vw, 96px);
-  /* 1.3 chứ không phải 1.15–1.2: dấu tiếng Việt xếp cao hơn chữ Latin,
-     dòng dưới có "ắ" "ế" gần chạm phần chân của dòng trên. Hạ về 1.2 sẽ
-     chật thêm chứ không thoáng ra. */
-  line-height: 1.3;
-  font-weight: 700;
+  /* Dòng 2 dài 26 ký tự (dòng 1 chỉ 18). Ở 96px nó cần ~1320px, vượt
+     max-width nên bị gãy xuống dòng thứ ba. Hạ trần xuống 86px để nó nằm
+     gọn một dòng, và nới max-width cho vừa. */
+  font-size: clamp(34px, 6.2vw, 86px);
+  /* Siết lại còn 1.18. Cộng với padding 0.06em ở .line thành khoảng cách
+     chân dòng ~1.30em — vẫn đủ chỗ cho dấu tiếng Việt (dấu mũ của dòng
+     dưới cao ~0.2em, chân chữ dòng trên sâu ~0.24em) nhưng hai dòng đọc ra
+     là một khối, không còn rời rạc. */
+  line-height: 1.18;
+  /* 800 chứ không 700: ở cỡ 86px, nét 700 của Plus Jakarta Sans trông
+     mảnh so với khối chữ lớn. Weight này đã được nạp sẵn ở index.html. */
+  font-weight: 800;
   letter-spacing: -0.025em;
-  max-width: 1200px;
+  max-width: 1280px;
 }
 
 .hero h1 .line {
   overflow: visible;
   display: block;
-  /* Cộng với line-height 1.3 thành khoảng cách chân dòng ~1.6em. */
-  padding-top: 0.15em;
-  padding-bottom: 0.15em;
+  /* Chỉ còn đủ để dấu không bị cắt khi .line có overflow. */
+  padding-top: 0.06em;
+  padding-bottom: 0.06em;
   margin-top: 0;
   margin-bottom: 0;
 }
@@ -433,25 +493,26 @@ section {
   font-style: normal;
   font-family: inherit;
   font-weight: inherit;
-  /* Xem ghi chú ở .section-title .dim: "sắp xếp lại." mới là lời hứa của sản
-     phẩm, không nên là phần mờ nhất trên hero. */
-  color: color-mix(in srgb, var(--ink) 62%, transparent);
+  /* Dòng 2 mới là lời hứa của sản phẩm nên không được là phần mờ nhất.
+     62% chìm hẳn xuống nền; 80% vẫn tách bậc rõ với dòng 1 (100%) nhưng
+     đọc ra là chữ có trọng lượng, không phải chữ bị mờ. */
+  color: color-mix(in srgb, var(--ink) 80%, transparent);
 }
 
 .hero-sub {
-  margin-top: 34px;
+  margin-top: 28px;
   max-width: 520px;
   /* --ink-dim (#9ca3af) là token chữ phụ, đứng cạnh H1 104px thì chìm.
      Dẫn xuất từ --ink để sáng hơn mà vẫn đúng ở cả hai giao diện —
      hardcode #cbd5e1 sẽ mất hút trên nền sáng. */
-  color: color-mix(in srgb, var(--ink) 78%, transparent);
+  color: color-mix(in srgb, var(--ink) 88%, transparent);
   font-size: 18px;
   line-height: 1.65;
   opacity: 0;
 }
 
 .hero-cta {
-  margin-top: 44px;
+  margin-top: 38px;
   display: flex;
   gap: 16px;
   opacity: 0;
@@ -617,9 +678,10 @@ section {
 
 .kicker {
   font-size: 12px;
+  font-weight: 600;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
   margin-bottom: 22px;
 }
 
@@ -710,7 +772,6 @@ section {
   gap: 24px;
 }
 
-
 /* Bố cục thẻ dùng GRID BA HÀNG cố định: tag / tiêu đề / mô tả.
    Cách cũ là flex + justify-content:space-between + .tag{padding-bottom:48px},
    nên vị trí tiêu đề phụ thuộc vào đoạn văn dài mấy dòng — hai thẻ cạnh nhau
@@ -753,9 +814,10 @@ section {
 
 .gallery-card .tag {
   font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .gallery-card h5 {
@@ -776,21 +838,9 @@ section {
   max-width: 46ch;
 }
 
-/* Lớp phủ cũ là rgba(217, 255, 91, .06) — vàng chanh, sót lại từ bảng màu
-   trước. Phủ lên mặt thẻ xám nó thành ra ngả ô liu, lệch hẳn khỏi tông
-   xanh của trang. Thay bằng vệt sáng hắt từ góc trên trái, lấy màu từ
-   chính --accent nên tự đúng ở cả hai giao diện. */
-.gallery-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(
-    120% 90% at 0% 0%,
-    color-mix(in srgb, var(--accent) 14%, transparent),
-    transparent 62%
-  );
-}
+/* Mặt thẻ để ĐƠN SẮC. Trước đây có một lớp phủ radial-gradient hắt sáng từ
+   góc trên trái, và nó đọc ra thành thẻ bị loang màu chéo. Chiều sâu giờ do
+   viền và bóng đổ lo, không do gradient. */
 
 /* PROCESS STEPS */
 .process-grid {
@@ -813,7 +863,9 @@ section {
 .process-num {
   font-size: 13px;
   font-weight: 700;
-  color: var(--accent);
+  /* 13px đậm vẫn tính là chữ THƯỜNG theo WCAG (ngưỡng chữ lớn là 18.66px
+     đậm), nên vẫn cần 4.5:1 — dùng biến đọc được. */
+  color: var(--accent-text);
   letter-spacing: 0.05em;
   margin-bottom: 26px;
   font-variant-numeric: tabular-nums;
@@ -836,27 +888,6 @@ section {
    color:var(--line) tức rgba(...,0.13) — mũi tên mờ hơn cả chữ mờ nhất trên
    trang, gần như vô hình. Và top:44px canh theo con số nên nó trôi lơ lửng
    thay vì nằm giữa cạnh nối hai thẻ. */
-.process-arrow {
-  position: absolute;
-  top: 50%;
-  right: -12px;
-  translate: 0 -50%;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  color: color-mix(in srgb, var(--accent) 70%, var(--ink-dim));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2;
-}
-
-.process-arrow svg {
-  width: 14px;
-  height: 14px;
-}
 
 /* TRUST / SECURITY */
 .trust-grid {
@@ -1273,45 +1304,6 @@ footer a {
    Nó là pseudo-element cấp document nên BẮT BUỘC phải global — viết ở đây
    thì Angular gắn thêm [_ngcontent-*] và rule không bao giờ khớp. */
 
-/* CUSTOM CURSOR */
-.cursor-dot,
-.cursor-ring {
-  position: fixed;
-  top: 0;
-  left: 0;
-  pointer-events: none;
-  z-index: 9997;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.cursor-dot {
-  width: 6px;
-  height: 6px;
-  background: var(--accent);
-}
-
-.cursor-ring {
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--line);
-  transition: width 0.25s ease, height 0.25s ease, border-color 0.25s ease, background 0.25s ease;
-}
-
-.cursor-ring.hovered {
-  width: 56px;
-  height: 56px;
-  background: var(--accent-dim);
-  border-color: var(--accent);
-}
-
-@media (pointer: coarse) {
-  .cursor-dot,
-  .cursor-ring {
-    display: none;
-  }
-}
-
 .btn-primary,
 .btn-ghost {
   will-change: transform;
@@ -1323,9 +1315,6 @@ footer a {
   }
   .process-grid {
     grid-template-columns: 1fr;
-  }
-  .process-arrow {
-    display: none;
   }
   .trust-grid {
     grid-template-columns: 1fr;
@@ -1626,7 +1615,7 @@ footer a {
 }
 .board-depth.d3 {
   transform: translateZ(-33px);
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  background: var(--accent);
   opacity: 0.85;
 }
 
@@ -2041,7 +2030,7 @@ footer a {
 .pbtn.yes {
   border-color: var(--accent);
   color: #fff;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  background: var(--accent);
   box-shadow: 0 10px 26px -8px var(--accent);
 }
 
@@ -2459,21 +2448,6 @@ footer a {
 }
 
 /* ── #process: vạch dọc như thước thời gian ── */
-
-.fx-rule {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: var(--x);
-  width: 1px;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    color-mix(in srgb, var(--ink) 12%, transparent) 22%,
-    color-mix(in srgb, var(--ink) 12%, transparent) 78%,
-    transparent
-  );
-}
 
 /* Vệt sáng quét ngang một lần rồi nghỉ — gợi tiến trình đang chạy tới. */
 .fx-sweep {
