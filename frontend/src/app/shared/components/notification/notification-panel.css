@@ -189,45 +189,28 @@
 
 .notif-panel__tabs {
   display: flex;
-  gap: 0.15rem;
-  padding: 0.45rem 0.5rem 0.5rem 0.5rem;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-border-strong) transparent;
+  justify-content: space-between;
+  gap: 0.2rem;
+  padding: 0.5rem 0.75rem;
 }
 
 .notif-panel__tabs::-webkit-scrollbar {
-  height: 4px;
+  display: none;
 }
 
-.notif-panel__tabs::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.notif-panel__tabs::-webkit-scrollbar-thumb {
-  background: var(--color-border-strong);
-  border-radius: var(--radius-full);
-}
-
-.notif-panel__tabs::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-tertiary);
-}
-
-/* Real spacer instead of trailing padding — some browsers clip a scroll
-   container's end padding, which made the last tab sit flush on the edge. */
 .notif-panel__tabs-end-spacer {
-  flex-shrink: 0;
-  width: 0.5rem;
+  display: none;
 }
 
 .notif-panel__tab {
-  flex-shrink: 0;
+  flex: 1;
+  text-align: center;
   white-space: nowrap;
   border: none;
   background: none;
-  padding: 0.28rem 0.52rem;
+  padding: 0.32rem 0.4rem;
   border-radius: var(--radius-full);
-  font-size: 0.74rem;
+  font-size: 0.76rem;
   font-weight: 600;
   color: var(--color-text-tertiary);
   cursor: pointer;
