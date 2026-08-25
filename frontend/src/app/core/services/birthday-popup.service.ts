@@ -58,6 +58,22 @@ export class BirthdayPopupService {
   }
 
   /**
+   * Trả về định dạng hiển thị ngày sinh kiểu Việt Nam (VD: 15/05/2000 hoặc 15/05)
+   */
+  getFormattedDobDisplay(): string {
+    const raw = this.getUserDob();
+    if (!raw) return '';
+    const parts = raw.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    if (parts.length === 2) {
+      return `${parts[1]}/${parts[0]}`;
+    }
+    return raw;
+  }
+
+  /**
    * Lưu ngày sinh người dùng vào Supabase user_metadata và LocalStorage
    */
   async setUserDob(dob: string): Promise<void> {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
 import { environment } from '../../../../../environments/environment';
 import { AuthStore } from '../../../../core/auth/auth-store';
 import { Density, DensityService } from '../../../../core/density/density-service';
@@ -77,6 +77,8 @@ export class SettingsModal {
   protected readonly savingName = signal(false);
   protected readonly nameSaved = signal(false);
   protected readonly dobDraft = signal(this.birthdayPopupService.getUserDob() ?? '');
+  protected readonly formattedDob = computed(() => this.birthdayPopupService.getFormattedDobDisplay());
+  protected readonly editingDob = signal(false);
   protected readonly savingDob = signal(false);
   protected readonly dobSaved = signal(false);
   protected readonly uploadingAvatar = signal(false);
