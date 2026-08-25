@@ -83,6 +83,38 @@ export class AuthStore {
     return data.publicUrl;
   }
 
+  /** Một lần làm mới đang chạy dở, để nhiều request 401 cùng lúc dùng chung. */
+  private refreshInFlight: Promise<boolean> | null = null;
+
+  /**
+   * Xin phiên mới bằng refresh token.
+   *
+   * Trả về `true` nếu đã có access token mới dùng được.
+   *
+   * Gộp mọi lời gọi song song vào MỘT lần làm mới là bắt buộc, không phải tối
+   * ưu: Supabase xoay vòng refresh token, nên hai lần làm mới chạy song song
+   * sẽ khiến lần sau vô hiệu hoá token của lần trước và đăng xuất người dùng
+   * ngay giữa chừng.
+   */
+  refreshSession(): Promise<boolean> {
+    this.refreshInFlight ??= this.doRefresh().finally(() => {
+      this.refreshInFlight = null;
+    });
+    return this.refreshInFlight;
+  }
+
+  private async doRefresh(): Promise<boolean> {
+    try {
+      const { data, error } = await this.supabase.auth.refreshSession();
+      if (error || !data.session) return false;
+      this.session.set(data.session);
+      return true;
+    } catch {
+      // Mất mạng hoặc refresh token đã bị thu hồi — coi như không làm mới được.
+      return false;
+    }
+  }
+
   async signOut(): Promise<void> {
     await this.supabase.auth.signOut();
   }
