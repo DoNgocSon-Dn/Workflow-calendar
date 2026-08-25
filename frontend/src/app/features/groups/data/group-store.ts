@@ -210,6 +210,7 @@ export class GroupStore {
         (payload) => {
           const row = payload.new as any;
           if (!row || !row.id || !row.group_id) return;
+          const member = this.members().find((m) => m.userId === row.sender_id);
           const msg: GroupMessage = {
             id: row.id,
             groupId: row.group_id,
@@ -222,8 +223,8 @@ export class GroupStore {
             attachmentName: row.attachment_name ?? undefined,
             attachmentType: row.attachment_type ?? undefined,
             attachmentSize: row.attachment_size ?? undefined,
-            senderEmail: row.sender_email,
-            senderName: row.sender_name ?? undefined,
+            senderEmail: row.sender_email || member?.email,
+            senderName: row.sender_name || (member?.email ? member.email.split('@')[0] : undefined),
           };
           const currentUser = this.authStore.user();
           const isFromOther = currentUser && msg.senderId !== currentUser.id;
