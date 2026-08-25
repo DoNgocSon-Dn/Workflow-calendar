@@ -386,17 +386,19 @@
 
 /* AI tab */
 .ai-chat-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   flex: 1;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
 }
 
 .messages {
-  flex: 1;
+  height: 100%;
   min-height: 0;
-  padding: 0.85rem 1.1rem;
+  padding: 0.85rem 1.1rem 8.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -404,13 +406,16 @@
 }
 
 .composer-area {
-  flex-shrink: 0;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
   display: flex;
   flex-direction: column;
   background: var(--color-surface-hover);
   border-top: 1px solid var(--color-border);
-  position: relative;
-  z-index: 10;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .hint-text {

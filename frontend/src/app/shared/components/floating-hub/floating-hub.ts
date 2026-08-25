@@ -1147,5 +1147,15 @@ export class FloatingHub {
       ...list,
       { id: crypto.randomUUID(), role, text, suggestManualForm, guessedTitle, attachmentName },
     ]);
+    this.scrollToBottom();
+  }
+
+  private scrollToBottom(): void {
+    setTimeout(() => {
+      const el = document.querySelector('.messages');
+      if (el) {
+        el.scrollTop = el.scrollHeight;
+      }
+    }, 50);
   }
 }
