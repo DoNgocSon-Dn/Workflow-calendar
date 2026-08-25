@@ -185,10 +185,13 @@
 }
 
 .preloader-caption {
-  font-size: 12px;
-  letter-spacing: 0.26em;
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.32em;
   text-transform: uppercase;
-  color: var(--ink-dim);
+  color: #ffffff;
+  text-shadow: 0 0 16px rgba(255, 255, 255, 0.5), 0 0 32px rgba(37, 99, 235, 0.4);
   opacity: 0;
   animation: preloaderCaptionIn 0.6s ease 0.3s forwards;
 }
