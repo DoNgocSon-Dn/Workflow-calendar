@@ -137,11 +137,29 @@ export class GroupsController {
   @Delete(':id/members/:userId')
   async removeMember(
     @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
     @Param('id') groupId: string,
     @Param('userId') userId: string,
   ) {
-    await this.groupsService.removeMember(supabase, groupId, userId);
+    // `user` bắt buộc phải truyền xuống: service dùng nó để kiểm tra thứ bậc.
+    await this.groupsService.removeMember(supabase, user, groupId, userId);
     return { message: 'Đã xóa thành viên khỏi nhóm' };
+  }
+
+  @Patch(':id/members/:userId/transfer-leadership')
+  async transferLeadership(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('id') groupId: string,
+    @Param('userId') userId: string,
+  ) {
+    const members = await this.groupsService.transferLeadership(
+      supabase,
+      user,
+      groupId,
+      userId,
+    );
+    return { members };
   }
 
   @Get(':id/tasks')

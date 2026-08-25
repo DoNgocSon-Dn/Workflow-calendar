@@ -1,3 +1,5 @@
+import { GroupRole } from './group-role';
+
 export type GroupColor = 'blue' | 'green' | 'orange' | 'red' | 'purple' | 'teal';
 
 export const GROUP_COLORS: readonly GroupColor[] = ['blue', 'green', 'orange', 'red', 'purple', 'teal'];
@@ -33,7 +35,7 @@ export interface GroupMember {
   id: string;
   groupId: string;
   userId: string;
-  role: 'owner' | 'admin' | 'member' | 'guest';
+  role: GroupRole;
   createdAt: string;
   email?: string;
   name?: string;

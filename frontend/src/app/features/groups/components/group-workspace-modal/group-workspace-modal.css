@@ -486,10 +486,9 @@
    since the badge background doesn't flip with light/dark. Bảng màu tách
    biệt nhau rõ theo tông (tím / xanh dương / xanh lá / hổ phách) thay vì
    dải xám-xanh gần giống nhau như trước, để liếc là phân biệt được vai trò. */
-.role-pill.owner { background: var(--color-role-owner); color: #ffffff; }
+.role-pill.leader { background: var(--color-role-owner); color: #ffffff; }
 .role-pill.admin { background: var(--color-role-admin); color: #ffffff; }
 .role-pill.member { background: var(--color-role-member); color: #ffffff; }
-.role-pill.guest { background: var(--color-role-guest); color: #1e293b; }
 
 .role-select {
   font-size: 0.75rem;
@@ -507,7 +506,6 @@
 
 .role-select.admin { background: var(--color-role-admin); color: #ffffff; }
 .role-select.member { background: var(--color-role-member); color: #ffffff; }
-.role-select.guest { background: var(--color-role-guest); color: #1e293b; }
 
 .btn-danger-sm {
   background: color-mix(in srgb, var(--color-danger) 20%, transparent);
@@ -1139,4 +1137,102 @@
 @keyframes popIn {
   from { opacity: 0; transform: scale(0.97) translateY(6px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes fadeInPanel {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Ký hiệu đứng trước tên vai trò: badge phân biệt bằng CẢ hình dạng lẫn màu,
+   nên người không phân biệt được màu vẫn đọc ra cấp bậc (★ trưởng nhóm,
+   ◆ quản trị viên, • thành viên). */
+.role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+
+.role-pill__mark {
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.btn-ghost-sm {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-strong);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.btn-ghost-sm:hover:not(:disabled) {
+  color: var(--color-text);
+  border-color: var(--color-role-owner);
+  background: color-mix(in srgb, var(--color-role-owner) 14%, transparent);
+}
+
+.btn-ghost-sm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Bảng "được phép / không thể" dưới ô chọn vai trò khi mời. */
+.role-perms {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-hover);
+}
+
+.role-perms__title {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.role-perms__cols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+
+.role-perms__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.75rem;
+  min-width: 160px;
+}
+
+.role-perms__list li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  color: var(--color-text-secondary);
+}
+
+.role-perms__mark {
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.role-perms__list--can .role-perms__mark {
+  color: #16a34a;
+}
+
+.role-perms__list--cannot .role-perms__mark {
+  color: var(--color-danger);
 }

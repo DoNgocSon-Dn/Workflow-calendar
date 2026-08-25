@@ -18,7 +18,7 @@
             <app-icon [name]="isHidden() ? 'eye' : 'eye-off'" />
             {{ isHidden() ? 'Bỏ ẩn' : 'Ẩn nhóm' }}
           </button>
-          @if (isOwner()) {
+          @if (isLeader()) {
             <button type="button" class="btn-header" (click)="startEditGroup()">
               <app-icon name="pencil" />
               Sửa
@@ -399,7 +399,7 @@
         <!-- TAB 2: MEMBERS -->
         @if (activeTab() === 'members') {
           <div class="members-section">
-            @if (isOwner()) {
+            @if (canInviteMembers()) {
               <div class="invite-card">
                 <h3>Mời thành viên mới vào nhóm</h3>
                 <div class="invite-form-row">
@@ -412,12 +412,15 @@
                   />
                   <select
                     class="select-input"
+                    [attr.aria-label]="i18n.t('group.inviteRoleLabel')"
                     [value]="inviteRole()"
                     (change)="inviteRole.set($any($event.target).value)"
                   >
-                    <option value="admin">{{ roleLabel('admin') }}</option>
-                    <option value="member">{{ roleLabel('member') }}</option>
-                    <option value="guest">{{ roleLabel('guest') }}</option>
+                    <!-- Trưởng nhóm KHÔNG có ở đây: không thể mời thẳng ai vào
+                         làm trưởng nhóm. -->
+                    @for (r of assignableRoles(); track r) {
+                      <option [value]="r">{{ roleLabel(r) }}</option>
+                    }
                   </select>
                   <button
                     type="button"
@@ -428,6 +431,25 @@
                     Mời vào nhóm
                   </button>
                 </div>
+
+                <!-- Đổi theo vai trò đang chọn: người mời biết chính xác họ đang
+                     trao quyền gì trước khi bấm. -->
+                <div class="role-perms">
+                  <p class="role-perms__title">{{ rolePermissions().title }}</p>
+                  <div class="role-perms__cols">
+                    <ul class="role-perms__list role-perms__list--can">
+                      @for (item of rolePermissions().can; track item) {
+                        <li><span class="role-perms__mark" aria-hidden="true">✓</span>{{ item }}</li>
+                      }
+                    </ul>
+                    <ul class="role-perms__list role-perms__list--cannot">
+                      @for (item of rolePermissions().cannot; track item) {
+                        <li><span class="role-perms__mark" aria-hidden="true">✕</span>{{ item }}</li>
+                      }
+                    </ul>
+                  </div>
+                </div>
+
                 @if (inviteError(); as err) {
                   <p class="error-msg">{{ err }}</p>
                 } @else if (inviteSuccess(); as ok) {
@@ -442,32 +464,64 @@
                 <div class="member-row">
                   <div class="member-info">
                     <span class="user-avatar"><app-icon name="user" /></span>
-                    <strong class="member-email">{{ m.email || m.userId }}</strong>
+                    <div>
+                      <strong class="member-email">{{ memberDisplayName(m) }}</strong>
+                      @if (canManageMember(m)) {
+                        <select
+                          class="role-select"
+                          [class]="m.role.toLowerCase()"
+                          [value]="m.role"
+                          [disabled]="updatingRoleUserId() === m.userId"
+                          [attr.aria-label]="i18n.t('group.inviteRoleLabel')"
+                          (change)="changeRole(m, $any($event.target).value)"
+                        >
+                          @for (r of assignableRoles(); track r) {
+                            <option [value]="r">{{ roleLabel(r) }}</option>
+                          }
+                        </select>
+                      } @else {
+                        <!-- Badge phân biệt bằng CẢ ký hiệu lẫn màu — người
+                             không phân biệt được màu vẫn đọc ra cấp bậc. -->
+                        <span class="role-pill" [class]="m.role.toLowerCase()">
+                          <span class="role-pill__mark" aria-hidden="true">
+                            @switch (m.role) {
+                              @case ('LEADER') { ★ }
+                              @case ('ADMIN') { ◆ }
+                              @default { • }
+                            }
+                          </span>
+                          {{ roleLabel(m.role) }}
+                        </span>
+                      }
+                    </div>
                   </div>
-                  <div class="member-actions">
-                    @if (isOwner() && m.role !== 'owner') {
-                      <select
-                        class="role-select"
-                        [class]="m.role"
-                        [value]="m.role"
-                        [disabled]="updatingRoleUserId() === m.userId"
-                        (change)="changeRole(m, $any($event.target).value)"
-                      >
-                        <option value="admin">{{ roleLabel('admin') }}</option>
-                        <option value="member">{{ roleLabel('member') }}</option>
-                        <option value="guest">{{ roleLabel('guest') }}</option>
-                      </select>
-                      <button
-                        type="button"
-                        class="btn-danger-sm"
-                        (click)="removeMember(m)"
-                      >
-                        Xóa
-                      </button>
-                    } @else {
-                      <span class="role-pill" [class]="m.role">{{ roleLabel(m.role) }}</span>
-                    }
-                  </div>
+
+                  <!-- Thành viên thường không quản lý được ai nên cả cụm nút
+                       này không tồn tại với họ. -->
+                  @if (canManageMember(m) || canTransferTo(m)) {
+                    <div class="member-actions">
+                      @if (canTransferTo(m)) {
+                        <button
+                          type="button"
+                          class="btn-ghost-sm"
+                          [disabled]="transferringUserId() === m.userId"
+                          [title]="i18n.t('group.transferLeadership')"
+                          (click)="transferLeadership(m)"
+                        >
+                          {{ i18n.t('group.transferLeadership') }}
+                        </button>
+                      }
+                      @if (canManageMember(m)) {
+                        <button
+                          type="button"
+                          class="btn-danger-sm"
+                          (click)="removeMember(m)"
+                        >
+                          {{ i18n.t('common.delete') }}
+                        </button>
+                      }
+                    </div>
+                  }
                 </div>
               }
             </div>

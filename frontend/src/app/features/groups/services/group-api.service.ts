@@ -126,6 +126,19 @@ export class GroupApiService {
     );
   }
 
+  /** Chuyển ghế trưởng nhóm. Tách khỏi updateMemberRole có chủ đích —
+   *  backend không cho phép gán vai trò LEADER qua đường phân quyền thường. */
+  async transferLeadership(groupId: string, userId: string): Promise<GroupMember[]> {
+    const res = await firstValueFrom(
+      this.http.patch<{ members: GroupMember[] }>(
+        `${environment.apiUrl}/groups/${groupId}/members/${userId}/transfer-leadership`,
+        {},
+        { headers: this.authHeaders },
+      ),
+    );
+    return res.members;
+  }
+
   async removeMember(groupId: string, userId: string): Promise<void> {
     await firstValueFrom(
       this.http.delete<void>(`${environment.apiUrl}/groups/${groupId}/members/${userId}`, {
