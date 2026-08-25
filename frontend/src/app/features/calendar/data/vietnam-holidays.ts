@@ -31,10 +31,13 @@ export function buildVietnamHolidayEvents(years: number[]): CalendarEvent[] {
         const start = new Date(date);
         const end = new Date(date);
         end.setDate(end.getDate() + 1);
+        const resolvedTitle = holiday.content.title
+          .replace(/\{year\}/g, String(year))
+          .replace(/\{nextYear\}/g, String(year + 1));
         events.push({
           id: `${VN_HOLIDAY_CALENDAR_ID}${EVENT_ID_SEPARATOR}${holiday.id}${EVENT_ID_SEPARATOR}${year}-${offset}`,
           calendarId: VN_HOLIDAY_CALENDAR_ID,
-          title: holiday.content.title,
+          title: resolvedTitle,
           start,
           end,
           allDay: true,
