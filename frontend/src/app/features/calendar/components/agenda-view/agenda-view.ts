@@ -11,7 +11,7 @@ import { TranslationService } from '../../../../core/i18n/translation.service';
 import { CALENDAR_COLOR_HEX, CalendarEvent } from '../../models/calendar.models';
 import { DatePipe } from '@angular/common';
 import { convertSolarToLunar } from '../../utils/lunar-calendar';
-import { resolveTopHolidayForDate } from '../../utils/holiday-resolver';
+import { resolveHolidaysForDate, resolveTopHolidayForDate } from '../../utils/holiday-resolver';
 import { VN_HOLIDAY_CALENDAR_ID } from '../../data/vietnam-holidays';
 import { Icon } from '../../../../shared/components/icon/icon';
 
@@ -145,9 +145,9 @@ export class AgendaView {
           dateList.push(d);
         }
       } else {
-        // Mode 'all': Gom các ngày có sự kiện + 60 ngày tiếp theo để Lịch Âm luôn có đầy đủ sự kiện
+        // Mode 'all': Gom các ngày có sự kiện + 365 ngày của năm để Lịch Âm luôn có đầy đủ Tết Trung Thu, Tết Nguyên Đán, Rằm...
         const dateSet = new Set<string>();
-        for (let i = 0; i < 60; i++) {
+        for (let i = 0; i < 365; i++) {
           const d = new Date(baseDate);
           d.setDate(d.getDate() + i);
           const k = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
@@ -171,29 +171,40 @@ export class AgendaView {
         const day = String(d.getDate()).padStart(2, '0');
         const dayKey = `${year}-${month}-${day}`;
 
-        const holiday = resolveTopHolidayForDate(d);
+        const holidays = resolveHolidaysForDate(d);
         const lunar = convertSolarToLunar(d);
 
-        let eventTitle: string | null = null;
-        if (holiday) {
-          eventTitle = `${holiday.icon || '🌸'} ${holiday.name}`;
-        } else if (lunar.day === 1) {
-          eventTitle = `🏮 Mùng 1 Tháng ${lunar.month} Âm Lịch`;
-        } else if (lunar.day === 15) {
-          eventTitle = `🌕 Ngày Rằm Tháng ${lunar.month} Âm Lịch`;
+        const titles: string[] = [];
+
+        for (const h of holidays) {
+          if (!titles.includes(h.name)) {
+            titles.push(h.name);
+          }
         }
 
-        if (eventTitle) {
+        // Bổ sung Tết Trung Thu nếu trùng 15/8 âm lịch mà chưa có
+        if (lunar.month === 8 && lunar.day === 15 && !titles.includes('Tết Trung Thu')) {
+          titles.push('Tết Trung Thu');
+        }
+
+        // Bổ sung Mùng 1 & Rằm hàng tháng (không icon emoji)
+        if (lunar.day === 1 && !titles.some((t) => t.includes('Mùng 1'))) {
+          titles.push(`Mùng 1 Tháng ${lunar.month} Âm Lịch`);
+        } else if (lunar.day === 15 && !titles.some((t) => t.includes('Rằm'))) {
+          titles.push(`Ngày Rằm Tháng ${lunar.month} Âm Lịch`);
+        }
+
+        for (const title of titles) {
           if (!map.has(dayKey)) {
             map.set(dayKey, { date: d, events: [] });
           }
           const group = map.get(dayKey)!;
-          const exists = group.events.some((ev) => ev.title === eventTitle);
+          const exists = group.events.some((ev) => ev.title === title);
           if (!exists) {
             group.events.unshift({
-              id: `lunar-evt-${dayKey}-${eventTitle}`,
+              id: `lunar-evt-${dayKey}-${title}`,
               calendarId: 'lunar-sys',
-              title: eventTitle,
+              title,
               start: d,
               end: d,
               allDay: true,
