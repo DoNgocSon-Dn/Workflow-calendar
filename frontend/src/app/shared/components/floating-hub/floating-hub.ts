@@ -2,8 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  ElementRef,
-  ViewChild,
   computed,
   effect,
   inject,
@@ -48,6 +46,14 @@ type NoteColor = (typeof NOTE_COLORS)[number];
 
 type HubTab = 'notes' | 'todos' | 'ai';
 
+/** Sự kiện AI vừa tạo, đã tách sẵn từng trường để template dựng thành thẻ. */
+interface ChatEventCard {
+  readonly title: string;
+  readonly dateLabel: string;
+  readonly timeLabel: string;
+  readonly location?: string;
+}
+
 interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -56,6 +62,8 @@ interface ChatMessage {
   guessedTitle?: string;
   /** Tên file người dùng đã gửi kèm câu này, hiện lại trong lịch sử chat. */
   attachmentName?: string;
+  /** Có giá trị thì tin nhắn dựng thành THẺ sự kiện thay cho đoạn chữ thường. */
+  event?: ChatEventCard;
 }
 
 /**
@@ -235,19 +243,34 @@ function formatDateLabel(date: Date): string {
   return absolute;
 }
 
-function formatEventPreview(event: { title: string; start: string; end: string; location?: string }): string {
+/**
+ * Sự kiện vừa tạo, tách thành từng trường rời.
+ *
+ * Bản trước nối tất cả thành MỘT chuỗi và dùng emoji làm nhãn ("📅 Ngày: …").
+ * Ba vấn đề: emoji không đổi màu theo giao diện sáng/tối, không co giãn theo
+ * cỡ chữ, và trình đọc màn hình đọc luôn tên emoji giữa câu. Trả về dữ liệu
+ * rồi để template lo phần nhìn thì cả ba biến mất, và tiêu đề sự kiện được
+ * nhấn mạnh đúng mức thay vì nằm lẫn trong một khối chữ đều tăm tắp.
+ */
+function buildEventCard(event: {
+  title: string;
+  start: string;
+  end: string;
+  location?: string;
+}): ChatEventCard {
   const start = new Date(event.start);
   const end = new Date(event.end);
   const invalid = Number.isNaN(start.getTime()) || Number.isNaN(end.getTime());
   const timeFmt = new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit' });
 
-  const lines = [
-    `✓ Tiêu đề: ${event.title}`,
-    `📅 Ngày: ${invalid ? event.start : formatDateLabel(start)}`,
-    `🕘 Thời gian: ${invalid ? `${event.start} - ${event.end}` : `${timeFmt.format(start)} – ${timeFmt.format(end)}`}`,
-  ];
-  if (event.location) lines.push(`📍 Địa điểm: ${event.location}`);
-  return lines.join('\n');
+  return {
+    title: event.title,
+    dateLabel: invalid ? event.start : formatDateLabel(start),
+    timeLabel: invalid
+      ? `${event.start} – ${event.end}`
+      : `${timeFmt.format(start)} – ${timeFmt.format(end)}`,
+    location: event.location || undefined,
+  };
 }
 
 @Component({
@@ -260,24 +283,6 @@ function formatEventPreview(event: { title: string; start: string; end: string; 
 export class FloatingHub {
   private readonly store = inject(CalendarStore);
   private readonly authStore = inject(AuthStore);
-
-  private composerObserver?: ResizeObserver;
-  protected readonly composerHeight = signal<number>(90);
-
-  @ViewChild('composerEl') set composerEl(ref: ElementRef<HTMLElement> | undefined) {
-    this.composerObserver?.disconnect();
-    if (ref?.nativeElement && typeof ResizeObserver !== 'undefined') {
-      this.composerObserver = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          const h = entry.borderBoxSize?.[0]?.blockSize ?? entry.target.getBoundingClientRect().height;
-          if (h > 0) {
-            this.composerHeight.set(Math.round(h));
-          }
-        }
-      });
-      this.composerObserver.observe(ref.nativeElement);
-    }
-  }
 
   protected readonly fabSize = FAB_SIZE;
   protected readonly panelGap = PANEL_GAP;
@@ -408,7 +413,6 @@ export class FloatingHub {
     this.hubDestroyRef.onDestroy(() => {
       this.stopThinking();
       if (this.rippleTimer) clearTimeout(this.rippleTimer);
-      this.composerObserver?.disconnect();
     });
 
     effect(() => {
@@ -617,7 +621,7 @@ export class FloatingHub {
       const result = await this.store.sendAiChat(text, calendarId, history);
       if (result.intent === 'create_event') {
         this.lastCreatedEventId.set(result.event.id);
-        this.pushMessage('assistant', `Đã tạo sự kiện:\n${formatEventPreview(result.event)}`);
+        this.pushEventMessage('Đã thêm vào lịch của bạn.', buildEventCard(result.event));
       } else if (result.intent === 'create_todos') {
         const proposal = this.buildProposal(result.goal, result.todos);
         if (proposal.rows.length) {
@@ -1167,6 +1171,17 @@ export class FloatingHub {
     this.messages.update((list) => [
       ...list,
       { id: crypto.randomUUID(), role, text, suggestManualForm, guessedTitle, attachmentName },
+    ]);
+    this.scrollToBottom();
+  }
+
+  /** Tin nhắn kèm thẻ sự kiện. Tách riêng khỏi pushMessage() chứ không thêm
+   *  tham số thứ sáu vào đó — chỗ gọi sẽ thành một dãy undefined không ai đọc
+   *  nổi. */
+  private pushEventMessage(text: string, event: ChatEventCard): void {
+    this.messages.update((list) => [
+      ...list,
+      { id: crypto.randomUUID(), role: 'assistant' as const, text, event },
     ]);
     this.scrollToBottom();
   }

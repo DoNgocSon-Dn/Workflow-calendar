@@ -46,7 +46,25 @@ const SIDEBAR_COLLAPSED_STORAGE_KEY = 'sidebar-collapsed';
 function readStoredSidebarCollapsed(): boolean {
   return localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === '1';
 }
-const HOLIDAY_YEARS = [2024, 2025, 2026, 2027, 2028];
+/** Số năm ngày lễ được sinh sẵn, tính từ năm hiện tại trở đi. */
+const HOLIDAY_YEAR_SPAN = 5;
+
+/**
+ * Cửa sổ năm để sinh sự kiện ngày lễ: năm hiện tại và bốn năm kế tiếp.
+ *
+ * Trước đây là một danh sách ghi cứng [2024…2028], viết ra lúc 2024 còn là năm
+ * hiện tại. Sang 2026 nó lệch hẳn hai năm: lịch vẫn đẻ ra ngày lễ 2024–2025,
+ * mà phía trước chỉ còn hai năm — mỗi năm trôi qua lại mất thêm một năm tương
+ * lai cho tới khi hết sạch. Tính từ năm hiện tại thì cửa sổ tự trượt theo.
+ *
+ * KHÔNG lùi về năm trước. Agenda ở chế độ "tất cả" không lọc theo ngày, nó
+ * liệt kê từ sự kiện sớm nhất — thêm một năm quá khứ là người dùng phải cuộn
+ * qua trọn một năm ngày lễ đã qua mới tới được năm nay.
+ */
+function holidayYearWindow(now: Date): readonly number[] {
+  const current = now.getFullYear();
+  return Array.from({ length: HOLIDAY_YEAR_SPAN }, (_, offset) => current + offset);
+}
 
 interface CalendarApiDto {
   id: string;
@@ -292,7 +310,9 @@ export class CalendarStore {
 
   // Lịch tham khảo chỉ đọc, không lưu ở backend — hiển thị trong mục "Lịch khác".
   readonly otherCalendars: CalendarDef[] = [VN_HOLIDAY_CALENDAR_DEF];
-  readonly holidayEvents: CalendarEvent[] = buildVietnamHolidayEvents(HOLIDAY_YEARS);
+  readonly holidayEvents: CalendarEvent[] = buildVietnamHolidayEvents(
+    holidayYearWindow(this.clock.now()),
+  );
 
   readonly visibleEvents = computed(() => {
     const visible = this.visibleCalendarIds();

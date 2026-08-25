@@ -11,7 +11,6 @@
   border: 1px solid transparent;
   background: var(--holiday-accent);
   color: var(--holiday-accent-contrast);
-  font-size: 1.35rem;
   box-shadow: var(--shadow-sm);
   cursor: grab;
   touch-action: none;
@@ -63,49 +62,73 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.5rem 0.5rem 0.5rem 0.6rem;
+  gap: 0.4rem;
+  padding: 0.5rem;
   border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+/* Segmented control: rãnh chìm bao cả ba tab, tab đang chọn NỔI lên bằng nền
+   sáng + đổ bóng. Bản cũ tô tab đang chọn bằng accent-soft, tức dùng màu
+   thương hiệu cho một thứ chỉ mang nghĩa "bạn đang ở đây" — accent nên để
+   dành cho hành động chính. */
+.tab-group {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-sm);
   background: var(--color-surface-hover);
 }
 
 .tab-btn {
+  /* flex:1 + min-width:0 để ba tab chia đều và không tab nào đẩy tab khác ra
+     ngoài panel 350px, dù nhãn dài ngắn khác nhau. */
+  flex: 1;
+  min-width: 0;
   border: none;
   background: none;
   color: var(--color-text-tertiary);
-  padding: 0.4rem 0.6rem;
-  border-radius: var(--radius-md);
-  font-size: 0.8rem;
+  padding: 0.34rem 0.25rem;
+  border-radius: calc(var(--radius-sm) - 2px);
+  font-size: 0.74rem;
   font-weight: 600;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
-.tab-btn:hover {
-  background: var(--color-surface);
-  color: var(--color-text);
+.tab-btn:hover:not(.active) {
+  color: var(--color-text-secondary);
 }
 
 .tab-btn.active {
-  background: var(--holiday-accent-soft);
-  color: var(--holiday-accent);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
 }
 
 .icon-btn {
-  margin-left: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
   border: none;
   background: none;
   color: var(--color-text-tertiary);
   cursor: pointer;
-  font-size: 1.25rem;
-  line-height: 1;
-  padding: 0.25rem 0.5rem;
   border-radius: var(--radius-sm);
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .icon-btn:hover {
-  background: var(--color-surface);
+  background: var(--color-surface-hover);
   color: var(--color-text);
 }
 
@@ -400,45 +423,57 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0.85rem 1.1rem calc(var(--composer-height, 90) * 1px + 0.75rem);
+  padding: 0.85rem 1.1rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
   overscroll-behavior: contain;
+  /* Thanh cuộn mảnh nhưng LUÔN thấy khi có tràn. Không có nó, danh sách gợi ý
+     dài hơn khung nhìn trông y như bị cắt cụt — người dùng không biết là cuộn
+     được. Firefox dùng hai thuộc tính chuẩn, WebKit dùng ::-webkit-scrollbar. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+.messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+.messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messages::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-full);
+  background: var(--color-border-strong);
+  /* Viền trong suốt + background-clip kéo con trượt mảnh lại mà vùng bấm vẫn
+     rộng 8px, dễ tóm bằng chuột. */
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.messages::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+  background-clip: content-box;
 }
 
 .messages > * {
   flex-shrink: 0;
 }
 
+/* Thanh soạn tin nằm TRONG luồng, không còn là lớp phủ tuyệt đối.
+   Bản cũ phủ đè lên .messages bằng một dải gradient mờ dần, nên dòng cuối
+   cùng luôn bị nhoè đi một nửa và đọc ra như nội dung bị cắt cụt — phải tắt
+   pointer-events cho cả vùng phủ rồi bật lại cho từng nút, quên một cái là
+   nút đó chết lặng. Để nó vào luồng thì flex tự chia chỗ: .messages co lại
+   đúng phần còn thừa, biên giữa hai vùng là một đường kẻ dứt khoát, và cả
+   cơ chế đo chiều cao bằng ResizeObserver cũng không cần nữa. */
 .composer-area {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10;
-  pointer-events: none;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  padding-top: 1.25rem;
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0) 0%,
-    var(--color-surface-hover) 1.25rem,
-    var(--color-surface-hover) 100%
-  );
-}
-
-.composer-area > * {
-  pointer-events: none;
-}
-
-.composer-area .text-input,
-.composer-area .primary-btn,
-.composer-area .attach-btn,
-.composer-area .attachment-chip__remove,
-.composer-area .field-error {
-  pointer-events: auto;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 
 .hint-text {
@@ -493,7 +528,10 @@
   max-width: 88%;
 }
 
-.message p {
+/* Dấu ">" là BẮT BUỘC, không phải để cho gọn. Không có nó, mọi thẻ <p> nằm
+   sâu bên trong tin nhắn — tiêu đề thẻ sự kiện chẳng hạn — đều bị tô nền
+   bong bóng và bo góc, thành ra hộp lồng trong hộp. */
+.message > p {
   margin: 0;
   font-size: 0.85rem;
   line-height: 1.45;
@@ -506,17 +544,74 @@
   align-self: flex-end;
 }
 
-.message.role-user p {
+.message.role-user > p {
   background: var(--holiday-accent);
   color: var(--holiday-accent-contrast);
   border-bottom-right-radius: 4px;
 }
 
-.message.role-assistant p {
+.message.role-assistant > p {
   background: var(--color-surface-hover);
   color: var(--color-text);
   border: 1px solid var(--color-border);
   border-bottom-left-radius: 4px;
+}
+
+/* Tin nhắn dẫn cho thẻ sự kiện: bỏ nền bong bóng, để nó thành một dòng dẫn
+   nhẹ. Hai khối đặc cạnh nhau (bong bóng xám + thẻ trắng) đọc thành hai lượt
+   trả lời rời rạc, trong khi đây chỉ là một. */
+.message.role-assistant:has(.event-chip) > p {
+  padding: 0 0.15rem 0.1rem;
+  border: none;
+  background: none;
+  font-size: 0.8rem;
+  color: var(--color-text-tertiary);
+}
+
+/* Thẻ sự kiện vừa tạo. Nối liền dưới bong bóng trả lời (bo góc trên vuông,
+   lệch phải 0 so với bong bóng) nên đọc như MỘT lượt trả lời, không phải hai
+   khối rời. Viền trái đậm màu accent là dấu "đã lưu thật", phân biệt với các
+   bảng nháp viền đứt ở dưới. */
+.event-chip {
+  padding: 0.6rem 0.75rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-left: 2px solid var(--holiday-accent);
+  border-radius: 4px var(--radius-md) var(--radius-md) 4px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.event-chip__title {
+  margin: 0 0 0.4rem;
+  font-family: var(--font-heading);
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.event-chip__meta {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.event-chip__meta li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.775rem;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+
+.event-chip__meta svg {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
 }
 
 .message .text-btn {
@@ -562,6 +657,37 @@
   border-color: var(--holiday-accent);
   box-shadow: 0 0 0 3px var(--holiday-accent-soft);
   background: var(--color-surface);
+}
+
+/* Nút gửi: tròn, chỉ có icon. Bằng đúng chiều cao ô nhập (32px) nên hàng
+   soạn tin thành một dải thẳng thớm, không so le. */
+.send-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.send-btn:hover:not(:disabled) {
+  background: var(--holiday-accent-hover);
+}
+
+.send-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.send-btn:disabled {
+  background: var(--color-surface-hover-strong);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
 }
 
 /* ===================================================================
@@ -1103,6 +1229,8 @@
 
 /* --- Đính kèm file cho AI ------------------------------------------- */
 
+/* Nút phụ, nên là nút ma: không viền, không nền. Bản cũ là ô vuông viền kín
+   nên nó nặng ngang nút gửi, trong khi đính kèm file là việc hiếm làm. */
 .attach-btn {
   flex-shrink: 0;
   display: inline-flex;
@@ -1110,18 +1238,17 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
+  border: none;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-text-tertiary);
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
 .attach-btn:hover:not(.disabled) {
-  color: var(--color-accent);
-  border-color: var(--color-accent);
-  background: var(--color-accent-soft);
+  color: var(--color-text);
+  background: var(--color-surface-hover-strong);
 }
 
 /* Input file thật bị ẩn, cả thẻ label đóng vai nút. Dùng :focus-within để
@@ -1157,7 +1284,8 @@
 
 .attachment-chip__icon {
   flex-shrink: 0;
-  font-size: 1rem;
+  display: inline-flex;
+  color: var(--color-text-tertiary);
 }
 
 .attachment-chip__info {
@@ -1200,14 +1328,29 @@
 
 /* Thẻ file trong tin nhắn đã gửi. */
 .message-file {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  /* inline-flex trong một flex column vẫn bị kéo giãn hết bề ngang nếu không
+     khai align-self, và chip sẽ dài bằng cả bong bóng dù tên file rất ngắn. */
+  align-self: flex-start;
   margin-bottom: 0.3rem;
-  padding: 0.15rem 0.4rem;
+  padding: 0.18rem 0.42rem;
   border-radius: var(--radius-sm);
   background: rgb(0 0 0 / 0.12);
   font-size: 0.7rem;
   font-weight: 600;
   max-width: 100%;
+}
+
+/* Cắt bớt phải nằm ở phần TÊN, không phải cả thẻ: đặt overflow lên thẻ ngoài
+   thì icon cũng bị cắt theo khi tên file dài. */
+.message.role-user .message-file {
+  align-self: flex-end;
+}
+
+.message-file__name {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1492,7 +1635,8 @@
 }
 
 .drop-overlay__icon {
-  font-size: 1.6rem;
+  display: inline-flex;
+  color: var(--color-accent);
 }
 
 .drop-overlay__text {

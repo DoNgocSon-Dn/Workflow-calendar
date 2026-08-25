@@ -19,7 +19,7 @@ const EVENT_ID_SEPARATOR = '::';
  * lunar ones resolve through `findLunarDateInSolarYear`, so this stays
  * correct beyond whatever year was last curated by hand.
  */
-export function buildVietnamHolidayEvents(years: number[]): CalendarEvent[] {
+export function buildVietnamHolidayEvents(years: readonly number[]): CalendarEvent[] {
   const events: CalendarEvent[] = [];
 
   for (const holiday of HOLIDAYS) {

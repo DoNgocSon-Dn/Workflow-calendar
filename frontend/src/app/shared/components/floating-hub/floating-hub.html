@@ -18,7 +18,12 @@
          nên kéo chữ hay ảnh từ trang web sẽ không làm nó bật lên. -->
     @if (dragActive()) {
       <div class="drop-overlay" aria-hidden="true">
-        <span class="drop-overlay__icon">📎</span>
+        <span class="drop-overlay__icon">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 16V4M8 8l4-4 4 4" />
+            <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+          </svg>
+        </span>
         <span class="drop-overlay__text">Thả file để đính kèm</span>
       </div>
     }
@@ -33,17 +38,48 @@
       ></span>
     }
 
+    <!-- Segmented control, KHÔNG phải ba nút rời. Panel chỉ rộng 350px nên
+         icon + nhãn cho ba tab sẽ tràn; nhãn chữ trên nền chìm đọc rõ hơn và
+         luôn vừa. Emoji cũ (📝 ✅ ✨) bỏ hẳn: chúng không đổi màu theo giao
+         diện, không co theo cỡ chữ, và trình đọc màn hình đọc luôn tên emoji. -->
     <div class="panel-tabs">
-      <button type="button" class="tab-btn" [class.active]="activeTab() === 'notes'" (click)="setTab('notes')">
-        📝 Ghi chú
+      <div class="tab-group" role="tablist" aria-label="Khu vực làm việc">
+        <button
+          type="button"
+          class="tab-btn"
+          role="tab"
+          [class.active]="activeTab() === 'notes'"
+          [attr.aria-selected]="activeTab() === 'notes'"
+          (click)="setTab('notes')"
+        >
+          Ghi chú
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          role="tab"
+          [class.active]="activeTab() === 'todos'"
+          [attr.aria-selected]="activeTab() === 'todos'"
+          (click)="setTab('todos')"
+        >
+          Việc cần làm
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          role="tab"
+          [class.active]="activeTab() === 'ai'"
+          [attr.aria-selected]="activeTab() === 'ai'"
+          (click)="setTab('ai')"
+        >
+          Trợ lý AI
+        </button>
+      </div>
+      <button type="button" class="icon-btn" aria-label="Đóng" (click)="toggle()">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
       </button>
-      <button type="button" class="tab-btn" [class.active]="activeTab() === 'todos'" (click)="setTab('todos')">
-        ✅ Việc cần làm
-      </button>
-      <button type="button" class="tab-btn" [class.active]="activeTab() === 'ai'" (click)="setTab('ai')">
-        ✨ Trợ lý AI
-      </button>
-      <button type="button" class="icon-btn" aria-label="Đóng" (click)="toggle()">×</button>
     </div>
 
     @switch (activeTab()) {
@@ -163,7 +199,7 @@
       }
 
       @default {
-      <div class="ai-chat-container" [style.--composer-height.px]="composerHeight()">
+      <div class="ai-chat-container">
         <div class="messages">
         @if (messages().length === 0) {
           <div class="ai-welcome">
@@ -179,10 +215,12 @@
             </span>
 
             <h3 class="ai-welcome__title">Hôm nay bạn muốn sắp xếp gì?</h3>
+            <!-- Rút từ 5 dòng xuống 2. Bản cũ vừa dài vừa canh giữa nên lề hai
+                 bên đều răng cưa, rất khó đọc; phần hướng dẫn đính kèm file đã
+                 nằm sẵn ở tooltip của nút kẹp giấy nên không cần nhắc lại đây. -->
             <p class="ai-welcome__sub">
-              Viết bằng câu tiếng Việt bình thường — mình tạo sự kiện vào lịch, hoặc chia một mục tiêu
-              thành danh sách việc cần làm để bạn duyệt.
-              Có file .xlsx, .docx hay .pdf thì bấm 📎 — hoặc copy file rồi nhấn Ctrl + V.
+              Cứ viết bằng câu tiếng Việt bình thường. Mình tạo sự kiện vào lịch,
+              hoặc chia một mục tiêu thành danh sách việc để bạn duyệt.
             </p>
 
             <div class="ai-suggestions">
@@ -208,9 +246,53 @@
         @for (m of messages(); track m.id) {
           <div class="message" [class]="'role-' + m.role">
             @if (m.attachmentName) {
-              <span class="message-file">📄 {{ m.attachmentName }}</span>
+              <span class="message-file">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <path d="M14 2v6h6" />
+                </svg>
+                <span class="message-file__name">{{ m.attachmentName }}</span>
+              </span>
             }
             <p>{{ m.text }}</p>
+
+            <!-- Sự kiện đã tạo: dựng thành THẺ có cấu trúc, không phải khối
+                 chữ. Tiêu đề là thứ người dùng cần xác nhận trước tiên nên nó
+                 được tách ra làm dòng riêng, cỡ lớn hơn. -->
+            @if (m.event; as ev) {
+              <div class="event-chip">
+                <p class="event-chip__title">{{ ev.title }}</p>
+                <ul class="event-chip__meta">
+                  <li>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+                      <rect x="3" y="5" width="18" height="16" rx="2" />
+                      <path d="M3 10h18M8 3v4M16 3v4" />
+                    </svg>
+                    <span class="sr-only">Ngày:</span>
+                    <span>{{ ev.dateLabel }}</span>
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="M12 7v5l3 2" />
+                    </svg>
+                    <span class="sr-only">Thời gian:</span>
+                    <span>{{ ev.timeLabel }}</span>
+                  </li>
+                  @if (ev.location) {
+                    <li>
+                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z" />
+                        <circle cx="12" cy="10" r="2.5" />
+                      </svg>
+                      <span class="sr-only">Địa điểm:</span>
+                      <span>{{ ev.location }}</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+
             @if (m.suggestManualForm) {
               <button
                 type="button"
@@ -467,19 +549,24 @@
         }
       </div>
 
-        <div class="composer-area" #composerEl>
+        <div class="composer-area">
           @if (aiError()) {
             <p class="field-error">{{ aiError() }}</p>
           }
 
-          <p class="ai-disclaimer">
-            WorkflowAI có thể mắc lỗi. Hãy kiểm tra các thông tin quan trọng.
-          </p>
+          <!-- Rút gọn còn một dòng. Bản cũ dài 2 dòng và nằm ngay trên ô nhập,
+               chiếm mất phần khung nhìn đáng lẽ để đọc hội thoại. -->
+          <p class="ai-disclaimer">WorkflowAI có thể trả lời sai — hãy kiểm tra lại.</p>
 
           <!-- File đã chọn nhưng chưa gửi. Xoá được trước khi gửi. -->
           @if (pendingFile(); as f) {
             <div class="attachment-chip">
-              <span class="attachment-chip__icon" aria-hidden="true">📄</span>
+              <span class="attachment-chip__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <path d="M14 2v6h6" />
+                </svg>
+              </span>
               <span class="attachment-chip__info">
                 <span class="attachment-chip__name">{{ f.name }}</span>
                 <span class="attachment-chip__meta">{{ pendingFileExt() }} · {{ pendingFileSizeLabel() }}</span>
@@ -522,13 +609,20 @@
               [disabled]="sending()"
               (keydown.enter)="$event.preventDefault(); send()"
             />
+            <!-- Nút tròn có icon thay cho nút chữ "Gửi". Panel hẹp nên nhãn
+                 chữ ăn mất chiều ngang của ô nhập, mà mũi tên lên là quy ước
+                 ai cũng đọc được ở ô chat. Nhãn cho trình đọc màn hình giữ
+                 nguyên trong aria-label. -->
             <button
               type="button"
-              class="primary-btn"
+              class="send-btn"
+              aria-label="Gửi"
               [disabled]="sending() || (!draft().trim() && !pendingFile())"
               (click)="send()"
             >
-              Gửi
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 19V5M5 12l7-7 7 7" />
+              </svg>
             </button>
           </div>
         </div>
@@ -550,5 +644,10 @@
   (pointerup)="onFabPointerUp()"
   (pointercancel)="onFabPointerUp()"
 >
-  ✨
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+    <path
+      fill="currentColor"
+      d="M12 2l1.9 5.6L19.5 9.5 13.9 11.4 12 17l-1.9-5.6L4.5 9.5l5.6-1.9zM18 15l.9 2.6 2.6.9-2.6.9L18 22l-.9-2.6-2.6-.9 2.6-.9z"
+    />
+  </svg>
 </button>
