@@ -46,7 +46,10 @@ export class AuthStore {
   async signInWithGoogle(): Promise<AuthError | null> {
     const { error } = await this.supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/calendar` },
+      options: {
+        redirectTo: `${window.location.origin}/calendar`,
+        scopes: 'openid profile email https://www.googleapis.com/auth/user.birthday.read',
+      },
     });
     return error;
   }

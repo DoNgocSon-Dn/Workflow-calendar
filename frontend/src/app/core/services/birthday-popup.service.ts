@@ -20,13 +20,39 @@ export class BirthdayPopupService {
   readonly data = signal<BirthdayPopupData | null>(null);
 
   /**
-   * Lấy ngày sinh của người dùng (từ Supabase metadata hoặc LocalStorage)
+   * Tự động trích xuất ngày sinh từ tài khoản Google OAuth / Supabase metadata / LocalStorage
    */
   getUserDob(): string {
     const user = this.authStore.user();
-    const metadata = user?.user_metadata as Record<string, unknown> | undefined;
-    const metaDob = typeof metadata?.['date_of_birth'] === 'string' ? metadata['date_of_birth'] : null;
-    if (metaDob) return metaDob;
+    if (user) {
+      const metadata = (user.user_metadata || {}) as Record<string, any>;
+      const identityData = (user.identities?.[0]?.identity_data || {}) as Record<string, any>;
+
+      // 1. Thử đọc từ các trường metadata chuẩn của Google & Supabase
+      const possibleDob =
+        metadata['date_of_birth'] ||
+        metadata['birthday'] ||
+        metadata['dob'] ||
+        identityData['date_of_birth'] ||
+        identityData['birthday'] ||
+        identityData['dob'];
+
+      if (typeof possibleDob === 'string' && possibleDob.trim()) {
+        return possibleDob.trim();
+      }
+
+      // 2. Thử đọc từ mảng birthdays của Google People API
+      const birthdaysArr = metadata['birthdays'] || identityData['birthdays'];
+      if (Array.isArray(birthdaysArr) && birthdaysArr.length > 0) {
+        const bDate = birthdaysArr[0]?.date;
+        if (bDate && bDate.month && bDate.day) {
+          const y = bDate.year || 2000;
+          const m = String(bDate.month).padStart(2, '0');
+          const d = String(bDate.day).padStart(2, '0');
+          return `${y}-${m}-${d}`;
+        }
+      }
+    }
 
     return localStorage.getItem(DOB_STORAGE_KEY) || '';
   }
