@@ -28,13 +28,18 @@
   <!-- NAVIGATION -->
   <nav class="landing-nav">
     <div class="logo">
-      <span class="dot"></span>
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <rect x="3" y="4" width="18" height="17" rx="2" fill="#1a73e8" />
+          <rect x="3" y="4" width="18" height="4" rx="2" fill="#185abc" />
+        </svg>
+      </span>
       <span>Workflow</span>
     </div>
 
     <div class="links">
       <a href="#features" (click)="scrollToSection($event, 'features')">Tính năng</a>
-      <a href="#showcase" (click)="scrollToSection($event, 'showcase')">Showcase</a>
+      <a href="#showcase" (click)="scrollToSection($event, 'showcase')">Khả năng</a>
       <a href="#process" (click)="scrollToSection($event, 'process')">Quy trình</a>
       <a href="#trust" (click)="scrollToSection($event, 'trust')">Bảo mật</a>
     </div>
@@ -50,18 +55,44 @@
         </svg>
       </button>
 
-      <a class="nav-cta" routerLink="/login">Dùng thử miễn phí</a>
+      <a class="nav-cta" routerLink="/login">Bắt đầu miễn phí</a>
+
+      <!-- Chỉ hiện ở <=860px, đúng chỗ mà .links bị ẩn đi. Trước đây menu bị
+           ẩn mà không có gì thay thế, nên mobile mất hẳn điều hướng. -->
+      <button
+        class="nav-burger"
+        type="button"
+        aria-controls="mobileMenu"
+        [attr.aria-expanded]="mobileMenuOpen()"
+        [attr.aria-label]="mobileMenuOpen() ? 'Đóng menu' : 'Mở menu'"
+        (click)="toggleMobileMenu()"
+      >
+        <span class="burger-bars" [class.is-open]="mobileMenuOpen()" aria-hidden="true">
+          <i></i><i></i><i></i>
+        </span>
+      </button>
     </div>
   </nav>
+
+  <!-- MENU MOBILE -->
+  @if (mobileMenuOpen()) {
+    <div class="mobile-menu-scrim" (click)="closeMobileMenu()" aria-hidden="true"></div>
+  }
+  <div id="mobileMenu" class="mobile-menu" [class.is-open]="mobileMenuOpen()">
+    <a href="#features" (click)="scrollToSection($event, 'features')">Tính năng</a>
+    <a href="#showcase" (click)="scrollToSection($event, 'showcase')">Khả năng</a>
+    <a href="#process" (click)="scrollToSection($event, 'process')">Quy trình</a>
+    <a href="#trust" (click)="scrollToSection($event, 'trust')">Bảo mật</a>
+    <a class="mobile-menu-cta" routerLink="/login">Bắt đầu miễn phí</a>
+  </div>
 
   <!-- HERO SECTION -->
   <section class="hero">
     <div class="orb"></div>
-    <div class="grid-ring" style="width:640px;height:640px;"></div>
-    <div class="grid-ring" style="width:460px;height:460px;"></div>
-    <div class="grid-ring" style="width:280px;height:280px;"></div>
+    <div class="grid-ring grid-ring--lg"></div>
+    <div class="grid-ring grid-ring--md"></div>
+    <div class="grid-ring grid-ring--sm"></div>
 
-    <div class="hero-eyebrow">Lịch cá nhân · thế hệ mới</div>
     <div class="hero-ambient" aria-hidden="true">
       <span class="hero-ambient__glow"></span>
       <span class="hero-ambient__ring hero-ambient__ring--1"></span>
@@ -69,16 +100,28 @@
       <span class="hero-ambient__ring hero-ambient__ring--3"></span>
     </div>
 
-    <h1>
-      <span class="line"><span>Thời gian của bạn,</span></span>
-      <span class="line"><span><em>sắp xếp lại.</em></span></span>
-    </h1>
-    <p class="hero-sub">
-      Lịch thông minh có trợ lý AI hiểu tiếng Việt, tự phát hiện trùng giờ, đồng bộ real-time và hiển thị sẵn ngày âm cùng ngày lễ Việt Nam trên từng ô lịch.
-    </p>
+    <!-- Khối chữ nằm riêng trong .hero-inner để nó tự căn giữa phần không
+         gian CÒN LẠI, còn "Kéo xuống" là một mục thật ở cuối luồng. Trước
+         đây "Kéo xuống" định vị tuyệt đối nên không được tính vào phép căn
+         và đè lên nút CTA. -->
+    <div class="hero-inner">
+      <div class="hero-eyebrow">Lịch cá nhân · thế hệ mới</div>
 
-    <div class="hero-cta">
-      <a class="btn-primary" routerLink="/login">Bắt đầu miễn phí</a>
+      <h1>
+        <span class="line"><span>Thời gian của bạn,</span></span>
+        <span class="line"><span><em>sắp xếp lại.</em></span></span>
+      </h1>
+      <p class="hero-sub">
+        Lịch thông minh có trợ lý AI hiểu tiếng Việt, tự phát hiện trùng giờ, đồng bộ real-time và hiển thị sẵn ngày âm cùng ngày lễ Việt Nam trên từng ô lịch.
+      </p>
+
+      <div class="hero-cta">
+        <a class="btn-primary" routerLink="/login">Bắt đầu miễn phí</a>
+        <!-- CTA phụ cho người chưa sẵn sàng đăng nhập. .btn-ghost vốn đã được
+             style đầy đủ nhưng không có ai dùng — chỗ trống này chính là nơi
+             nó được dựng ra để đứng. -->
+        <a class="btn-ghost" href="#features" (click)="scrollToSection($event, 'features')">Xem tính năng</a>
+      </div>
     </div>
 
     <div class="scroll-hint">
@@ -103,8 +146,11 @@
     </div>
   </div>
 
-  <!-- CORE FEATURES SECTION -->
-  <section class="section-pad" id="features">
+  <!-- CORE FEATURES SECTION
+       Đây là phần MỞ ĐẦU của #scrolly ngay bên dưới, không phải một section
+       độc lập — nên nó dùng .section-pad--lead để bỏ padding đáy, chảy thẳng
+       vào phần scrollytelling thay vì để trống nguyên một màn hình. -->
+  <section class="section-pad section-pad--lead" id="features">
     <div class="kicker reveal">Tính năng cốt lõi</div>
     <h2 class="section-title reveal">Một chiếc lịch <span class="dim">biết suy nghĩ</span> thay bạn.</h2>
     <p class="section-desc reveal">Bốn trụ cột đứng sau Workflow — mỗi phần đều được xây để giảm ma sát trong ngày làm việc của bạn.</p>
@@ -312,10 +358,17 @@
 
   <!-- SHOWCASE GALLERY -->
   <section class="section-pad" id="showcase">
-    <div class="kicker reveal">Showcase</div>
+    <!-- Nền động: hai quầng sáng trôi rất chậm. Section này đã có lưới thẻ
+         nên chỉ cần hơi ấm nền, không thêm đường nét. -->
+    <div class="sec-fx sec-fx--aurora" aria-hidden="true">
+      <span class="fx-blob fx-blob--a"></span>
+      <span class="fx-blob fx-blob--b"></span>
+    </div>
+
+    <div class="kicker reveal">Khả năng</div>
     <h2 class="section-title reveal">Được thiết kế cho <span class="dim">mọi nhịp làm việc.</span></h2>
 
-    <div class="gallery" style="margin-top:70px;">
+    <div class="gallery">
       <div class="gallery-row">
         <div class="gallery-card reveal">
           <span class="tag">Import lịch</span>
@@ -329,13 +382,13 @@
         </div>
       </div>
       <div class="gallery-row">
-        <div class="gallery-card reveal" style="flex:1.4;">
-          <span class="tag">Group Workspace</span>
+        <div class="gallery-card gallery-card--wide reveal">
+          <span class="tag">Không gian nhóm</span>
           <h5>Không gian làm việc cho cả nhóm</h5>
           <p>Chat real-time, giao task kèm deadline và trạng thái, lịch chung của nhóm — tất cả nằm một chỗ. Mời thành viên qua email, phân quyền chủ nhóm / quản trị / thành viên / khách.</p>
         </div>
         <div class="gallery-card reveal">
-          <span class="tag">Cá nhân &amp; Đội nhóm</span>
+          <span class="tag">Cá nhân &amp; đội nhóm</span>
           <h5>Ghi chú riêng, bình luận chung</h5>
           <p>Lịch cá nhân có ghi chú (notes) riêng tư; lịch nhóm có bình luận (comment) ngay trong sự kiện để mọi người trao đổi.</p>
         </div>
@@ -346,8 +399,8 @@
           <h5>Tháng, Tuần, Ngày hay Lịch biểu</h5>
           <p>Đổi góc nhìn tuỳ việc đang làm — nhìn tổng quan cả tháng, chia khung giờ theo tuần/ngày, hoặc đọc danh sách tuần tự trong Lịch biểu.</p>
         </div>
-        <div class="gallery-card reveal" style="flex:1.3;">
-          <span class="tag">Thùng rác &amp; Cá nhân hoá</span>
+        <div class="gallery-card gallery-card--wide reveal">
+          <span class="tag">Thùng rác &amp; cá nhân hoá</span>
           <h5>Xoá nhầm vẫn lấy lại được</h5>
           <p>Sự kiện xoá đi nằm trong thùng rác chờ khôi phục, chỉ mất hẳn khi bạn tự xoá vĩnh viễn. Kèm giao diện sáng/tối, đổi màu nhấn, chỉnh mật độ lịch và in lịch ra giấy.</p>
         </div>
@@ -357,6 +410,23 @@
 
   <!-- PROCESS STEPS -->
   <section class="section-pad" id="process">
+    <!-- Vạch dọc thưa như thước thời gian — hợp với nội dung "quy trình",
+         và một vệt sáng chạy dọc gợi tiến trình đang đi tới. -->
+    <!-- Vạch dọc khớp ĐÚNG lưới 4 cột của .process-grid: section có padding
+         6vw mỗi bên nên vùng nội dung là 88vw, các đường chia cột rơi vào
+         6% + {0, 25, 50, 75, 100} × 88% = 6 / 28 / 50 / 72 / 94%.
+         Bản cũ đặt 12/31/50/69/88 — lệch 45–90px so với cạnh thẻ, đọc ra như
+         lỗi render chứ không như một cái lưới. -->
+    <div class="sec-fx sec-fx--rules" aria-hidden="true">
+      <span class="fx-wash"></span>
+      <span class="fx-rule" style="--x: 6%"></span>
+      <span class="fx-rule" style="--x: 28%"></span>
+      <span class="fx-rule" style="--x: 50%"></span>
+      <span class="fx-rule" style="--x: 72%"></span>
+      <span class="fx-rule" style="--x: 94%"></span>
+      <span class="fx-sweep"></span>
+    </div>
+
     <div class="kicker reveal">Quy trình</div>
     <h2 class="section-title reveal">Từ ý nghĩ đến <span class="dim">lịch trình, trong vài giây.</span></h2>
     <p class="section-desc reveal">Không cần học cách dùng — Workflow được thiết kế để bạn tạo lịch nhanh như đang nhắn tin.</p>
@@ -402,6 +472,20 @@
 
   <!-- TRUST & SECURITY -->
   <section class="section-pad" id="trust">
+    <!-- Lưới ô lịch + mưa nhẹ. Đây là section trống nhất nên được nhận
+         hiệu ứng dày nhất trong ba cái. -->
+    <div class="sec-fx sec-fx--rain" aria-hidden="true">
+      <span class="fx-grid"></span>
+      <span class="fx-wash"></span>
+      <span class="fx-drop" style="--x: 9%; --d: 0s; --t: 7.5s"></span>
+      <span class="fx-drop" style="--x: 23%; --d: 2.1s; --t: 9s"></span>
+      <span class="fx-drop" style="--x: 37%; --d: 4.4s; --t: 8s"></span>
+      <span class="fx-drop" style="--x: 52%; --d: 1.3s; --t: 10s"></span>
+      <span class="fx-drop" style="--x: 66%; --d: 5.6s; --t: 7s"></span>
+      <span class="fx-drop" style="--x: 79%; --d: 3.2s; --t: 9.5s"></span>
+      <span class="fx-drop" style="--x: 92%; --d: 6.4s; --t: 8.5s"></span>
+    </div>
+
     <div class="kicker reveal">Bảo mật &amp; độ tin cậy</div>
     <h2 class="section-title reveal">Được xây trên nền tảng <span class="dim">vững chắc.</span></h2>
     <p class="section-desc reveal">Mỗi lớp trong Workflow đều được thiết kế để dữ liệu lịch trình của bạn luôn an toàn và đúng người mới xem/sửa được.</p>
@@ -414,8 +498,9 @@
           </svg>
         </div>
         <div>
-          <h5>Phân quyền theo hàng (RLS)</h5>
-          <p>Mỗi truy vấn dữ liệu đều được kiểm tra ở tầng database — chỉ thành viên đúng calendar mới đọc/sửa được, kể cả khi gọi thẳng API.</p>
+          <h5>Không ai xem được lịch của bạn</h5>
+          <p>Quyền truy cập được kiểm tra ở tầng sâu nhất của hệ thống, không phải ở giao diện — nên kể cả người có kỹ thuật cố lách vào cũng không đọc được lịch mà họ không thuộc về.</p>
+          <p class="trust-tech">Row-Level Security ở tầng database</p>
         </div>
       </div>
       <div class="trust-card reveal">
@@ -425,8 +510,9 @@
           </svg>
         </div>
         <div>
-          <h5>Xác nhận email dùng token 1 lần</h5>
-          <p>Link "Đồng ý/Từ chối" trong email dùng token ngẫu nhiên, tự hết hạn sau 7 ngày và vô hiệu ngay sau khi dùng — không ai respond hộ được người khác.</p>
+          <h5>Lời mời chỉ đúng người nhận trả lời được</h5>
+          <p>Nút "Đồng ý / Từ chối" trong email gắn riêng cho từng người, dùng một lần là hết hiệu lực và tự hết hạn sau 7 ngày — không ai trả lời thay bạn được, kể cả khi email bị chuyển tiếp.</p>
+          <p class="trust-tech">Token ngẫu nhiên, dùng một lần</p>
         </div>
       </div>
       <div class="trust-card reveal">
@@ -436,8 +522,9 @@
           </svg>
         </div>
         <div>
-          <h5>Realtime an toàn</h5>
-          <p>Kết nối WebSocket được xác thực JWT ngay khi mở, mỗi calendar là một room riêng — không rò dữ liệu chéo giữa các lịch khác nhau.</p>
+          <h5>Đồng bộ tức thì mà không lẫn dữ liệu</h5>
+          <p>Mỗi lịch chạy trên một kênh riêng và được xác thực ngay từ lúc kết nối, nên thay đổi ở lịch này không bao giờ lọt sang lịch khác.</p>
+          <p class="trust-tech">WebSocket xác thực bằng JWT</p>
         </div>
       </div>
       <div class="trust-card reveal">
@@ -447,8 +534,9 @@
           </svg>
         </div>
         <div>
-          <h5>Giới hạn tần suất AI</h5>
-          <p>Trợ lý AI được giới hạn số lượt gọi mỗi giờ để tránh lạm dụng, đồng thời luôn có bước xác nhận thủ công trước khi tạo sự kiện không rõ ràng.</p>
+          <h5>AI không bao giờ tự ý tạo lịch rác</h5>
+          <p>Câu nào mơ hồ thì trợ lý chuyển sang form để bạn tự xác nhận, chứ không đoán bừa. Số lượt gọi mỗi giờ cũng có giới hạn để không ai lạm dụng được.</p>
+          <p class="trust-tech">Luôn có bước xác nhận thủ công</p>
         </div>
       </div>
     </div>
@@ -478,17 +566,25 @@
       <h2 class="reveal">Sẵn sàng cho <span class="dim">nhịp mới</span> chưa?</h2>
       <p class="sub reveal">Đăng nhập bằng Google là dùng được ngay — không cần đặt mật khẩu, không có gói trả phí.</p>
       <div class="hero-cta reveal">
-        <a class="btn-primary" routerLink="/login">Bắt đầu ngay</a>
+        <a class="btn-primary" routerLink="/login">Bắt đầu miễn phí</a>
       </div>
     </div>
   </section>
 
   <!-- FOOTER -->
   <footer>
-    <div class="logo"><span class="dot"></span> Workflow</div>
+    <div class="logo">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <rect x="3" y="4" width="18" height="17" rx="2" fill="#1a73e8" />
+          <rect x="3" y="4" width="18" height="4" rx="2" fill="#185abc" />
+        </svg>
+      </span>
+      <span>Workflow</span>
+    </div>
     <div class="f-links">
       <a href="#features" (click)="scrollToSection($event, 'features')">Tính năng</a>
-      <a href="#showcase" (click)="scrollToSection($event, 'showcase')">Showcase</a>
+      <a href="#showcase" (click)="scrollToSection($event, 'showcase')">Khả năng</a>
       <a href="#trust" (click)="scrollToSection($event, 'trust')">Bảo mật</a>
       <a routerLink="/login">Đăng nhập</a>
     </div>

@@ -403,7 +403,9 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 120px 6vw 60px;
+  /* Trên và dưới bằng nhau thì align-items:center mới cho ra giữa thật.
+     120/60 khiến thẻ tụt xuống 30px so với tâm màn hình. */
+  padding: 100px 6vw;
 }
 
 .auth-card {
@@ -560,7 +562,7 @@ main {
   }
 
   main {
-    padding: 110px 5vw 50px;
+    padding: 92px 5vw;
   }
 }
 
@@ -852,7 +854,10 @@ main {
 
 /* --- Header: gắn vào trang thay vì nổi lềnh bềnh bên trên ------- */
 .login-nav {
-  position: relative;
+  /* KHÔNG khai position ở đây. Luật trên (dòng ~278) đã đặt `fixed`;
+     ghi đè bằng `relative` sẽ kéo thanh nav trở vào luồng, đẩy cả <main>
+     xuống đúng chiều cao nav — đó là lý do thẻ đăng nhập bị lệch xuống.
+     `::after` bên dưới vẫn neo được vì `fixed` cũng là giá trị positioned. */
   z-index: 3;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);

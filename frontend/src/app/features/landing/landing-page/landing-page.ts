@@ -7,6 +7,7 @@ import {
   NgZone,
   OnInit,
   inject,
+  signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { gsap } from 'gsap';
@@ -14,12 +15,20 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
+/** Khoá phiên: intro đầy đủ chỉ chạy MỘT lần mỗi phiên trình duyệt. Lần vào
+ *  thứ hai trở đi, người dùng đã biết trang trông thế nào — bắt họ xem lại
+ *  màn mở đầu là thu phí trên chính người quay lại nhiều nhất. */
+const INTRO_SEEN_KEY = 'workflow-landing-intro-seen';
+
 @Component({
   selector: 'app-landing-page',
   templateUrl: './landing-page.html',
   styleUrl: './landing-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
+  host: {
+    '(document:keydown.escape)': 'onEscape()',
+  },
 })
 export class LandingPage implements OnInit, AfterViewInit {
   private readonly host = inject(ElementRef<HTMLElement>);
@@ -28,9 +37,29 @@ export class LandingPage implements OnInit, AfterViewInit {
 
   protected readonly currentYear = new Date().getFullYear();
 
+  /** Menu điều hướng trên mobile (<=860px). */
+  protected readonly mobileMenuOpen = signal(false);
+
+  /** Bảo đảm finishIntro() chỉ chạy một lần dù bị gọi từ mấy nguồn. */
+  private introDone = false;
+  private introTimeline: gsap.core.Timeline | null = null;
+
   ngOnInit(): void {
     const savedTheme = localStorage.getItem('workflow-theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
+  }
+
+  protected toggleMobileMenu(): void {
+    this.mobileMenuOpen.update((open) => !open);
+  }
+
+  protected closeMobileMenu(): void {
+    if (this.mobileMenuOpen()) this.mobileMenuOpen.set(false);
+  }
+
+  /** Escape đóng drawer — kỳ vọng chuẩn của mọi lớp phủ. */
+  protected onEscape(): void {
+    this.closeMobileMenu();
   }
 
   toggleTheme(event: MouseEvent): void {
@@ -63,6 +92,10 @@ export class LandingPage implements OnInit, AfterViewInit {
   }
 
   scrollToSection(event: Event, id: string): void {
+    // Bấm một mục trong drawer thì drawer phải đóng lại, nếu không nó che mất
+    // đúng cái section vừa cuộn tới.
+    this.closeMobileMenu();
+
     const target = this.host.nativeElement.querySelector(`#${id}`);
     if (!target) return;
     event.preventDefault();
@@ -79,20 +112,88 @@ export class LandingPage implements OnInit, AfterViewInit {
       container.setAttribute('data-theme', savedTheme);
     }
 
+    // Cổng animation: chỉ giấu nội dung khi CHẮC CHẮN sắp có animation chạy.
+    // Mặc định của CSS là đã hiện, nên nếu khối dưới ném lỗi ở bất kỳ đâu thì
+    // trang vẫn đọc được và nút CTA vẫn bấm được.
+    container?.classList.add('js-anim');
+
     this.zone.runOutsideAngular(() => {
       const ctx = gsap.context(() => {
-        this.initPreloader();
-        this.initScrollProgress();
-        this.initHeroParticles();
-        this.initScrollAnimations();
-        this.initScrollyShowcase();
-        this.initCursorAndInteractiveEffects();
+        try {
+          this.initPreloader();
+          this.initScrollProgress();
+          this.initHeroParticles();
+          this.initScrollAnimations();
+          this.initScrollyShowcase();
+          this.initCursorAndInteractiveEffects();
+        } catch (err) {
+          // Animation hỏng thì chỉ mất animation — không được phép làm mất
+          // nội dung. Gỡ cổng là mọi thứ trở lại trạng thái hiện của CSS.
+          console.error('[landing] animation init failed, falling back to static page', err);
+          container?.classList.remove('js-anim');
+          this.finishIntro();
+        }
       }, this.host.nativeElement);
 
       this.destroyRef.onDestroy(() => {
         ctx.revert();
+        this.teardown.forEach((off) => off());
+        this.teardown = [];
       });
     });
+  }
+
+  /** Các hàm gỡ listener gắn ngoài phạm vi gsap.context() (window/document).
+   *  ctx.revert() không đụng tới chúng, nên phải tự dọn — nếu không, rời khỏi
+   *  trang landing rồi mà scroll/mousemove handler vẫn chạy suốt vòng đời app. */
+  private teardown: Array<() => void> = [];
+
+  /** Đăng ký listener kèm sẵn đường gỡ. */
+  private on<E extends Event = Event>(
+    target: Window | Document,
+    type: string,
+    handler: (event: E) => void,
+    options?: AddEventListenerOptions,
+  ): void {
+    const listener = handler as EventListener;
+    target.addEventListener(type, listener, options);
+    this.teardown.push(() => target.removeEventListener(type, listener, options));
+  }
+
+  /**
+   * Đưa trang về trạng thái "intro đã xong". Gọi bao nhiêu lần cũng an toàn.
+   *
+   * Có BA nguồn gọi, và đó là chủ ý:
+   *   1. onComplete của timeline — đường đi bình thường.
+   *   2. setTimeout failsafe — setTimeout VẪN chạy khi tab ở chế độ nền, còn
+   *      requestAnimationFrame (thứ GSAP dựa vào) thì bị bóp gần như đứng.
+   *      Đây chính là kịch bản từng để lại trang không có nút CTA.
+   *   3. visibilitychange — tab bị ẩn giữa chừng thì kết thúc luôn, đỡ phải
+   *      xem một màn intro đã lỡ nhịp khi quay lại.
+   */
+  private finishIntro(): void {
+    if (this.introDone) return;
+    this.introDone = true;
+
+    // progress(1) áp thẳng giá trị cuối của mọi tween, không cần chờ frame nào.
+    this.introTimeline?.progress(1);
+    this.introTimeline = null;
+
+    const host = this.host.nativeElement as HTMLElement;
+    host.querySelectorAll<HTMLElement>('#preloader, .preloader-panel').forEach((el) => {
+      el.style.display = 'none';
+    });
+
+    document.documentElement.classList.remove('is-loading');
+
+    // Gỡ cổng chỉ cho phần hero: .reveal vẫn cần cổng vì ScrollTrigger còn
+    // phải reveal chúng khi người dùng cuộn xuống.
+    gsap.set(
+      host.querySelectorAll('.hero-eyebrow, .hero-sub, .hero-cta, .hero-word, .hero-phrase'),
+      { opacity: 1, y: 0, filter: 'blur(0px)', clearProps: 'filter' },
+    );
+
+    ScrollTrigger.refresh();
   }
 
   /** Nhịp chuyển cảnh, tính bằng giây trên MỘT timeline duy nhất. Gom về đây
@@ -129,23 +230,54 @@ export class LandingPage implements OnInit, AfterViewInit {
 
     this.splitHeroText();
 
+    // Tab mở ở chế độ nền (Ctrl+Click, khôi phục phiên): requestAnimationFrame
+    // bị bóp nên timeline sẽ đứng giữa chừng. Bỏ qua intro luôn — người dùng
+    // quay lại thấy trang hoàn chỉnh, không thấy một màn mở đầu dở dang.
+    const seenThisSession = sessionStorage.getItem(INTRO_SEEN_KEY) === '1';
+    if (document.visibilityState === 'hidden' || seenThisSession || this.reducedMotion) {
+      this.finishIntro();
+      return;
+    }
+    sessionStorage.setItem(INTRO_SEEN_KEY, '1');
+
+    // Tab bị ẩn GIỮA CHỪNG intro thì cũng kết thúc luôn, vì lý do y hệt.
+    this.on(document, 'visibilitychange', () => {
+      if (document.visibilityState === 'hidden') this.finishIntro();
+    });
+
     if (!preloader || !word || !mark || !panelLeft || !panelRight) {
       root.classList.remove('is-loading');
-      this.buildIntroTimeline(null).play();
+      this.playIntro(this.buildIntroTimeline(null));
       return;
     }
 
-    const LETTER_REVEAL_DONE = 900;
-    const WORD_HOLD = 500;
-    const MARK_HOLD = 550;
+    // Rút từ 2500ms xuống 900ms trước khi timeline hero bắt đầu. Preloader là
+    // thuế thu trên MỌI lượt truy cập; giữ nó ở mức "một nhịp thở", không phải
+    // "một đoạn phim".
+    const LETTER_REVEAL_DONE = 480;
+    const WORD_HOLD = 120;
+    const MARK_HOLD = 180;
 
-    setTimeout(() => {
+    const startAt = window.setTimeout(() => {
       word.classList.add('hide');
       mark.classList.add('show');
-      setTimeout(() => {
-        this.buildIntroTimeline({ preloader, mark, panelLeft, panelRight }).play();
-      }, 550 + MARK_HOLD);
+      const thenAt = window.setTimeout(() => {
+        this.playIntro(this.buildIntroTimeline({ preloader, mark, panelLeft, panelRight }));
+      }, 120 + MARK_HOLD);
+      this.teardown.push(() => clearTimeout(thenAt));
     }, LETTER_REVEAL_DONE + WORD_HOLD);
+    this.teardown.push(() => clearTimeout(startAt));
+  }
+
+  /** Chạy timeline intro kèm dây bảo hiểm bằng setTimeout. */
+  private playIntro(tl: gsap.core.Timeline): void {
+    this.introTimeline = tl;
+    tl.play();
+
+    // Dài hơn thời lượng thật một quãng rộng rãi. Nếu timeline chạy xong bình
+    // thường thì finishIntro() đã khoá lại và lần gọi này không làm gì cả.
+    const failsafe = window.setTimeout(() => this.finishIntro(), (tl.duration() + 2) * 1000);
+    this.teardown.push(() => clearTimeout(failsafe));
   }
 
   /**
@@ -175,15 +307,7 @@ export class LandingPage implements OnInit, AfterViewInit {
     const tl = gsap.timeline({
       paused: true,
       defaults: { ease: CINEMATIC },
-      onComplete: () => {
-        if (preloaderParts) {
-          preloaderParts.preloader.style.display = 'none';
-          preloaderParts.panelLeft.style.display = 'none';
-          preloaderParts.panelRight.style.display = 'none';
-        }
-        document.documentElement.classList.remove('is-loading');
-        ScrollTrigger.refresh();
-      },
+      onComplete: () => this.finishIntro(),
     });
 
     // --- Nền Hero hiện ra TRƯỚC, ngay phía sau preloader còn đang che ---
@@ -295,13 +419,13 @@ export class LandingPage implements OnInit, AfterViewInit {
       bar.style.width = `${pct}%`;
     };
 
-    window.addEventListener('scroll', updateProgress, { passive: true });
+    this.on(window, 'scroll', updateProgress, { passive: true });
     updateProgress();
   }
 
   private initHeroParticles(): void {
     const hero = this.host.nativeElement.querySelector('.hero') as HTMLElement | null;
-    if (!hero) return;
+    if (!hero || this.reducedMotion) return;
 
     const COUNT = 16;
     for (let i = 0; i < COUNT; i++) {
@@ -320,14 +444,19 @@ export class LandingPage implements OnInit, AfterViewInit {
   }
 
   private initScrollAnimations(): void {
-    const orb = this.host.nativeElement.querySelector('.orb');
-    if (orb) {
-      gsap.to(orb, { scale: 1.15, duration: 6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-    }
+    // Hai tween này chạy VÔ HẠN. Reveal theo cuộn thì vẫn giữ (nó có điểm
+    // dừng, và là cách nội dung xuất hiện), nhưng thứ quay/phồng mãi mãi thì
+    // đúng là cái prefers-reduced-motion muốn loại bỏ.
+    if (!this.reducedMotion) {
+      const orb = this.host.nativeElement.querySelector('.orb');
+      if (orb) {
+        gsap.to(orb, { scale: 1.15, duration: 6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      }
 
-    const gridRings = this.host.nativeElement.querySelectorAll('.grid-ring');
-    if (gridRings.length) {
-      gsap.to(gridRings, { rotate: 360, duration: 40, repeat: -1, ease: 'none', transformOrigin: 'center center' });
+      const gridRings = this.host.nativeElement.querySelectorAll('.grid-ring');
+      if (gridRings.length) {
+        gsap.to(gridRings, { rotate: 360, duration: 40, repeat: -1, ease: 'none', transformOrigin: 'center center' });
+      }
     }
 
     const heroOrb = this.host.nativeElement.querySelector('.hero .orb');
@@ -349,26 +478,17 @@ export class LandingPage implements OnInit, AfterViewInit {
       });
     });
 
-    this.host.nativeElement.querySelectorAll('.feature-visual').forEach((el: Element) => {
-      gsap.fromTo(
-        el,
-        { scale: 0.92 },
-        {
-          scale: 1,
-          duration: 1.2,
-          ease: 'power2.out',
-          scrollTrigger: { trigger: el, start: 'top 80%', toggleActions: 'play none none reverse' },
-        }
-      );
-    });
-
     this.host.nativeElement.querySelectorAll('.section-title').forEach((title: Element) => {
       const original = title.innerHTML;
       const words = original.split(/(<span[^>]*>.*?<\/span>|\s+)/).filter(Boolean);
+      // Kiểu dáng nằm trong CSS (.word-mask / .word-inner), không nhồi vào
+      // thuộc tính style. Bản cũ đặt vertical-align:top kèm padding dọc
+      // 0.12em ngay trên inline-block, khiến tiêu đề hai dòng có chữ tràn
+      // xuống dưới hộp h2 và chạm vào đoạn mô tả ngay bên dưới.
       title.innerHTML = words
         .map((w: string) => {
           if (/^\s+$/.test(w)) return w;
-          return `<span class="word-mask" style="display:inline-block; overflow:visible; vertical-align:top; padding-top:0.12em; padding-bottom:0.12em;"><span class="word-inner" style="display:inline-block; transform:translateY(115%);">${w}</span></span>`;
+          return `<span class="word-mask"><span class="word-inner">${w}</span></span>`;
         })
         .join('');
 
@@ -587,18 +707,22 @@ export class LandingPage implements OnInit, AfterViewInit {
   }
 
   private initCursorAndInteractiveEffects(): void {
-    if (!window.matchMedia('(pointer:fine)').matches) return;
+    // Nút bám chuột và thẻ nghiêng 3D đều là chuyển động do con trỏ điều
+    // khiển — đúng loại mà prefers-reduced-motion muốn tắt.
+    if (!window.matchMedia('(pointer:fine)').matches || this.reducedMotion) return;
 
     const dot = this.host.nativeElement.querySelector('#cursorDot') as HTMLElement | null;
     const ring = this.host.nativeElement.querySelector('#cursorRing') as HTMLElement | null;
     if (!dot || !ring) return;
 
-    const moveDot = gsap.quickTo(dot, 'x', { duration: 0.12, ease: 'power3.out' });
-    const moveDotY = gsap.quickTo(dot, 'y', { duration: 0.12, ease: 'power3.out' });
-    const moveRing = gsap.quickTo(ring, 'x', { duration: 0.4, ease: 'power3.out' });
-    const moveRingY = gsap.quickTo(ring, 'y', { duration: 0.4, ease: 'power3.out' });
+    // Vòng ngoài đuổi theo trong 0.4s khiến trang có cảm giác lag ngay cả khi
+    // không lag. 0.16s vẫn còn độ trễ mềm nhưng bám sát con trỏ thật.
+    const moveDot = gsap.quickTo(dot, 'x', { duration: 0.1, ease: 'power3.out' });
+    const moveDotY = gsap.quickTo(dot, 'y', { duration: 0.1, ease: 'power3.out' });
+    const moveRing = gsap.quickTo(ring, 'x', { duration: 0.16, ease: 'power3.out' });
+    const moveRingY = gsap.quickTo(ring, 'y', { duration: 0.16, ease: 'power3.out' });
 
-    window.addEventListener('mousemove', (e: MouseEvent) => {
+    this.on<MouseEvent>(window, 'mousemove', (e) => {
       moveDot(e.clientX);
       moveDotY(e.clientY);
       moveRing(e.clientX);
@@ -606,7 +730,7 @@ export class LandingPage implements OnInit, AfterViewInit {
     });
 
     this.host.nativeElement
-      .querySelectorAll('a, button, .gallery-card, .feature-visual, .theme-toggle')
+      .querySelectorAll('a, button, .gallery-card, .theme-toggle')
       .forEach((el: Element) => {
         el.addEventListener('mouseenter', () => ring.classList.add('hovered'));
         el.addEventListener('mouseleave', () => ring.classList.remove('hovered'));
@@ -625,7 +749,7 @@ export class LandingPage implements OnInit, AfterViewInit {
       });
     });
 
-    this.host.nativeElement.querySelectorAll('.gallery-card, .feature-visual').forEach((card: Element) => {
+    this.host.nativeElement.querySelectorAll('.gallery-card').forEach((card: Element) => {
       const cardEl = card as HTMLElement;
       cardEl.style.transformStyle = 'preserve-3d';
       cardEl.addEventListener('mousemove', (e: Event) => {
@@ -649,7 +773,7 @@ export class LandingPage implements OnInit, AfterViewInit {
 
     const heroOrb = this.host.nativeElement.querySelector('.hero .orb');
     if (heroOrb) {
-      window.addEventListener('mousemove', (e: MouseEvent) => {
+      this.on<MouseEvent>(window, 'mousemove', (e) => {
         const cx = (e.clientX / window.innerWidth - 0.5) * 40;
         const cy = (e.clientY / window.innerHeight - 0.5) * 40;
         gsap.to(heroOrb, { x: cx, y: cy, duration: 1, ease: 'power2.out' });

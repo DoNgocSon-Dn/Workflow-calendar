@@ -58,9 +58,63 @@ h1, h2, h3, h4, h5,
   font-family: var(--font-heading);
 }
 
-::selection {
-  background: var(--accent);
-  color: #fff;
+/* ::selection đã chuyển sang styles.css — nó là pseudo-element cấp document
+   nên phải global, viết ở đây Angular sẽ scope và rule chết. */
+
+/* ─────────── GIẢM CHUYỂN ĐỘNG (toàn trang) ───────────
+   Trước đây các khối reduced-motion nằm rải rác và chỉ tắt vài hiệu ứng nền,
+   trong khi thứ gây khó chịu NHẤT — băng chữ chạy ngang không ngừng — lại
+   không bị đụng tới. Gom về một chỗ và tắt mọi animation lặp vô hạn. */
+@media (prefers-reduced-motion: reduce) {
+  .marquee,
+  .particle,
+  .scroll-hint .bar,
+  .cta-glow,
+  .cta-badge-dot,
+  .board-wrap,
+  .cmd-caret,
+  .warn-badge,
+  .fx-blob,
+  .fx-sweep {
+    animation: none !important;
+  }
+
+  .cta-stars,
+  .fx-drop,
+  .particle {
+    display: none;
+  }
+
+  /* Băng chữ đứng yên thì phải nhìn thấy được từ đầu, không bị cắt cụt. */
+  .marquee-wrap {
+    white-space: normal;
+  }
+
+  .marquee {
+    flex-wrap: wrap;
+    gap: 12px 32px;
+  }
+}
+
+/* ─────────── FOCUS ───────────
+   Trên nền gần đen, focus ring mặc định của trình duyệt gần như không thấy.
+   Dùng hai lớp outline (accent + nền) để vòng focus đọc được ở CẢ giao diện
+   sáng và tối, kể cả khi nó nằm trên thẻ, trên ảnh nền hay trên nút xanh. */
+.landing-container a:focus-visible,
+.landing-container button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+/* Nút bo tròn hoàn toàn thì vòng focus cũng phải bo theo, nếu không sẽ ra
+   một hình chữ nhật ôm ngoài viên thuốc. */
+.landing-container .btn-primary:focus-visible,
+.landing-container .btn-ghost:focus-visible,
+.landing-container .nav-cta:focus-visible,
+.landing-container .theme-toggle:focus-visible {
+  border-radius: 999px;
 }
 
 /* NOISE OVERLAY */
@@ -101,19 +155,27 @@ h1, h2, h3, h4, h5,
   color: var(--ink);
 }
 
-.logo .dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
+/* Chấm tròn cũ đổi thành tờ lịch, trùng với logo trong app và trang chính. */
+.logo-mark {
+  display: inline-flex;
+  flex: none;
+}
+
+.logo-mark svg {
+  display: block;
 }
 
 .landing-nav .links {
   display: flex;
   gap: 36px;
-  font-size: 13px;
+  /* 13px + weight 400 + màu --ink-dim (#9ca3af) đọc ra như chữ bị vô hiệu
+     hoá. Kéo cả ba lên: to hơn 1px, đậm hơn một nấc, và lấy màu dẫn xuất từ
+     --ink thay vì --ink-dim — sáng hơn hẳn nhưng vẫn dưới logo và nút CTA
+     nên thứ bậc trong thanh nav không bị phá. */
+  font-size: 14px;
+  font-weight: 500;
   letter-spacing: 0.04em;
-  color: var(--ink-dim);
+  color: color-mix(in srgb, var(--ink) 82%, transparent);
 }
 
 .landing-nav .links a {
@@ -147,6 +209,122 @@ h1, h2, h3, h4, h5,
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+/* ─────────── MENU MOBILE ───────────
+   Nút hamburger chỉ tồn tại ở <=860px — đúng ngưỡng mà .links bị ẩn. */
+.nav-burger {
+  display: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.burger-bars {
+  position: relative;
+  width: 16px;
+  height: 12px;
+  display: block;
+}
+
+.burger-bars i {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 1.5px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.18s ease;
+}
+
+.burger-bars i:nth-child(1) { top: 0; }
+.burger-bars i:nth-child(2) { top: 5.25px; }
+.burger-bars i:nth-child(3) { top: 10.5px; }
+
+/* Ba vạch gập lại thành dấu X — cùng một element, không đổi icon. */
+.burger-bars.is-open i:nth-child(1) {
+  transform: translateY(5.25px) rotate(45deg);
+}
+
+.burger-bars.is-open i:nth-child(2) {
+  opacity: 0;
+}
+
+.burger-bars.is-open i:nth-child(3) {
+  transform: translateY(-5.25px) rotate(-45deg);
+}
+
+.mobile-menu-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 48;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.mobile-menu {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 49;
+  width: min(300px, 82vw);
+  padding: 96px 28px 32px;
+  background: var(--bg-2);
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  /* Trượt ra ngoài mép phải khi đóng. Dùng translate + visibility thay vì
+     display:none để có animation, và visibility mới là thứ giữ nó khỏi
+     bẫy focus của bàn phím khi đang đóng. */
+  transform: translateX(100%);
+  visibility: hidden;
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.32s;
+}
+
+.mobile-menu.is-open {
+  transform: translateX(0);
+  visibility: visible;
+}
+
+.mobile-menu a {
+  color: var(--ink);
+  text-decoration: none;
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.mobile-menu a:last-of-type {
+  border-bottom: none;
+}
+
+.mobile-menu .mobile-menu-cta {
+  margin-top: 20px;
+  padding: 14px 20px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  text-align: center;
+  font-weight: 600;
+  border-bottom: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-menu,
+  .burger-bars i {
+    transition: none;
+  }
 }
 
 .theme-toggle {
@@ -199,14 +377,26 @@ section {
 
 /* HERO SECTION */
 .hero {
-  height: 100svh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  /* padding trên chừa chỗ cho thanh nav cố định, dưới chừa lề cho dòng
+     "Kéo xuống". Cả hai đều là mục thật trong luồng nên không thể đè nhau. */
+  padding: clamp(88px, 9vh, 104px) 6vw 28px;
+}
+
+/* Chiếm hết phần không gian còn lại rồi tự căn giữa bên trong — nhờ vậy
+   khối chữ luôn cân, bất kể dòng "Kéo xuống" cao bao nhiêu. */
+.hero-inner {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  position: relative;
-  padding: 0 6vw;
+  width: 100%;
 }
 
 .hero-eyebrow {
@@ -219,18 +409,22 @@ section {
 }
 
 .hero h1 {
-  font-size: clamp(38px, 7.5vw, 104px);
-  line-height: 1.22;
+  font-size: clamp(38px, 7vw, 96px);
+  /* 1.3 chứ không phải 1.15–1.2: dấu tiếng Việt xếp cao hơn chữ Latin,
+     dòng dưới có "ắ" "ế" gần chạm phần chân của dòng trên. Hạ về 1.2 sẽ
+     chật thêm chứ không thoáng ra. */
+  line-height: 1.3;
   font-weight: 700;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.025em;
   max-width: 1200px;
 }
 
 .hero h1 .line {
   overflow: visible;
   display: block;
-  padding-top: 0.12em;
-  padding-bottom: 0.12em;
+  /* Cộng với line-height 1.3 thành khoảng cách chân dòng ~1.6em. */
+  padding-top: 0.15em;
+  padding-bottom: 0.15em;
   margin-top: 0;
   margin-bottom: 0;
 }
@@ -239,15 +433,20 @@ section {
   font-style: normal;
   font-family: inherit;
   font-weight: inherit;
-  color: var(--ink-dim);
+  /* Xem ghi chú ở .section-title .dim: "sắp xếp lại." mới là lời hứa của sản
+     phẩm, không nên là phần mờ nhất trên hero. */
+  color: color-mix(in srgb, var(--ink) 62%, transparent);
 }
 
 .hero-sub {
   margin-top: 34px;
-  max-width: 480px;
-  color: var(--ink-dim);
-  font-size: 17px;
-  line-height: 1.6;
+  max-width: 520px;
+  /* --ink-dim (#9ca3af) là token chữ phụ, đứng cạnh H1 104px thì chìm.
+     Dẫn xuất từ --ink để sáng hơn mà vẫn đúng ở cả hai giao diện —
+     hardcode #cbd5e1 sẽ mất hút trên nền sáng. */
+  color: color-mix(in srgb, var(--ink) 78%, transparent);
+  font-size: 18px;
+  line-height: 1.65;
   opacity: 0;
 }
 
@@ -290,10 +489,14 @@ section {
 }
 
 .scroll-hint {
-  position: absolute;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
+  /* Nằm trong luồng, là mục cuối của .hero — không còn định vị tuyệt đối
+     nên không thể đè lên nút CTA, và luôn ở dưới cùng dù nội dung dài ngắn
+     thế nào. Cũng bỏ luôn kiểu căn giữa bằng transform, thứ đã hai lần
+     hỏng trên trang này khi có cái khác ghi vào transform. */
+  flex: none;
+  /* 24px khiến "Kéo xuống" dính vào nút CTA thành một cụm — nhìn qua tưởng nó
+     là chú thích của cái nút. Nó là gợi ý phụ, phải đứng tách hẳn ra. */
+  margin-top: 56px;
   font-size: 11px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -359,6 +562,10 @@ section {
   pointer-events: none;
 }
 
+.grid-ring--lg { width: 640px; height: 640px; }
+.grid-ring--md { width: 460px; height: 460px; }
+.grid-ring--sm { width: 280px; height: 280px; }
+
 /* MARQUEE */
 .marquee-wrap {
   border-top: 1px solid var(--line);
@@ -397,8 +604,15 @@ section {
 
 /* SECTION HEADER PATTERN */
 .section-pad {
-  padding: 180px 6vw;
-  scroll-margin-top: 80px;
+  /* 180px trên+dưới cho ra gần một màn hình trắng giữa hai section. 128px
+     vẫn thoáng nhưng không còn khiến trang trông như bị thiếu nội dung. */
+  padding: 128px 6vw;
+  scroll-margin-top: 88px;
+}
+
+/* Section chỉ đóng vai tiêu đề mở đầu cho khối ngay dưới nó. */
+.section-pad--lead {
+  padding-bottom: 0;
 }
 
 .kicker {
@@ -410,139 +624,59 @@ section {
 }
 
 .section-title {
-  font-size: clamp(28px, 4.2vw, 58px);
+  font-size: clamp(28px, 4.2vw, 52px);
   font-weight: 700;
   letter-spacing: -0.015em;
-  line-height: 1.25;
+  /* 1.32 chứ không phải 1.25, cùng lý do đã ghi ở .hero h1: dấu tiếng Việt
+     xếp cao hơn chữ Latin nên hai dòng liền nhau bị chật. Ở đây còn thêm một
+     lý do: initScrollAnimations() bọc mỗi từ trong .word-mask có padding dọc
+     0.12em, làm hộp chữ cao hơn line box. */
+  line-height: 1.32;
   max-width: 820px;
 }
 
-.section-title .dim {
-  color: var(--ink-dim);
+/* Bọc reveal theo từng từ, do initScrollAnimations() sinh ra lúc chạy.
+   Giữ nguyên căn baseline mặc định: đây chỉ là lớp bọc animation, nó không
+   được phép làm đổi cách dòng chữ xếp. overflow:visible để dấu tiếng Việt
+   (dấu mũ, dấu nặng) không bị cắt trong lúc từ đang trượt lên. */
+.section-title .word-mask {
+  display: inline-block;
+  overflow: visible;
 }
 
+.section-title .word-inner {
+  display: inline-block;
+}
+
+/* Trạng thái ẩn ban đầu chỉ tồn tại khi JS thật sự sắp animate. */
+.js-anim .section-title .word-inner {
+  transform: translateY(115%);
+}
+
+/* --ink-dim là token của CHỮ PHỤ. Dùng nó cho nửa sau của tiêu đề khiến
+   đúng phần mang lời hứa ("biết suy nghĩ thay bạn") đọc ra như bị vô hiệu
+   hoá. Vẫn giữ hai tông, nhưng tông nhạt bây giờ dẫn xuất từ --ink nên nó
+   là "nhạt hơn", không phải "kém quan trọng hơn". */
+.section-title .dim {
+  color: color-mix(in srgb, var(--ink) 62%, transparent);
+}
+
+/* 24px giữa tiêu đề 52px và chữ 17px là quá sát — chân chữ có dấu của dòng
+   cuối gần chạm dòng mô tả. Khoảng hở phải tỉ lệ với cỡ chữ lớn hơn. */
 .section-desc {
-  margin-top: 24px;
+  margin-top: 32px;
   color: var(--ink-dim);
   font-size: 17px;
-  max-width: 520px;
+  max-width: 560px;
   line-height: 1.7;
 }
 
-/* FEATURE PIN SECTION */
-.feature-pin {
-  height: 100svh;
-  display: flex;
-  align-items: center;
-  padding: 0 6vw;
-  gap: 8vw;
-}
-
-.feature-text {
-  flex: 0 0 auto;
-  max-width: 420px;
-}
-
+/* Nhãn "01 / Trợ lý AI" trong các khối chữ của scrollytelling. */
 .feature-index {
   font-size: 13px;
   color: var(--ink-dim);
   letter-spacing: 0.1em;
   margin-bottom: 18px;
-}
-
-.feature-text h3 {
-  font-size: clamp(28px, 3.4vw, 44px);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-  margin-bottom: 20px;
-}
-
-.feature-text p {
-  color: var(--ink-dim);
-  font-size: 16px;
-  line-height: 1.75;
-}
-
-.feature-visual {
-  flex: 1;
-  height: 70vh;
-  border-radius: 24px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.feature-visual .glow {
-  position: absolute;
-  inset: 0;
-  background: var(--accent-dim);
-}
-
-/* CALENDAR CARD MOCKUP */
-.cal-card {
-  width: 78%;
-  background: var(--bg-2);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 26px;
-  position: relative;
-  z-index: 2;
-  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.35);
-}
-
-.cal-card .cal-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 18px;
-}
-
-.cal-card .cal-head span {
-  font-size: 13px;
-  color: var(--ink-dim);
-  letter-spacing: 0.05em;
-}
-
-.cal-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
-}
-
-.cal-grid div {
-  aspect-ratio: 1;
-  border-radius: 8px;
-  background: rgba(127, 127, 127, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  color: var(--ink-dim);
-}
-
-.cal-grid div.active {
-  background: var(--accent);
-  color: #fff;
-  font-weight: 700;
-}
-
-.cal-grid div.dot-mark {
-  position: relative;
-}
-
-.cal-grid div.dot-mark::after {
-  content: '';
-  position: absolute;
-  bottom: 5px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--accent);
 }
 
 .chip-row {
@@ -567,26 +701,54 @@ section {
 .gallery {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 24px;
+  margin-top: 60px;
 }
 
 .gallery-row {
   display: flex;
-  gap: 32px;
+  gap: 24px;
 }
 
+
+/* Bố cục thẻ dùng GRID BA HÀNG cố định: tag / tiêu đề / mô tả.
+   Cách cũ là flex + justify-content:space-between + .tag{padding-bottom:48px},
+   nên vị trí tiêu đề phụ thuộc vào đoạn văn dài mấy dòng — hai thẻ cạnh nhau
+   trong cùng một hàng lệch tiêu đề tới 46px, nhìn ra là hỏng chứ không phải
+   có ý đồ. Grid neo mỗi phần vào đúng hàng của nó nên mọi thẻ tự khớp. */
 .gallery-card {
   flex: 1;
-  min-height: 340px;
+  /* 300px là chiều cao dành sẵn cho ảnh minh hoạ chưa bao giờ được thêm vào,
+     nên thẻ trông như thiếu nội dung. Hạ xuống cho thẻ ôm sát chữ; khi nào có
+     ảnh thật thì nâng lại. */
+  min-height: 210px;
   border-radius: 20px;
   border: 1px solid var(--line);
-  background: var(--card);
+  /* Pha một chút accent vào mặt thẻ để nó ngả xanh cùng tông với nền
+     trang, thay vì đứng riêng thành mảng xám ấm. */
+  background: color-mix(in srgb, var(--accent) 5%, var(--card));
   position: relative;
   overflow: hidden;
-  padding: 36px 32px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  padding: 30px 32px 32px;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  align-content: start;
+  gap: 14px;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s ease, background 0.35s ease;
+}
+
+/* Nhịp lưới không đều là chủ ý — nhưng phải khai báo SAU .gallery-card, vì
+   cùng độ đặc hiệu thì luật viết sau mới thắng. Đặt trước thì flex:1 của
+   .gallery-card đè lại và mọi thẻ rộng bằng nhau. */
+.gallery-card--wide {
+  flex: 1.28;
+}
+
+.gallery-card:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+  background: color-mix(in srgb, var(--accent) 9%, var(--card));
 }
 
 .gallery-card .tag {
@@ -594,29 +756,40 @@ section {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--accent);
-  margin-bottom: auto;
-  padding-bottom: 48px;
 }
 
 .gallery-card h5 {
   font-size: 20px;
   font-weight: 600;
-  margin-bottom: 12px;
   line-height: 1.3;
+  margin: 0;
 }
 
 .gallery-card p {
   color: var(--ink-dim);
   font-size: 14px;
   line-height: 1.65;
-  max-width: 280px;
+  margin: 0;
+  /* 280px trong một thẻ rộng 756px là ~35 ký tự/dòng — dưới ngưỡng dễ đọc
+     (45–75) và để lại một mảng trống lớn bên phải. 46ch bám theo cỡ chữ nên
+     đúng ở mọi bề rộng thẻ. */
+  max-width: 46ch;
 }
 
+/* Lớp phủ cũ là rgba(217, 255, 91, .06) — vàng chanh, sót lại từ bảng màu
+   trước. Phủ lên mặt thẻ xám nó thành ra ngả ô liu, lệch hẳn khỏi tông
+   xanh của trang. Thay bằng vệt sáng hắt từ góc trên trái, lấy màu từ
+   chính --accent nên tự đúng ở cả hai giao diện. */
 .gallery-card::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(217, 255, 91, 0.06);
+  pointer-events: none;
+  background: radial-gradient(
+    120% 90% at 0% 0%,
+    color-mix(in srgb, var(--accent) 14%, transparent),
+    transparent 62%
+  );
 }
 
 /* PROCESS STEPS */
@@ -659,17 +832,30 @@ section {
   line-height: 1.65;
 }
 
+/* Ý "01 → 02 → 03 → 04" là ý tốt nhưng trước đây không truyền đạt được:
+   color:var(--line) tức rgba(...,0.13) — mũi tên mờ hơn cả chữ mờ nhất trên
+   trang, gần như vô hình. Và top:44px canh theo con số nên nó trôi lơ lửng
+   thay vì nằm giữa cạnh nối hai thẻ. */
 .process-arrow {
   position: absolute;
-  top: 44px;
-  right: -1px;
-  width: 22px;
-  height: 22px;
-  color: var(--line);
+  top: 50%;
+  right: -12px;
+  translate: 0 -50%;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: color-mix(in srgb, var(--accent) 70%, var(--ink-dim));
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2;
+}
+
+.process-arrow svg {
+  width: 14px;
+  height: 14px;
 }
 
 /* TRUST / SECURITY */
@@ -681,13 +867,23 @@ section {
 }
 
 .trust-card {
-  background: var(--card);
+  /* Cùng công thức mặt thẻ với .gallery-card để hai khu vực đọc ra là một
+     hệ, không phải hai kiểu thẻ khác nhau. */
+  background: color-mix(in srgb, var(--accent) 5%, var(--card));
   border: 1px solid var(--line);
   border-radius: 20px;
   padding: 32px;
   display: flex;
   gap: 20px;
   align-items: flex-start;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s ease, background 0.35s ease;
+}
+
+.trust-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--line));
+  background: color-mix(in srgb, var(--accent) 8%, var(--card));
 }
 
 .trust-icon {
@@ -717,11 +913,24 @@ section {
   color: var(--ink-dim);
   font-size: 13.5px;
   line-height: 1.65;
+  margin: 0;
+}
+
+/* Thuật ngữ kỹ thuật xuống dòng phụ: người muốn một cái lịch đọc phần trên,
+   người muốn biết nó chạy bằng gì đọc dòng này. Không ai phải đọc "RLS" để
+   hiểu là lịch của mình an toàn. */
+.trust-card .trust-tech {
+  margin-top: 10px;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent) 78%, var(--ink-dim));
 }
 
 /* CTA SECTION */
 .cta-section {
-  padding: 220px 6vw 160px;
+  padding: 150px 6vw 130px;
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -860,37 +1069,35 @@ section {
 }
 
 /* Tôn trọng người tắt hiệu ứng: giữ trang trí nhưng đứng yên. */
-@media (prefers-reduced-motion: reduce) {
-  .cta-glow,
-  .cta-badge-dot {
-    animation: none;
-  }
-
-  .cta-stars {
-    display: none;
-  }
-}
-
+/* 96px ở đây gần bằng hero (104px) trong khi tiêu đề các section giữa chỉ
+   52px — nhịp bị gãy thành to → nhỏ → to. Thang chữ giờ là:
+   hero 96 › CTA 64 › section 52 › copy-step 38. Hero là thứ DUY NHẤT ở bậc
+   cao nhất, đúng vai trò của nó. */
 .cta-section h2 {
-  font-size: clamp(40px, 7vw, 96px);
+  font-size: clamp(36px, 5.4vw, 64px);
   font-weight: 600;
   letter-spacing: -0.03em;
-  line-height: 1;
+  line-height: 1.08;
 }
 
 .cta-section .dim {
-  color: var(--ink-dim);
+  color: color-mix(in srgb, var(--ink) 62%, transparent);
 }
 
+/* Trước đây badge→H2 cách 30px còn H2→mô tả chỉ 15px, nên đoạn mô tả bị hút
+   dính vào tiêu đề thay vì đứng thành một khối riêng. */
 .cta-section p.sub {
-  margin-top: 26px;
+  margin-top: 22px;
+  margin-inline: auto;
+  max-width: 560px;
   color: var(--ink-dim);
   font-size: 17px;
+  line-height: 1.6;
 }
 
 .cta-section .hero-cta {
   justify-content: center;
-  margin-top: 46px;
+  margin-top: 40px;
 }
 
 footer {
@@ -913,18 +1120,31 @@ footer a {
   text-decoration: none;
 }
 
-.reveal {
+/* ══════════════════════════════════════════════════════════════════════
+   CỔNG ANIMATION — .js-anim
+
+   Nguyên tắc: trạng thái MẶC ĐỊNH của trang là ĐÃ HIỆN. Chỉ khi TS thật sự
+   sắp chạy animation nó mới gắn .js-anim lên .landing-container, và lúc đó
+   các phần tử mới bị giấu đi để được reveal.
+
+   Trước đây `opacity: 0` nằm thẳng trên .hero-cta / .reveal, nên bất cứ thứ
+   gì làm timeline không chạy xong — tab mở ở chế độ nền (rAF bị bóp), GSAP
+   ném lỗi — đều để lại trang KHÔNG CÓ NÚT CTA. Đảo chiều mặc định là cách
+   duy nhất khiến lỗi đó không thể tái diễn.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.js-anim .reveal {
   opacity: 0;
   transform: translateY(40px);
 }
 
-/* PRELOADER */
-html.is-loading,
-html.is-loading body {
-  overflow: hidden;
-  height: 100%;
+.js-anim .hero-eyebrow,
+.js-anim .hero-sub,
+.js-anim .hero-cta {
+  opacity: 0;
 }
 
+/* PRELOADER */
 #preloader {
   position: fixed;
   inset: 0;
@@ -935,6 +1155,10 @@ html.is-loading body {
   align-items: center;
   justify-content: center;
   gap: 28px;
+  /* Preloader không có gì để bấm. Không có dòng này, nó vẫn nuốt mọi cú
+     click vào hero suốt thời gian chưa bị display:none — kể cả khi đã mờ
+     tới mức nhìn không thấy. */
+  pointer-events: none;
 }
 
 .preloader-stage {
@@ -947,7 +1171,7 @@ html.is-loading body {
 
 .preloader-word {
   display: flex;
-  transition: opacity 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .preloader-word.hide {
@@ -963,7 +1187,7 @@ html.is-loading body {
   color: var(--ink);
   opacity: 0;
   transform: translateY(26px);
-  animation: letterIn 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation: letterIn 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 @keyframes letterIn {
@@ -981,7 +1205,7 @@ html.is-loading body {
   color: var(--accent);
   opacity: 0;
   transform: scale(0.55);
-  transition: opacity 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .preloader-mark.show {
@@ -996,6 +1220,7 @@ html.is-loading body {
   width: 50.5%;
   background: var(--bg);
   z-index: 9998;
+  pointer-events: none;
 }
 
 .preloader-panel.left {
@@ -1044,25 +1269,9 @@ html.is-loading body {
   }
 }
 
-/* THEME TOGGLE VIEW TRANSITION */
-::view-transition-old(root) {
-  animation: none;
-  mix-blend-mode: normal;
-}
-
-::view-transition-new(root) {
-  animation: themeCircleReveal 0.65s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-  mix-blend-mode: normal;
-}
-
-@keyframes themeCircleReveal {
-  from {
-    clip-path: circle(0% at var(--tx, 50%) var(--ty, 50%));
-  }
-  to {
-    clip-path: circle(140% at var(--tx, 50%) var(--ty, 50%));
-  }
-}
+/* Hiệu ứng chuyển theme (::view-transition-*) nằm ở styles.css.
+   Nó là pseudo-element cấp document nên BẮT BUỘC phải global — viết ở đây
+   thì Angular gắn thêm [_ngcontent-*] và rule không bao giờ khớp. */
 
 /* CUSTOM CURSOR */
 .cursor-dot,
@@ -1103,28 +1312,12 @@ html.is-loading body {
   }
 }
 
-/* TILT */
-.tilt {
-  will-change: transform;
-  transform-style: preserve-3d;
-}
-
 .btn-primary,
 .btn-ghost {
   will-change: transform;
 }
 
 @media (max-width: 860px) {
-  .feature-pin {
-    flex-direction: column;
-    height: auto;
-    padding: 120px 6vw;
-    gap: 40px;
-  }
-  .feature-visual {
-    width: 100%;
-    height: 400px;
-  }
   .gallery-row {
     flex-direction: column;
   }
@@ -1140,37 +1333,39 @@ html.is-loading body {
   .landing-nav .links {
     display: none;
   }
+  /* Menu ngang nhường chỗ cho hamburger + drawer. */
+  .nav-burger {
+    display: flex;
+  }
+  /* Nút CTA trong nav trùng chức năng với CTA trong drawer, và ở màn hẹp nó
+     đẩy hamburger ra sát mép. Bỏ đi, drawer đã có. */
+  .landing-nav .nav-cta {
+    display: none;
+  }
   .section-pad {
-    padding: 120px 6vw;
+    padding: 96px 6vw;
+  }
+  /* Phải nhắc lại trong media query: luật ngoài kia cùng độ đặc hiệu nhưng
+     nằm TRƯỚC, nên .section-pad ở đây sẽ trả lại padding đáy nếu không ghi. */
+  .section-pad--lead {
+    padding-bottom: 0;
+  }
+}
+
+/* Trên desktop drawer không được tồn tại kể cả khi state còn mở (ví dụ người
+   dùng mở menu ở mobile rồi xoay ngang máy). */
+@media (min-width: 861px) {
+  .mobile-menu,
+  .mobile-menu-scrim {
+    display: none;
   }
 }
 
 /* LIGHT THEME SURFACES & ELEVATIONS */
-.landing-container[data-theme="light"] .cal-card,
-:host-context([data-theme="light"]) .cal-card {
-  background: #ffffff;
-  border-color: rgba(15, 23, 42, 0.12);
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
-}
-
-.landing-container[data-theme="light"] .cal-grid div,
-:host-context([data-theme="light"]) .cal-grid div {
-  background: rgba(15, 23, 42, 0.04);
-  color: #475569;
-}
-
-.landing-container[data-theme="light"] .cal-grid div.active,
-:host-context([data-theme="light"]) .cal-grid div.active {
-  background: var(--accent);
-  color: #ffffff;
-}
-
 .landing-container[data-theme="light"] .gallery-card,
 .landing-container[data-theme="light"] .trust-card,
-.landing-container[data-theme="light"] .feature-visual,
 :host-context([data-theme="light"]) .gallery-card,
-:host-context([data-theme="light"]) .trust-card,
-:host-context([data-theme="light"]) .feature-visual {
+:host-context([data-theme="light"]) .trust-card {
   background: #ffffff;
   border-color: rgba(15, 23, 42, 0.12);
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.04);
@@ -1191,180 +1386,6 @@ html.is-loading body {
 .landing-container[data-theme="light"] .orb,
 :host-context([data-theme="light"]) .orb {
   background: rgba(37, 99, 235, 0.1);
-}
-
-/* PRELOADER STYLES */
-html.is-loading,
-html.is-loading body {
-  overflow: hidden;
-  height: 100%;
-}
-
-#preloader {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: var(--bg);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 28px;
-}
-
-.preloader-stage {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 120px;
-}
-
-.preloader-word {
-  display: flex;
-  transition: opacity 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.preloader-word.hide {
-  opacity: 0;
-  transform: translateY(-16px);
-}
-
-.preloader-word .letter {
-  display: inline-block;
-  font-size: clamp(34px, 6.4vw, 78px);
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-  opacity: 0;
-  transform: translateY(26px);
-  animation: letterIn 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-}
-
-@keyframes letterIn {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.preloader-mark {
-  position: absolute;
-  font-size: clamp(64px, 11vw, 130px);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--accent);
-  opacity: 0;
-  transform: scale(0.55);
-  transition: opacity 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.preloader-mark.show {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.preloader-panel {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  width: 50.5%;
-  background: var(--bg);
-  z-index: 9998;
-}
-
-.preloader-panel.left {
-  left: 0;
-}
-
-.preloader-panel.right {
-  right: 0;
-}
-
-/* HERO PARTICLES */
-.particle {
-  position: absolute;
-  border-radius: 50%;
-  background: var(--accent);
-  pointer-events: none;
-  opacity: 0;
-  animation: particleFloat linear infinite;
-}
-
-@keyframes particleFloat {
-  0% {
-    opacity: 0;
-    transform: translateY(0) translateX(0);
-  }
-  10% {
-    opacity: 0.7;
-  }
-  90% {
-    opacity: 0.5;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-140px) translateX(var(--drift, 20px));
-  }
-}
-
-/* CUSTOM CURSOR */
-.cursor-dot,
-.cursor-ring {
-  position: fixed;
-  top: 0;
-  left: 0;
-  pointer-events: none;
-  z-index: 9997;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.cursor-dot {
-  width: 6px;
-  height: 6px;
-  background: var(--accent);
-}
-
-.cursor-ring {
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--line);
-  transition: width 0.25s ease, height 0.25s ease, border-color 0.25s ease, background 0.25s ease;
-}
-
-.cursor-ring.hovered {
-  width: 56px;
-  height: 56px;
-  background: var(--accent-dim);
-  border-color: var(--accent);
-}
-
-@media (pointer: coarse) {
-  .cursor-dot,
-  .cursor-ring {
-    display: none;
-  }
-}
-
-/* THEME TOGGLE VIEW TRANSITION */
-::view-transition-old(root) {
-  animation: none;
-  mix-blend-mode: normal;
-}
-
-::view-transition-new(root) {
-  animation: themeCircleReveal 0.65s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-  mix-blend-mode: normal;
-}
-
-@keyframes themeCircleReveal {
-  from {
-    clip-path: circle(0% at var(--tx, 50%) var(--ty, 50%));
-  }
-  to {
-    clip-path: circle(140% at var(--tx, 50%) var(--ty, 50%));
-  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1427,9 +1448,11 @@ html.is-loading body {
 /* ─────────── chế độ scrollytelling ─────────── */
 
 .scrolly.is-enhanced {
-  /* Timeline dài thêm ~13% sau khi chèn quãng dừng cho stage 0, nên
-     tăng chiều cao tương ứng để tốc độ cuộn không bị nhanh hơn. */
-  height: 640svh;
+  /* 640svh = 6,4 màn hình cuộn cho 5 slide, tức gần 1,3 màn hình mỗi slide —
+     người dùng cuộn mãi mà nội dung không nhích. 420svh cho ~0,84 màn hình
+     mỗi slide: vẫn đủ chậm để đọc kịp, không còn cảm giác trang bị kẹt.
+     Timeline được scrub theo chiều cao section nên chỉ cần đổi số này. */
+  height: 420svh;
   padding: 0;
 }
 
@@ -2258,14 +2281,6 @@ html.is-loading body {
 
 /* ─────────── giảm chuyển động ─────────── */
 
-@media (prefers-reduced-motion: reduce) {
-  .board-wrap,
-  .cmd-caret,
-  .warn-badge {
-    animation: none;
-  }
-}
-
 /* ===== Hero: nền có chiều sâu + reveal theo từng từ =====================
    Các lớp nền nằm DƯỚI nội dung và không nhận chuột, nên không ảnh hưởng
    khả năng đọc hay thao tác. */
@@ -2277,8 +2292,17 @@ html.is-loading body {
   z-index: 0;
 }
 
-/* Nội dung hero phải nổi lên trên lớp nền. */
-.hero > *:not(.hero-ambient) {
+/* Nội dung hero phải nổi lên trên lớp nền.
+
+   CHỈ nhắm hai khối nội dung thật. Bản trước viết
+   `.hero > *:not(.hero-ambient)` — luật đó quét trúng cả .orb và ba
+   .grid-ring, vốn là đồ trang trí đang `position: absolute`. Selector này
+   có độ ưu tiên cao hơn (0-2-0 so với 0-1-0) nên ép chúng về `relative`,
+   tức trả cả bốn khối trở lại LUỒNG: 820px + 640px + 460px + 280px chồng
+   lên nhau thành hơn 2000px khoảng trắng nằm trên tiêu đề. Đó là lý do
+   phải cuộn một lúc mới thấy chữ. */
+.hero-inner,
+.hero > .scroll-hint {
   position: relative;
   z-index: 1;
 }
@@ -2315,16 +2339,24 @@ html.is-loading body {
 .hero-ambient__ring--2 { width: min(82vw, 900px);  height: min(82vw, 900px); }
 .hero-ambient__ring--3 { width: min(106vw, 1180px); height: min(106vw, 1180px); }
 
-/* Chỉ nhắm con TRỰC TIẾP: sau khi tách từ, các <span> từ nằm bên trong và
-   phải có trạng thái riêng, không bị luật này đè lên. */
 .hero h1 .line > span {
   display: inline-block;
+}
+
+/* Chỉ nhắm con TRỰC TIẾP: sau khi tách từ, các <span> từ nằm bên trong và
+   phải có trạng thái riêng, không bị luật này đè lên.
+   Nằm sau .js-anim vì nếu không có JS thì tiêu đề H1 phải hiện bình thường —
+   translateY(110%) đẩy nguyên dòng chữ ra khỏi khung. */
+.js-anim .hero h1 .line > span {
   transform: translateY(110%);
 }
 
 /* Đơn vị reveal của tiêu đề. Blur chỉ dùng trong lúc reveal ngắn rồi bỏ. */
 .hero-word {
   display: inline-block;
+}
+
+.js-anim .hero-word {
   opacity: 0;
   transform: translateY(24px);
   filter: blur(8px);
@@ -2335,15 +2367,172 @@ html.is-loading body {
    bắt người đọc chờ quá lâu. */
 .hero-phrase {
   display: inline;
+}
+
+.js-anim .hero-phrase {
   opacity: 0;
   filter: blur(4px);
   will-change: opacity, filter;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-word,
-  .hero-phrase {
+  .js-anim .hero-word,
+  .js-anim .hero-phrase {
     filter: none;
     transform: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   NỀN ĐỘNG CHO CÁC SECTION DƯỚI
+
+   Ba biến thể cùng một họ, không lặp lại nhau:
+     --aurora  (#showcase) quầng sáng trôi
+     --rules   (#process)  vạch dọc + vệt quét
+     --rain    (#trust)    lưới ô lịch + mưa nhẹ
+
+   Nguyên tắc chung: MỌI lớp đều tan hết trước khi chạm mép nhờ
+   mask hình elip. Trang này từng có một tấm nền hình hộp và mép
+   phải của nó cắt ngang nền thành một đường kẻ dọc rất lộ — hình
+   hộp thì luôn có cạnh, dù mờ cỡ nào.
+   ═══════════════════════════════════════════════════════════════ */
+
+.sec-fx {
+  position: absolute;
+  inset: 0;
+  /* z-index âm: nằm dưới chữ trong luồng nhưng vẫn trên nền trang.
+     Dùng 0 thì lớp có position sẽ vẽ ĐÈ lên chữ. */
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* ── Quầng sáng dùng chung ── */
+
+.fx-blob,
+.fx-wash {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.fx-blob {
+  width: min(560px, 46vw);
+  aspect-ratio: 1;
+  filter: blur(90px);
+  opacity: 0.5;
+}
+
+.fx-blob--a {
+  top: 4%;
+  left: -6%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 26%, transparent), transparent 66%);
+  animation: fx-drift-a 19s ease-in-out infinite;
+}
+
+.fx-blob--b {
+  bottom: 2%;
+  right: -8%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 18%, transparent), transparent 68%);
+  animation: fx-drift-b 24s ease-in-out infinite;
+}
+
+@keyframes fx-drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%      { transform: translate3d(5%, 7%, 0) scale(1.1); }
+}
+
+@keyframes fx-drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.06); }
+  50%      { transform: translate3d(-6%, -5%, 0) scale(1); }
+}
+
+.fx-wash {
+  top: 50%;
+  left: 50%;
+  width: min(920px, 82vw);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 14%, transparent), transparent 62%);
+  filter: blur(80px);
+  opacity: 0.62;
+}
+
+/* ── #process: vạch dọc như thước thời gian ── */
+
+.fx-rule {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--x);
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--ink) 12%, transparent) 22%,
+    color-mix(in srgb, var(--ink) 12%, transparent) 78%,
+    transparent
+  );
+}
+
+/* Vệt sáng quét ngang một lần rồi nghỉ — gợi tiến trình đang chạy tới. */
+.fx-sweep {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 34%;
+  left: -34%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--accent) 9%, transparent),
+    transparent
+  );
+  animation: fx-sweep 11s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+@keyframes fx-sweep {
+  0%       { transform: translateX(0); opacity: 0; }
+  12%      { opacity: 1; }
+  62%      { opacity: 1; }
+  78%, 100% { transform: translateX(400%); opacity: 0; }
+}
+
+/* ── #trust: lưới ô lịch + mưa ── */
+
+.fx-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--ink) 9%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--ink) 9%, transparent) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(ellipse 66% 62% at 50% 44%, #000 6%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 66% 62% at 50% 44%, #000 6%, transparent 78%);
+}
+
+.fx-drop {
+  position: absolute;
+  top: -18%;
+  left: var(--x);
+  width: 1px;
+  height: 92px;
+  border-radius: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--accent) 62%, transparent),
+    transparent
+  );
+  opacity: 0;
+  animation: fx-fall var(--t, 8s) linear var(--d, 0s) infinite;
+}
+
+@keyframes fx-fall {
+  0%   { transform: translateY(0); opacity: 0; }
+  14%  { opacity: 0.85; }
+  76%  { opacity: 0.85; }
+  100% { transform: translateY(135%); opacity: 0; }
+}
+
+/* Giảm chuyển động cho các nền động này được xử lý ở khối gom chung đầu file. */

@@ -2,13 +2,34 @@
 <html lang="vi">
 <head>
   <meta charset="utf-8">
-  <title>Workflow - Lịch & Quản Lý Công Việc</title>
+  <title>Workflow — Lịch thông minh có trợ lý AI hiểu tiếng Việt</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+  <!-- Trang landing là cửa vào công khai của sản phẩm. Không có mô tả và thẻ
+       Open Graph thì link dán vào Zalo/Messenger/Facebook ra một ô trống —
+       mất trắng phần lớn giá trị của việc được chia sẻ. -->
+  <meta name="description" content="Lịch cá nhân và nhóm với trợ lý AI hiểu tiếng Việt: gõ một câu là có sự kiện, tự phát hiện trùng giờ, đồng bộ real-time, sẵn ngày âm và ngày lễ Việt Nam. Miễn phí, đăng nhập bằng Google.">
+  <meta name="theme-color" content="#060608">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Workflow">
+  <meta property="og:locale" content="vi_VN">
+  <meta property="og:title" content="Workflow — Lịch thông minh có trợ lý AI hiểu tiếng Việt">
+  <meta property="og:description" content="Gõ một câu là có sự kiện. Tự phát hiện trùng giờ, đồng bộ real-time, sẵn ngày âm và ngày lễ Việt Nam. Miễn phí, đăng nhập bằng Google.">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Workflow — Lịch thông minh có trợ lý AI hiểu tiếng Việt">
+  <meta name="twitter:description" content="Gõ một câu là có sự kiện. Tự phát hiện trùng giờ, đồng bộ real-time, sẵn ngày âm và ngày lễ Việt Nam.">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Chỉ tải các weight thật sự được dùng trong CSS (500/600/700/800 + 400
+       mặc định). Bản cũ xin cả 300 và 900 cùng hai kiểu nghiêng của Be Vietnam
+       Pro — không chỗ nào trong dự án khai báo chúng, mà font là thứ chặn
+       đường render đầu tiên của chính trang landing này. -->
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
   <app-root></app-root>

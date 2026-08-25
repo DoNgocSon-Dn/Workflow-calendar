@@ -218,6 +218,14 @@ h1, h2, h3, h4, .font-heading {
   background: var(--color-text-tertiary);
 }
 
+/* Text selection colour. Global for the same reason as the view transition
+   below: ::selection is a document-level pseudo-element, so a component
+   stylesheet would have it rewritten into a selector that never matches. */
+::selection {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
 /* Theme-toggle view transition (landing + login pages).
    These must be global: ::view-transition-* are document-level pseudo-elements,
    so Angular's component style scoping would rewrite them into selectors that
