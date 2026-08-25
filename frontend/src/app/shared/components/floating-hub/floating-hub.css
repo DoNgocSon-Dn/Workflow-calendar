@@ -388,17 +388,16 @@
 /* AI tab */
 .ai-chat-container {
   position: relative;
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow: hidden;
 }
 
 .messages {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 0.85rem 1.1rem calc(var(--composer-height, 90) * 1px + 0.75rem);
@@ -415,7 +414,7 @@
 .composer-area {
   position: absolute;
   left: 0;
-  right: 6px;
+  right: 0;
   bottom: 0;
   z-index: 10;
   pointer-events: none;
