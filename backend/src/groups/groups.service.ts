@@ -805,6 +805,10 @@ export class GroupsService {
       groupId,
       task: taskDto,
     });
+    await this.emitToGroupMembers(supabase, groupId, 'group:taskCreated', {
+      groupId,
+      task: taskDto,
+    });
 
     return taskDto;
   }
@@ -849,6 +853,10 @@ export class GroupsService {
     };
 
     await this.emitToGroupRooms(supabase, groupId, 'group:taskUpdated', {
+      groupId,
+      task: taskDto,
+    });
+    await this.emitToGroupMembers(supabase, groupId, 'group:taskUpdated', {
       groupId,
       task: taskDto,
     });
@@ -922,6 +930,10 @@ export class GroupsService {
     };
 
     await this.emitToGroupRooms(supabase, groupId, 'group:messageSent', {
+      groupId,
+      message: msgDto,
+    });
+    await this.emitToGroupMembers(supabase, groupId, 'group:messageSent', {
       groupId,
       message: msgDto,
     });

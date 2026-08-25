@@ -1,12 +1,18 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Socket, io } from 'socket.io-client';
 import { environment } from '../../../environments/environment';
 import { AuthStore } from '../auth/auth-store';
+
+interface EventListenerReg {
+  event: string;
+  handler: (payload: any) => void;
+}
 
 @Injectable({ providedIn: 'root' })
 export class RealtimeService {
   private readonly authStore = inject(AuthStore);
   private socket: Socket | null = null;
+  private currentToken: string | null = null;
 
   /** Số lần socket bắt tay thành công. Dùng `update` chứ không `set` vì giá trị
    *  mới suy ra từ giá trị cũ — đúng chỗ để tăng dần. */
@@ -17,43 +23,70 @@ export class RealtimeService {
   private readonly connectedState = signal(false);
 
   private readonly reconnectHandlers: Array<() => void> = [];
+  private readonly connectHandlers: Array<() => void> = [];
+  private readonly listeners: EventListenerReg[] = [];
+  private readonly joinedRooms = new Set<string>();
 
   /** Real-time còn sống hay không. */
   readonly connected = this.connectedState.asReadonly();
 
   /** Đã bắt tay được ít nhất một lần. Trước thời điểm đó, `connected === false`
-   *  chỉ có nghĩa là "đang kết nối lần đầu", KHÔNG phải "mất kết nối" — thiếu
-   *  phân biệt này thì lúc mới tải trang banner cảnh báo sẽ nháy lên oan. */
+   *  chỉ có nghĩa là "đang kết nối lần đầu", KHÔNG phải "mất kết nối". */
   readonly hasConnectedOnce = computed(() => this.connectCount() > 0);
 
   /** Chỉ báo động khi thật sự đứt: đã từng nối được, rồi mới mất. */
   readonly disconnected = computed(() => this.hasConnectedOnce() && !this.connectedState());
 
-  // Reuses a single Socket instance for the tab's lifetime instead of
-  // recreating it on every connect() — listeners registered by stores
-  // (GroupStore, CalendarStore, ...) must stay bound across reconnects
-  // (e.g. the auth-driven disconnect/reconnect during session restore),
-  // otherwise they end up attached to a discarded socket and silently stop
-  // receiving events.
+  constructor() {
+    effect(() => {
+      const token = this.authStore.accessToken();
+      if (token && token !== this.currentToken) {
+        this.reconnectWithToken(token);
+      } else if (!token && this.socket) {
+        this.disconnect();
+      }
+    });
+  }
+
   connect(): void {
+    const token = this.authStore.accessToken();
+    if (!token) return;
     if (this.socket) {
       if (!this.socket.connected) this.socket.connect();
       return;
     }
+    this.reconnectWithToken(token);
+  }
+
+  private reconnectWithToken(token: string): void {
+    if (this.socket) {
+      this.socket.removeAllListeners();
+      this.socket.disconnect();
+      this.socket = null;
+    }
+
+    this.currentToken = token;
     this.socket = io(environment.apiUrl, {
-      auth: (cb) => cb({ token: this.authStore.accessToken() }),
+      auth: { token },
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
     });
 
-    // Một listener 'connect' DUY NHẤT ở đây điều phối tất cả: cập nhật trạng
-    // thái rồi gọi các handler re-sync. Nếu để mỗi store tự đăng ký listener
-    // 'connect' riêng cho việc này thì lại sinh ra đúng cái subscription trùng
-    // mà kiến trúc đang tránh.
+    for (const { event, handler } of this.listeners) {
+      this.socket.on(event, handler);
+    }
+
     this.socket.on('connect', () => {
-      // Đọc TRƯỚC khi tăng: lần bắt tay đầu tiên không phải là "nối lại".
       const isReconnect = this.connectCount() > 0;
       this.connectCount.update((count) => count + 1);
       this.connectedState.set(true);
 
+      for (const roomId of this.joinedRooms) {
+        this.socket?.emit('joinCalendar', { calendarId: roomId });
+      }
+
+      for (const handler of this.connectHandlers) handler();
       if (isReconnect) {
         for (const handler of this.reconnectHandlers) handler();
       }
@@ -64,30 +97,42 @@ export class RealtimeService {
   }
 
   joinCalendar(calendarId: string): void {
-    this.socket?.emit('joinCalendar', { calendarId });
+    if (!calendarId) return;
+    this.joinedRooms.add(calendarId);
+    if (this.socket?.connected) {
+      this.socket.emit('joinCalendar', { calendarId });
+    }
   }
 
   onConnect(handler: () => void): void {
-    this.socket?.on('connect', handler);
+    this.connectHandlers.push(handler);
+    if (this.socket?.connected) {
+      handler();
+    }
   }
 
-  /** Chạy mỗi khi kết nối LẠI (không chạy ở lần kết nối đầu). Dùng để tải lại
-   *  những gì đã bỏ lỡ lúc mất mạng. Không tạo listener socket mới — chỉ thêm
-   *  vào danh sách do listener 'connect' chung ở trên gọi. */
   onReconnect(handler: () => void): void {
     this.reconnectHandlers.push(handler);
   }
 
   on<T>(event: string, handler: (payload: T) => void): void {
-    this.socket?.on(event, handler);
+    this.listeners.push({ event, handler: handler as (payload: any) => void });
+    this.socket?.on(event, handler as (payload: any) => void);
   }
 
   off<T>(event: string, handler: (payload: T) => void): void {
-    this.socket?.off(event, handler);
+    const idx = this.listeners.findIndex((l) => l.event === event && l.handler === handler);
+    if (idx !== -1) this.listeners.splice(idx, 1);
+    this.socket?.off(event, handler as (payload: any) => void);
   }
 
   disconnect(): void {
-    this.socket?.disconnect();
+    this.currentToken = null;
+    if (this.socket) {
+      this.socket.removeAllListeners();
+      this.socket.disconnect();
+      this.socket = null;
+    }
     this.connectedState.set(false);
   }
 }

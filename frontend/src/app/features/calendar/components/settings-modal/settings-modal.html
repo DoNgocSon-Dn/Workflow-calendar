@@ -294,7 +294,7 @@
                 >
                   <option value="">{{ i18n.t('settings.holidayDebugNormal') }}</option>
                   @for (holiday of holidayDebugOptions; track holiday.id) {
-                    <option [value]="holiday.id">{{ holiday.icon }} {{ holiday.name }}</option>
+                    <option [value]="holiday.id">{{ holiday.name }}</option>
                   }
                 </select>
               </div>
