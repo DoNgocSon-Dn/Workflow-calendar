@@ -18,9 +18,6 @@
         </div>
         @if (holiday; as h) {
           <span class="holiday-badge" [title]="holidayTooltip(day)" [attr.aria-label]="holidayTooltip(day)">
-            @if (h.icon) {
-              {{ h.icon }}
-            }
             {{ h.name }}
           </span>
         }

@@ -58,7 +58,7 @@ export class AgendaView {
   holidayTagFor(date: Date): string | null {
     const holiday = resolveTopHolidayForDate(date);
     if (!holiday) return null;
-    return holiday.icon ? `${holiday.icon} ${holiday.name}` : holiday.name;
+    return holiday.name;
   }
 
   protected colorFor(event: CalendarEvent & { isLunarEvent?: boolean }): string {
@@ -147,7 +147,7 @@ export class AgendaView {
           const month = String(d.getMonth() + 1).padStart(2, '0');
           const day = String(d.getDate()).padStart(2, '0');
           const dayKey = `${year}-${month}-${day}`;
-          const title = holiday.icon ? `${holiday.icon} ${holiday.name}` : holiday.name;
+          const title = holiday.name;
 
           if (!map.has(dayKey)) {
             map.set(dayKey, { date: d, events: [] });

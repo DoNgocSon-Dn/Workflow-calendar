@@ -75,10 +75,7 @@ export class CalendarPage {
   /** Icon lễ đang active, phóng to làm watermark mờ phía sau lưới lịch (spec:
    *  vẫn nhìn xuyên qua được, không che nội dung). null khi không có lễ nào
    *  hoặc holiday đó không có icon. */
-  protected readonly holidayWatermarkIcon = computed(() => {
-    const id = this.holidayThemeService.activeHolidayId();
-    return id ? (findHolidayById(id)?.icon ?? null) : null;
-  });
+  protected readonly holidayWatermarkIcon = computed(() => null);
 
   protected readonly weekDays = computed(() => buildWeekDays(this.store.focusedDate()));
   protected readonly dayViewDays = computed(() => [this.store.focusedDate()]);
