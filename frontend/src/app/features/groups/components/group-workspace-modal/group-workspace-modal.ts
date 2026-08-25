@@ -11,6 +11,7 @@ import {
 import { DatePipe } from '@angular/common';
 import { AuthStore } from '../../../../core/auth/auth-store';
 import { TranslationService } from '../../../../core/i18n/translation.service';
+import { DialogService } from '../../../../core/services/dialog.service';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { GroupStore } from '../../data/group-store';
 import {
@@ -36,10 +37,15 @@ export class GroupWorkspaceModal {
   protected readonly store = inject(GroupStore);
   private readonly authStore = inject(AuthStore);
   protected readonly i18n = inject(TranslationService);
+  private readonly dialog = inject(DialogService);
 
   readonly closed = output<void>();
 
-  protected readonly activeTab = signal<WorkspaceTab>('tasks');
+  // Mirror store.activeWorkspaceTab() thay vì giữ signal riêng rồi tự đồng bộ
+  // hai chiều — component chỉ mount SAU khi selectGroup() đã set xong tab
+  // (activeWorkspaceModalOpen chỉ bật ở cuối selectGroup), nên đọc thẳng từ
+  // store là đủ và tránh được một nguồn lệch trạng thái.
+  protected readonly activeTab = computed(() => this.store.activeWorkspaceTab());
   protected readonly isOwner = computed(
     () => this.store.activeGroup()?.ownerId === this.authStore.user()?.id,
   );
@@ -52,6 +58,27 @@ export class GroupWorkspaceModal {
   protected readonly canModerateChat = computed(
     () => this.currentRole() === 'owner' || this.currentRole() === 'admin',
   );
+
+  /** Nhãn tiếng Việt cho badge vai trò (readonly, không phải dropdown) — badge
+   *  trước đây in thẳng `m.role` ra màn hình nên "owner" hiện tiếng Anh. */
+  private static readonly ROLE_LABELS: Record<GroupMember['role'], string> = {
+    owner: 'Chủ nhóm',
+    admin: 'Quản trị viên',
+    member: 'Thành viên',
+    guest: 'Khách',
+  };
+
+  protected roleLabel(role: GroupMember['role']): string {
+    return GroupWorkspaceModal.ROLE_LABELS[role] ?? role;
+  }
+
+  /** Tên hiển thị cho một thành viên — ưu tiên tên thật, rồi mới tới phần
+   *  trước "@" của email (KHÔNG BAO GIỜ email đầy đủ: lộ cả @gmail.com trong
+   *  danh sách chọn người phụ trách thì vừa dài dòng vừa không phải là tên).
+   *  Cùng thứ tự ưu tiên với `senderDisplayName` bên khung chat. */
+  protected memberDisplayName(member: Pick<GroupMember, 'name' | 'email'> | undefined, fallback = 'Thành viên'): string {
+    return member?.name || member?.email?.split('@')[0] || fallback;
+  }
 
   protected readonly todoTasks = computed(() => this.store.tasks().filter((t) => t.status === 'todo'));
   protected readonly inProgressTasks = computed(() =>
@@ -85,7 +112,7 @@ export class GroupWorkspaceModal {
     const id = this.taskAssignedTo();
     if (!id) return '-- Chọn thành viên phụ trách --';
     const member = this.store.members().find((m) => m.userId === id);
-    return member?.email || id;
+    return this.memberDisplayName(member, id);
   });
 
   toggleAssigneeMenu(): void {
@@ -130,14 +157,6 @@ export class GroupWorkspaceModal {
   private static readonly MAX_ATTACHMENT_BYTES = 15 * 1024 * 1024;
 
   constructor() {
-    // Luồng bên ngoài (click thông báo tin nhắn) yêu cầu mở sẵn một tab cụ thể.
-    effect(() => {
-      const requested = this.store.requestedWorkspaceTab();
-      if (!requested) return;
-      this.activeTab.set(requested);
-      this.store.requestedWorkspaceTab.set(null);
-    });
-
     effect(() => {
       const msgs = this.store.messages();
       if (this.activeTab() !== 'chat' || msgs.length === 0) return;
@@ -165,10 +184,11 @@ export class GroupWorkspaceModal {
   }
 
   setTab(tab: WorkspaceTab): void {
-    this.activeTab.set(tab);
     this.store.activeWorkspaceTab.set(tab);
     if (tab === 'chat') {
       this.store.unreadChatCount.set(0);
+      const groupId = this.store.activeGroup()?.id;
+      if (groupId) this.store.clearGroupUnread(groupId);
     }
   }
 
@@ -212,22 +232,26 @@ export class GroupWorkspaceModal {
     }
   }
 
+  // Xoá nhóm kéo theo task, tin nhắn và cả lịch nhóm — chỉ cần xác nhận
+  // Đồng ý/Hủy qua DialogService dùng chung toàn app, không dùng
+  // window.confirm() gốc của trình duyệt (xấu, không theo theme, có thể bị chặn).
   async deleteGroup(): Promise<void> {
     const group = this.store.activeGroup();
     if (!group || this.deletingGroup()) return;
-    // Xoá nhóm kéo theo task, tin nhắn và cả lịch nhóm — bắt gõ đúng tên để
-    // không ai xoá nhầm bằng một cú nhấn.
-    const typed = prompt(this.i18n.t('group.deleteConfirmPrompt', { name: group.name }));
-    if (typed?.trim() !== group.name) {
-      if (typed !== null) alert(this.i18n.t('group.deleteNameMismatch'));
-      return;
-    }
+
+    const ok = await this.dialog.confirm(
+      `Toàn bộ task, tin nhắn và lịch nhóm sẽ bị xóa và KHÔNG thể khôi phục.`,
+      { title: `Xóa vĩnh viễn nhóm "${group.name}"?`, confirmLabel: 'Đồng ý xóa', danger: true },
+    );
+    if (!ok) return;
 
     this.deletingGroup.set(true);
     try {
+      // store.deleteGroup() tự tắt activeWorkspaceModalOpen khi đây là nhóm
+      // đang mở — @if ở calendar-page tự đóng modal, không cần tự đóng ở đây.
       await this.store.deleteGroup(group.id);
     } catch (err: any) {
-      alert(err?.error?.message || this.i18n.t('group.deleteGroupError'));
+      await this.dialog.alert(err?.error?.message || this.i18n.t('group.deleteGroupError'));
     } finally {
       this.deletingGroup.set(false);
     }
@@ -239,7 +263,7 @@ export class GroupWorkspaceModal {
     try {
       await this.store.setGroupHidden(group.id, !group.hidden);
     } catch (err: any) {
-      alert(err?.error?.message || this.i18n.t('group.toggleHiddenError'));
+      await this.dialog.alert(err?.error?.message || this.i18n.t('group.toggleHiddenError'));
     }
   }
 
@@ -280,7 +304,7 @@ export class GroupWorkspaceModal {
     try {
       await this.store.updateMemberRole(group.id, member.userId, role);
     } catch (err: any) {
-      alert(err?.error?.message || this.i18n.t('group.changeRoleError'));
+      await this.dialog.alert(err?.error?.message || this.i18n.t('group.changeRoleError'));
     } finally {
       this.updatingRoleUserId.set(null);
     }
@@ -289,15 +313,23 @@ export class GroupWorkspaceModal {
   async removeMember(member: GroupMember): Promise<void> {
     const group = this.store.activeGroup();
     if (!group) return;
-    if (confirm(this.i18n.t('group.removeMemberConfirm', { member: member.email || member.userId }))) {
-      await this.store.removeMember(group.id, member.userId);
-    }
+    const ok = await this.dialog.confirm(
+      this.i18n.t('group.removeMemberConfirm', { member: this.memberDisplayName(member, member.userId) }),
+      { danger: true },
+    );
+    if (ok) await this.store.removeMember(group.id, member.userId);
   }
+
+  /** Bắt buộc chọn người phụ trách — task không giao cho ai thì trôi nổi,
+   *  không ai theo dõi trách nhiệm. */
+  protected readonly canCreateTask = computed(
+    () => !!this.taskTitle().trim() && !!this.taskAssignedTo() && !this.creatingTask(),
+  );
 
   async createTask(): Promise<void> {
     const group = this.store.activeGroup();
     const title = this.taskTitle().trim();
-    if (!group || !title || this.creatingTask()) return;
+    if (!group || !this.canCreateTask()) return;
 
     this.creatingTask.set(true);
     try {
@@ -306,7 +338,7 @@ export class GroupWorkspaceModal {
         title,
         this.taskDescription().trim(),
         'todo',
-        this.taskAssignedTo() || undefined,
+        this.taskAssignedTo(),
         this.taskDueDate() || undefined,
       );
       this.taskTitle.set('');
@@ -320,13 +352,72 @@ export class GroupWorkspaceModal {
 
   async setTaskStatus(task: GroupTask, status: 'todo' | 'in_progress' | 'done'): Promise<void> {
     const group = this.store.activeGroup();
-    if (!group) return;
+    if (!group || task.status === status) return;
     await this.store.updateTaskStatus(group.id, task.id, status);
   }
 
-  assigneeEmail(task: GroupTask): string {
+  assigneeName(task: GroupTask): string {
+    if (!task.assignedTo) return '';
     const member = this.store.members().find((m) => m.userId === task.assignedTo);
-    return member?.email || task.assignedTo || '';
+    return this.memberDisplayName(member, task.assignedTo);
+  }
+
+  /** Người tạo task hoặc chủ nhóm/quản trị viên mới xoá được — cùng quy tắc
+   *  với `canDeleteMessage` bên khung chat, KHÔNG phải "chỉ chủ nhóm". */
+  canDeleteTask(task: GroupTask): boolean {
+    return task.createdBy === this.currentUserId() || this.canModerateChat();
+  }
+
+  async deleteTask(task: GroupTask): Promise<void> {
+    const group = this.store.activeGroup();
+    if (!group) return;
+    const ok = await this.dialog.confirm(
+      this.i18n.t('group.deleteTaskConfirm', { title: task.title }),
+      { danger: true },
+    );
+    if (!ok) return;
+    try {
+      await this.store.deleteTask(group.id, task.id);
+    } catch (err: any) {
+      await this.dialog.alert(err?.error?.message || this.i18n.t('group.deleteTaskError'));
+    }
+  }
+
+  // Kéo-thả giữa 3 cột — HTML5 drag-and-drop gốc, không cần thư viện thêm.
+  protected readonly draggingTaskId = signal<string | null>(null);
+  protected readonly dragOverStatus = signal<'todo' | 'in_progress' | 'done' | null>(null);
+
+  onTaskDragStart(task: GroupTask, event: DragEvent): void {
+    this.draggingTaskId.set(task.id);
+    event.dataTransfer?.setData('text/plain', task.id);
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+  }
+
+  onTaskDragEnd(): void {
+    this.draggingTaskId.set(null);
+    this.dragOverStatus.set(null);
+  }
+
+  onColumnDragOver(status: 'todo' | 'in_progress' | 'done', event: DragEvent): void {
+    if (!this.draggingTaskId()) return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    this.dragOverStatus.set(status);
+  }
+
+  onColumnDragLeave(status: 'todo' | 'in_progress' | 'done'): void {
+    if (this.dragOverStatus() === status) this.dragOverStatus.set(null);
+  }
+
+  async onColumnDrop(status: 'todo' | 'in_progress' | 'done', event: DragEvent): Promise<void> {
+    event.preventDefault();
+    const taskId = this.draggingTaskId();
+    this.draggingTaskId.set(null);
+    this.dragOverStatus.set(null);
+    if (!taskId) return;
+
+    const task = this.store.tasks().find((t) => t.id === taskId);
+    if (task) await this.setTaskStatus(task, status);
   }
 
   async reassignTask(task: GroupTask, userId: string): Promise<void> {
@@ -337,7 +428,7 @@ export class GroupWorkspaceModal {
     try {
       await this.store.updateTask(group.id, task.id, { assignedTo: userId || undefined });
     } catch (err: any) {
-      alert(err?.error?.message || this.i18n.t('group.reassignError'));
+      await this.dialog.alert(err?.error?.message || this.i18n.t('group.reassignError'));
     } finally {
       this.reassigningTaskId.set(null);
     }
@@ -426,19 +517,20 @@ export class GroupWorkspaceModal {
       await this.store.editMessage(group.id, msg.id, text);
       this.cancelEditMessage();
     } catch (err: any) {
-      alert(err?.error?.message || this.i18n.t('group.editMessageError'));
+      await this.dialog.alert(err?.error?.message || this.i18n.t('group.editMessageError'));
     }
   }
 
   async deleteMessage(msg: GroupMessage): Promise<void> {
     const group = this.store.activeGroup();
     if (!group) return;
-    if (!confirm(this.i18n.t('group.deleteMessageConfirm'))) return;
+    const ok = await this.dialog.confirm(this.i18n.t('group.deleteMessageConfirm'), { danger: true });
+    if (!ok) return;
 
     try {
       await this.store.deleteMessage(group.id, msg.id);
     } catch (err: any) {
-      alert(err?.error?.message || this.i18n.t('group.deleteMessageError'));
+      await this.dialog.alert(err?.error?.message || this.i18n.t('group.deleteMessageError'));
     }
   }
 
@@ -468,6 +560,7 @@ export class GroupWorkspaceModal {
   }
 
   close(): void {
+    this.store.closeWorkspaceModal();
     this.closed.emit();
   }
 

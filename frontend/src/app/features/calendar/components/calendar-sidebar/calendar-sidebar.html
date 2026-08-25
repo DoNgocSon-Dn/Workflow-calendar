@@ -45,10 +45,18 @@
 
         <div class="calendar-items-wrapper">
           @for (g of displayGroups(); track g.id) {
-            <div class="calendar-item group-item" (click)="onGroupClicked(g)" [title]="g.name">
+            <div
+              class="calendar-item group-item"
+              [class.has-unread]="groupStore.unreadMessageGroupIds().has(g.id)"
+              (click)="onGroupClicked(g)"
+              [title]="g.name"
+            >
               <span class="color-dot" [style.background]="g.color"></span>
               <app-icon class="group-icon" name="users" />
               <span class="calendar-name">{{ g.name }}</span>
+              @if (groupStore.unreadMessageGroupIds().has(g.id)) {
+                <span class="group-unread-dot" aria-hidden="true"></span>
+              }
               <button
                 type="button"
                 class="group-hide-btn"
@@ -169,8 +177,18 @@
       <!-- COLLAPSED RAIL — icon-only, native title tooltips on hover -->
       <div class="rail-list">
         @for (g of displayGroups(); track g.id) {
-          <button type="button" class="rail-item" [title]="g.name" [attr.aria-label]="g.name" (click)="onGroupClicked(g)">
+          <button
+            type="button"
+            class="rail-item"
+            [class.has-unread]="groupStore.unreadMessageGroupIds().has(g.id)"
+            [title]="g.name"
+            [attr.aria-label]="g.name"
+            (click)="onGroupClicked(g)"
+          >
             <span class="color-dot" [style.background]="g.color"></span>
+            @if (groupStore.unreadMessageGroupIds().has(g.id)) {
+              <span class="rail-unread-dot" aria-hidden="true"></span>
+            }
           </button>
         }
 

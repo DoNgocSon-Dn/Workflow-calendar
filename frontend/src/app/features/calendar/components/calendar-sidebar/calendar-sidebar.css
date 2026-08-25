@@ -29,6 +29,7 @@
 }
 
 .rail-item {
+  position: relative;
   flex-shrink: 0;
   width: 2.35rem;
   height: 2.35rem;
@@ -48,6 +49,17 @@
 
 .rail-item.is-off .color-dot {
   opacity: 0.35;
+}
+
+.rail-unread-dot {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--holiday-accent);
+  box-shadow: 0 0 0 2px var(--color-bg-sidebar);
 }
 
 .rail-divider {
@@ -246,6 +258,26 @@
 
 .group-item:hover .group-arrow {
   opacity: 1;
+}
+
+/* "Sáng lên" kiểu Messenger khi nhóm có tin nhắn chưa đọc: nền tint nhẹ + tên
+   in đậm + chấm accent. :not(:hover) để hover vẫn thấy rõ phản hồi tương tác
+   thay vì bị lớp tint đè lên. */
+.group-item.has-unread:not(:hover) {
+  background: var(--holiday-accent-soft);
+}
+
+.group-item.has-unread .calendar-name {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.group-unread-dot {
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--holiday-accent);
 }
 
 /* Cùng cách ẩn/hiện như .invite-btn: chỉ lộ ra khi hover hoặc khi focus bằng

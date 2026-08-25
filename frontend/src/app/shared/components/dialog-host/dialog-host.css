@@ -1,0 +1,105 @@
+/* z-index cao hơn MỌI modal khác trong app (modal thường 1000-1100) — dialog
+   này thay cho window.confirm()/alert()/prompt(), nên phải luôn nổi trên
+   cùng bất kể được gọi từ component/modal nào. */
+.dh-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-backdrop);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5000;
+  animation: dhFadeIn 0.15s ease-out;
+}
+
+.dh-dialog {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 16px;
+  width: 92%;
+  max-width: 420px;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-modal);
+  padding: 20px;
+  animation: dhPopIn 0.18s ease-out;
+}
+
+.dh-title {
+  margin: 0 0 8px 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.dh-message {
+  margin: 0 0 12px 0;
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.dh-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--color-surface-input);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.dh-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.dh-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: filter 0.15s ease, transform 0.15s ease, background 0.15s ease;
+}
+
+.dh-btn-primary {
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
+}
+.dh-btn-primary:hover {
+  background: var(--holiday-accent-hover);
+}
+
+.dh-btn-ghost {
+  background: transparent;
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text-secondary);
+}
+.dh-btn-ghost:hover {
+  background: var(--color-surface-hover-strong);
+  color: var(--color-text);
+}
+
+.dh-btn-danger {
+  background: var(--color-danger);
+  color: #ffffff;
+}
+.dh-btn-danger:hover {
+  filter: brightness(1.1);
+}
+
+@keyframes dhFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dhPopIn {
+  from { opacity: 0; transform: scale(0.97) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}

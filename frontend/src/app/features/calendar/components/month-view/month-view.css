@@ -105,6 +105,13 @@
   pointer-events: none;
 }
 
+/* Ngày ngoài tháng hiện tại đã mờ số ngày (.day-number opacity 0.5) — ảnh nền
+   phải mờ theo cùng quy ước, không thì ô "outside" trông sống động ngang ô
+   trong tháng. */
+.day-cell.outside .day-cell__bg-image {
+  opacity: 0.15;
+}
+
 /* Nhãn ngày lễ là phần tử DUY NHẤT trong hàng đầu ô được phép co lại: số ngày
    và ngày âm đều ngắn và phải đọc trọn vẹn. flex-shrink của hai cái kia đặt về
    0 ở dưới, nên toàn bộ phần thiếu chỗ dồn hết vào đây rồi cắt bằng ellipsis. */

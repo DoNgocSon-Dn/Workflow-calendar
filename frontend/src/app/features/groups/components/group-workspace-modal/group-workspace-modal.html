@@ -179,7 +179,7 @@
                             [attr.aria-selected]="taskAssignedTo() === m.userId"
                             (click)="selectAssignee(m.userId)"
                           >
-                            {{ m.email || m.userId }}
+                            {{ memberDisplayName(m, m.userId) }}
                           </button>
                         }
                       </div>
@@ -195,7 +195,7 @@
                 <button
                   type="button"
                   class="btn btn-primary"
-                  [disabled]="!taskTitle().trim() || creatingTask()"
+                  [disabled]="!canCreateTask()"
                   (click)="createTask()"
                 >
                   + Thêm Task
@@ -207,9 +207,21 @@
               <!-- Todo Column -->
               <div class="kanban-col">
                 <h4 class="col-title todo">Cần làm (Todo) <span class="col-count">{{ todoTasks().length }}</span></h4>
-                <div class="kanban-col-body">
+                <div
+                  class="kanban-col-body"
+                  [class.drag-over]="dragOverStatus() === 'todo'"
+                  (dragover)="onColumnDragOver('todo', $event)"
+                  (dragleave)="onColumnDragLeave('todo')"
+                  (drop)="onColumnDrop('todo', $event)"
+                >
                   @for (t of todoTasks(); track t.id) {
-                    <div class="task-item">
+                    <div
+                      class="task-item"
+                      draggable="true"
+                      [class.dragging]="draggingTaskId() === t.id"
+                      (dragstart)="onTaskDragStart(t, $event)"
+                      (dragend)="onTaskDragEnd()"
+                    >
                       <div class="task-item-header">
                         <strong>{{ t.title }}</strong>
                       </div>
@@ -224,7 +236,7 @@
                       >
                         <option value="">Chưa giao</option>
                         @for (m of store.members(); track m.id) {
-                          <option [value]="m.userId">{{ m.email || m.userId }}</option>
+                          <option [value]="m.userId">{{ memberDisplayName(m, m.userId) }}</option>
                         }
                       </select>
                       <div class="task-actions">
@@ -242,6 +254,17 @@
                         >
                           <app-icon name="check" /> Xong
                         </button>
+                        @if (canDeleteTask(t)) {
+                          <button
+                            type="button"
+                            class="action-badge task-delete"
+                            [title]="i18n.t('group.deleteTask')"
+                            [attr.aria-label]="i18n.t('group.deleteTask')"
+                            (click)="deleteTask(t)"
+                          >
+                            <app-icon name="trash" />
+                          </button>
+                        }
                       </div>
                     </div>
                   } @empty {
@@ -253,9 +276,21 @@
               <!-- In Progress Column -->
               <div class="kanban-col">
                 <h4 class="col-title in-progress">Đang thực hiện <span class="col-count">{{ inProgressTasks().length }}</span></h4>
-                <div class="kanban-col-body">
+                <div
+                  class="kanban-col-body"
+                  [class.drag-over]="dragOverStatus() === 'in_progress'"
+                  (dragover)="onColumnDragOver('in_progress', $event)"
+                  (dragleave)="onColumnDragLeave('in_progress')"
+                  (drop)="onColumnDrop('in_progress', $event)"
+                >
                   @for (t of inProgressTasks(); track t.id) {
-                    <div class="task-item">
+                    <div
+                      class="task-item"
+                      draggable="true"
+                      [class.dragging]="draggingTaskId() === t.id"
+                      (dragstart)="onTaskDragStart(t, $event)"
+                      (dragend)="onTaskDragEnd()"
+                    >
                       <div class="task-item-header">
                         <strong>{{ t.title }}</strong>
                       </div>
@@ -270,7 +305,7 @@
                       >
                         <option value="">Chưa giao</option>
                         @for (m of store.members(); track m.id) {
-                          <option [value]="m.userId">{{ m.email || m.userId }}</option>
+                          <option [value]="m.userId">{{ memberDisplayName(m, m.userId) }}</option>
                         }
                       </select>
                       <div class="task-actions">
@@ -288,6 +323,17 @@
                         >
                           <app-icon name="check" /> Xong
                         </button>
+                        @if (canDeleteTask(t)) {
+                          <button
+                            type="button"
+                            class="action-badge task-delete"
+                            [title]="i18n.t('group.deleteTask')"
+                            [attr.aria-label]="i18n.t('group.deleteTask')"
+                            (click)="deleteTask(t)"
+                          >
+                            <app-icon name="trash" />
+                          </button>
+                        }
                       </div>
                     </div>
                   } @empty {
@@ -299,14 +345,26 @@
               <!-- Done Column -->
               <div class="kanban-col">
                 <h4 class="col-title done">Đã hoàn thành <span class="col-count">{{ doneTasks().length }}</span></h4>
-                <div class="kanban-col-body">
+                <div
+                  class="kanban-col-body"
+                  [class.drag-over]="dragOverStatus() === 'done'"
+                  (dragover)="onColumnDragOver('done', $event)"
+                  (dragleave)="onColumnDragLeave('done')"
+                  (drop)="onColumnDrop('done', $event)"
+                >
                   @for (t of doneTasks(); track t.id) {
-                    <div class="task-item task-done">
+                    <div
+                      class="task-item task-done"
+                      draggable="true"
+                      [class.dragging]="draggingTaskId() === t.id"
+                      (dragstart)="onTaskDragStart(t, $event)"
+                      (dragend)="onTaskDragEnd()"
+                    >
                       <div class="task-item-header">
                         <strong>{{ t.title }}</strong>
                       </div>
                       @if (t.assignedTo) {
-                        <p class="task-desc"><app-icon name="user" /> {{ assigneeEmail(t) }}</p>
+                        <p class="task-desc"><app-icon name="user" /> {{ assigneeName(t) }}</p>
                       }
                       <div class="task-actions">
                         <button
@@ -316,6 +374,17 @@
                         >
                           Mở lại
                         </button>
+                        @if (canDeleteTask(t)) {
+                          <button
+                            type="button"
+                            class="action-badge task-delete"
+                            [title]="i18n.t('group.deleteTask')"
+                            [attr.aria-label]="i18n.t('group.deleteTask')"
+                            (click)="deleteTask(t)"
+                          >
+                            <app-icon name="trash" />
+                          </button>
+                        }
                       </div>
                     </div>
                   } @empty {
@@ -330,40 +399,42 @@
         <!-- TAB 2: MEMBERS -->
         @if (activeTab() === 'members') {
           <div class="members-section">
-            <div class="invite-card">
-              <h3>Mời thành viên mới vào nhóm</h3>
-              <div class="invite-form-row">
-                <input
-                  type="email"
-                  class="text-input"
-                  placeholder="Email người muốn mời..."
-                  [value]="inviteEmail()"
-                  (input)="onInviteEmailInput($any($event.target).value)"
-                />
-                <select
-                  class="select-input"
-                  [value]="inviteRole()"
-                  (change)="inviteRole.set($any($event.target).value)"
-                >
-                  <option value="admin">Quản trị viên (Admin)</option>
-                  <option value="member">Thành viên (Member)</option>
-                  <option value="guest">Khách (Guest)</option>
-                </select>
-                <button
-                  type="button"
-                  class="btn btn-primary"
-                  [disabled]="!inviteEmailValid() || inviting()"
-                  (click)="invite()"
-                >
-                  Mời vào nhóm
-                </button>
+            @if (isOwner()) {
+              <div class="invite-card">
+                <h3>Mời thành viên mới vào nhóm</h3>
+                <div class="invite-form-row">
+                  <input
+                    type="email"
+                    class="text-input"
+                    placeholder="Email người muốn mời..."
+                    [value]="inviteEmail()"
+                    (input)="onInviteEmailInput($any($event.target).value)"
+                  />
+                  <select
+                    class="select-input"
+                    [value]="inviteRole()"
+                    (change)="inviteRole.set($any($event.target).value)"
+                  >
+                    <option value="admin">{{ roleLabel('admin') }}</option>
+                    <option value="member">{{ roleLabel('member') }}</option>
+                    <option value="guest">{{ roleLabel('guest') }}</option>
+                  </select>
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    [disabled]="!inviteEmailValid() || inviting()"
+                    (click)="invite()"
+                  >
+                    Mời vào nhóm
+                  </button>
+                </div>
+                @if (inviteError(); as err) {
+                  <p class="error-msg">{{ err }}</p>
+                } @else if (inviteSuccess(); as ok) {
+                  <p class="success-msg">{{ ok }}</p>
+                }
               </div>
-              @if (inviteError(); as err) {
-                <p class="error-msg">{{ err }}</p>
-              } @else if (inviteSuccess(); as ok) {
-                <p class="success-msg">{{ ok }}</p>
-              }
-            </div>
+            }
 
             <h3 class="section-subtitle">Danh sách thành viên ({{ store.members().length }})</h3>
             <div class="members-list">
@@ -371,34 +442,32 @@
                 <div class="member-row">
                   <div class="member-info">
                     <span class="user-avatar"><app-icon name="user" /></span>
-                    <div>
-                      <strong>{{ m.email || m.userId }}</strong>
-                      @if (isOwner() && m.role !== 'owner') {
-                        <select
-                          class="role-select"
-                          [class]="m.role"
-                          [value]="m.role"
-                          [disabled]="updatingRoleUserId() === m.userId"
-                          (change)="changeRole(m, $any($event.target).value)"
-                        >
-                          <option value="admin">Quản trị viên (Admin)</option>
-                          <option value="member">Thành viên (Member)</option>
-                          <option value="guest">Khách (Guest)</option>
-                        </select>
-                      } @else {
-                        <span class="role-pill" [class]="m.role">{{ m.role }}</span>
-                      }
-                    </div>
+                    <strong class="member-email">{{ m.email || m.userId }}</strong>
                   </div>
-                  @if (isOwner() && m.role !== 'owner') {
-                    <button
-                      type="button"
-                      class="btn-danger-sm"
-                      (click)="removeMember(m)"
-                    >
-                      Xóa
-                    </button>
-                  }
+                  <div class="member-actions">
+                    @if (isOwner() && m.role !== 'owner') {
+                      <select
+                        class="role-select"
+                        [class]="m.role"
+                        [value]="m.role"
+                        [disabled]="updatingRoleUserId() === m.userId"
+                        (change)="changeRole(m, $any($event.target).value)"
+                      >
+                        <option value="admin">{{ roleLabel('admin') }}</option>
+                        <option value="member">{{ roleLabel('member') }}</option>
+                        <option value="guest">{{ roleLabel('guest') }}</option>
+                      </select>
+                      <button
+                        type="button"
+                        class="btn-danger-sm"
+                        (click)="removeMember(m)"
+                      >
+                        Xóa
+                      </button>
+                    } @else {
+                      <span class="role-pill" [class]="m.role">{{ roleLabel(m.role) }}</span>
+                    }
+                  </div>
                 </div>
               }
             </div>

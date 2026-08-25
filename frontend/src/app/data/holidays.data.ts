@@ -307,6 +307,7 @@ export const HOLIDAYS: readonly Holiday[] = [
     name: 'Tết Dương Lịch',
     priority: 40,
     officialHoliday: true,
+    popupEnabled: true,
     dateRule: { kind: 'fixed', month: 1, day: 1 },
     theme: {
       background: '#1e1b4b',

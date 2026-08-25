@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth-store';
+import { DialogService } from '../../../core/services/dialog.service';
 import { CalendarStore } from '../../calendar/data/calendar-store';
 import { Todo, TodoList } from '../../calendar/models/calendar.models';
 import { BrandLogo } from '../../../shared/components/brand-logo/brand-logo';
@@ -37,6 +38,7 @@ export class TasksPage {
   protected readonly store = inject(CalendarStore);
   protected readonly authStore = inject(AuthStore);
   private readonly router = inject(Router);
+  private readonly dialog = inject(DialogService);
 
   protected readonly userEmail = computed(() => this.authStore.user()?.email ?? '');
   protected readonly displayName = computed(() => this.authStore.displayName() ?? this.userEmail());
@@ -91,7 +93,11 @@ export class TasksPage {
       .filter((t) => t.listId === list.id)
       .map((t) => t.id);
     if (ids.length === 0) return;
-    if (!confirm(`Xoá toàn bộ ${ids.length} việc cần làm trong "${list.name}"?`)) return;
+    const ok = await this.dialog.confirm(
+      `Xoá toàn bộ ${ids.length} việc cần làm trong "${list.name}"?`,
+      { danger: true },
+    );
+    if (!ok) return;
 
     await Promise.all(ids.map((id) => this.store.deleteTodo(id)));
   }
@@ -152,14 +158,18 @@ export class TasksPage {
 
   async removeList(list: TodoList): Promise<void> {
     if (this.lists().length <= 1) {
-      alert('Không thể xoá danh sách cuối cùng.');
+      await this.dialog.alert('Không thể xoá danh sách cuối cùng.');
       return;
     }
-    if (!confirm(`Xoá danh sách "${list.name}" và toàn bộ việc cần làm trong đó?`)) return;
+    const ok = await this.dialog.confirm(
+      `Xoá danh sách "${list.name}" và toàn bộ việc cần làm trong đó?`,
+      { danger: true },
+    );
+    if (!ok) return;
     try {
       await this.store.deleteTodoList(list.id);
     } catch (err: any) {
-      alert(err?.error?.message || 'Không thể xoá danh sách.');
+      await this.dialog.alert(err?.error?.message || 'Không thể xoá danh sách.');
     }
   }
 

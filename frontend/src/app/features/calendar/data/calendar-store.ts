@@ -38,6 +38,7 @@ import {
 } from '../models/calendar.models';
 import { TimeFormatService } from '../../../core/time-format/time-format-service';
 import { TimeFormat, addDays, clampToDay, formatTimeLabel, startOfDay } from '../utils/date-utils';
+import { matchScore } from '../utils/search-match';
 import { VN_HOLIDAY_CALENDAR_DEF, VN_HOLIDAY_CALENDAR_ID, buildVietnamHolidayEvents } from './vietnam-holidays';
 
 const SELF_ORIGIN_TTL_MS = 8000;
@@ -320,11 +321,27 @@ export class CalendarStore {
     return [...this.events(), ...this.holidayEvents].filter((e) => {
       if (!visible.has(e.calendarId)) return false;
       if (!query) return true;
-      const titleMatch = e.title.toLowerCase().includes(query);
-      const locMatch = e.location?.toLowerCase().includes(query);
-      const descMatch = e.description?.toLowerCase().includes(query);
-      return titleMatch || locMatch || descMatch;
+      return matchScore(e, query) !== null;
     });
+  });
+
+  /** Top search matches, closest text match first and — within the same
+   *  match tier — the event date closest to today first ("gần đến xa"). */
+  readonly searchResults = computed(() => {
+    const query = this.searchQuery().trim().toLowerCase();
+    if (!query) return [];
+    const today = this.today().getTime();
+    return this.visibleEvents()
+      .map((event) => ({ event, tier: matchScore(event, query) }))
+      .filter((r): r is { event: CalendarEvent; tier: number } => r.tier !== null)
+      .sort((a, b) => {
+        if (a.tier !== b.tier) return a.tier - b.tier;
+        const distanceA = Math.abs(a.event.start.getTime() - today);
+        const distanceB = Math.abs(b.event.start.getTime() - today);
+        return distanceA - distanceB;
+      })
+      .slice(0, 8)
+      .map((r) => r.event);
   });
 
   setSearchQuery(q: string): void {

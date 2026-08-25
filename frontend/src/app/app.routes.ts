@@ -53,5 +53,17 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./features/tasks/tasks-page/tasks-page').then((m) => m.TasksPage),
   },
+  {
+    // "calendar/import", KHÔNG phải "/import" trần trụi — proxy.conf.json đã
+    // chiếm tiền tố "/import" cho API import file thật (POST /import). Trùng
+    // tiền tố thì F5/dán link vào trang này sẽ bị proxy bắt gửi thẳng lên
+    // backend thay vì phục vụ app Angular.
+    path: 'calendar/import',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/calendar/components/import-modal/import-modal').then(
+        (m) => m.ImportModalComponent,
+      ),
+  },
   { path: '**', redirectTo: 'calendar' },
 ];

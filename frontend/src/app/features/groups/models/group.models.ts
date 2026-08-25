@@ -36,6 +36,7 @@ export interface GroupMember {
   role: 'owner' | 'admin' | 'member' | 'guest';
   createdAt: string;
   email?: string;
+  name?: string;
 }
 
 export type GroupInviteStatus = 'pending' | 'accepted' | 'declined';

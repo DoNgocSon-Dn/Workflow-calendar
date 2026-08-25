@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { CalendarStore } from '../../data/calendar-store';
 import { TranslationService } from '../../../../core/i18n/translation.service';
+import { DialogService } from '../../../../core/services/dialog.service';
 import { GroupStore } from '../../../groups/data/group-store';
 import { Group } from '../../../groups/models/group.models';
 import { CALENDAR_COLOR_HEX } from '../../models/calendar.models';
@@ -39,6 +40,7 @@ export class CalendarSidebar implements OnInit {
   protected readonly store = inject(CalendarStore);
   protected readonly groupStore = inject(GroupStore);
   protected readonly i18n = inject(TranslationService);
+  private readonly dialog = inject(DialogService);
   protected readonly colorHex = CALENDAR_COLOR_HEX;
 
   readonly createClicked = output<void>();
@@ -87,7 +89,7 @@ export class CalendarSidebar implements OnInit {
     try {
       await this.groupStore.setGroupHidden(group.id, !group.hidden);
     } catch {
-      alert('Không thể cập nhật trạng thái hiển thị của nhóm.');
+      await this.dialog.alert('Không thể cập nhật trạng thái hiển thị của nhóm.');
     }
   }
 }

@@ -1,0 +1,51 @@
+@if (dialog.request(); as req) {
+  <div class="dh-overlay" (click)="onBackdropClick($event)">
+    <div class="dh-dialog" role="alertdialog" aria-modal="true">
+      @if (req.title) {
+        <h3 class="dh-title">{{ req.title }}</h3>
+      }
+      <p class="dh-message">{{ req.message }}</p>
+
+      @if (req.kind === 'prompt') {
+        <input
+          type="text"
+          class="dh-input"
+          [value]="dialog.inputValue()"
+          (input)="dialog.inputValue.set($any($event.target).value)"
+          (keydown.enter)="dialog.submitPrompt()"
+          autofocus
+        />
+      }
+
+      <div class="dh-actions">
+        @switch (req.kind) {
+          @case ('alert') {
+            <button type="button" class="dh-btn dh-btn-primary" (click)="dialog.acknowledge()">
+              {{ req.confirmLabel || 'Đã hiểu' }}
+            </button>
+          }
+          @case ('prompt') {
+            <button type="button" class="dh-btn dh-btn-ghost" (click)="dialog.cancelPrompt()">
+              {{ req.cancelLabel || 'Hủy' }}
+            </button>
+            <button type="button" class="dh-btn dh-btn-primary" (click)="dialog.submitPrompt()">
+              {{ req.confirmLabel || 'OK' }}
+            </button>
+          }
+          @default {
+            <button type="button" class="dh-btn dh-btn-ghost" (click)="dialog.respondNo()">
+              {{ req.cancelLabel || 'Hủy' }}
+            </button>
+            <button
+              type="button"
+              [class]="req.danger ? 'dh-btn dh-btn-danger' : 'dh-btn dh-btn-primary'"
+              (click)="dialog.respondYes()"
+            >
+              {{ req.confirmLabel || 'Đồng ý' }}
+            </button>
+          }
+        }
+      </div>
+    </div>
+  </div>
+}

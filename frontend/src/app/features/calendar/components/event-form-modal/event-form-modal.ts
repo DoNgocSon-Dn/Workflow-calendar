@@ -14,6 +14,7 @@ import { debounceTime, distinctUntilChanged, map } from 'rxjs';
 import { AuthStore } from '../../../../core/auth/auth-store';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { TimeFormatService } from '../../../../core/time-format/time-format-service';
+import { DialogService } from '../../../../core/services/dialog.service';
 import { CalendarStore } from '../../data/calendar-store';
 import {
   Attendee,
@@ -85,6 +86,7 @@ export class EventFormModal {
   private readonly authStore = inject(AuthStore);
   protected readonly i18n = inject(TranslationService);
   private readonly timeFormatService = inject(TimeFormatService);
+  private readonly dialog = inject(DialogService);
 
   readonly event = input<CalendarEvent | null>(null);
   readonly defaultStart = input<Date | null>(null);
@@ -537,7 +539,7 @@ export class EventFormModal {
       this.todoListId.set(select.value);
       return;
     }
-    const name = prompt('Tên danh sách mới:')?.trim();
+    const name = (await this.dialog.prompt('Tên danh sách mới:'))?.trim();
     if (!name) {
       // Angular bỏ qua việc ghi lại [value] nếu todoListId() không đổi (dù
       // DOM <select> vừa bị người dùng tự đổi qua tay) — reset thẳng DOM để

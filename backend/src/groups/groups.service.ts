@@ -74,6 +74,7 @@ export interface GroupMemberDto {
   role: string;
   createdAt: string;
   email?: string;
+  name?: string;
 }
 
 export interface GroupTaskDto {
@@ -475,6 +476,7 @@ export class GroupsService {
         role: m.role,
         createdAt: m.created_at,
         email: m.email,
+        name: m.full_name,
       })),
     };
   }
@@ -862,6 +864,37 @@ export class GroupsService {
     });
 
     return taskDto;
+  }
+
+  async deleteTask(
+    supabase: SupabaseClient,
+    groupId: string,
+    taskId: string,
+  ): Promise<{ id: string }> {
+    const { data, error } = await supabase
+      .from('group_tasks')
+      .delete()
+      .eq('id', taskId)
+      .eq('group_id', groupId)
+      .select('id')
+      .single();
+
+    if (error || !data) {
+      throw new InternalServerErrorException(
+        error?.message || 'Không thể xoá task',
+      );
+    }
+
+    await this.emitToGroupRooms(supabase, groupId, 'group:taskDeleted', {
+      groupId,
+      taskId: data.id,
+    });
+    await this.emitToGroupMembers(supabase, groupId, 'group:taskDeleted', {
+      groupId,
+      taskId: data.id,
+    });
+
+    return { id: data.id };
   }
 
   // Realtime Group Messages

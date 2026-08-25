@@ -39,10 +39,38 @@
       <input
         type="text"
         class="search-input"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-controls="search-results-list"
+        [attr.aria-expanded]="searchResultsOpen()"
         [placeholder]="i18n.t('header.searchPlaceholder')"
         [value]="store.searchQuery()"
         (input)="store.setSearchQuery($any($event.target).value)"
+        (focus)="searchFocused.set(true)"
+        (blur)="onSearchBlur()"
       />
+
+      @if (searchResultsOpen()) {
+        <ul id="search-results-list" class="search-results" role="listbox">
+          @if (searchResults().length) {
+            @for (result of searchResults(); track result.id) {
+              <li role="option">
+                <button
+                  type="button"
+                  class="search-result"
+                  (mousedown)="selectSearchResult(result)"
+                >
+                  <span class="search-result__dot" [style.background]="colorHex[store.calendarColor().get(result.calendarId) ?? 'blue']"></span>
+                  <span class="search-result__title">{{ result.title }}</span>
+                  <span class="search-result__date">{{ searchResultDateLabel(result) }}</span>
+                </button>
+              </li>
+            }
+          } @else {
+            <li class="search-results__empty">{{ i18n.t('header.searchNoResults') }}</li>
+          }
+        </ul>
+      }
     </div>
 
     <button type="button" class="icon-btn" [attr.aria-label]="i18n.t('header.import')" [title]="i18n.t('header.import')" (click)="openImport.emit()">

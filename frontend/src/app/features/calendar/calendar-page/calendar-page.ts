@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth-store';
 import { DensityService } from '../../../core/density/density-service';
 import { NotificationQueue } from '../../../core/realtime/notification-queue';
@@ -12,7 +13,6 @@ import { CreateRequest, MonthView } from '../components/month-view/month-view';
 import { NotificationPopup } from '../components/notification-popup/notification-popup';
 import { TimeGridView } from '../components/time-grid-view/time-grid-view';
 import { AgendaView } from '../components/agenda-view/agenda-view';
-import { ImportModalComponent } from '../components/import-modal/import-modal';
 import { SettingsModal } from '../components/settings-modal/settings-modal';
 import { TrashModal } from '../components/trash-modal/trash-modal';
 import { CalendarStore } from '../data/calendar-store';
@@ -50,7 +50,6 @@ interface ModalState {
     MonthView,
     TimeGridView,
     AgendaView,
-    ImportModalComponent,
     TrashModal,
     SettingsModal,
     EventFormModal,
@@ -74,6 +73,7 @@ export class CalendarPage {
   protected readonly holidayThemeService = inject(HolidayThemeService);
   private readonly notificationQueue = inject(NotificationQueue);
   private readonly densityService = inject(DensityService);
+  private readonly router = inject(Router);
 
   protected readonly weekDays = computed(() => buildWeekDays(this.store.focusedDate()));
   protected readonly dayViewDays = computed(() => [this.store.focusedDate()]);
@@ -89,7 +89,6 @@ export class CalendarPage {
     consumeOauthRedirect() && !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   );
 
-  protected readonly importModalOpen = signal(false);
   protected readonly trashModalOpen = signal(false);
   protected readonly settingsModalOpen = signal(false);
   protected readonly inviteModalTarget = signal<{ calendarId: string; calendarName: string } | null>(
@@ -98,9 +97,17 @@ export class CalendarPage {
   protected readonly createCalendarModalOpen = signal(false);
   protected readonly createGroupModalOpen = signal(false);
 
+  /** Popup "hoàn tất hồ sơ" lần đầu đăng nhập — bắt buộc điền cả Tên hiển thị
+   *  lẫn Ngày sinh trước khi vào app, không có nút bỏ qua nữa: ngày sinh cần
+   *  có sẵn cho tính năng chúc mừng sinh nhật, không xin sau thì gần như
+   *  không ai chủ động vào Cài đặt tự điền. */
   protected readonly namePromptOpen = signal(false);
   protected readonly nameDraft = signal('');
+  protected readonly dobDraft = signal('');
   protected readonly savingName = signal(false);
+  protected readonly onboardingCanSubmit = computed(
+    () => !!this.nameDraft().trim() && !!this.dobDraft(),
+  );
 
   constructor() {
     this.notificationQueue.requestPermission();
@@ -111,22 +118,33 @@ export class CalendarPage {
       }
     });
 
-    // Check if user needs to set a display name after logging in
+    // Lần đầu đăng nhập (chưa có tên hiển thị thật, hoặc chưa khai ngày sinh)
+    // thì bắt hoàn tất hồ sơ trước — chạy 1 lần trong constructor, không cần
+    // effect vì authStore đã init xong trước khi route vào được trang này
+    // (authGuard chờ authStore.init() rồi mới cho qua).
     const currentName = this.authStore.displayName();
     const userEmail = this.authStore.user()?.email;
-    if (!currentName || currentName === userEmail) {
+    const hasName = !!currentName && currentName !== userEmail;
+    const hasDob = !!this.birthdayService.getUserDob();
+    if (!hasName || !hasDob) {
       this.nameDraft.set(currentName ?? '');
+      this.dobDraft.set(this.birthdayService.getUserDob());
       this.namePromptOpen.set(true);
     }
   }
 
-  async saveDisplayName(): Promise<void> {
-    const name = this.nameDraft().trim();
-    if (!name) return;
+  async completeOnboarding(): Promise<void> {
+    if (!this.onboardingCanSubmit() || this.savingName()) return;
     this.savingName.set(true);
-    await this.authStore.updateDisplayName(name);
-    this.savingName.set(false);
-    this.namePromptOpen.set(false);
+    try {
+      await Promise.all([
+        this.authStore.updateDisplayName(this.nameDraft().trim()),
+        this.birthdayService.setUserDob(this.dobDraft()),
+      ]);
+      this.namePromptOpen.set(false);
+    } finally {
+      this.savingName.set(false);
+    }
   }
 
   onViewDetail(eventId: string): void {
@@ -138,6 +156,10 @@ export class CalendarPage {
 
   onOpenGroupFromNotification(request: OpenGroupChatRequest): void {
     void this.groupStore.openGroupChat(request.groupId, request.messageId);
+  }
+
+  openImportPage(): void {
+    void this.router.navigate(['/calendar/import']);
   }
 
   openCreateBlank(): void {

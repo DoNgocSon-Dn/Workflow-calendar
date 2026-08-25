@@ -172,6 +172,15 @@ export class GroupsController {
     return this.groupsService.updateTask(supabase, groupId, taskId, dto);
   }
 
+  @Delete(':id/tasks/:taskId')
+  async deleteTask(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @Param('id') groupId: string,
+    @Param('taskId') taskId: string,
+  ) {
+    return this.groupsService.deleteTask(supabase, groupId, taskId);
+  }
+
   @Get(':id/messages')
   async getMessages(
     @CurrentSupabase() supabase: SupabaseClient,

@@ -173,6 +173,15 @@ export class GroupApiService {
     );
   }
 
+  async deleteTask(groupId: string, taskId: string): Promise<{ id: string }> {
+    return firstValueFrom(
+      this.http.delete<{ id: string }>(
+        `${environment.apiUrl}/groups/${groupId}/tasks/${taskId}`,
+        { headers: this.authHeaders },
+      ),
+    );
+  }
+
   async getMessages(groupId: string): Promise<GroupMessage[]> {
     return firstValueFrom(
       this.http.get<GroupMessage[]>(`${environment.apiUrl}/groups/${groupId}/messages`, {

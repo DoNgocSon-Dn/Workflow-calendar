@@ -103,11 +103,83 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  /* Khi topbar không đủ chỗ và .right rớt xuống dòng riêng (flex-wrap ở
+     .topbar), mặc định flex-start sẽ dạt nó về sát mép trái — kéo nút chuông
+     theo, khiến panel thông báo (neo `right: 0` theo nút chuông) tràn ra
+     ngoài màn hình bên trái. margin-left: auto ăn hết khoảng trống trên dòng
+     riêng đó, giữ .right áp sát mép phải như khi còn chung dòng với .center. */
+  margin-left: auto;
 }
 
 .search-box {
+  position: relative;
   flex: 1 1 140px;
   min-width: 0;
+}
+
+.search-results {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  right: 0;
+  min-width: 260px;
+  max-height: 320px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.35rem;
+  list-style: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-modal);
+  z-index: 60;
+}
+
+.search-result {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.search-result:hover {
+  background: var(--color-surface-hover);
+}
+
+.search-result__dot {
+  flex: none;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: var(--radius-full);
+}
+
+.search-result__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.search-result__date {
+  flex: none;
+  font-size: 0.72rem;
+  color: var(--color-text-tertiary);
+}
+
+.search-results__empty {
+  padding: 0.6rem 0.55rem;
+  font-size: 0.8rem;
+  color: var(--color-text-tertiary);
 }
 
 .search-input {

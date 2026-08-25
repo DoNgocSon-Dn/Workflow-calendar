@@ -3,10 +3,10 @@ import {
   Component,
   computed,
   inject,
-  output,
   signal,
 } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../../environments/environment';
 import { CalendarStore } from '../../data/calendar-store';
@@ -93,6 +93,9 @@ function fromDatetimeLocal(dtLocalStr: string): string {
   return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
 }
 
+/** Trang riêng `/calendar/import` — trước là modal nổi trên trang lịch, giờ
+ *  là trang đầy đủ vì bảng xem trước sự kiện (5 cột, có thể nhiều dòng) cần
+ *  nhiều chỗ hơn một hộp thoại cho được. */
 @Component({
   selector: 'app-import-modal',
   templateUrl: './import-modal.html',
@@ -100,15 +103,14 @@ function fromDatetimeLocal(dtLocalStr: string): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule],
   // Nghe ở cấp document vì vùng thả file là một <label>, không nhận được
-  // focus nên sự kiện paste không bao giờ bay tới nó. Đây là hộp thoại modal
-  // và component chỉ tồn tại khi popup đang mở, nên phạm vi này là đúng.
+  // focus nên sự kiện paste không bao giờ bay tới nó. Trang này chỉ tồn tại
+  // lúc route đang active, nên phạm vi này là đúng.
   host: { '(document:paste)': 'onPaste($event)' },
 })
 export class ImportModalComponent {
   private readonly http = inject(HttpClient);
   protected readonly store = inject(CalendarStore);
-
-  readonly closed = output<void>();
+  private readonly router = inject(Router);
 
   readonly selectedFile = signal<File | null>(null);
   readonly parsing = signal(false);
@@ -476,7 +478,7 @@ export class ImportModalComponent {
       }
 
       this.importSuccess.set(true);
-      setTimeout(() => this.closed.emit(), 1200);
+      setTimeout(() => this.cancel(), 1200);
     } catch (err: any) {
       this.parseError.set(err?.error?.message || 'Lỗi khi lưu sự kiện hàng loạt.');
     } finally {
@@ -485,10 +487,6 @@ export class ImportModalComponent {
   }
 
   cancel(): void {
-    this.closed.emit();
-  }
-
-  onBackdropClick(event: MouseEvent): void {
-    if (event.target === event.currentTarget) this.cancel();
+    void this.router.navigate(['/calendar']);
   }
 }

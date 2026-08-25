@@ -1,6 +1,6 @@
 <div class="calendar-page">
   <app-calendar-header
-    (openImport)="importModalOpen.set(true)"
+    (openImport)="openImportPage()"
     (openSettings)="settingsModalOpen.set(true)"
     (openEventFromNotification)="onViewDetail($event)"
     (openGroupFromNotification)="onOpenGroupFromNotification($event)"
@@ -78,10 +78,6 @@
   />
 }
 
-@if (importModalOpen()) {
-  <app-import-modal (closed)="importModalOpen.set(false)" />
-}
-
 @if (trashModalOpen()) {
   <app-trash-modal (closed)="trashModalOpen.set(false)" />
 }
@@ -131,7 +127,7 @@
 
       <h2 class="name-prompt-title">Chào mừng bạn đến với Workflow!</h2>
       <p class="name-prompt-desc">
-        Vui lòng chọn <strong>Tên hiển thị</strong> của bạn. Tên này sẽ xuất hiện trên lịch và khi tham gia nhóm làm việc.
+        Vui lòng hoàn tất hồ sơ trước khi vào app: <strong>Tên hiển thị</strong> xuất hiện trên lịch và khi tham gia nhóm làm việc, còn <strong>Ngày sinh</strong> để Workflow gửi lời chúc mừng sinh nhật đúng ngày.
       </p>
 
       <div class="name-prompt-field">
@@ -141,7 +137,17 @@
           placeholder="Nhập tên của bạn (VD: Hoàng Cường)"
           [value]="nameDraft()"
           (input)="nameDraft.set($any($event.target).value)"
-          (keyup.enter)="saveDisplayName()"
+          (keyup.enter)="completeOnboarding()"
+        />
+      </div>
+
+      <div class="name-prompt-field">
+        <input
+          type="date"
+          class="name-prompt-input"
+          [value]="dobDraft()"
+          (input)="dobDraft.set($any($event.target).value)"
+          (keyup.enter)="completeOnboarding()"
         />
       </div>
 
@@ -149,17 +155,10 @@
         <button
           type="button"
           class="name-prompt-submit-btn"
-          [disabled]="savingName() || !nameDraft().trim()"
-          (click)="saveDisplayName()"
+          [disabled]="savingName() || !onboardingCanSubmit()"
+          (click)="completeOnboarding()"
         >
           {{ savingName() ? 'Đang lưu…' : 'Bắt đầu sử dụng' }}
-        </button>
-        <button
-          type="button"
-          class="name-prompt-skip-btn"
-          (click)="namePromptOpen.set(false)"
-        >
-          Bỏ qua (Đặt tên sau)
         </button>
       </div>
     </div>

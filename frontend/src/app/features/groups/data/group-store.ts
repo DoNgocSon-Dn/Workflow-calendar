@@ -62,6 +62,10 @@ export class GroupStore {
   readonly unreadChatCount = signal<number>(0);
   /** Tin nhắn cần cuộn tới sau khi mở tab Trò chuyện. */
   readonly pendingChatMessageId = signal<string | null>(null);
+  /** ID các nhóm có tin nhắn chưa đọc — cho sidebar "sáng lên" kiểu Messenger
+   *  khi có người nhắn tới, kể cả nhóm không phải nhóm đang mở. Xoá khỏi set
+   *  này khi người dùng mở nhóm đó (xem `selectGroup`). */
+  readonly unreadMessageGroupIds = signal<ReadonlySet<string>>(new Set());
 
   private realtimeInitialized = false;
   private readonly selfOriginTaskIds = new Set<string>();
@@ -274,6 +278,13 @@ export class GroupStore {
       this.notifyTaskEvent(payload.groupId, payload.task, 'updated');
     });
 
+    this.realtime.on<{ groupId: string; taskId: string }>('group:taskDeleted', (payload) => {
+      if (!payload?.taskId) return;
+      if (this.isActiveGroup(payload.groupId)) {
+        this.tasks.update((list) => list.filter((t) => t.id !== payload.taskId));
+      }
+    });
+
     // Ba sự kiện dưới đây đến từ room riêng của user (không phải room nhóm) nên
     // vẫn nhận được kể cả khi chưa mở nhóm — đó là điều kiện để nhóm đang ẩn tự
     // hiện lại lúc có tin nhắn mới.
@@ -396,6 +407,8 @@ export class GroupStore {
     const currentUser = this.authStore.user();
     if (!currentUser || message.senderId === currentUser.id) return;
 
+    this.markGroupUnread(groupId || message.groupId);
+
     const group = this.groups().find((g) => g.id === groupId || g.id === message.groupId);
     const text = message.message ?? (message.attachmentName ? `Đã gửi tệp: ${message.attachmentName}` : '');
     const input: GroupMessageDraftInput = {
@@ -418,6 +431,16 @@ export class GroupStore {
     }
 
     this.notifications.ingest(groupMessageDraft(input));
+  }
+
+  /** Không đánh dấu unread nếu người dùng đang nhìn thẳng vào đúng tab Chat
+   *  của đúng nhóm đó — mới nhắn xong đọc ngay thì đâu cần "sáng lên" báo lại. */
+  private markGroupUnread(groupId: string): void {
+    if (!groupId) return;
+    if (this.activeGroupId() === groupId && this.activeWorkspaceModalOpen() && this.activeWorkspaceTab() === 'chat') {
+      return;
+    }
+    this.unreadMessageGroupIds.update((ids) => (ids.has(groupId) ? ids : new Set(ids).add(groupId)));
   }
 
   /** Nhận diện "@tên" hoặc email đầy đủ của người dùng trong nội dung tin nhắn. */
@@ -522,14 +545,25 @@ export class GroupStore {
     }
   }
 
+  /** Bỏ đúng một nhóm khỏi set "có tin chưa đọc" — gọi khi người dùng thực sự
+   *  nhìn vào nhóm đó: lúc mở workspace (`selectGroup`) VÀ lúc chuyển sang tab
+   *  Chat của nhóm đang mở sẵn (modal không đóng/mở lại nên `selectGroup`
+   *  không chạy lại — thiếu chỗ gọi này thì sidebar cứ sáng dù đã đọc xong). */
+  clearGroupUnread(groupId: string): void {
+    this.unreadMessageGroupIds.update((ids) => {
+      if (!ids.has(groupId)) return ids;
+      const next = new Set(ids);
+      next.delete(groupId);
+      return next;
+    });
+  }
+
   /** Mở workspace của nhóm và nhảy thẳng vào tab Trò chuyện — dùng cho luồng
    *  click thông báo tin nhắn. `messageId` (nếu có) sẽ được cuộn tới. */
   async openGroupChat(groupId: string, messageId?: string): Promise<void> {
     const group = this.groups().find((g) => g.id === groupId);
     if (!group) return;
     this.requestedWorkspaceTab.set('chat');
-    this.activeWorkspaceTab.set('chat');
-    this.unreadChatCount.set(0);
     this.pendingChatMessageId.set(messageId ?? null);
     await this.selectGroup(group);
   }
@@ -537,7 +571,12 @@ export class GroupStore {
   async selectGroup(group: Group): Promise<void> {
     this.activeGroup.set(group);
     this.activeWorkspaceModalOpen.set(true);
-    if (this.requestedWorkspaceTab() === 'chat') {
+    this.clearGroupUnread(group.id);
+    // Đọc rồi xoá ngay trong cùng chỗ — chỉ MỘT nơi tiêu thụ cờ này, tránh
+    // hai chỗ khác nhau cùng đọc rồi dẫm lên nhau.
+    const requestedTab = this.requestedWorkspaceTab();
+    this.requestedWorkspaceTab.set(null);
+    if (requestedTab === 'chat') {
       this.unreadChatCount.set(0);
       this.activeWorkspaceTab.set('chat');
     } else {
@@ -614,6 +653,11 @@ export class GroupStore {
     const updated = await this.api.updateTask(groupId, taskId, updates);
     this.tasks.update((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
     return updated;
+  }
+
+  async deleteTask(groupId: string, taskId: string): Promise<void> {
+    await this.api.deleteTask(groupId, taskId);
+    this.tasks.update((prev) => prev.filter((t) => t.id !== taskId));
   }
 
   async loadMessages(groupId: string): Promise<void> {

@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { NotificationService } from '../../../core/services/notification.service';
+import { DialogService } from '../../../core/services/dialog.service';
 import {
   AppNotification,
   NotificationRespondPayload,
@@ -60,6 +61,7 @@ export interface OpenGroupChatRequest {
 })
 export class NotificationPanel {
   private readonly service = inject(NotificationService);
+  private readonly dialog = inject(DialogService);
   protected readonly i18n = inject(TranslationService);
   private readonly realtime = inject(RealtimeService);
 
@@ -226,9 +228,10 @@ export class NotificationPanel {
 
   protected readonly hasAnyNotification = computed(() => this.service.notifications().length > 0);
 
-  clearAll(): void {
+  async clearAll(): Promise<void> {
     if (!this.hasAnyNotification()) return;
-    if (!confirm(this.i18n.t('notif.clearConfirm'))) return;
+    const ok = await this.dialog.confirm(this.i18n.t('notif.clearConfirm'), { danger: true });
+    if (!ok) return;
     this.service.clearAll();
   }
 

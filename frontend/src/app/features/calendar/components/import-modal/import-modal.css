@@ -1,34 +1,27 @@
-.backdrop {
-  position: fixed;
-  inset: 0;
-  background: var(--overlay-backdrop);
-  backdrop-filter: blur(4px);
+.page {
+  min-height: 100dvh;
+  background: var(--color-bg);
   display: flex;
-  align-items: center;
   justify-content: center;
-  z-index: 1000;
 }
 
 .modal {
   background: var(--color-surface);
   color: var(--color-text);
-  width: 90%;
-  max-width: 840px;
-  max-height: 90vh;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-modal);
+  width: 100%;
+  max-width: 1100px;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--color-border);
 }
 
 .modal-header {
   padding: var(--space-4) var(--space-5);
   border-bottom: 1px solid var(--color-border);
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: var(--space-2);
 }
 
 .modal-header h2 {
@@ -51,12 +44,20 @@
   background: var(--color-surface-hover);
 }
 
+.back-btn {
+  flex: 0 0 auto;
+  font-size: 1.5rem;
+  line-height: 1;
+  padding: 0.2rem 0.5rem;
+}
+
 .modal-body {
-  padding: var(--space-5);
+  flex: 1 1 auto;
+  padding: var(--space-6);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-5);
 }
 
 .mode-tabs {
@@ -87,19 +88,22 @@
 .upload-section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
+/* Thu gọn lại so với trước — chỉ cần đủ chỗ cho icon + 2 dòng chữ, phần dư
+   thừa nhường lại cho khoảng cách quanh nó (modal-body/upload-section đã nới
+   gap) để cả khu vực import bớt cảm giác bị dồn sát nhau. */
 .dropzone {
   border: 2px dashed var(--color-border-strong);
   border-radius: var(--radius-lg);
-  padding: var(--space-6);
+  padding: var(--space-4);
   text-align: center;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
   transition: border-color 0.2s;
 }
 
@@ -112,7 +116,7 @@
 }
 
 .upload-icon {
-  font-size: 2rem;
+  font-size: 1.5rem;
 }
 
 .upload-text {
@@ -131,6 +135,8 @@
 }
 
 .preview-section {
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -168,7 +174,9 @@
 }
 
 .title-input {
-  min-width: 150px;
+  /* 150px trước đây chỉ vừa vài chữ — tiêu đề sự kiện thật (VD "Sprint
+     Planning Q4 - Estimation") dài hơn thế nhiều, luôn bị cắt cụt. */
+  min-width: 260px;
 }
 
 .datetime-input {
@@ -177,18 +185,32 @@
 }
 
 .location-input {
-  min-width: 120px;
+  /* Địa điểm nhiều khi là link Google Meet dài (https://meet.google.com/...),
+     120px không đủ chỗ đọc, phải bấm vào từng ô mới thấy hết. */
+  min-width: 220px;
 }
 
 .preview-table-container {
-  max-height: 280px;
-  overflow-y: auto;
+  /* Trang riêng có cả chiều cao viewport để dùng — cho bảng giãn theo thay vì
+     ràng buộc 280px cố định như hồi còn là modal nhỏ. */
+  flex: 1 1 auto;
+  min-height: 220px;
+  /* Trước chỉ overflow-y — bảng bị ép vừa đúng bề rộng modal nên các ô input
+     (title/datetime/location đều có min-width riêng) bị bóp nhỏ lại, chữ mất
+     dấu ba chấm cũng không đọc hết. Thêm overflow-x: bảng được phép rộng hơn
+     khung nhìn, cuộn ngang thay vì bóp cột. */
+  overflow: auto;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
 }
 
 .preview-table {
   width: 100%;
+  /* Không bao giờ hẹp hơn tổng min-width tự nhiên của các cột — đây là thứ
+     thật sự chặn việc bị bóp, "width: 100%" một mình không đủ vì table-layout
+     auto vẫn co cột xuống dưới min-width của input bên trong khi container
+     chật. */
+  min-width: max-content;
   border-collapse: collapse;
   font-size: 0.8125rem;
 }
@@ -226,6 +248,10 @@
 }
 
 .success-banner {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: var(--space-8);
   text-align: center;
   color: var(--color-success);
@@ -318,7 +344,6 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  margin-top: 0.6rem;
   padding: 0.55rem 0.65rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);

@@ -10,7 +10,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthStore } from '../../../../core/auth/auth-store';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { CalendarStore } from '../../data/calendar-store';
-import { CalendarViewMode } from '../../models/calendar.models';
+import { CALENDAR_COLOR_HEX, CalendarEvent, CalendarViewMode } from '../../models/calendar.models';
 import { addDays, monthYearLabel, startOfWeek } from '../../utils/date-utils';
 import { NotificationButton } from '../../../../shared/components/notification/notification-button';
 import { OpenGroupChatRequest } from '../../../../shared/components/notification/notification-panel';
@@ -55,6 +55,16 @@ export class CalendarHeader {
   protected readonly userInitial = computed(() => this.displayName().charAt(0).toUpperCase() || '?');
   protected readonly userMenuOpen = signal(false);
   protected readonly viewMenuOpen = signal(false);
+  protected readonly colorHex = CALENDAR_COLOR_HEX;
+
+  /** Only open while the input has focus AND there's something to search —
+   *  closing on blur is deferred (see `selectSearchResult`) so a click on a
+   *  result registers before the blur would otherwise dismiss the list. */
+  protected readonly searchFocused = signal(false);
+  protected readonly searchResultsOpen = computed(
+    () => this.searchFocused() && this.store.searchQuery().trim().length > 0,
+  );
+  protected readonly searchResults = computed(() => this.store.searchResults());
 
   readonly viewModes: { mode: CalendarViewMode; labelKey: string }[] = [
     { mode: 'day', labelKey: 'header.viewDay' },
@@ -130,5 +140,23 @@ export class CalendarHeader {
     this.closeUserMenu();
     await this.authStore.signOut();
     await this.router.navigate(['/login']);
+  }
+
+  protected searchResultDateLabel(event: CalendarEvent): string {
+    return DATE_FMT[this.i18n.locale()].dayMonth.format(event.start);
+  }
+
+  /** mousedown fires before the input's blur, so the click registers here
+   *  first; closing on blur alone would remove the dropdown (and the item
+   *  under the pointer) before a click event ever reaches it. Just jumps the
+   *  calendar to the event's date — no modal, the grid itself is the result. */
+  selectSearchResult(event: CalendarEvent): void {
+    this.store.goTo(event.start);
+    this.store.setSearchQuery('');
+    this.searchFocused.set(false);
+  }
+
+  onSearchBlur(): void {
+    this.searchFocused.set(false);
   }
 }
