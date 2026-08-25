@@ -27,7 +27,13 @@ export class TodosService {
   ): Promise<TodoDto> {
     const { data, error } = await supabase
       .from('todos')
-      .insert({ user_id: userId, content: dto.content })
+      .insert({
+        user_id: userId,
+        content: dto.content,
+        list_id: dto.listId,
+        ...(dto.description !== undefined ? { description: dto.description } : {}),
+        ...(dto.dueAt !== undefined ? { due_at: dto.dueAt } : {}),
+      })
       .select('*')
       .returns<TodoRow[]>()
       .single();
@@ -41,9 +47,21 @@ export class TodosService {
     id: string,
     dto: UpdateTodoDto,
   ): Promise<TodoDto> {
+    // Cột DB dùng snake_case (list_id, due_at) trong khi DTO dùng camelCase
+    // (listId, dueAt) — không thể spread thẳng dto vào .update(), phải map
+    // lại từng trường.
+    const row: Record<string, unknown> = {};
+    if (dto.content !== undefined) row['content'] = dto.content;
+    if (dto.done !== undefined) row['done'] = dto.done;
+    if (dto.listId !== undefined) row['list_id'] = dto.listId;
+    if (dto.description !== undefined) row['description'] = dto.description;
+    if (dto.starred !== undefined) row['starred'] = dto.starred;
+    if (dto.clearDueAt) row['due_at'] = null;
+    else if (dto.dueAt !== undefined) row['due_at'] = dto.dueAt;
+
     const { data, error } = await supabase
       .from('todos')
-      .update(dto)
+      .update(row)
       .eq('id', id)
       .select('*')
       .returns<TodoRow[]>();

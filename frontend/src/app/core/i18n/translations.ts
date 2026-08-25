@@ -85,6 +85,8 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'settings.sectionNotifications': 'Thông báo',
     'settings.holidayNotif': 'Ngày lễ',
     'settings.notificationSound': 'Âm thanh thông báo',
+    'settings.soundPreviewGeneral': 'Chung',
+    'settings.soundPreviewChat': 'Chat',
     'settings.sectionOther': 'Khác',
     'settings.deletedEvents': 'Sự kiện đã xoá',
     'settings.printCalendar': 'In lịch',
@@ -232,6 +234,9 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'event.tabTodo': 'Việc cần làm',
     'event.todoHint': 'Thêm một việc cần làm — không gắn với ngày giờ cụ thể.',
     'event.todoTitleRequired': 'Vui lòng nhập nội dung việc cần làm.',
+    'event.addDueDate': 'Thêm thời hạn',
+    'event.removeDueDate': 'Xoá thời hạn',
+    'event.selectListAria': 'Chọn danh sách',
 
     // --- group workspace ----------------------------------------------------
     'group.defaultDescription': 'Không gian làm việc nhóm',
@@ -385,6 +390,8 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'settings.sectionNotifications': 'Notifications',
     'settings.holidayNotif': 'Holidays',
     'settings.notificationSound': 'Notification sound',
+    'settings.soundPreviewGeneral': 'General',
+    'settings.soundPreviewChat': 'Chat',
     'settings.sectionOther': 'Other',
     'settings.deletedEvents': 'Deleted events',
     'settings.printCalendar': 'Print calendar',
@@ -532,6 +539,9 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'event.tabTodo': 'To-do',
     'event.todoHint': "Add a to-do — it isn't tied to a specific date or time.",
     'event.todoTitleRequired': 'Please enter what needs to be done.',
+    'event.addDueDate': 'Add deadline',
+    'event.removeDueDate': 'Remove deadline',
+    'event.selectListAria': 'Select list',
 
     // --- group workspace ----------------------------------------------------
     'group.defaultDescription': 'Team workspace',

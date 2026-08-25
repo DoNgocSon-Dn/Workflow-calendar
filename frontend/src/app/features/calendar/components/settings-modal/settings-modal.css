@@ -485,3 +485,17 @@
     overflow-y: auto;
   }
 }
+
+/* Nhóm nút bên phải không được co lại, và nhãn bên trái được phép co — nếu
+   không, nhãn sẽ bị bóp thành nhiều dòng khi nút có chữ dài. */
+.setting-inline {
+  flex-shrink: 0;
+}
+
+.setting-inline .sound-preview-btn {
+  white-space: nowrap;
+}
+
+.setting-row > .setting-title {
+  min-width: 0;
+}

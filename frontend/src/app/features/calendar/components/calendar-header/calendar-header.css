@@ -232,6 +232,38 @@
   color: var(--color-text);
 }
 
+.app-switch {
+  display: flex;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  border-radius: var(--radius-full);
+  padding: 3px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.app-switch-btn {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.app-switch-btn:hover {
+  color: var(--color-text);
+}
+
+.app-switch-btn.active {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  cursor: default;
+}
+
 .view-menu {
   position: relative;
 }

@@ -6,7 +6,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthStore } from '../../../../core/auth/auth-store';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { CalendarStore } from '../../data/calendar-store';
@@ -15,6 +15,7 @@ import { addDays, monthYearLabel, startOfWeek } from '../../utils/date-utils';
 import { NotificationButton } from '../../../../shared/components/notification/notification-button';
 import { OpenGroupChatRequest } from '../../../../shared/components/notification/notification-panel';
 import { BrandLogo } from '../../../../shared/components/brand-logo/brand-logo';
+import { Icon } from '../../../../shared/components/icon/icon';
 
 /** Matches calendar-page.css / calendar-sidebar.css's mobile-drawer breakpoint. */
 const MOBILE_BREAKPOINT_PX = 720;
@@ -35,7 +36,7 @@ const DATE_FMT: Record<'vi' | 'en', { dayMonth: Intl.DateTimeFormat; fullDate: I
   templateUrl: './calendar-header.html',
   styleUrl: './calendar-header.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NotificationButton, BrandLogo],
+  imports: [NotificationButton, BrandLogo, Icon, RouterLink],
 })
 export class CalendarHeader {
   protected readonly store = inject(CalendarStore);

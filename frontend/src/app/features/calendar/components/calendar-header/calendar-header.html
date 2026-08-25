@@ -88,6 +88,15 @@
       }
     </div>
 
+    <div class="app-switch" role="group" aria-label="Chuyển đổi Lịch / Việc cần làm">
+      <span class="app-switch-btn active" aria-current="page" aria-label="Lịch">
+        <app-icon name="calendar" />
+      </span>
+      <a routerLink="/tasks" class="app-switch-btn" aria-label="Việc cần làm">
+        <app-icon name="check-square" />
+      </a>
+    </div>
+
     @if (userEmail()) {
       <div class="user-menu">
         <button

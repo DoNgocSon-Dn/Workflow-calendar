@@ -1,0 +1,241 @@
+<div class="tasks-page">
+  <header class="topbar">
+    <div class="left">
+      <button type="button" class="icon-btn" aria-label="Ẩn/hiện thanh bên" (click)="toggleSidebar()">
+        <svg viewBox="0 0 24 24" width="22" height="22">
+          <path fill="currentColor" d="M3 18h18v-2H3zm0-5h18v-2H3zm0-7v2h18V6z" />
+        </svg>
+      </button>
+      <span class="brand"><app-brand-logo [dayNumber]="store.today().getDate()" /></span>
+    </div>
+
+    <div class="right">
+      <div class="view-toggle" role="group" aria-label="Chuyển đổi Lịch / Việc cần làm">
+        <a routerLink="/calendar" class="view-toggle-btn" aria-label="Lịch">
+          <app-icon name="calendar" />
+        </a>
+        <span class="view-toggle-btn active" aria-current="page" aria-label="Việc cần làm">
+          <app-icon name="check-square" />
+        </span>
+      </div>
+
+      @if (userEmail()) {
+        <div class="user-menu">
+          <button
+            type="button"
+            class="avatar-btn"
+            aria-haspopup="true"
+            [attr.aria-expanded]="userMenuOpen()"
+            [attr.aria-label]="displayName()"
+            (click)="toggleUserMenu()"
+          >
+            @if (authStore.avatarUrl(); as avatarUrl) {
+              <img [src]="avatarUrl" alt="" class="avatar-img" />
+            } @else {
+              {{ userInitial() }}
+            }
+          </button>
+          @if (userMenuOpen()) {
+            <div class="menu-backdrop" (click)="closeUserMenu()"></div>
+            <div class="user-dropdown" role="menu">
+              <p class="user-dropdown-name">{{ displayName() }}</p>
+              @if (authStore.displayName()) {
+                <p class="user-dropdown-email">{{ userEmail() }}</p>
+              }
+              <button type="button" class="dropdown-item" role="menuitem" (click)="openSettingsFromMenu()">
+                Cài đặt
+              </button>
+              <button type="button" class="dropdown-item" role="menuitem" (click)="logout()">
+                Đăng xuất
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </header>
+
+  @if (settingsModalOpen()) {
+    <app-settings-modal (closed)="settingsModalOpen.set(false)" />
+  }
+
+  <div class="body">
+    @if (sidebarOpen()) {
+      <aside class="sidebar">
+        <ul class="filter-nav">
+          <li>
+            <button type="button" class="filter-nav-item" [class.active]="viewFilter() === 'all'" (click)="viewFilter.set('all')">
+              <app-icon name="check-square" />
+              Tất cả việc cần làm
+            </button>
+          </li>
+          <li>
+            <button type="button" class="filter-nav-item" [class.active]="viewFilter() === 'starred'" (click)="viewFilter.set('starred')">
+              <app-icon name="star" [filled]="viewFilter() === 'starred'" />
+              Có gắn dấu sao
+            </button>
+          </li>
+        </ul>
+
+        <h2 class="sidebar-title">Danh sách</h2>
+        <ul class="list-nav">
+          @for (list of lists(); track list.id) {
+            <li class="list-nav-item">
+              <label class="list-nav-check">
+                <input type="checkbox" [checked]="!isListHidden(list.id)" (change)="toggleListVisibility(list.id)" />
+                <span>{{ list.name }}</span>
+              </label>
+              <button type="button" class="list-nav-delete" aria-label="Xoá danh sách" (click)="removeList(list)">
+                <app-icon name="trash" />
+              </button>
+            </li>
+          }
+        </ul>
+        <input
+          type="text"
+          class="new-list-input"
+          placeholder="+ Tạo danh sách mới"
+          [value]="newListName()"
+          (input)="newListName.set($any($event.target).value)"
+          (keydown.enter)="createList()"
+        />
+      </aside>
+    }
+
+    <main class="board">
+      @if (loading()) {
+        <p class="hint-text">Đang tải...</p>
+      } @else if (viewFilter() === 'starred') {
+        <section class="column">
+          <header class="column-header">
+            <h3 class="column-title">Có gắn dấu sao</h3>
+          </header>
+          <ul class="todo-list">
+            @for (todo of starredPending(); track todo.id) {
+              <li class="todo-item">
+                <input type="checkbox" [checked]="todo.done" (change)="toggleTodo(todo)" />
+                <div class="todo-main">
+                  <span class="todo-content">{{ todo.content }}</span>
+                  <span class="todo-due">{{ listNameFor(todo.listId) }}</span>
+                </div>
+                <button type="button" class="todo-star active" aria-label="Bỏ dấu sao" (click)="toggleStar(todo)">
+                  <app-icon name="star" [filled]="true" />
+                </button>
+                <button type="button" class="todo-delete" aria-label="Xoá" (click)="removeTodo(todo.id)">
+                  <app-icon name="trash" />
+                </button>
+              </li>
+            } @empty {
+              <li class="todo-empty">Chưa gắn dấu sao cho việc nào.</li>
+            }
+
+            @if (starredDone().length > 0) {
+              <li class="todo-divider">Đã xong ({{ starredDone().length }})</li>
+              @for (todo of starredDone(); track todo.id) {
+                <li class="todo-item todo-item-done">
+                  <input type="checkbox" [checked]="todo.done" (change)="toggleTodo(todo)" />
+                  <span class="todo-content">{{ todo.content }}</span>
+                  <button type="button" class="todo-star active" aria-label="Bỏ dấu sao" (click)="toggleStar(todo)">
+                    <app-icon name="star" [filled]="true" />
+                  </button>
+                  <button type="button" class="todo-delete" aria-label="Xoá" (click)="removeTodo(todo.id)">
+                    <app-icon name="trash" />
+                  </button>
+                </li>
+              }
+            }
+          </ul>
+        </section>
+      } @else if (visibleLists().length === 0) {
+        <p class="hint-text">Chưa có danh sách nào đang hiển thị — bật lại ở thanh bên trái.</p>
+      } @else {
+        @for (list of visibleLists(); track list.id) {
+          <section class="column">
+            <header class="column-header">
+              @if (renamingListId() === list.id) {
+                <input
+                  type="text"
+                  class="rename-input"
+                  [value]="renameDraft()"
+                  (input)="renameDraft.set($any($event.target).value)"
+                  (keydown.enter)="saveRenameList(list.id)"
+                  (keydown.escape)="cancelRenameList()"
+                  autofocus
+                />
+              } @else {
+                <h3 class="column-title" (click)="startRenameList(list)">{{ list.name }}</h3>
+              }
+              @if (hasTodos(list.id)) {
+                <button type="button" class="clear-all-btn" (click)="clearAllTodos(list)">
+                  Xoá tất cả
+                </button>
+              }
+            </header>
+
+            <input
+              type="text"
+              class="add-todo-input"
+              placeholder="+ Thêm việc cần làm"
+              [value]="todoDraft(list.id)"
+              (input)="setTodoDraft(list.id, $any($event.target).value)"
+              (keydown.enter)="addTodo(list.id)"
+            />
+
+            <ul class="todo-list">
+              @for (todo of pendingTodosForList(list.id); track todo.id) {
+                <li class="todo-item">
+                  <input type="checkbox" [checked]="todo.done" (change)="toggleTodo(todo)" />
+                  @if (editingTodoId() === todo.id) {
+                    <input
+                      type="text"
+                      class="todo-edit-input"
+                      [value]="editingTodoContent()"
+                      (input)="editingTodoContent.set($any($event.target).value)"
+                      (keydown.enter)="saveEditTodo(todo.id)"
+                      (keydown.escape)="cancelEditTodo()"
+                      autofocus
+                    />
+                  } @else {
+                    <div class="todo-main" (click)="startEditTodo(todo)">
+                      <span class="todo-content">{{ todo.content }}</span>
+                      @if (todo.dueAt) {
+                        <span class="todo-due">{{ todo.dueAt | date: 'dd/MM HH:mm' }}</span>
+                      }
+                      @if (todo.description) {
+                        <span class="todo-desc">{{ todo.description }}</span>
+                      }
+                    </div>
+                  }
+                  <button type="button" class="todo-star" [class.active]="todo.starred" [attr.aria-label]="todo.starred ? 'Bỏ dấu sao' : 'Gắn dấu sao'" (click)="toggleStar(todo)">
+                    <app-icon name="star" [filled]="todo.starred" />
+                  </button>
+                  <button type="button" class="todo-delete" aria-label="Xoá" (click)="removeTodo(todo.id)">
+                    <app-icon name="trash" />
+                  </button>
+                </li>
+              } @empty {
+                <li class="todo-empty">Chưa có việc cần làm nào.</li>
+              }
+
+              @if (doneTodosForList(list.id).length > 0) {
+                <li class="todo-divider">Đã xong ({{ doneTodosForList(list.id).length }})</li>
+                @for (todo of doneTodosForList(list.id); track todo.id) {
+                  <li class="todo-item todo-item-done">
+                    <input type="checkbox" [checked]="todo.done" (change)="toggleTodo(todo)" />
+                    <span class="todo-content">{{ todo.content }}</span>
+                    <button type="button" class="todo-star" [class.active]="todo.starred" [attr.aria-label]="todo.starred ? 'Bỏ dấu sao' : 'Gắn dấu sao'" (click)="toggleStar(todo)">
+                      <app-icon name="star" [filled]="todo.starred" />
+                    </button>
+                    <button type="button" class="todo-delete" aria-label="Xoá" (click)="removeTodo(todo.id)">
+                      <app-icon name="trash" />
+                    </button>
+                  </li>
+                }
+              }
+            </ul>
+          </section>
+        }
+      }
+    </main>
+  </div>
+</div>

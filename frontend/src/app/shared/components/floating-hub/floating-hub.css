@@ -516,3 +516,316 @@
   box-shadow: 0 0 0 3px var(--color-accent-soft);
   background: var(--color-surface);
 }
+
+/* ===================================================================
+   AI: màn hình chào + trạng thái đang nghĩ
+   Mọi màu lấy từ token app nên tự đúng ở cả sáng lẫn tối.
+   =================================================================== */
+
+.ai-welcome {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.4rem 0.5rem 0.9rem;
+}
+
+/* Quầng sáng rất nhạt phía sau, thở chậm — đủ để không gian không chết,
+   không đủ để kéo mắt khỏi nội dung. */
+.ai-welcome__aura {
+  position: absolute;
+  top: 0.4rem;
+  left: 50%;
+  width: 12rem;
+  height: 12rem;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--color-accent-soft), transparent 66%);
+  opacity: 0.75;
+  pointer-events: none;
+  animation: aiAuraBreathe 7s ease-in-out infinite;
+}
+
+@keyframes aiAuraBreathe {
+  0%, 100% { transform: translateX(-50%) scale(1);    opacity: 0.6; }
+  50%      { transform: translateX(-50%) scale(1.08); opacity: 0.85; }
+}
+
+.ai-welcome__mark {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  margin-bottom: 0.7rem;
+  border-radius: 0.8rem;
+  background: linear-gradient(140deg, var(--color-accent-soft), transparent 78%), var(--color-accent-soft);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 26%, transparent);
+  color: var(--color-accent);
+  animation: aiPartIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+}
+
+.ai-welcome__title {
+  position: relative;
+  margin: 0 0 0.35rem;
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  animation: aiPartIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
+}
+
+.ai-welcome__sub {
+  position: relative;
+  margin: 0 0 1rem;
+  max-width: 19rem;
+  font-size: 0.79rem;
+  line-height: 1.5;
+  color: var(--color-text-tertiary);
+  animation: aiPartIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.19s both;
+}
+
+/* Các phần lắp vào lần lượt thay vì hiện cùng lúc. */
+@keyframes aiPartIn {
+  from { opacity: 0; transform: translateY(8px); filter: blur(5px); }
+  to   { opacity: 1; transform: translateY(0);   filter: blur(0); }
+}
+
+.ai-suggestions {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.ai-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+  font-size: 0.79rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease,
+    box-shadow 0.16s ease;
+  animation: aiPartIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.ai-suggestion:nth-child(1) { animation-delay: 0.24s; }
+.ai-suggestion:nth-child(2) { animation-delay: 0.3s; }
+.ai-suggestion:nth-child(3) { animation-delay: 0.36s; }
+.ai-suggestion:nth-child(4) { animation-delay: 0.42s; }
+
+.ai-suggestion:hover:not(:disabled) {
+  background: var(--color-surface);
+  border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+  color: var(--color-text);
+  transform: translateY(-1px);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--color-accent) 14%, transparent);
+}
+
+.ai-suggestion:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.ai-suggestion__icon {
+  flex-shrink: 0;
+  display: flex;
+  color: var(--color-accent);
+}
+
+.ai-suggestion__text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ---- Trạng thái đang nghĩ ---------------------------------------- */
+.ai-thinking {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.1rem;
+  animation: aiPartIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Ba chấm HỘI TỤ rồi toả ra, không nhảy lên xuống như chatbot cũ. */
+.ai-thinking__pulse {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.ai-thinking__pulse i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  animation: aiPulse 1.25s ease-in-out infinite;
+}
+
+.ai-thinking__pulse i:nth-child(2) { animation-delay: 0.16s; }
+.ai-thinking__pulse i:nth-child(3) { animation-delay: 0.32s; }
+
+@keyframes aiPulse {
+  0%, 100% { opacity: 0.28; transform: scale(0.72); }
+  45%      { opacity: 1;    transform: scale(1.12); }
+}
+
+/* Câu trạng thái: mờ + nhoè bay lên, câu mới nhoè hiện xuống — crossfade chứ
+   không gõ từng ký tự. */
+.ai-thinking__line {
+  font-size: 0.78rem;
+  color: var(--color-text-tertiary);
+  animation: aiLineIn 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes aiLineIn {
+  from { opacity: 0; transform: translateY(5px); filter: blur(4px); }
+  to   { opacity: 1; transform: translateY(0);   filter: blur(0); }
+}
+
+/* Câu trả lời hiện ra mềm, nối tiếp ngay chỗ trạng thái vừa biến mất. */
+.message.role-assistant {
+  animation: aiReplyIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes aiReplyIn {
+  from { opacity: 0; transform: translateY(6px); filter: blur(4px); }
+  to   { opacity: 1; transform: translateY(0);   filter: blur(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-welcome__aura,
+  .ai-welcome__mark,
+  .ai-welcome__title,
+  .ai-welcome__sub,
+  .ai-suggestion,
+  .ai-thinking,
+  .ai-thinking__line,
+  .message.role-assistant {
+    animation: none !important;
+  }
+  /* Giữ chỉ báo hoạt động, chỉ làm nó dịu đi — tắt hẳn thì người dùng không
+     biết AI còn đang chạy hay đã treo. */
+  .ai-thinking__pulse i {
+    animation-duration: 2.4s;
+  }
+  .ai-suggestion:hover:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* ===================================================================
+   Mở panel: sóng lan từ phía bong bóng, panel hiện ra THEO sóng
+   =================================================================== */
+
+/* Panel không tự fade vào — nó được "mở ra" theo sóng: clip-path nở từ đúng
+   điểm gốc, nên nội dung lộ dần theo vùng sóng đã quét qua. */
+.panel {
+  transform-origin: var(--ripple-origin, 0% 0%);
+  animation: panelReveal 0.44s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes panelReveal {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+    clip-path: circle(12% at var(--ripple-origin, 0% 0%));
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    clip-path: circle(150% at var(--ripple-origin, 0% 0%));
+  }
+}
+
+/* MỘT vòng sóng duy nhất, bám theo mép vùng card đang lộ ra.
+   Đặt ở lớp dưới nội dung (z-index 0) và pointer-events:none, nên nó là mép
+   sóng của chính card chứ không phải hình tròn vẽ đè lên chữ. */
+.panel-ripple {
+  position: absolute;
+  top: var(--ripple-y, 0%);
+  left: var(--ripple-x, 0%);
+  width: 260%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0.05);
+  /* Viền mềm bằng gradient thay vì border cứng — cho ra mép sóng lan trên mặt
+     nước, không phải vòng radar. */
+  background: radial-gradient(
+    circle,
+    transparent 62%,
+    color-mix(in srgb, var(--color-accent) 26%, transparent) 71%,
+    color-mix(in srgb, var(--color-accent) 8%, transparent) 76%,
+    transparent 82%
+  );
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+  animation: rippleSpread 0.9s cubic-bezier(0.22, 0.7, 0.3, 1) both;
+}
+
+@keyframes rippleSpread {
+  0%   { opacity: 0;   transform: translate(-50%, -50%) scale(0.05); }
+  14%  { opacity: 0.9; }
+  70%  { opacity: 0.4; }
+  100% { opacity: 0;   transform: translate(-50%, -50%) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Không lan sóng, chỉ hiện nhẹ — nhưng vẫn có chuyển tiếp chứ không bật
+     ra đột ngột. */
+  .panel {
+    animation: panelRevealReduced 0.18s ease both;
+  }
+  .panel-ripple {
+    display: none;
+  }
+}
+
+@keyframes panelRevealReduced {
+  from { opacity: 0; transform: scale(0.985); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Nội dung panel phải nằm TRÊN lớp sóng. Thiếu luật này thì .panel-ripple
+   (đã định vị, z-index 0) sẽ vẽ đè lên tabs và nội dung — đúng cái phải
+   tránh: sóng là mép card đang lộ ra, không phải hình tròn dán lên chữ. */
+.panel > *:not(.panel-ripple) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Dòng miễn trừ ngay trên ô nhập. Nhận luôn đường kẻ phân cách mà .input-row
+   vốn giữ, để nó nằm CÙNG vùng cố định với ô nhập — đặt phía trên đường kẻ
+   thì nó sẽ trôi lẫn vào danh sách tin nhắn và cuộn mất. */
+.ai-disclaimer {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0.6rem 1.1rem 0;
+  border-top: 1px solid var(--color-border);
+  text-align: center;
+  font-size: 0.69rem;
+  line-height: 1.4;
+  color: var(--color-text-tertiary);
+  opacity: 0.8;
+}
+
+/* Đường kẻ đã chuyển lên trên nên bỏ ở đây, tránh hai vạch chồng nhau. */
+.ai-disclaimer + .input-row {
+  border-top: none;
+  padding-top: 0.55rem;
+}

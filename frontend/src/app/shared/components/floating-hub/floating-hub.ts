@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  output,
+  signal,
+} from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { AuthStore } from '../../../core/auth/auth-store';
@@ -31,6 +40,9 @@ interface ChatMessage {
 const POS_STORAGE_KEY = 'floating-hub-pos';
 const FAB_SIZE = 52;
 const EDGE_MARGIN = 24;
+/** Thời lượng một lượt sóng, phải khớp keyframe rippleSpread trong CSS. */
+const RIPPLE_MS = 900;
+
 const PANEL_GAP = 12;
 const DRAG_THRESHOLD_PX = 4;
 
@@ -143,6 +155,29 @@ export class FloatingHub {
     return { horizontal, vertical };
   });
 
+  /**
+   * Gốc của hiệu ứng lan sóng, đặt ở GÓC PANEL GIÁP BONG BÓNG.
+   *
+   * Panel neo quanh bong bóng và bong bóng kéo được khắp màn hình, nên toạ độ
+   * click tuyệt đối không dùng được — nhưng `panelSide()` đã cho biết panel
+   * mở về hướng nào, đủ để sóng luôn xuất phát từ phía người dùng vừa bấm.
+   */
+  /** Ripple chỉ tồn tại trong đúng một lượt mở. Gỡ hẳn khỏi DOM sau đó —
+   *  để lại phần tử với opacity 0 vẫn là một lớp phủ nằm trên nội dung, và
+   *  vẫn có nguy cơ chạy lại khi Angular vẽ lại panel. */
+  protected readonly rippleActive = signal(false);
+  private rippleTimer: ReturnType<typeof setTimeout> | null = null;
+
+  protected readonly rippleX = computed(() =>
+    this.panelSide().horizontal === 'right' ? '0%' : '100%',
+  );
+  protected readonly rippleY = computed(() =>
+    this.panelSide().vertical === 'down' ? '0%' : '100%',
+  );
+
+  /** Dạng ghép cho clip-path / transform-origin (cần "x y" trên một dòng). */
+  protected readonly rippleOrigin = computed(() => `${this.rippleX()} ${this.rippleY()}`);
+
   protected panelLeft(): number | null {
     return this.panelSide().horizontal === 'right' ? this.pos().x + FAB_SIZE + PANEL_GAP : null;
   }
@@ -196,7 +231,15 @@ export class FloatingHub {
   }
 
   toggle(): void {
+    const willOpen = !this.open();
     this.open.update((v) => !v);
+
+    if (willOpen) {
+      if (this.rippleTimer) clearTimeout(this.rippleTimer);
+      this.rippleActive.set(true);
+      // Khớp thời lượng animation trong CSS; hết là gỡ luôn.
+      this.rippleTimer = setTimeout(() => this.rippleActive.set(false), RIPPLE_MS);
+    }
   }
 
   setTab(tab: HubTab): void {
@@ -213,13 +256,18 @@ export class FloatingHub {
   protected readonly editingContent = signal('');
 
   constructor() {
+    // Huỷ component giữa lúc đang chờ AI thì finally chưa chạy — timer sẽ
+    // tiếp tục tick vào một signal của component đã chết.
+    this.hubDestroyRef.onDestroy(() => {
+      this.stopThinking();
+      if (this.rippleTimer) clearTimeout(this.rippleTimer);
+    });
+
     effect(() => {
       if (this.authStore.user()) {
         void this.loadNotes();
-        void this.loadTodos();
       } else {
         this.notes.set([]);
-        this.todos.set([]);
       }
     });
   }
@@ -269,7 +317,9 @@ export class FloatingHub {
   }
 
   // --- Todos tab (checklist, sibling of notes) ----------------------------
-  protected readonly todos = signal<Todo[]>([]);
+  // Đọc thẳng từ CalendarStore — KHÔNG giữ bản sao riêng — để thêm/sửa/xoá ở
+  // đây phản ánh ngay trên trang "Việc cần làm" (/tasks) và ngược lại.
+  protected readonly todos = this.store.todos;
   protected readonly newTodoContent = signal('');
   protected readonly savingTodo = signal(false);
   protected readonly editingTodoId = signal<string | null>(null);
@@ -281,21 +331,15 @@ export class FloatingHub {
    *  gộp thành 1 mảng để dùng chung 1 @for/@empty trong template. */
   protected readonly sortedTodos = computed(() => [...this.pendingTodos(), ...this.doneTodos()]);
 
-  private async loadTodos(): Promise<void> {
-    try {
-      this.todos.set(await this.store.listTodos());
-    } catch {
-      this.todos.set([]);
-    }
-  }
-
   async addTodo(): Promise<void> {
     const content = this.newTodoContent().trim();
     if (!content) return;
     this.savingTodo.set(true);
     try {
-      const todo = await this.store.createTodo(content);
-      this.todos.update((list) => [todo, ...list]);
+      // Thêm nhanh từ bong bóng nổi không cho chọn danh sách — luôn rơi vào
+      // danh sách mặc định, xem/di chuyển danh sách khác thì mở trang Tasks.
+      const defaultList = await this.store.ensureDefaultTodoList();
+      await this.store.createTodo(content, defaultList.id);
       this.newTodoContent.set('');
     } finally {
       this.savingTodo.set(false);
@@ -303,8 +347,7 @@ export class FloatingHub {
   }
 
   async toggleTodo(todo: Todo): Promise<void> {
-    const updated = await this.store.updateTodo(todo.id, { done: !todo.done });
-    this.todos.update((list) => list.map((t) => (t.id === todo.id ? updated : t)));
+    await this.store.updateTodo(todo.id, { done: !todo.done });
   }
 
   startEditTodo(todo: Todo): void {
@@ -320,17 +363,45 @@ export class FloatingHub {
   async saveEditTodo(id: string): Promise<void> {
     const content = this.editingTodoContent().trim();
     if (!content) return;
-    const updated = await this.store.updateTodo(id, { content });
-    this.todos.update((list) => list.map((t) => (t.id === id ? updated : t)));
+    await this.store.updateTodo(id, { content });
     this.cancelEditTodo();
   }
 
   async removeTodo(id: string): Promise<void> {
     await this.store.deleteTodo(id);
-    this.todos.update((list) => list.filter((t) => t.id !== id));
   }
 
   // --- AI chat tab (unchanged behavior, moved from AiChatWidget) ---------
+
+  /**
+   * Câu trạng thái hiển thị trong lúc chờ AI trả lời.
+   *
+   * QUAN TRỌNG: backend chỉ có MỘT lời gọi duy nhất, không chia bước. Nên các
+   * câu này cố tình nói chung chung về việc "đang xử lý", KHÔNG mô tả những
+   * bước backend không hề thực hiện. Nói "đang kiểm tra lịch trống" trong khi
+   * server không làm việc đó là nói dối người dùng.
+   */
+  private static readonly THINKING_LINES: Readonly<Record<'create' | 'delete' | 'generic', readonly string[]>> = {
+    create: ['Đang đọc yêu cầu của bạn…', 'Đang xác định thời gian…', 'Đang chuẩn bị phản hồi…'],
+    delete: ['Đang xem lại sự kiện vừa tạo…', 'Đang chuẩn bị phản hồi…'],
+    generic: ['Đang hiểu yêu cầu…', 'Đang xử lý thông tin…', 'Đang chuẩn bị phản hồi…'],
+  };
+
+  /** Đổi câu sau mỗi nhịp này. Đủ chậm để đọc kịp, đủ nhanh để không thấy đứng. */
+  private static readonly THINKING_STEP_MS = 1400;
+
+  private readonly thinkingKind = signal<'create' | 'delete' | 'generic'>('generic');
+  private readonly thinkingStep = signal(0);
+  private thinkingTimer: ReturnType<typeof setInterval> | null = null;
+
+  private readonly hubDestroyRef = inject(DestroyRef);
+
+  /** Câu đang hiển thị; dừng lại ở câu cuối thay vì quay vòng, vì quay vòng
+   *  làm người dùng tưởng nó bị kẹt. */
+  protected readonly thinkingLine = computed(() => {
+    const lines = FloatingHub.THINKING_LINES[this.thinkingKind()];
+    return lines[Math.min(this.thinkingStep(), lines.length - 1)];
+  });
   protected readonly messages = signal<ChatMessage[]>([]);
   protected readonly draft = signal('');
   protected readonly sending = signal(false);
@@ -364,9 +435,11 @@ export class FloatingHub {
     this.draft.set('');
     this.sending.set(true);
     this.aiError.set(null);
+    this.startThinking(text);
 
     if (isDeleteIntent(text)) {
       await this.handleDeleteIntent();
+      this.stopThinking();
       this.sending.set(false);
       return;
     }
@@ -389,8 +462,24 @@ export class FloatingHub {
     } catch (err) {
       this.aiError.set(extractErrorMessage(err));
     } finally {
+      this.stopThinking();
       this.sending.set(false);
     }
+  }
+
+  /** Chọn nhóm câu theo ý định ĐÃ nhận diện được bằng chính hàm có sẵn, không
+   *  đoán thêm gì mới. */
+  private startThinking(text: string): void {
+    this.thinkingKind.set(isDeleteIntent(text) ? 'delete' : 'create');
+    this.thinkingStep.set(0);
+    this.thinkingTimer = setInterval(() => {
+      this.thinkingStep.update((n) => n + 1);
+    }, FloatingHub.THINKING_STEP_MS);
+  }
+
+  private stopThinking(): void {
+    if (this.thinkingTimer) clearInterval(this.thinkingTimer);
+    this.thinkingTimer = null;
   }
 
   private async handleDeleteIntent(): Promise<void> {

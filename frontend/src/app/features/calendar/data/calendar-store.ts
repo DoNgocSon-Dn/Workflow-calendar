@@ -34,6 +34,7 @@ import {
   Reminder,
   ReminderDraft,
   Todo,
+  TodoList,
 } from '../models/calendar.models';
 import { TimeFormatService } from '../../../core/time-format/time-format-service';
 import { TimeFormat, addDays, clampToDay, formatTimeLabel, startOfDay } from '../utils/date-utils';
@@ -116,8 +117,20 @@ interface NoteApiDto {
 
 interface TodoApiDto {
   id: string;
+  listId: string;
   content: string;
+  description?: string;
   done: boolean;
+  dueAt?: string;
+  starred: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface TodoListApiDto {
+  id: string;
+  name: string;
+  position: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -149,8 +162,22 @@ function toNote(dto: NoteApiDto): Note {
 function toTodo(dto: TodoApiDto): Todo {
   return {
     id: dto.id,
+    listId: dto.listId,
     content: dto.content,
+    description: dto.description,
     done: dto.done,
+    dueAt: dto.dueAt ? new Date(dto.dueAt) : undefined,
+    starred: dto.starred,
+    createdAt: new Date(dto.createdAt),
+    updatedAt: new Date(dto.updatedAt),
+  };
+}
+
+function toTodoList(dto: TodoListApiDto): TodoList {
+  return {
+    id: dto.id,
+    name: dto.name,
+    position: dto.position,
     createdAt: new Date(dto.createdAt),
     updatedAt: new Date(dto.updatedAt),
   };
@@ -259,6 +286,10 @@ export class CalendarStore {
   readonly searchQuery = signal('');
   readonly pendingInvites = signal<CalendarInvite[]>([]);
 
+  readonly todos = signal<Todo[]>([]);
+  readonly todoLists = signal<TodoList[]>([]);
+  readonly todosLoaded = signal(false);
+
   // Lịch tham khảo chỉ đọc, không lưu ở backend — hiển thị trong mục "Lịch khác".
   readonly otherCalendars: CalendarDef[] = [VN_HOLIDAY_CALENDAR_DEF];
   readonly holidayEvents: CalendarEvent[] = buildVietnamHolidayEvents(HOLIDAY_YEARS);
@@ -324,6 +355,9 @@ export class CalendarStore {
         this.events.set([]);
         this.visibleCalendarIds.set(new Set());
         this.pendingInvites.set([]);
+        this.todos.set([]);
+        this.todoLists.set([]);
+        this.todosLoaded.set(false);
         this.realtime.disconnect();
       }
     });
@@ -369,6 +403,7 @@ export class CalendarStore {
     }
 
     void this.refreshPendingInvites();
+    void this.loadTodosState();
 
     this.realtime.connect();
     this.joinAllCalendarRooms();
@@ -965,27 +1000,185 @@ export class CalendarStore {
     await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/notes/${id}`));
   }
 
-  async listTodos(): Promise<Todo[]> {
-    const result = await firstValueFrom(this.http.get<TodoApiDto[]>(`${this.apiUrl}/todos`));
-    return result.map(toTodo);
+  /** Nguồn dữ liệu todo/todo-list DUY NHẤT của toàn app — FloatingHub, TasksPage
+   *  và EventFormModal đều đọc thẳng `todos()`/`todoLists()` và gọi các hàm bên
+   *  dưới thay vì tự giữ bản sao riêng, để tạo/sửa/xoá ở bất kỳ đâu cũng phản
+   *  ánh ngay lập tức ở mọi nơi khác — giống cách Google Tasks đồng bộ. */
+  private async loadTodosState(): Promise<void> {
+    try {
+      const [lists, todos] = await Promise.all([
+        firstValueFrom(this.http.get<TodoListApiDto[]>(`${this.apiUrl}/todo-lists`)),
+        firstValueFrom(this.http.get<TodoApiDto[]>(`${this.apiUrl}/todos`)),
+      ]);
+      this.todoLists.set(lists.map(toTodoList));
+      this.todos.set(todos.map(toTodo));
+      if (this.todoLists().length === 0) {
+        // Người dùng chưa từng tạo todo nào nên migration chưa backfill được
+        // danh sách nào cho họ — tạo sẵn một cái để không nơi nào trống trơn.
+        await this.createTodoList('Việc cần làm của tôi');
+      }
+    } catch (err) {
+      console.error('Lỗi khi tải việc cần làm:', err);
+    } finally {
+      this.todosLoaded.set(true);
+    }
   }
 
-  async createTodo(content: string): Promise<Todo> {
-    const result = await firstValueFrom(
-      this.http.post<TodoApiDto>(`${this.apiUrl}/todos`, { content }),
-    );
-    return toTodo(result);
+  /** Chèn ngay vào `todos()` với id tạm trước khi request bay đi — checkbox/nút
+   *  sao/thêm/xoá phản hồi tức thì thay vì đợi round-trip, UI chỉ "giật lùi"
+   *  lại nếu request thật sự lỗi. Cùng cách làm cho todo lẫn todo-list bên dưới. */
+  async createTodo(
+    content: string,
+    listId: string,
+    extra?: { description?: string; dueAt?: Date },
+  ): Promise<Todo> {
+    const tempId = `temp-${crypto.randomUUID()}`;
+    const now = new Date();
+    const optimistic: Todo = {
+      id: tempId,
+      listId,
+      content,
+      description: extra?.description,
+      done: false,
+      dueAt: extra?.dueAt,
+      starred: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.todos.update((list) => [optimistic, ...list]);
+    try {
+      const result = await firstValueFrom(
+        this.http.post<TodoApiDto>(`${this.apiUrl}/todos`, {
+          content,
+          listId,
+          ...(extra?.description ? { description: extra.description } : {}),
+          ...(extra?.dueAt ? { dueAt: extra.dueAt.toISOString() } : {}),
+        }),
+      );
+      const todo = toTodo(result);
+      this.todos.update((list) => list.map((t) => (t.id === tempId ? todo : t)));
+      return todo;
+    } catch (err) {
+      this.todos.update((list) => list.filter((t) => t.id !== tempId));
+      throw err;
+    }
   }
 
-  async updateTodo(id: string, changes: { content?: string; done?: boolean }): Promise<Todo> {
-    const result = await firstValueFrom(
-      this.http.patch<TodoApiDto>(`${this.apiUrl}/todos/${id}`, changes),
-    );
-    return toTodo(result);
+  async updateTodo(
+    id: string,
+    changes: {
+      content?: string;
+      done?: boolean;
+      listId?: string;
+      description?: string;
+      dueAt?: Date;
+      clearDueAt?: boolean;
+      starred?: boolean;
+    },
+  ): Promise<Todo> {
+    const previous = this.todos().find((t) => t.id === id);
+    if (previous) {
+      const optimistic: Todo = {
+        ...previous,
+        ...(changes.content !== undefined ? { content: changes.content } : {}),
+        ...(changes.done !== undefined ? { done: changes.done } : {}),
+        ...(changes.listId !== undefined ? { listId: changes.listId } : {}),
+        ...(changes.description !== undefined ? { description: changes.description } : {}),
+        ...(changes.starred !== undefined ? { starred: changes.starred } : {}),
+        dueAt: changes.clearDueAt ? undefined : (changes.dueAt ?? previous.dueAt),
+      };
+      this.todos.update((list) => list.map((t) => (t.id === id ? optimistic : t)));
+    }
+
+    const { dueAt, ...rest } = changes;
+    try {
+      const result = await firstValueFrom(
+        this.http.patch<TodoApiDto>(`${this.apiUrl}/todos/${id}`, {
+          ...rest,
+          ...(dueAt ? { dueAt: dueAt.toISOString() } : {}),
+        }),
+      );
+      const todo = toTodo(result);
+      this.todos.update((list) => list.map((t) => (t.id === id ? todo : t)));
+      return todo;
+    } catch (err) {
+      if (previous) this.todos.update((list) => list.map((t) => (t.id === id ? previous : t)));
+      throw err;
+    }
   }
 
   async deleteTodo(id: string): Promise<void> {
-    await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/todos/${id}`));
+    const removed = this.todos().find((t) => t.id === id);
+    this.todos.update((list) => list.filter((t) => t.id !== id));
+    try {
+      await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/todos/${id}`));
+    } catch (err) {
+      if (removed) this.todos.update((list) => [removed, ...list]);
+      throw err;
+    }
+  }
+
+  async createTodoList(name: string): Promise<TodoList> {
+    const tempId = `temp-${crypto.randomUUID()}`;
+    const now = new Date();
+    const optimistic: TodoList = { id: tempId, name, position: this.todoLists().length, createdAt: now, updatedAt: now };
+    this.todoLists.update((ls) => [...ls, optimistic]);
+    try {
+      const result = await firstValueFrom(
+        this.http.post<TodoListApiDto>(`${this.apiUrl}/todo-lists`, { name }),
+      );
+      const list = toTodoList(result);
+      this.todoLists.update((ls) => ls.map((l) => (l.id === tempId ? list : l)));
+      return list;
+    } catch (err) {
+      this.todoLists.update((ls) => ls.filter((l) => l.id !== tempId));
+      throw err;
+    }
+  }
+
+  async renameTodoList(id: string, name: string): Promise<TodoList> {
+    const previous = this.todoLists().find((l) => l.id === id);
+    if (previous) {
+      this.todoLists.update((ls) => ls.map((l) => (l.id === id ? { ...l, name } : l)));
+    }
+    try {
+      const result = await firstValueFrom(
+        this.http.patch<TodoListApiDto>(`${this.apiUrl}/todo-lists/${id}`, { name }),
+      );
+      const list = toTodoList(result);
+      this.todoLists.update((ls) => ls.map((l) => (l.id === id ? list : l)));
+      return list;
+    } catch (err) {
+      if (previous) this.todoLists.update((ls) => ls.map((l) => (l.id === id ? previous : l)));
+      throw err;
+    }
+  }
+
+  async deleteTodoList(id: string): Promise<void> {
+    const removedList = this.todoLists().find((l) => l.id === id);
+    const removedTodos = this.todos().filter((t) => t.listId === id);
+    this.todoLists.update((ls) => ls.filter((l) => l.id !== id));
+    this.todos.update((ts) => ts.filter((t) => t.listId !== id));
+    try {
+      await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/todo-lists/${id}`));
+    } catch (err) {
+      if (removedList) this.todoLists.update((ls) => [...ls, removedList]);
+      if (removedTodos.length > 0) this.todos.update((ts) => [...removedTodos, ...ts]);
+      throw err;
+    }
+  }
+
+  /** Phòng trường hợp gọi trước khi loadTodosState() xong hoặc todoLists() rỗng
+   *  do lỗi tải thoáng qua — vẫn đảm bảo luôn có ít nhất 1 danh sách để dùng. */
+  private defaultTodoListInFlight: Promise<TodoList> | null = null;
+
+  ensureDefaultTodoList(): Promise<TodoList> {
+    const existing = this.todoLists()[0];
+    if (existing) return Promise.resolve(existing);
+    this.defaultTodoListInFlight ??= this.createTodoList('Việc cần làm của tôi').finally(() => {
+      this.defaultTodoListInFlight = null;
+    });
+    return this.defaultTodoListInFlight;
   }
 
   async sendAiChat(
