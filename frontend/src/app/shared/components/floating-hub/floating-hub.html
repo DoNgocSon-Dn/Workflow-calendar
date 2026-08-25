@@ -163,7 +163,8 @@
       }
 
       @default {
-      <div class="messages">
+      <div class="ai-chat-container">
+        <div class="messages">
         @if (messages().length === 0) {
           <div class="ai-welcome">
             <span class="ai-welcome__aura" aria-hidden="true"></span>
@@ -466,68 +467,71 @@
         }
       </div>
 
-      @if (aiError()) {
-        <p class="field-error">{{ aiError() }}</p>
-      }
+        <div class="composer-area">
+          @if (aiError()) {
+            <p class="field-error">{{ aiError() }}</p>
+          }
 
-      <p class="ai-disclaimer">
-        WorkflowAI có thể mắc lỗi. Hãy kiểm tra các thông tin quan trọng.
-      </p>
+          <p class="ai-disclaimer">
+            WorkflowAI có thể mắc lỗi. Hãy kiểm tra các thông tin quan trọng.
+          </p>
 
-      <!-- File đã chọn nhưng chưa gửi. Xoá được trước khi gửi. -->
-      @if (pendingFile(); as f) {
-        <div class="attachment-chip">
-          <span class="attachment-chip__icon" aria-hidden="true">📄</span>
-          <span class="attachment-chip__info">
-            <span class="attachment-chip__name">{{ f.name }}</span>
-            <span class="attachment-chip__meta">{{ pendingFileExt() }} · {{ pendingFileSizeLabel() }}</span>
-          </span>
-          <button
-            type="button"
-            class="attachment-chip__remove"
-            [disabled]="sending()"
-            aria-label="Bỏ file đính kèm"
-            (click)="clearPendingFile()"
-          >
-            ×
-          </button>
-        </div>
-      }
+          <!-- File đã chọn nhưng chưa gửi. Xoá được trước khi gửi. -->
+          @if (pendingFile(); as f) {
+            <div class="attachment-chip">
+              <span class="attachment-chip__icon" aria-hidden="true">📄</span>
+              <span class="attachment-chip__info">
+                <span class="attachment-chip__name">{{ f.name }}</span>
+                <span class="attachment-chip__meta">{{ pendingFileExt() }} · {{ pendingFileSizeLabel() }}</span>
+              </span>
+              <button
+                type="button"
+                class="attachment-chip__remove"
+                [disabled]="sending()"
+                aria-label="Bỏ file đính kèm"
+                (click)="clearPendingFile()"
+              >
+                ×
+              </button>
+            </div>
+          }
 
-      <div class="input-row">
-        <label class="attach-btn" [class.disabled]="sending()" title="Đính kèm .xlsx, .docx hoặc .pdf — hoặc copy file rồi nhấn Ctrl + V">
-          <input
-            type="file"
-            class="attach-input"
-            [accept]="acceptAttr"
-            [disabled]="sending()"
-            (change)="onFilePicked($event)"
-          />
-          <span class="sr-only">Đính kèm file</span>
-          <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
-            <path
-              fill="currentColor"
-              d="M16.5 6v11.5a4.5 4.5 0 0 1-9 0V5a3 3 0 0 1 6 0v10.5a1.5 1.5 0 0 1-3 0V6H10v9.5a3 3 0 0 0 6 0V5a4.5 4.5 0 0 0-9 0v12.5a6 6 0 0 0 12 0V6z"
+          <div class="input-row">
+            <label class="attach-btn" [class.disabled]="sending()" title="Đính kèm .xlsx, .docx hoặc .pdf — hoặc copy file rồi nhấn Ctrl + V">
+              <input
+                type="file"
+                class="attach-input"
+                [accept]="acceptAttr"
+                [disabled]="sending()"
+                (change)="onFilePicked($event)"
+              />
+              <span class="sr-only">Đính kèm file</span>
+              <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M16.5 6v11.5a4.5 4.5 0 0 1-9 0V5a3 3 0 0 1 6 0v10.5a1.5 1.5 0 0 1-3 0V6H10v9.5a3 3 0 0 0 6 0V5a4.5 4.5 0 0 0-9 0v12.5a6 6 0 0 0 12 0V6z"
+                />
+              </svg>
+            </label>
+            <input
+              class="text-input"
+              type="text"
+              [ngModel]="draft()"
+              (ngModelChange)="draft.set($event)"
+              [placeholder]="pendingFile() ? 'Muốn lấy gì từ file này? (không bắt buộc)' : 'Nhập yêu cầu…'"
+              [disabled]="sending()"
+              (keydown.enter)="$event.preventDefault(); send()"
             />
-          </svg>
-        </label>
-        <input
-          class="text-input"
-          type="text"
-          [ngModel]="draft()"
-          (ngModelChange)="draft.set($event)"
-          [placeholder]="pendingFile() ? 'Muốn lấy gì từ file này? (không bắt buộc)' : 'Nhập yêu cầu…'"
-          [disabled]="sending()"
-          (keydown.enter)="$event.preventDefault(); send()"
-        />
-        <button
-          type="button"
-          class="primary-btn"
-          [disabled]="sending() || (!draft().trim() && !pendingFile())"
-          (click)="send()"
-        >
-          Gửi
-        </button>
+            <button
+              type="button"
+              class="primary-btn"
+              [disabled]="sending() || (!draft().trim() && !pendingFile())"
+              (click)="send()"
+            >
+              Gửi
+            </button>
+          </div>
+        </div>
       </div>
       }
     }
