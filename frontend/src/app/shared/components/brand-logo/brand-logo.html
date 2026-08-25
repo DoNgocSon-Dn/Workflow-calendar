@@ -1,15 +1,31 @@
 <span class="bl" [attr.data-phase]="phase()">
   <span class="bl-icon" aria-hidden="true">
+    <!-- Tờ lịch: THÂN TRẮNG, viền + gáy + ký tự đều màu xanh thương hiệu.
+         Nền trắng cố định (không theo token giao diện) là có chủ đích: đây là
+         nhận diện thương hiệu, phải giống hệt nhau ở mọi trang và mọi chế độ
+         sáng/tối. Trên nền tối thì thân trắng nổi lên, trên nền sáng thì viền
+         và gáy xanh giữ hình — nên không chỗ nào bị chìm.
+
+         Toạ độ đã trừ hao nét viền: thân vẽ ở 3.6/4.6 với stroke-width 1.2,
+         mà stroke nằm giữa đường biên nên mép ngoài rơi đúng 3.0/4.0 — trùng
+         khít khuôn của bản đặc cũ, logo không đổi kích thước. -->
     <svg viewBox="0 0 24 24" width="26" height="26">
-      <rect x="3" y="4" width="18" height="17" rx="2" fill="var(--holiday-accent, #1a73e8)" />
-      <rect x="3" y="4" width="18" height="4" rx="2" fill="var(--holiday-accent-hover, #185abc)" />
+      <rect x="3.6" y="4.6" width="16.8" height="15.8" rx="2" fill="#fff" />
+
+      <!-- Gáy lịch: chỉ bo hai góc TRÊN, hai góc dưới vuông để ăn khớp với mặt
+           lịch bên dưới. Phải vẽ bằng path — dùng <rect rx> sẽ bo cả bốn góc. -->
+      <path
+        d="M3.6 7.9V6.6a2 2 0 0 1 2-2h12.8a2 2 0 0 1 2 2v1.3z"
+        fill="var(--holiday-accent, #1a73e8)"
+      />
+
       @if (dayNumber() !== null) {
         <text
           x="12"
           y="17"
           text-anchor="middle"
           font-size="9"
-          fill="var(--holiday-accent-contrast, #fff)"
+          fill="var(--holiday-accent, #1a73e8)"
           font-weight="700"
         >
           {{ dayNumber() }}
@@ -17,19 +33,24 @@
       } @else {
         <!-- Không có ngày để hiển thị (trang đăng nhập) thì mặt lịch mang chữ W.
              Vẽ bằng path chứ không dùng <text>: <text> phải chờ font tải xong nên
-             sẽ thấy chữ nhảy cỡ, mà logo thì nằm ngay khung hình đầu tiên.
-
-             TRẮNG CỨNG, KHÔNG dùng --holiday-accent-contrast như số ngày ở trên.
-             Token đó là màu chữ-trên-nền-accent của giao diện, ở chế độ tối nó
-             bằng #0b0d12 (gần đen) vì accent tối #3b82f6 quá sáng để đặt chữ
-             trắng — hợp cho số ngày, nhưng bôi đen luôn chữ W. Chữ W là phần
-             nhận diện thương hiệu, phải trắng y hệt logo bản vẽ tay ở landing
-             page, nên nó không đi theo token giao diện. -->
+             sẽ thấy chữ nhảy cỡ, mà logo thì nằm ngay khung hình đầu tiên. -->
         <path
           d="M7.6 11 9 16.8h1.6l1.4-3.6 1.4 3.6h1.6l1.4-5.8h-1.6l-.8 3.6-1.3-3.6h-1.4l-1.3 3.6-.8-3.6z"
-          fill="#fff"
+          fill="var(--holiday-accent, #1a73e8)"
         />
       }
+
+      <!-- Viền vẽ SAU CÙNG để nét luôn liền, không bị gáy hay ký tự đè lên. -->
+      <rect
+        x="3.6"
+        y="4.6"
+        width="16.8"
+        height="15.8"
+        rx="2"
+        fill="none"
+        stroke="var(--holiday-accent, #1a73e8)"
+        stroke-width="1.2"
+      />
     </svg>
   </span>
 
