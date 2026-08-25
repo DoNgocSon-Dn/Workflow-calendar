@@ -73,6 +73,43 @@
                   }
                 </div>
 
+                <div class="dob-field" style="margin-top: 1rem;">
+                  <label for="dob-input" style="font-size: 0.85rem; font-weight: 600; color: var(--color-text); display: block; margin-bottom: 0.4rem;">
+                    🎂 Ngày sinh của bạn
+                  </label>
+                  <div class="name-input-row">
+                    <input
+                      id="dob-input"
+                      type="date"
+                      class="name-input"
+                      [value]="dobDraft()"
+                      (change)="dobDraft.set($any($event.target).value)"
+                    />
+                    <button
+                      type="button"
+                      class="save-name-btn"
+                      [disabled]="savingDob()"
+                      (click)="saveDob()"
+                    >
+                      {{ savingDob() ? 'Đang lưu…' : 'Lưu ngày sinh' }}
+                    </button>
+                  </div>
+                  @if (dobSaved()) {
+                    <span class="profile-success">Đã lưu ngày sinh thành công!</span>
+                  }
+                </div>
+
+                <div style="margin-top: 0.85rem;">
+                  <button
+                    type="button"
+                    class="save-name-btn"
+                    style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; width: 100%; border: none; padding: 0.55rem 1rem; border-radius: var(--radius-md); font-weight: 700; cursor: pointer;"
+                    (click)="testBirthdayPopup()"
+                  >
+                    🎂 Xem thử màn hình chúc mừng sinh nhật (Bánh kem 🎉)
+                  </button>
+                </div>
+
                 @if (profileError(); as err) {
                   <span class="profile-error">{{ err }}</span>
                 }

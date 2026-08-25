@@ -4,6 +4,7 @@ import { AuthStore } from '../../../../core/auth/auth-store';
 import { Density, DensityService } from '../../../../core/density/density-service';
 import { Locale, TranslationService } from '../../../../core/i18n/translation.service';
 import { HolidayPopupService } from '../../../../core/services/holiday-popup.service';
+import { BirthdayPopupService } from '../../../../core/services/birthday-popup.service';
 import { NotificationSoundService } from '../../../../core/services/notification-sound.service';
 import { TimeFormatService } from '../../../../core/time-format/time-format-service';
 import { TimeFormat } from '../../utils/date-utils';
@@ -59,6 +60,7 @@ export class SettingsModal {
   protected readonly holidayPopupService = inject(HolidayPopupService);
   protected readonly holidayThemeService = inject(HolidayThemeService);
   protected readonly soundService = inject(NotificationSoundService);
+  protected readonly birthdayPopupService = inject(BirthdayPopupService);
   protected readonly authStore = inject(AuthStore);
   protected readonly i18n = inject(TranslationService);
 
@@ -74,8 +76,25 @@ export class SettingsModal {
   protected readonly nameDraft = signal(this.authStore.displayName() ?? '');
   protected readonly savingName = signal(false);
   protected readonly nameSaved = signal(false);
+  protected readonly dobDraft = signal(this.birthdayPopupService.getUserDob() ?? '');
+  protected readonly savingDob = signal(false);
+  protected readonly dobSaved = signal(false);
   protected readonly uploadingAvatar = signal(false);
   protected readonly profileError = signal<string | null>(null);
+
+  async saveDob(): Promise<void> {
+    const dob = this.dobDraft().trim();
+    if (this.savingDob()) return;
+    this.savingDob.set(true);
+    await this.birthdayPopupService.setUserDob(dob);
+    this.savingDob.set(false);
+    this.dobSaved.set(true);
+    setTimeout(() => this.dobSaved.set(false), 2500);
+  }
+
+  testBirthdayPopup(): void {
+    this.birthdayPopupService.triggerBirthday(this.dobDraft() || undefined, true);
+  }
 
   setTheme(theme: Theme): void {
     this.themeService.setTheme(theme);
