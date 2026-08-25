@@ -18,6 +18,17 @@ interface BirthdayParticle {
 
 const PARTICLE_EMOJIS = ['🎉', '🎂', '🎈', '✨', '🎁', '⭐', '🎊', '💖'];
 
+const BIRTHDAY_WISHES: readonly string[] = [
+  'Workflow Calendar chúc bạn một tuổi mới tràn đầy năng lượng, sức khỏe dồi dào, hạnh phúc và gặt hái thật nhiều thành công rực rỡ!',
+  'Chúc mừng sinh nhật bạn! Mong rằng tuổi mới sẽ mang đến cho bạn vô vàn cơ hội mới, niềm vui mới và những bước tiến vượt bậc trong công việc & cuộc sống.',
+  'Chúc bạn một sinh nhật thật ấm áp, ý nghĩa và một tuổi mới bứt phá mọi giới hạn, chinh phục mọi mục tiêu đã đề ra!',
+  'Chúc mừng sinh nhật! Cảm ơn bạn đã đồng hành cùng Workflow Calendar. Chúc bạn luôn giữ vững ngọn lửa đam mê và gặt hái nhiều thắng lợi mới!',
+  'Tuổi mới - Hành trình mới! Chúc bạn luôn bình an, may mắn, giàu sức khỏe và gặt hái thành công trên mọi chặng đường sắp tới.',
+  'Chúc mừng sinh nhật bạn! Chúc mỗi ngày trong tuổi mới của bạn đều là một ngày tràn ngập niềm vui, cảm hứng làm việc và năng lượng tích cực!',
+  'Chúc bạn tuổi mới rạng rỡ, làm chủ thời gian, dẫn đầu mục tiêu và đón nhận thật nhiều điều tuyệt vời nhất!',
+  'Chúc mừng sinh nhật! Chúc bạn thêm một tuổi mới tài lộc vượng tiến, công danh rộng mở và cuộc sống luôn trọn vẹn niềm vui!',
+];
+
 function buildParticles(): readonly BirthdayParticle[] {
   return Array.from({ length: 24 }, (_, i) => ({
     emoji: PARTICLE_EMOJIS[i % PARTICLE_EMOJIS.length],
@@ -48,6 +59,11 @@ export class BirthdayPopup {
   protected readonly wishMade = signal(false);
 
   protected readonly particles = computed<readonly BirthdayParticle[]>(() => buildParticles());
+  protected readonly wishText = computed(() => {
+    if (!this.visible()) return BIRTHDAY_WISHES[0];
+    const index = Math.floor(Math.random() * BIRTHDAY_WISHES.length);
+    return BIRTHDAY_WISHES[index];
+  });
 
   blowCandle(): void {
     if (this.candleBlownOut()) return;
