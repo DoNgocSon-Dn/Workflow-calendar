@@ -348,26 +348,6 @@
               </div>
             </section>
           }
-
-          @case ('developer') {
-            <section class="setting-group">
-              <div class="setting-row">
-                <span class="setting-title" id="holiday-debug-label">{{ i18n.t('settings.holidayDebugPreview') }}</span>
-                <select
-                  class="select-input"
-                  aria-labelledby="holiday-debug-label"
-                  [value]="holidayThemeService.debugOverrideId() ?? ''"
-                  (change)="onHolidayDebugChange($any($event.target).value)"
-                >
-                  <option value="">{{ i18n.t('settings.holidayDebugNormal') }}</option>
-                  @for (holiday of holidayDebugOptions; track holiday.id) {
-                    <option [value]="holiday.id">{{ holiday.name }}</option>
-                  }
-                </select>
-              </div>
-              <p class="setting-hint">{{ i18n.t('settings.holidayDebugHint') }}</p>
-            </section>
-          }
         }
       </div>
     </div>

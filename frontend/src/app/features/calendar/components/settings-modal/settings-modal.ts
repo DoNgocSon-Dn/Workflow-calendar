@@ -27,7 +27,7 @@ const BRAND_THEME_OPTIONS: readonly BrandThemeOption[] = [
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
-type SettingsSection = 'profile' | 'appearance' | 'language' | 'notifications' | 'other' | 'developer';
+type SettingsSection = 'profile' | 'appearance' | 'language' | 'notifications' | 'other';
 
 interface SettingsNavItem {
   readonly id: SettingsSection;
@@ -41,10 +41,6 @@ const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
   { id: 'notifications', labelKey: 'settings.sectionNotifications' },
   { id: 'other', labelKey: 'settings.sectionOther' },
 ];
-
-/** Chỉ hiện trong build development — bảng xem trước theme ngày lễ mà
- *  không cần đợi đúng ngày (spec: Debug Mode). */
-const DEVELOPER_NAV_ITEM: SettingsNavItem = { id: 'developer', labelKey: 'settings.sectionDeveloper' };
 
 @Component({
   selector: 'app-settings-modal',
@@ -65,9 +61,7 @@ export class SettingsModal {
   protected readonly i18n = inject(TranslationService);
 
   protected readonly brandThemeOptions = BRAND_THEME_OPTIONS;
-  protected readonly isDev = !environment.production;
-  protected readonly navItems = this.isDev ? [...SETTINGS_NAV_ITEMS, DEVELOPER_NAV_ITEM] : SETTINGS_NAV_ITEMS;
-  protected readonly holidayDebugOptions = HOLIDAYS;
+  protected readonly navItems = SETTINGS_NAV_ITEMS;
   protected readonly activeSection = signal<SettingsSection>('profile');
 
   readonly closed = output<void>();

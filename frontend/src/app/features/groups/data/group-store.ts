@@ -223,8 +223,8 @@ export class GroupStore {
             attachmentName: row.attachment_name ?? undefined,
             attachmentType: row.attachment_type ?? undefined,
             attachmentSize: row.attachment_size ?? undefined,
-            senderEmail: row.sender_email || member?.email,
-            senderName: row.sender_name || (member?.email ? member.email.split('@')[0] : undefined),
+            senderEmail: member?.email,
+            senderName: member?.email ? member.email.split('@')[0] : undefined,
           };
           const currentUser = this.authStore.user();
           const isFromOther = currentUser && msg.senderId !== currentUser.id;
