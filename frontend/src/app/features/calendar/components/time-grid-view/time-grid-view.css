@@ -28,8 +28,16 @@
      scrollable grid underneath, regardless of browser/OS scrollbar size. */
 }
 
+/* min-width: 0 là BẮT BUỘC trên mọi cột `flex: 1` của view này.
+   Kích thước tối thiểu mặc định của một flex item là `auto`, tức bằng
+   min-content của nó — một tên ngày lễ dài sẽ khiến ô từ chối co lại và tràn
+   sang các cột bên cạnh, đúng như "Ngày thành lập Mặt trận Tổ quốc Việt Nam"
+   trải ngang bốn cột. Nghiêm trọng hơn: hàng tiêu đề, hàng cả-ngày và lưới giờ
+   là BA flex container riêng biệt, nên chỉ cần một hàng không co được là ba
+   hàng chia bề ngang khác nhau và các cột lệch hẳn khỏi nhau. */
 .day-header-cell {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -107,6 +115,7 @@
 
 .all-day-cell {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -161,12 +170,16 @@
 
 .columns {
   flex: 1;
+  min-width: 0;
   display: flex;
   position: relative;
 }
 
+/* Phải co được y hệt .day-header-cell và .all-day-cell ở trên, nếu không ba
+   hàng chia bề ngang lệch nhau và cột giờ không còn thẳng với tiêu đề. */
 .day-col {
   flex: 1;
+  min-width: 0;
   position: relative;
   border-left: 1px solid var(--color-border);
   cursor: crosshair;

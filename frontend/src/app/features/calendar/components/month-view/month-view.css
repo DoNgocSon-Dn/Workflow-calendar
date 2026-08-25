@@ -15,9 +15,12 @@
   height: 100%;
 }
 
+/* Phải khớp CHÍNH XÁC công thức cột của .month-grid bên dưới. Hai lưới rời
+   nhau, nên chỉ cần một bên dùng `1fr` còn bên kia `minmax(0, 1fr)` là ngày
+   nào có chữ dài sẽ đẩy hai lưới lệch cột khỏi nhau. */
 .weekday-row {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg-sidebar);
 }
@@ -36,7 +39,12 @@
 .month-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  /* minmax(0, 1fr) chứ KHÔNG phải 1fr. `1fr` là viết tắt của minmax(auto, 1fr),
+     mà cận dưới `auto` bằng kích thước min-content của ô — nên một tên ngày lễ
+     dài như "Ngày thành lập Mặt trận Tổ quốc Việt Nam" ép cột phình ra theo,
+     bóp méo cả sáu cột còn lại. Đặt cận dưới bằng 0 thì cột giữ đúng 1/7 bề
+     ngang, phần chữ thừa để text-overflow của .holiday-badge lo. */
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   grid-template-rows: repeat(6, 1fr);
   min-height: 0;
   user-select: none;
@@ -82,7 +90,11 @@
   background: var(--holiday-surface-tint);
 }
 
+/* Nhãn ngày lễ là phần tử DUY NHẤT trong hàng đầu ô được phép co lại: số ngày
+   và ngày âm đều ngắn và phải đọc trọn vẹn. flex-shrink của hai cái kia đặt về
+   0 ở dưới, nên toàn bộ phần thiếu chỗ dồn hết vào đây rồi cắt bằng ellipsis. */
 .holiday-badge {
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -95,6 +107,8 @@
 
 .day-number {
   align-self: flex-start;
+  /* Không bao giờ co: số ngày bị bóp thì cả ô mất nghĩa. */
+  flex: none;
   font-family: var(--font-heading);
   font-size: 0.78rem;
   font-weight: 600;
@@ -116,6 +130,8 @@
 
 .lunar-day {
   margin-left: auto;
+  /* Cũng không co: "1/8Âm" mà bị cắt thành "1/8…" là sai thông tin. */
+  flex: none;
   font-size: 0.68rem;
   font-weight: 500;
   color: var(--color-text-tertiary);
