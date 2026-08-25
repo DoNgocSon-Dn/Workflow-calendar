@@ -770,7 +770,12 @@ export class CalendarStore {
       );
       const event = toCalendarEvent(created);
       this.markSelfOrigin(event.id);
-      this.events.update((list) => [...list, event]);
+      // upsert chứ KHÔNG append: server phát event:created cho cả phòng lịch
+      // ngay khi insert xong, nên gói socket có thể về TRƯỚC phản hồi HTTP này.
+      // Khi đó handleRemoteCreated đã thêm sự kiện vào danh sách (và chưa thể
+      // nhận ra là tự mình tạo, vì markSelfOrigin cần id chỉ có ở đây), append
+      // thêm lần nữa sẽ tạo hai bản ghi trùng id.
+      this.upsertEvent(event);
       return event;
     } catch (err) {
       console.warn('Lưu sự kiện lên backend thất bại, tự động lưu cục bộ:', err);
@@ -1192,6 +1197,21 @@ export class CalendarStore {
     return this.defaultTodoListInFlight;
   }
 
+  /**
+   * Gửi một file .xlsx/.docx/.pdf cho AI đọc.
+   *
+   * CỐ Ý không lưu gì: backend chỉ trả về đề xuất, việc ghi vào lịch / việc
+   * cần làm do người dùng bấm xác nhận ở bảng xem trước mới xảy ra.
+   */
+  async analyzeAiFile(file: File, message: string): Promise<AiFileAnalysis> {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('message', message);
+    return firstValueFrom(
+      this.http.post<AiFileAnalysis>(`${this.apiUrl}/ai/analyze-file`, form),
+    );
+  }
+
   async sendAiChat(
     message: string,
     calendarId: string,
@@ -1208,10 +1228,44 @@ export class CalendarStore {
   }
 }
 
+/** Một việc AI đề xuất. Backend CỐ Ý không lưu — đây mới chỉ là bản nháp chờ
+ *  người dùng duyệt ở bảng xem trước. */
+export interface AiSuggestedTodo {
+  readonly content: string;
+  readonly description?: string;
+  /** Vắng mặt khi người dùng không nêu thời gian. Không tự điền hộ. */
+  readonly due_at?: string;
+}
+
 export type AiChatResult =
   | { intent: 'create_event'; event: EventApiDto }
+  | { intent: 'create_todos'; goal: string; todos: readonly AiSuggestedTodo[] }
   | { intent: 'chat'; reply: string }
   | { intent: 'unclear'; title?: string; message: string };
+
+/**
+ * Một sự kiện AI đọc được từ file đính kèm.
+ *
+ * `start`/`end` tuỳ chọn vì file có thể nêu tên sự kiện mà không nêu ngày
+ * giờ — khi đó `missing` giải thích thiếu gì, và AI KHÔNG được đoán bừa.
+ */
+export interface AiFileEvent {
+  readonly title: string;
+  readonly start?: string;
+  readonly end?: string;
+  readonly allDay?: boolean;
+  readonly location?: string;
+  readonly description?: string;
+  readonly missing?: string;
+}
+
+export interface AiFileAnalysis {
+  readonly kind: 'events' | 'todos' | 'mixed' | 'none';
+  readonly summary: string;
+  readonly events: readonly AiFileEvent[];
+  readonly todos: readonly AiSuggestedTodo[];
+  readonly fileName: string;
+}
 
 export interface AiChatHistoryEntry {
   readonly role: 'user' | 'assistant';

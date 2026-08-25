@@ -41,7 +41,9 @@ export class AiFileImportService {
   }
 
   async parseEventsWithAi(rawText: string): Promise<ParsedImportEvent[]> {
-    const apiKey = this.configService.get<string>('GEMINI_API_KEY', { infer: true });
+    // Config được nạp lồng trong khoá 'ai' (xem config/configuration.ts).
+    // Đọc thẳng 'GEMINI_API_KEY' luôn trả undefined nên nhánh AI chưa từng chạy.
+    const apiKey = this.configService.get('ai', { infer: true }).geminiApiKey?.trim();
     if (!apiKey) {
       this.logger.warn('Chưa cấu hình GEMINI_API_KEY, trả về fallback parser');
       return this.fallbackTextParse(rawText);

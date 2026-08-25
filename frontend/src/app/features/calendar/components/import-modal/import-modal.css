@@ -287,3 +287,109 @@
 .danger-btn:hover {
   background: color-mix(in srgb, var(--color-danger) 12%, transparent);
 }
+
+/* Thay cho dải tab cũ: nói rõ file .xlsx/.docx/.pdf đi đường nào, để người
+   dùng quen Smart Import không tưởng là chức năng bị gỡ mất. */
+.mode-note {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.mode-note strong {
+  color: var(--color-text);
+}
+
+/* Gợi ý cách đưa file vào, nằm dưới dòng chính trong vùng thả file. */
+.upload-hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  color: var(--color-text-tertiary);
+}
+
+/* Thẻ file đã chọn — dùng chung cho cả chọn bằng nút lẫn dán bằng Ctrl+V. */
+.import-file-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.import-file-chip__icon {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+}
+
+.import-file-chip__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.import-file-chip__name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.import-file-chip__meta {
+  font-size: 0.68rem;
+  color: var(--color-text-tertiary);
+}
+
+.import-file-chip__remove {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-tertiary);
+  font-size: 1.05rem;
+  line-height: 1;
+  padding: 0.2rem 0.35rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.import-file-chip__remove:hover:not(:disabled) {
+  color: var(--color-danger);
+  background: var(--color-surface-hover);
+}
+
+.import-file-chip__remove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Trạng thái đang kéo file lên vùng thả. Chỉ đổi màu viền và nền, không đổi
+   kích thước — vùng thả mà co giãn lúc đang kéo sẽ khiến con trỏ rơi ra
+   ngoài và huỷ luôn thao tác. */
+.dropzone.drag-over {
+  border-color: var(--color-accent);
+  border-style: dashed;
+  background: color-mix(in srgb, var(--color-surface) 85%, var(--color-accent));
+}
+
+.dropzone.drag-over .upload-text {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+/* Mọi thứ bên trong vùng thả đều trong suốt với chuột trong lúc kéo, để con
+   trỏ đi qua icon/chữ không sinh ra dragleave giả. */
+.dropzone.drag-over > * {
+  pointer-events: none;
+}

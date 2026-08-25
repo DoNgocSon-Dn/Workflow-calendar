@@ -809,14 +809,12 @@
   z-index: 1;
 }
 
-/* Dòng miễn trừ ngay trên ô nhập. Nhận luôn đường kẻ phân cách mà .input-row
-   vốn giữ, để nó nằm CÙNG vùng cố định với ô nhập — đặt phía trên đường kẻ
-   thì nó sẽ trôi lẫn vào danh sách tin nhắn và cuộn mất. */
+/* Dòng miễn trừ ngay trên ô nhập, không đường kẻ. Vẫn nằm CÙNG vùng cố định
+   với ô nhập (ngoài .messages) nên không trôi theo danh sách tin nhắn. */
 .ai-disclaimer {
   flex-shrink: 0;
   margin: 0;
   padding: 0.6rem 1.1rem 0;
-  border-top: 1px solid var(--color-border);
   text-align: center;
   font-size: 0.69rem;
   line-height: 1.4;
@@ -824,8 +822,641 @@
   opacity: 0.8;
 }
 
-/* Đường kẻ đã chuyển lên trên nên bỏ ở đây, tránh hai vạch chồng nhau. */
+/* Bỏ luôn đường kẻ ở đây: vùng nhập liệu không còn vạch phân cách nào. */
 .ai-disclaimer + .input-row {
   border-top: none;
   padding-top: 0.55rem;
+}
+
+/* Bảng xem trước việc cần làm do AI đề xuất.
+   Cố tình trông như một "thẻ nháp" — viền đứt, nhãn Bản nháp — để không ai
+   nhầm nó với danh sách việc thật đã lưu. */
+.todo-proposal {
+  margin: 0.35rem 0 0.1rem;
+  padding: 0.75rem 0.8rem;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  animation: proposalIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes proposalIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.todo-proposal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.todo-proposal__heading {
+  min-width: 0;
+}
+
+.todo-proposal__title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.3;
+}
+
+.todo-proposal__hint {
+  margin: 0.15rem 0 0;
+  font-size: 0.7rem;
+  color: var(--color-text-tertiary);
+}
+
+.todo-proposal__badge {
+  flex-shrink: 0;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-full);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.todo-proposal__dup-note {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+}
+
+.todo-proposal__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.todo-proposal__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
+/* Việc trùng vẫn hiện đầy đủ, chỉ mờ đi — người dùng có thể tick lại. */
+.todo-proposal__row.is-duplicate {
+  opacity: 0.62;
+}
+
+.todo-proposal__check {
+  display: flex;
+  align-items: center;
+  padding-top: 0.3rem;
+  cursor: pointer;
+}
+
+.todo-proposal__check input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.todo-proposal__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.todo-proposal__name {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.2rem 0.3rem;
+}
+
+.todo-proposal__name:hover:not(:disabled) {
+  border-color: var(--color-border);
+}
+
+.todo-proposal__name:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  background: var(--color-surface);
+}
+
+.todo-proposal__desc {
+  margin: 0;
+  padding: 0 0.3rem;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
+.todo-proposal__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0 0.3rem;
+}
+
+.todo-proposal__date {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  padding: 0.15rem 0.3rem;
+}
+
+.todo-proposal__date:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.todo-proposal__nodate,
+.todo-proposal__dup {
+  font-size: 0.65rem;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+.todo-proposal__dup {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.todo-proposal__remove {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-tertiary);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.2rem 0.3rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.todo-proposal__remove:hover:not(:disabled) {
+  color: var(--color-danger);
+  background: var(--color-surface-hover);
+}
+
+.todo-proposal__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.todo-proposal__actions .primary-btn {
+  flex: 1;
+}
+
+.todo-proposal__actions .text-btn {
+  color: var(--color-text-secondary);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .todo-proposal {
+    animation: none;
+  }
+}
+
+/* --- Đính kèm file cho AI ------------------------------------------- */
+
+.attach-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.attach-btn:hover:not(.disabled) {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+/* Input file thật bị ẩn, cả thẻ label đóng vai nút. Dùng :focus-within để
+   người dùng bàn phím vẫn thấy được điểm focus. */
+.attach-btn:focus-within {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.attach-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.attach-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.attachment-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 1.1rem 0.5rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.attachment-chip__icon {
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+
+.attachment-chip__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.attachment-chip__name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-chip__meta {
+  font-size: 0.65rem;
+  color: var(--color-text-tertiary);
+}
+
+.attachment-chip__remove {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-tertiary);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.2rem 0.3rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.attachment-chip__remove:hover:not(:disabled) {
+  color: var(--color-danger);
+  background: var(--color-surface-hover);
+}
+
+/* Thẻ file trong tin nhắn đã gửi. */
+.message-file {
+  display: inline-block;
+  margin-bottom: 0.3rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: var(--radius-sm);
+  background: rgb(0 0 0 / 0.12);
+  font-size: 0.7rem;
+  font-weight: 600;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- Bảng xem trước sự kiện đọc từ file ------------------------------ */
+
+/* Dùng lại đúng ngôn ngữ hình ảnh của bảng việc cần làm: viền đứt + nhãn
+   "Bản nháp", để hai bảng đọc như một cặp chứ không phải hai thứ rời rạc. */
+.event-proposal {
+  margin: 0.35rem 0 0.1rem;
+  padding: 0.75rem 0.8rem;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  animation: proposalIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.event-proposal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.event-proposal__heading {
+  min-width: 0;
+}
+
+.event-proposal__title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.3;
+}
+
+.event-proposal__hint {
+  margin: 0.15rem 0 0;
+  font-size: 0.7rem;
+  color: var(--color-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-proposal__badge {
+  flex-shrink: 0;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-full);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-size: 0.625rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.event-proposal__bulk,
+.todo-proposal__bulk {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.7rem;
+}
+
+.event-proposal__bulk .text-btn,
+.todo-proposal__bulk .text-btn {
+  color: var(--color-accent);
+  font-size: 0.7rem;
+  padding: 0;
+}
+
+.event-proposal__warn {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+}
+
+.event-proposal__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.event-proposal__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
+/* Thiếu ngày giờ: viền cảnh báo thay vì làm mờ, vì đây là dòng người dùng
+   CẦN chú ý và tự điền, không phải dòng nên bỏ qua. */
+.event-proposal__row.is-incomplete {
+  border-color: var(--color-danger);
+}
+
+.event-proposal__check {
+  display: flex;
+  align-items: center;
+  padding-top: 0.3rem;
+  cursor: pointer;
+}
+
+.event-proposal__check input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.event-proposal__check input:disabled {
+  cursor: not-allowed;
+}
+
+.event-proposal__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.event-proposal__name {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.2rem 0.3rem;
+}
+
+.event-proposal__name:hover:not(:disabled) {
+  border-color: var(--color-border);
+}
+
+.event-proposal__name:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  background: var(--color-surface);
+}
+
+.event-proposal__missing {
+  margin: 0;
+  padding: 0 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--color-danger);
+}
+
+.event-proposal__times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0 0.3rem;
+}
+
+.event-proposal__field {
+  flex: 1;
+  min-width: 130px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.event-proposal__field span {
+  font-size: 0.62rem;
+  color: var(--color-text-tertiary);
+}
+
+.event-proposal__field input {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  padding: 0.2rem 0.3rem;
+}
+
+.event-proposal__field input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.event-proposal__location {
+  margin: 0 0.3rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  padding: 0.2rem 0.3rem;
+}
+
+.event-proposal__location:hover:not(:disabled) {
+  border-color: var(--color-border);
+}
+
+.event-proposal__location:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  background: var(--color-surface);
+}
+
+.event-proposal__remove {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-tertiary);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.2rem 0.3rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.event-proposal__remove:hover:not(:disabled) {
+  color: var(--color-danger);
+  background: var(--color-surface-hover);
+}
+
+.event-proposal__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.event-proposal__actions .primary-btn {
+  flex: 1;
+}
+
+.event-proposal__actions .text-btn {
+  color: var(--color-text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event-proposal {
+    animation: none;
+  }
+}
+
+/* Lớp phủ khi kéo file vào khung chat.
+   Đặt trên cùng nhưng KHÔNG nhận sự kiện chuột: nếu nó bắt pointer thì con
+   trỏ sẽ liên tục rời/vào phần tử bên dưới, sinh ra chuỗi dragleave giả và
+   làm lớp phủ nhấp nháy. */
+.drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: inherit;
+  border: 2px dashed var(--color-accent);
+  background: color-mix(in srgb, var(--color-surface) 88%, var(--color-accent));
+  animation: dropOverlayIn 0.15s ease-out both;
+}
+
+@keyframes dropOverlayIn {
+  from {
+    opacity: 0;
+  }
+}
+
+.drop-overlay__icon {
+  font-size: 1.6rem;
+}
+
+.drop-overlay__text {
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drop-overlay {
+    animation: none;
+  }
 }
