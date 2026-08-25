@@ -262,21 +262,40 @@ export class FloatingHub {
   private readonly authStore = inject(AuthStore);
 
   private composerObserver?: ResizeObserver;
-  protected readonly composerHeight = signal<number>(90);
+  /**
+   * Chiều cao thật của .composer-area, dùng làm padding-bottom cho .messages
+   * để nội dung không bị composer che mất đoạn cuối.
+   *
+   * 116 là chiều cao đo được của composer ở trạng thái NHỎ NHẤT (chỉ có
+   * disclaimer + ô nhập, chưa có file đính kèm/lỗi). Trước đây khởi tạo bằng
+   * 90 — nhỏ hơn cả trạng thái tối thiểu thật — nên trong khoảng thời gian
+   * TRƯỚC LẦN ĐO ĐẦU TIÊN, padding-bottom luôn thiếu và tin nhắn cuối bị đè
+   * dưới composer với không còn chỗ cuộn để lộ ra.
+   */
+  protected readonly composerHeight = signal<number>(116);
 
   @ViewChild('composerEl') set composerEl(ref: ElementRef<HTMLElement> | undefined) {
     this.composerObserver?.disconnect();
-    if (ref?.nativeElement && typeof ResizeObserver !== 'undefined') {
-      this.composerObserver = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          const h = entry.borderBoxSize?.[0]?.blockSize ?? entry.target.getBoundingClientRect().height;
-          if (h > 0) {
-            this.composerHeight.set(Math.round(h));
-          }
+    if (!ref?.nativeElement) return;
+
+    // Đo NGAY khi element xuất hiện, không đợi ResizeObserver báo lần đầu.
+    // getBoundingClientRect() TỰ ép trình duyệt chạy layout ngay lúc gọi, nên
+    // kết quả chính xác dù chỉ vừa gắn vào DOM trong cùng một lượt CD — không
+    // còn khoảng trống thời gian nào dùng giá trị đoán (90 cũ) trong khi chờ
+    // callback bất đồng bộ đầu tiên của observer.
+    const initial = ref.nativeElement.getBoundingClientRect().height;
+    if (initial > 0) this.composerHeight.set(Math.round(initial));
+
+    if (typeof ResizeObserver === 'undefined') return;
+    this.composerObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const h = entry.borderBoxSize?.[0]?.blockSize ?? entry.target.getBoundingClientRect().height;
+        if (h > 0) {
+          this.composerHeight.set(Math.round(h));
         }
-      });
-      this.composerObserver.observe(ref.nativeElement);
-    }
+      }
+    });
+    this.composerObserver.observe(ref.nativeElement);
   }
 
   protected readonly fabSize = FAB_SIZE;
