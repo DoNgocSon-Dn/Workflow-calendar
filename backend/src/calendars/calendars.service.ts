@@ -40,12 +40,19 @@ export class CalendarsService {
     const { data: userRes } = await supabase.auth.getUser();
     const userId = userRes.user?.id ?? null;
 
+    // Không xác định được người dùng thì KHÔNG kết luận "chỉ đọc": làm vậy sẽ
+    // khoá họ ra khỏi chính lịch của mình và đẩy client đi tạo lịch mới. Trả về
+    // như cũ và để RLS làm lớp chặn thật.
+    if (!userId) {
+      return rows.map((row) => toCalendarDto(row, true));
+    }
+
     // Vai trò trong từng lịch. 'viewer' chỉ được xem — chính là lịch nhóm mà
     // client vẫn hay chọn nhầm làm nơi ghi sự kiện.
     const { data: memberRows } = await supabase
       .from('calendar_members')
       .select('calendar_id, role')
-      .eq('user_id', userId ?? '');
+      .eq('user_id', userId);
     const roleOf = new Map(
       ((memberRows ?? []) as { calendar_id: string; role: string }[]).map((m) => [
         m.calendar_id,
@@ -56,7 +63,7 @@ export class CalendarsService {
     return rows.map((row) => {
       const role = roleOf.get(row.id);
       const canEdit =
-        (!!userId && row.owner_id === userId) || role === 'owner' || role === 'editor';
+        row.owner_id === userId || role === 'owner' || role === 'editor';
       return toCalendarDto(row, canEdit);
     });
   }
