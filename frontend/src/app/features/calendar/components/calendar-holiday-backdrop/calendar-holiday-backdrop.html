@@ -1,19 +1,32 @@
 @if (activeScene(); as scene) {
   <div
     class="holiday-backdrop"
-    [class.holiday-backdrop--dong-son]="scene === 'dong-son-drum-scene'"
+    [class.holiday-backdrop--labor-day]="scene === 'labor-day-scene'"
+    [class.holiday-backdrop--national-day]="scene === 'national-day-scene'"
     [class.holiday-backdrop--flag]="scene === 'vietnam-flag-scene'"
+    [class.holiday-backdrop--dong-son]="scene === 'dong-son-drum-scene'"
+    [class.holiday-backdrop--new-year]="scene === 'new-year-scene'"
+    appHolidayParallax
     aria-hidden="true"
   >
     @switch (scene) {
       @case ('tet-branch-scene') {
         <app-tet-branch-motif class="holiday-backdrop__motif" />
       }
-      @case ('dong-son-drum-scene') {
-        <app-dong-son-drum-motif class="holiday-backdrop__motif" />
+      @case ('labor-day-scene') {
+        <app-labor-day-motif class="holiday-backdrop__motif" />
+      }
+      @case ('national-day-scene') {
+        <app-national-day-motif class="holiday-backdrop__motif" />
       }
       @case ('vietnam-flag-scene') {
         <app-vietnam-flag-motif class="holiday-backdrop__motif" />
+      }
+      @case ('dong-son-drum-scene') {
+        <app-dong-son-drum-motif class="holiday-backdrop__motif" />
+      }
+      @case ('new-year-scene') {
+        <app-new-year-motif class="holiday-backdrop__motif" />
       }
     }
   </div>

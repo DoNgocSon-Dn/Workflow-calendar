@@ -1,3 +1,5 @@
+import { RecurrenceRule } from '../utils/recurrence';
+
 export type CalendarViewMode = 'month' | 'week' | 'day' | 'agenda';
 
 export type CalendarColor =
@@ -36,7 +38,14 @@ export interface CalendarEvent {
   end: Date;
   allDay: boolean;
   deletedAt?: Date;
+  meetLink?: string;
+  /** Có giá trị khi sự kiện này là một lần lặp thuộc một chuỗi lặp lại. */
+  seriesId?: string;
+  recurrenceRule?: RecurrenceRule;
 }
+
+/** Phạm vi áp dụng khi sửa/xoá một lần lặp trong chuỗi lặp lại. */
+export type SeriesEditScope = 'this' | 'following' | 'all';
 
 export type CalendarEventDraft = Omit<CalendarEvent, 'id'>;
 

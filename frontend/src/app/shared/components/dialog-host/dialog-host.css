@@ -58,6 +58,27 @@
   margin-top: 16px;
 }
 
+.dh-choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.dh-btn-choice {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  padding: 10px 14px;
+}
+.dh-btn-choice:hover {
+  background: var(--color-surface-hover-strong);
+  border-color: var(--color-border-strong);
+}
+
 .dh-btn {
   padding: 8px 16px;
   border-radius: 8px;

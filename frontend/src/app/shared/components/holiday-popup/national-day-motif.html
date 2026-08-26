@@ -1,0 +1,194 @@
+<div class="ndm-scene">
+  <!-- Lớp 1: nền — skyline Việt Nam rất mờ, ruy băng mềm nhất, 2 chim ở xa
+       (nhỏ/mờ/chậm nhất), 2 sao vàng, particle nhỏ/chậm. -->
+  <svg class="ndm-layer ndm-layer--bg" viewBox="0 0 200 160" preserveAspectRatio="xMaxYMin meet" aria-hidden="true">
+    <!-- Skyline Việt Nam — ảnh thật (cột cờ Hà Nội, Dinh Độc Lập, cầu dây
+         văng, nhà thờ Đức Bà...), thay cho silhouette vẽ tay trước đây. Đứng
+         yên hoàn toàn, cùng quy ước với Dinh Độc Lập ở VietnamFlagMotif (30/4). -->
+    <image class="ndm-skyline" href="/assets/holidays/national-day/skyline.png" x="0" y="110" width="200" height="50" preserveAspectRatio="xMidYMax meet" />
+
+    <path class="ndm-ribbon ndm-ribbon--soft" d="M-10 118 Q 50 96 100 112 T 210 100" />
+
+    @for (i of [3, 4]; track i) {
+      @let d = doves[i];
+      <g [attr.transform]="'translate(' + d.baseX + ',' + d.baseY + ') scale(' + d.scale + ')' + (d.flip ? ' scale(-1,1)' : '')">
+        <g class="ndm-dove" [style.--ndm-dove-op]="d.opacity" [style.animation-duration.s]="d.duration" [style.animation-delay.s]="d.delay">
+          <image class="ndm-dove-image" href="/assets/holidays/reunification/dove-flying.png" x="-80" y="-93" width="161" height="186" />
+        </g>
+      </g>
+    }
+
+    @for (i of [0, 1]; track i) {
+      @let s = stars[i];
+      <polygon
+        class="ndm-mini-star"
+        points="0,-47 11,-13 47,-13 18,8 29,42 0,21 -29,42 -18,8 -47,-13 -11,-13"
+        [attr.transform]="'translate(' + s.x + ',' + s.y + ') scale(' + s.scale + ')'"
+        [style.--ndm-star-min]="s.minOpacity"
+        [style.--ndm-star-max]="s.maxOpacity"
+        [style.animation-duration.s]="s.duration"
+        [style.animation-delay.s]="s.delay"
+      />
+    }
+
+    @for (p of bgParticles; track $index) {
+      <g [attr.transform]="'rotate(' + (p.left * 3.6) + ' ' + (p.left * 2) + ' ' + p.top + ')'">
+        <circle
+          class="ndm-particle"
+          [class.ndm-particle--gold]="p.tone === 'gold'"
+          [class.ndm-particle--reverse]="p.reverse"
+          [attr.cx]="p.left * 2"
+          [attr.cy]="p.top"
+          [attr.r]="p.size / 2"
+          [style.opacity]="p.opacity"
+          [style.animation-duration.s]="p.duration"
+          [style.animation-delay.s]="p.delay"
+        />
+      </g>
+    }
+  </svg>
+
+  <!-- Lớp 2: giữa — lá cờ (không vẽ cột, chỉ vải bay; sóng lan từ điểm neo vô
+       hình ra mép, xem poleX trong .ts) + sao vàng lớn (hero, animation
+       riêng) + 2 chim tầm trung + 2 sao nhỏ + particle. -->
+  <svg class="ndm-layer ndm-layer--mid" viewBox="0 0 200 160" preserveAspectRatio="xMaxYMin meet" aria-hidden="true">
+    <!-- Bóng lá cờ — cùng animation với dải vải thật nhưng lệch xuống/phải và
+         mờ đen, tạo cảm giác cờ nổi khối phía trên nền. -->
+    <g class="ndm-flag-shadow">
+      @for (s of flagSegments; track $index) {
+        <rect
+          [attr.x]="s.x"
+          [attr.y]="flagTop"
+          [attr.width]="s.width"
+          [attr.height]="flagBottom - flagTop"
+          [style.--ndm-amp.px]="s.amplitude"
+          [style.animation-delay.ms]="s.delayMs"
+          [style.transform-origin]="poleX + 'px ' + (flagTop + flagBottom) / 2 + 'px'"
+        />
+      }
+    </g>
+
+    <g class="ndm-flag">
+      @for (s of flagSegments; track $index) {
+        <rect
+          class="ndm-flag-strip"
+          [attr.x]="s.x"
+          [attr.y]="flagTop"
+          [attr.width]="s.width"
+          [attr.height]="flagBottom - flagTop"
+          [style.--ndm-amp.px]="s.amplitude"
+          [style.animation-delay.ms]="s.delayMs"
+          [style.transform-origin]="poleX + 'px ' + (flagTop + flagBottom) / 2 + 'px'"
+        />
+      }
+    </g>
+
+    <!-- Sao vàng lớn — animation riêng (translateY + rotateZ nhẹ + scale),
+         KHÔNG xoay 360°. Vẽ 2 lớp (bóng lệch dưới + sao chính) để giả lập
+         extrusion không cần gradient. -->
+    <g [attr.transform]="'translate(' + starCx + ',' + starCy + ')'">
+      <g class="ndm-star">
+        <polygon
+          class="ndm-star-shadow"
+          points="0,-47 11,-13 47,-13 18,8 29,42 0,21 -29,42 -18,8 -47,-13 -11,-13"
+          transform="translate(1.4,2.2) scale(0.3)"
+        />
+        <polygon
+          class="ndm-star-main"
+          points="0,-47 11,-13 47,-13 18,8 29,42 0,21 -29,42 -18,8 -47,-13 -11,-13"
+          transform="scale(0.3)"
+        />
+      </g>
+    </g>
+
+    @for (i of [1, 2]; track i) {
+      @let d = doves[i];
+      <g [attr.transform]="'translate(' + d.baseX + ',' + d.baseY + ') scale(' + d.scale + ')' + (d.flip ? ' scale(-1,1)' : '')">
+        <g class="ndm-dove" [style.--ndm-dove-op]="d.opacity" [style.animation-duration.s]="d.duration" [style.animation-delay.s]="d.delay">
+          <image class="ndm-dove-image" href="/assets/holidays/reunification/dove-flying.png" x="-80" y="-93" width="161" height="186" />
+        </g>
+      </g>
+    }
+
+    @for (i of [2, 3]; track i) {
+      @let s = stars[i];
+      <polygon
+        class="ndm-mini-star"
+        points="0,-47 11,-13 47,-13 18,8 29,42 0,21 -29,42 -18,8 -47,-13 -11,-13"
+        [attr.transform]="'translate(' + s.x + ',' + s.y + ') scale(' + s.scale + ')'"
+        [style.--ndm-star-min]="s.minOpacity"
+        [style.--ndm-star-max]="s.maxOpacity"
+        [style.animation-duration.s]="s.duration"
+        [style.animation-delay.s]="s.delay"
+      />
+    }
+
+    @for (p of midParticles; track $index) {
+      <g [attr.transform]="'rotate(' + (p.left * 3.6) + ' ' + (p.left * 2) + ' ' + p.top + ')'">
+        <circle
+          class="ndm-particle"
+          [class.ndm-particle--gold]="p.tone === 'gold'"
+          [class.ndm-particle--reverse]="p.reverse"
+          [attr.cx]="p.left * 2"
+          [attr.cy]="p.top"
+          [attr.r]="p.size / 2"
+          [style.opacity]="p.opacity"
+          [style.animation-duration.s]="p.duration"
+          [style.animation-delay.s]="p.delay"
+        />
+      </g>
+    }
+  </svg>
+
+  <!-- Lớp 3: tiền cảnh — ruy băng rõ nhất, 1 chim gần nhất (lớn/rõ nhất), 2
+       sao nhỏ, particle lớn/rõ. Không vật thể nặng nào khác — spec yêu cầu
+       tối giản, calendar luôn đọc được. -->
+  <svg class="ndm-layer ndm-layer--fg" viewBox="0 0 200 160" preserveAspectRatio="xMaxYMin meet" aria-hidden="true">
+    <path class="ndm-ribbon" d="M-10 100 Q 55 78 105 96 T 210 84" />
+
+    @let heroDove = doves[0];
+    <g
+      [attr.transform]="
+        'translate(' + heroDove.baseX + ',' + heroDove.baseY + ') scale(' + heroDove.scale + ')' + (heroDove.flip ? ' scale(-1,1)' : '')
+      "
+    >
+      <g
+        class="ndm-dove"
+        [style.--ndm-dove-op]="heroDove.opacity"
+        [style.animation-duration.s]="heroDove.duration"
+        [style.animation-delay.s]="heroDove.delay"
+      >
+        <image class="ndm-dove-image" href="/assets/holidays/reunification/dove-flying.png" x="-80" y="-93" width="161" height="186" />
+      </g>
+    </g>
+
+    @for (i of [4, 5]; track i) {
+      @let s = stars[i];
+      <polygon
+        class="ndm-mini-star"
+        points="0,-47 11,-13 47,-13 18,8 29,42 0,21 -29,42 -18,8 -47,-13 -11,-13"
+        [attr.transform]="'translate(' + s.x + ',' + s.y + ') scale(' + s.scale + ')'"
+        [style.--ndm-star-min]="s.minOpacity"
+        [style.--ndm-star-max]="s.maxOpacity"
+        [style.animation-duration.s]="s.duration"
+        [style.animation-delay.s]="s.delay"
+      />
+    }
+
+    @for (p of fgParticles; track $index) {
+      <g [attr.transform]="'rotate(' + (p.left * 3.6) + ' ' + (p.left * 2) + ' ' + p.top + ')'">
+        <circle
+          class="ndm-particle"
+          [class.ndm-particle--gold]="p.tone === 'gold'"
+          [class.ndm-particle--reverse]="p.reverse"
+          [attr.cx]="p.left * 2"
+          [attr.cy]="p.top"
+          [attr.r]="p.size / 2"
+          [style.opacity]="p.opacity"
+          [style.animation-duration.s]="p.duration"
+          [style.animation-delay.s]="p.delay"
+        />
+      </g>
+    }
+  </svg>
+</div>

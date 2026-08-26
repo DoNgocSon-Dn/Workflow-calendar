@@ -1,5 +1,5 @@
 import { CalendarEvent } from '../models/calendar.models';
-import { diffMinutes, minutesSinceMidnight } from './date-utils';
+import { addDays, diffMinutes, minutesSinceMidnight, startOfDay } from './date-utils';
 
 export interface PositionedEvent {
   event: CalendarEvent;
@@ -14,11 +14,20 @@ const MIN_BLOCK_HEIGHT = 18;
 /**
  * Greedy column-packing layout: events overlapping in time share the
  * available column width side by side, like Google Calendar's day/week grid.
+ *
+ * `day` là cột NGÀY đang vẽ — mỗi sự kiện chỉ nằm trong cột của ngày chứa
+ * `event.start` (bộ lọc ở nơi gọi), nhưng nếu `event.end` tràn qua nửa đêm
+ * sang ngày sau, chiều cao khối KHÔNG được tính theo tổng thời lượng thật
+ * (sẽ vẽ tràn quá mốc 24h/23h xuống dưới đáy cột) — phải cắt tại đúng 24:00
+ * của `day` này. Việc gộp cột theo giờ trùng nhau (columnEndTimes/clusterEnd)
+ * vẫn dùng giờ kết thúc THẬT, chỉ chiều cao hiển thị mới bị cắt.
  */
 export function layoutDayEvents(
   events: CalendarEvent[],
   hourHeight: number,
+  day: Date,
 ): PositionedEvent[] {
+  const dayEnd = addDays(startOfDay(day), 1);
   const timed = [...events].sort((a, b) => {
     const start = a.start.getTime() - b.start.getTime();
     if (start !== 0) return start;
@@ -53,7 +62,8 @@ export function layoutDayEvents(
     cluster.forEach((e, index) => {
       const col = columnOfIndex[index];
       const top = (minutesSinceMidnight(e.start) / 60) * hourHeight;
-      const height = Math.max((diffMinutes(e.start, e.end) / 60) * hourHeight, MIN_BLOCK_HEIGHT);
+      const visibleEnd = e.end.getTime() > dayEnd.getTime() ? dayEnd : e.end;
+      const height = Math.max((diffMinutes(e.start, visibleEnd) / 60) * hourHeight, MIN_BLOCK_HEIGHT);
       result.push({
         event: e,
         top,

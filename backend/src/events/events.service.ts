@@ -26,8 +26,11 @@ import {
   toEventInsertRow,
   toEventUpdateRow,
 } from './event.mapper';
+import { expandRecurrence } from './recurrence.util';
 
 const INVITE_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+export type SeriesEditScope = 'following' | 'all';
 
 interface InviteEventContext {
   title: string;
@@ -69,20 +72,34 @@ export class EventsService {
     dto: CreateEventDto,
     createdBy: string,
   ): Promise<EventDto> {
-    const { data, error } = await supabase
+    const row = toEventInsertRow(dto, createdBy);
+    let { data, error } = await supabase
       .from('events')
-      .insert(toEventInsertRow(dto, createdBy))
+      .insert(row)
       .select('*')
       .returns<EventRow[]>()
       .single();
 
-    if (error) throw new InternalServerErrorException(error.message);
-    const eventDto = toEventDto(data);
+    if (error) {
+      this.logger.warn(`Insert event failed (${error.message}), retrying fallback without series_id/recurrence_rule...`);
+      const { series_id, recurrence_rule, ...fallbackRow } = row;
+      const res = await supabase
+        .from('events')
+        .insert(fallbackRow)
+        .select('*')
+        .returns<EventRow[]>()
+        .single();
+      if (res.error) throw new InternalServerErrorException(res.error.message);
+      data = res.data;
+    }
+
+    const eventDto = toEventDto(data!);
     this.realtimeGateway.emitToCalendar(
       eventDto.calendarId,
       'event:created',
       eventDto,
     );
+    void this.notifyConflictsSafely(supabase, createdBy, eventDto);
     return eventDto;
   }
 
@@ -133,10 +150,75 @@ export class EventsService {
     return eventDtos;
   }
 
+  /**
+   * Tạo một sự kiện, có thể lặp lại. Không lặp lại thì chỉ gọi create() như
+   * cũ. Có lặp lại thì vật chất hoá mọi lần lặp thành các hàng events thật
+   * cùng một series_id, insert một lượt và phát events:bulk-created — dùng
+   * lại đúng khung của bulkCreate() (import file) thay vì tạo cơ chế song
+   * song, để client không cần thêm handler realtime mới cho tạo mới.
+   */
+  async createSeries(
+    supabase: SupabaseClient,
+    dto: CreateEventDto,
+    createdBy: string,
+  ): Promise<EventDto[]> {
+    if (!dto.recurrenceRule) {
+      return [await this.create(supabase, dto, createdBy)];
+    }
+
+    const seriesId = randomUUID();
+    const occurrences = expandRecurrence(
+      new Date(dto.start),
+      new Date(dto.end),
+      dto.recurrenceRule,
+    );
+    const rows = occurrences.map((occ) =>
+      toEventInsertRow(
+        { ...dto, start: occ.start.toISOString(), end: occ.end.toISOString() },
+        createdBy,
+        { seriesId, recurrenceRule: dto.recurrenceRule ?? null },
+      ),
+    );
+
+    let { data, error } = await supabase
+      .from('events')
+      .insert(rows)
+      .select('*')
+      .returns<EventRow[]>();
+
+    if (error) {
+      this.logger.warn(`Insert series failed (${error.message}), retrying fallback without series_id/recurrence_rule...`);
+      const fallbackRows = rows.map(({ series_id, recurrence_rule, ...rest }) => rest);
+      const res = await supabase
+        .from('events')
+        .insert(fallbackRows)
+        .select('*')
+        .returns<EventRow[]>();
+      if (res.error) throw new InternalServerErrorException(res.error.message);
+      data = res.data;
+    }
+
+    const eventDtos = (data ?? []).map(toEventDto);
+    const byCalendar = new Map<string, EventDto[]>();
+    for (const item of eventDtos) {
+      const list = byCalendar.get(item.calendarId);
+      if (list) list.push(item);
+      else byCalendar.set(item.calendarId, [item]);
+    }
+    for (const [calendarId, events] of byCalendar) {
+      this.realtimeGateway.emitToCalendar(calendarId, 'events:bulk-created', {
+        calendarId,
+        events,
+      });
+    }
+    return eventDtos;
+  }
+
   async update(
     supabase: SupabaseClient,
     id: string,
     dto: UpdateEventDto,
+    userId: string,
   ): Promise<EventDto> {
     const { data, error } = await supabase
       .from('events')
@@ -158,7 +240,108 @@ export class EventsService {
       'event:updated',
       eventDto,
     );
+    void this.notifyConflictsSafely(supabase, userId, eventDto);
     return eventDto;
+  }
+
+  /**
+   * Sửa một lần lặp và lan ra các lần lặp khác trong cùng chuỗi.
+   *
+   * Không đổi start/end: mọi hàng khớp scope nhận CÙNG một giá trị, xong
+   * trong một câu UPDATE. Có đổi start/end: mỗi hàng cần một ngày giờ tuyệt
+   * đối khác nhau, nên tính độ lệch (delta) so với hàng đang sửa rồi cộng vào
+   * từng hàng — phải update từng hàng một, nhưng số hàng luôn bị chặn bởi
+   * RECURRENCE_MAX_OCCURRENCES nên vòng lặp này luôn nhỏ.
+   */
+  async updateSeries(
+    supabase: SupabaseClient,
+    id: string,
+    dto: UpdateEventDto,
+    scope: SeriesEditScope,
+    userId: string,
+  ): Promise<EventDto[]> {
+    const { data: base, error: baseError } = await supabase
+      .from('events')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle<EventRow>();
+    if (baseError) throw new InternalServerErrorException(baseError.message);
+    if (!base) {
+      throw new NotFoundException('Event not found or you do not have permission to edit it');
+    }
+    if (!base.series_id) {
+      return [await this.update(supabase, id, dto, userId)];
+    }
+
+    let siblingsQuery = supabase
+      .from('events')
+      .select('*')
+      .eq('series_id', base.series_id)
+      .is('deleted_at', null);
+    if (scope === 'following') {
+      siblingsQuery = siblingsQuery.gte('start_at', base.start_at);
+    }
+    const { data: siblings, error: siblingsError } = await siblingsQuery.returns<EventRow[]>();
+    if (siblingsError) throw new InternalServerErrorException(siblingsError.message);
+
+    const updateRow = toEventUpdateRow(dto);
+    let updatedRows: EventRow[];
+
+    if (dto.start === undefined && dto.end === undefined) {
+      let query = supabase.from('events').update(updateRow).eq('series_id', base.series_id);
+      if (scope === 'following') query = query.gte('start_at', base.start_at);
+      const { data, error } = await query.select('*').returns<EventRow[]>();
+      if (error) throw new InternalServerErrorException(error.message);
+      updatedRows = data ?? [];
+    } else {
+      const startDeltaMs = dto.start
+        ? new Date(dto.start).getTime() - new Date(base.start_at).getTime()
+        : 0;
+      const endDeltaMs = dto.end
+        ? new Date(dto.end).getTime() - new Date(base.end_at).getTime()
+        : 0;
+      const results: EventRow[] = [];
+      for (const row of siblings ?? []) {
+        const rowUpdate = { ...updateRow };
+        if (dto.start) {
+          rowUpdate['start_at'] = new Date(new Date(row.start_at).getTime() + startDeltaMs).toISOString();
+        }
+        if (dto.end) {
+          rowUpdate['end_at'] = new Date(new Date(row.end_at).getTime() + endDeltaMs).toISOString();
+        }
+        const { data, error } = await supabase
+          .from('events')
+          .update(rowUpdate)
+          .eq('id', row.id)
+          .select('*')
+          .returns<EventRow[]>();
+        if (error) throw new InternalServerErrorException(error.message);
+        if (data?.[0]) results.push(data[0]);
+      }
+      updatedRows = results;
+    }
+
+    const eventDtos = updatedRows.map(toEventDto);
+    const byCalendar = new Map<string, EventDto[]>();
+    for (const eventDto of eventDtos) {
+      const list = byCalendar.get(eventDto.calendarId);
+      if (list) list.push(eventDto);
+      else byCalendar.set(eventDto.calendarId, [eventDto]);
+    }
+    for (const [calendarId, events] of byCalendar) {
+      this.realtimeGateway.emitToCalendar(calendarId, 'events:bulk-updated', {
+        calendarId,
+        events,
+      });
+    }
+    // Chỉ kiểm tra trùng lịch cho ĐÚNG lần lặp người dùng đang mở sửa — kiểm
+    // tra cả chuỗi (có thể hàng chục lần lặp) sẽ dội hàng loạt cảnh báo cho
+    // một thao tác sửa.
+    const editedEventDto = eventDtos.find((e) => e.id === id) ?? eventDtos[0];
+    if (editedEventDto) {
+      void this.notifyConflictsSafely(supabase, userId, editedEventDto);
+    }
+    return eventDtos;
   }
 
   // Xoá "mềm" — chuyển sự kiện vào thùng rác thay vì xoá hẳn, cho phép
@@ -180,6 +363,50 @@ export class EventsService {
     this.realtimeGateway.emitToCalendar(data[0].calendar_id, 'event:deleted', {
       id: data[0].id,
     });
+  }
+
+  /** Xoá "mềm" một lần lặp và lan ra các lần lặp khác trong cùng chuỗi — luôn
+   *  là một thao tác đồng nhất (cùng đánh deleted_at) nên chỉ cần MỘT câu
+   *  UPDATE, không cần vòng lặp như updateSeries(). */
+  async removeSeries(
+    supabase: SupabaseClient,
+    id: string,
+    scope: SeriesEditScope,
+  ): Promise<{ ids: string[]; calendarId: string | null }> {
+    const { data: base, error: baseError } = await supabase
+      .from('events')
+      .select('id, calendar_id, series_id, start_at')
+      .eq('id', id)
+      .maybeSingle<{ id: string; calendar_id: string; series_id: string | null; start_at: string }>();
+    if (baseError) throw new InternalServerErrorException(baseError.message);
+    if (!base) {
+      throw new NotFoundException('Event not found or you do not have permission to delete it');
+    }
+    if (!base.series_id) {
+      await this.remove(supabase, id);
+      return { ids: [id], calendarId: base.calendar_id };
+    }
+
+    let query = supabase
+      .from('events')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('series_id', base.series_id)
+      .is('deleted_at', null);
+    if (scope === 'following') query = query.gte('start_at', base.start_at);
+    const { data, error } = await query
+      .select('id, calendar_id')
+      .returns<{ id: string; calendar_id: string }[]>();
+    if (error) throw new InternalServerErrorException(error.message);
+
+    const ids = (data ?? []).map((r) => r.id);
+    const calendarId = data?.[0]?.calendar_id ?? null;
+    if (calendarId) {
+      this.realtimeGateway.emitToCalendar(calendarId, 'events:bulk-deleted', {
+        calendarId,
+        ids,
+      });
+    }
+    return { ids, calendarId };
   }
 
   async listTrash(
@@ -257,6 +484,38 @@ export class EventsService {
     const { data, error } = await query;
     if (error) throw new InternalServerErrorException(error.message);
     return (data as EventRow[]).map(toConflictEventDto);
+  }
+
+  /**
+   * Báo cho người vừa lưu sự kiện biết nó đang trùng giờ với sự kiện khác —
+   * chỉ CẢNH BÁO qua chuông thông báo trong app, không chặn việc lưu (đã lưu
+   * xong rồi mới kiểm tra). Lỗi kiểm tra trùng lịch không được làm hỏng thao
+   * tác tạo/sửa sự kiện chính, nên nuốt lỗi ở đây thay vì để nó văng lên.
+   */
+  private async notifyConflictsSafely(
+    supabase: SupabaseClient,
+    userId: string,
+    eventDto: EventDto,
+  ): Promise<void> {
+    try {
+      const conflicts = await this.checkConflicts(supabase, {
+        start: eventDto.start,
+        end: eventDto.end,
+        excludeEventId: eventDto.id,
+      });
+      this.logger.log(
+        `notifyConflictsSafely: event ${eventDto.id} (${eventDto.title}) userId=${userId} -> ${conflicts.length} conflict(s)`,
+      );
+      if (conflicts.length === 0) return;
+      this.realtimeGateway.emitToUser(userId, 'event:conflict', {
+        event: eventDto,
+        conflicts,
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Failed to check conflicts for event ${eventDto.id}: ${(err as Error).message}`,
+      );
+    }
   }
 
   async invite(

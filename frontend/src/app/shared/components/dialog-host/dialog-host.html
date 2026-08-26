@@ -17,8 +17,23 @@
         />
       }
 
+      @if (req.kind === 'choice') {
+        <div class="dh-choice-list">
+          @for (opt of req.options; track opt.value) {
+            <button type="button" class="dh-btn dh-btn-choice" (click)="dialog.respondChoice(opt.value)">
+              {{ opt.label }}
+            </button>
+          }
+        </div>
+      }
+
       <div class="dh-actions">
         @switch (req.kind) {
+          @case ('choice') {
+            <button type="button" class="dh-btn dh-btn-ghost" (click)="dialog.respondChoice(null)">
+              {{ req.cancelLabel || 'Hủy' }}
+            </button>
+          }
           @case ('alert') {
             <button type="button" class="dh-btn dh-btn-primary" (click)="dialog.acknowledge()">
               {{ req.confirmLabel || 'Đã hiểu' }}

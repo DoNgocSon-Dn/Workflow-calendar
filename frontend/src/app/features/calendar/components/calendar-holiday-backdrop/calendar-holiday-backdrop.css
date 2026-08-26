@@ -36,12 +36,117 @@
   }
 }
 
-/* Trống đồng là một khối tròn gọn, không cần trải rộng như cành mai/đào —
-   spec: chiếm khoảng 20–30% chiều cao vùng lịch, vẫn neo góc trên-phải. */
+/* Bánh răng + dụng cụ lao động — mức đầu tư "4/5", neo góc trên-phải như
+   Tết nhưng chiếm diện tích khiêm tốn hơn 2/9 (scene mạnh nhất). */
+.holiday-backdrop--labor-day .holiday-backdrop__motif {
+  width: min(46vw, 500px);
+  height: min(62%, 460px);
+  opacity: 0.82;
+}
+
+@media (max-width: 1200px) {
+  .holiday-backdrop--labor-day .holiday-backdrop__motif {
+    width: min(52vw, 400px);
+    height: min(46%, 320px);
+    opacity: 0.68;
+  }
+}
+
+@media (max-width: 900px) {
+  .holiday-backdrop--labor-day .holiday-backdrop__motif {
+    width: min(66vw, 300px);
+    height: min(34%, 220px);
+    opacity: 0.55;
+  }
+}
+
+/* Cờ + skyline Quốc khánh — theo yêu cầu người dùng, đặt CHÍNH GIỮA màn hình
+   thay vì neo góc trên-phải (cùng cách xử lý với .holiday-backdrop--flag ở
+   30/4: top/left 50% + translate(-50%,-50%) thay vì top/right:0). Mask mờ
+   dần đối xứng từ tâm ra bốn phía để cạnh vuông của khung ảnh tan vào nền
+   thay vì cắt cứng — cần thiết vì đặt giữa nên mọi cạnh khung đều lộ ra giữa
+   vùng lịch (khác kiểu neo góc, chỉ 2 cạnh lộ và đã bị góc màn hình che bớt). */
+.holiday-backdrop--national-day .holiday-backdrop__motif {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, -50%);
+  width: min(50vw, 560px);
+  height: min(64%, 480px);
+  opacity: 0.68;
+  mask-image: radial-gradient(65% 65% at 50% 50%, #000 55%, transparent 100%);
+  -webkit-mask-image: radial-gradient(65% 65% at 50% 50%, #000 55%, transparent 100%);
+}
+
+@media (max-width: 1200px) {
+  .holiday-backdrop--national-day .holiday-backdrop__motif {
+    width: min(56vw, 420px);
+    height: min(48%, 340px);
+    opacity: 0.58;
+  }
+}
+
+@media (max-width: 900px) {
+  .holiday-backdrop--national-day .holiday-backdrop__motif {
+    width: min(72vw, 300px);
+    height: min(36%, 220px);
+    opacity: 0.48;
+  }
+}
+
+/* Cờ 30/4 + Dinh Độc Lập + chim bồ câu — theo yêu cầu người dùng, đặt CHÍNH
+   GIỮA màn hình thay vì neo góc trên-phải như 3 scene còn lại (chim bồ câu
+   bay trong hộp nhỏ ở góc bị chê "nhỏ quá", khó thấy). Dùng top/left 50% +
+   translate(-50%,-50%) thay vì top/right:0. Kích thước nhỉnh hơn bản neo góc
+   trước đó để chim bay rõ hơn, nhưng vẫn thấp hơn national-day (scene mạnh
+   nhất) vì lá cờ tô đặc, dễ trùm kín cột ngày nếu quá to. */
+.holiday-backdrop--flag .holiday-backdrop__motif {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, -50%);
+  width: min(52vw, 580px);
+  height: min(66%, 500px);
+  opacity: 0.65;
+  /* Lá cờ tô đặc gần kín khung (không thưa như cành mai/bánh răng), nên cạnh
+     vuông của khung ảnh lộ rõ thành một khối chữ nhật cứng, như dán đè lên
+     lịch. Mask mờ dần đối xứng từ tâm ra bốn phía (khớp với việc đặt chính
+     giữa, khác với mask lệch góc dùng cho kiểu neo góc) để rìa tan vào nền
+     thay vì cắt cứng. */
+  mask-image: radial-gradient(65% 65% at 50% 50%, #000 55%, transparent 100%);
+  -webkit-mask-image: radial-gradient(65% 65% at 50% 50%, #000 55%, transparent 100%);
+}
+
+@media (max-width: 1200px) {
+  .holiday-backdrop--flag .holiday-backdrop__motif {
+    width: min(58vw, 460px);
+    height: min(50%, 360px);
+    opacity: 0.55;
+  }
+}
+
+@media (max-width: 900px) {
+  .holiday-backdrop--flag .holiday-backdrop__motif {
+    width: min(72vw, 340px);
+    height: min(38%, 250px);
+    opacity: 0.46;
+  }
+}
+
+/* Trống đồng Đông Sơn (Giỗ Tổ Hùng Vương) — khối tròn gọn, không cần trải
+   rộng như cành mai/bánh răng/lá cờ, neo góc trên-phải cùng quy tắc chung. */
 .holiday-backdrop--dong-son .holiday-backdrop__motif {
   width: min(30vw, 340px);
   height: min(42%, 340px);
   opacity: 0.9;
+}
+
+@media (max-width: 1200px) {
+  .holiday-backdrop--dong-son .holiday-backdrop__motif {
+    width: min(36vw, 280px);
+    height: min(38%, 280px);
+    opacity: 0.8;
+  }
 }
 
 @media (max-width: 900px) {
@@ -52,26 +157,26 @@
   }
 }
 
-/* Lá cờ và Dinh Độc Lập nằm chính giữa màn hình (tâm lưới lịch) làm chìm
-   nền trang trọng cho ngày Giải phóng miền Nam 30/4. */
-.holiday-backdrop--flag .holiday-backdrop__motif {
-  top: 50%;
-  left: 50%;
-  right: auto;
-  transform: translate(-50%, -50%);
-  width: min(55vw, 600px);
-  height: min(65%, 480px);
-  opacity: 0.55;
+/* Đồng hồ giao thừa + pháo hoa (Tết Dương Lịch 1/1) — neo góc trên-phải,
+   mức đầu tư khiêm tốn như 1/5 (không phải "lễ lớn nhất" của bộ 6). */
+.holiday-backdrop--new-year .holiday-backdrop__motif {
+  width: min(44vw, 480px);
+  height: min(60%, 440px);
+  opacity: 0.78;
+}
+
+@media (max-width: 1200px) {
+  .holiday-backdrop--new-year .holiday-backdrop__motif {
+    width: min(50vw, 380px);
+    height: min(44%, 300px);
+    opacity: 0.65;
+  }
 }
 
 @media (max-width: 900px) {
-  .holiday-backdrop--flag .holiday-backdrop__motif {
-    top: 50%;
-    left: 50%;
-    right: auto;
-    transform: translate(-50%, -50%);
-    width: min(80vw, 360px);
-    height: min(50%, 300px);
-    opacity: 0.45;
+  .holiday-backdrop--new-year .holiday-backdrop__motif {
+    width: min(64vw, 280px);
+    height: min(32%, 200px);
+    opacity: 0.55;
   }
 }

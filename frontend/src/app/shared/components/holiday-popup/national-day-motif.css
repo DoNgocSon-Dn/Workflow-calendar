@@ -1,0 +1,308 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: #da251d;
+}
+
+.ndm-scene {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* 3 lớp độ sâu — mỗi lớp một <svg> riêng để tịnh tiến bằng px thật khi
+   appHolidayParallax ghi --holiday-px/py lên .holiday-backdrop cha. Không có
+   var thì translate = 0 (mobile/reduced motion không gắn listener). */
+.ndm-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.ndm-layer--bg {
+  z-index: 1;
+  transform: translate(calc(var(--holiday-px, 0) * 1.5px), calc(var(--holiday-py, 0) * 1.5px));
+}
+
+.ndm-layer--mid {
+  z-index: 2;
+  transform: translate(calc(var(--holiday-px, 0) * 4px), calc(var(--holiday-py, 0) * 4px));
+}
+
+.ndm-layer--fg {
+  z-index: 3;
+  transform: translate(calc(var(--holiday-px, 0) * 6.5px), calc(var(--holiday-py, 0) * 6.5px));
+}
+
+/* ---- skyline: ảnh thật, đứng yên hoàn toàn (không animate, giống Dinh Độc
+   Lập ở VietnamFlagMotif). Ảnh đã tự có màu đỏ/vàng riêng nên không cần fill
+   — opacity cao hơn silhouette vẽ tay trước đây (giờ là tranh thật, để mờ
+   quá thì phí chi tiết), nhưng vẫn đứng sau lá cờ/sao về mặt thị giác. ---- */
+.ndm-skyline {
+  opacity: 0.4;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.2));
+}
+
+/* ---- lá cờ: không vẽ cột, chỉ vải deform quanh 1 điểm neo vô hình (poleX
+   trong .ts, dùng làm transform-origin) — đứng yên tuyệt đối. Loop 3.6s theo
+   đúng spec (3-4 giây), mềm/tự nhiên (ease-in-out), KHÔNG gradient — fill là
+   currentColor (đỏ Việt Nam đặt ở :host). ---- */
+.ndm-flag {
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.25));
+}
+
+.ndm-flag-strip {
+  fill: currentColor;
+  animation-name: ndmFlagWave;
+  animation-duration: 3.6s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+/* Bóng lá cờ — cùng animation với dải vải thật nhưng lệch xuống/phải và mờ
+   đen, tạo cảm giác cờ nổi khối phía trên nền. */
+.ndm-flag-shadow {
+  fill: #1a0605;
+  opacity: 0.2;
+  filter: blur(2px);
+  transform: translate(2.5px, 3.5px);
+}
+
+.ndm-flag-shadow rect {
+  fill: currentColor;
+  animation-name: ndmFlagWave;
+  animation-duration: 3.6s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+/* ---- sao vàng lớn (hero, trên lá cờ): translateY + rotateZ nhẹ + scale,
+   KHÔNG xoay 360°, KHÔNG glow mạnh (chỉ drop-shadow mềm). ---- */
+.ndm-star {
+  animation: ndmStarFloat 5s ease-in-out infinite;
+  transform-origin: 0px 0px;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.35));
+}
+
+.ndm-star-main {
+  fill: #ffcd00;
+}
+
+.ndm-star-shadow {
+  fill: #b8860b;
+  opacity: 0.55;
+}
+
+/* ---- sao vàng nhỏ rải có chủ đích: fade rất nhẹ, KHÔNG nhấp nháy mạnh.
+   --ndm-star-min/max gán qua style ở template — mỗi sao biên độ/nhịp riêng. ---- */
+.ndm-mini-star {
+  fill: #ffd54f;
+  animation-name: ndmStarFade;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+/* ---- chim bồ câu: ẢNH THẬT (cùng file dove-flying.png đang dùng ở 30/4 —
+   VietnamFlagMotif), không còn path vẽ tay. Opacity riêng từng con đọc từ
+   --ndm-dove-op (gán qua [style.--ndm-dove-op] trong template) — PHẢI là
+   custom property chứ không phải opacity trực tiếp, vì keyframe cần dùng nó
+   làm giá trị "hiện rõ" ở giữa quỹ đạo trong lúc 0%/100% vẫn là opacity:0 (kỹ
+   thuật giống hệt .vfm-dove ở VietnamFlagMotif — mờ dần ở hai đầu quỹ đạo
+   thay vì giật hình khi animation lặp lại từ đầu). Bay MỘT CHIỀU, không lượn
+   qua lại, mỗi con tốc độ/pha khác nhau qua animation-duration/delay riêng. ---- */
+.ndm-dove-image {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.ndm-dove {
+  animation-name: ndmDoveFly;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  transform-origin: 0px 0px;
+}
+
+/* ---- ruy băng đỏ mềm: đường cong lớn, KHÔNG gradient, không che chữ (opacity
+   thấp, nằm sau mọi thứ khác). Chuyển động cực chậm theo đúng spec. ---- */
+.ndm-ribbon {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 7;
+  stroke-linecap: round;
+  opacity: 0.22;
+  animation: ndmRibbonFlow 13s ease-in-out infinite;
+}
+
+.ndm-ribbon--soft {
+  stroke-width: 4.5;
+  opacity: 0.12;
+  animation-duration: 17s;
+  animation-direction: reverse;
+}
+
+/* ---- particle vàng/đỏ, số lượng ít theo spec (không được "quá nhiều particle") ---- */
+.ndm-particle {
+  fill: currentColor;
+  animation-name: ndmParticleDriftRight;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.ndm-particle--gold {
+  fill: #ffd54f;
+}
+
+.ndm-particle--reverse {
+  animation-name: ndmParticleDriftLeft;
+}
+
+/* ================= keyframes ================= */
+
+@keyframes ndmFlagWave {
+  0%,
+  100% {
+    transform: skewX(calc(var(--ndm-amp) * -0.14deg));
+  }
+  50% {
+    transform: skewX(calc(var(--ndm-amp) * 0.14deg));
+  }
+}
+
+@keyframes ndmStarFloat {
+  0%,
+  100% {
+    transform: translateY(-4px) rotateZ(-1deg) scale(0.98);
+  }
+  50% {
+    transform: translateY(4px) rotateZ(1deg) scale(1.02);
+  }
+}
+
+@keyframes ndmStarFade {
+  0%,
+  100% {
+    opacity: var(--ndm-star-min);
+  }
+  50% {
+    opacity: var(--ndm-star-max);
+  }
+}
+
+/* Bay một chiều, mờ dần ở hai đầu quỹ đạo (opacity 0 → var(--ndm-dove-op) →
+   0) thay vì lượn qua lại tại chỗ — giống hệt kỹ thuật vfmDoveFlyAcross ở
+   VietnamFlagMotif (30/4), để lúc animation lặp lại từ đầu (translate nhảy
+   ngược về 0px) con chim đang trong suốt, không bị giật hình. */
+@keyframes ndmDoveFly {
+  0% {
+    transform: translate(0px, 0px);
+    opacity: 0;
+  }
+  10% {
+    opacity: var(--ndm-dove-op);
+  }
+  50% {
+    transform: translate(70px, -8px);
+  }
+  90% {
+    opacity: var(--ndm-dove-op);
+  }
+  100% {
+    transform: translate(140px, 2px);
+    opacity: 0;
+  }
+}
+
+@keyframes ndmRibbonFlow {
+  0%,
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    transform: translateX(-6px) translateY(3px);
+  }
+}
+
+@keyframes ndmParticleDriftRight {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(20px, -12px);
+    opacity: 0;
+  }
+}
+
+@keyframes ndmParticleDriftLeft {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-20px, -10px);
+    opacity: 0;
+  }
+}
+
+/* ---- dark mode (chế độ chính): giữ đỏ sẫm/vàng ấm/trắng nhẹ, KHÔNG neon,
+   KHÔNG glow mạnh — chỉ đậm bóng đổ + hạ opacity nền một chút. ---- */
+:host-context(.dark) .ndm-skyline {
+  opacity: 0.5;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+}
+
+:host-context(.dark) .ndm-flag {
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.55));
+}
+
+:host-context(.dark) .ndm-star {
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+}
+
+:host-context(.dark) .ndm-dove-image {
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ndm-flag-strip,
+  .ndm-flag-shadow rect,
+  .ndm-star,
+  .ndm-mini-star,
+  .ndm-dove,
+  .ndm-ribbon,
+  .ndm-ribbon--soft,
+  .ndm-particle {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .ndm-particle {
+    opacity: 0.3 !important;
+  }
+
+  .ndm-mini-star {
+    opacity: 0.2 !important;
+  }
+
+  /* Không có animation thì opacity không tự set qua keyframe nữa — đọc thẳng
+     từ --ndm-dove-op (đã gán qua template) để chim vẫn hiện đúng độ mờ đã
+     định thay vì rơi về mặc định opacity:1. */
+  .ndm-dove {
+    opacity: var(--ndm-dove-op) !important;
+  }
+}

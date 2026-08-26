@@ -128,7 +128,7 @@ export class TimeGridView {
       const dayEvents = this.store
         .visibleEvents()
         .filter((e) => !e.allDay && isSameDay(e.start, day));
-      map.set(toDateInputValue(day), layoutDayEvents(dayEvents, HOUR_HEIGHT));
+      map.set(toDateInputValue(day), layoutDayEvents(dayEvents, HOUR_HEIGHT, day));
     }
     return map;
   });

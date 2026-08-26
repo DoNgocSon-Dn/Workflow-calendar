@@ -27,7 +27,16 @@
         }
 
         <div class="day-number-header">
-          <span class="day-number" [class.today]="isToday(day)">{{ day.getDate() }}</span>
+          <span
+            class="day-number"
+            [class.today]="isToday(day)"
+            [class.national-day-focus]="holiday?.id === 'national-day'"
+          >
+            {{ day.getDate() }}
+            @if (holiday?.id === 'national-day') {
+              <span class="national-day-star" aria-hidden="true">★</span>
+            }
+          </span>
           @if (holiday; as h) {
             <span class="holiday-badge" [title]="holidayTooltip(day)" [attr.aria-label]="holidayTooltip(day)">
               {{ h.name }}

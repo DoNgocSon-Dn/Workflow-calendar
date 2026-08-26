@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsISO8601,
@@ -5,7 +6,9 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  ValidateNested,
 } from 'class-validator';
+import { RecurrenceRuleDto } from './recurrence-rule.dto';
 
 export class CreateEventDto {
   @IsUUID()
@@ -31,4 +34,13 @@ export class CreateEventDto {
 
   @IsBoolean()
   allDay!: boolean;
+
+  @IsOptional()
+  @IsString()
+  meetLink?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => RecurrenceRuleDto)
+  recurrenceRule?: RecurrenceRuleDto;
 }

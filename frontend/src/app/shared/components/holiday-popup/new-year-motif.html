@@ -1,0 +1,122 @@
+<div class="nym-scene">
+  <!-- Lớp 1: nền — skyline rất mờ, 1 pháo hoa nhỏ/xa nhất, spark chậm/mờ. -->
+  <svg class="nym-layer nym-layer--bg" viewBox="0 0 200 160" preserveAspectRatio="xMaxYMin meet" aria-hidden="true">
+    <g class="nym-skyline">
+      <rect x="6" y="126" width="12" height="34" />
+      <rect x="24" y="108" width="9" height="52" />
+      <polygon points="38,160 38,98 46,88 54,98 54,160" />
+      <rect x="60" y="120" width="15" height="40" />
+      <rect x="82" y="104" width="8" height="56" />
+    </g>
+
+    @let bgFw = fireworks[2];
+    <g [attr.transform]="'translate(' + bgFw.cx + ',' + bgFw.cy + ')'">
+      <g
+        class="nym-firework nym-firework--blue"
+        [style.animation-duration.s]="bgFw.duration"
+        [style.animation-delay.s]="bgFw.delay"
+      >
+        @for (angle of fireworkRayAngles; track $index) {
+          <line x1="0" y1="0" x2="0" [attr.y2]="-bgFw.radius" [attr.transform]="'rotate(' + angle + ')'" />
+        }
+        <circle class="nym-firework-core" r="1.4" />
+      </g>
+    </g>
+
+    @for (p of bgSparks; track $index) {
+      <circle
+        class="nym-spark"
+        [class.nym-spark--gold]="p.tone === 'gold'"
+        [attr.cx]="p.left * 2"
+        [attr.cy]="p.top"
+        [attr.r]="p.size / 2"
+        [style.--nym-drift]="p.drift"
+        [style.opacity]="p.opacity"
+        [style.animation-duration.s]="p.duration"
+        [style.animation-delay.s]="p.delay"
+      />
+    }
+  </svg>
+
+  <!-- Lớp 2: giữa — đồng hồ giao thừa (12h, đứng yên, chỉ quầng sáng ở mốc 12
+       pulse nhẹ) + 1 pháo hoa tầm trung + spark. -->
+  <svg class="nym-layer nym-layer--mid" viewBox="0 0 200 160" preserveAspectRatio="xMaxYMin meet" aria-hidden="true">
+    <g [attr.transform]="'translate(' + clockCx + ',' + clockCy + ')'">
+      <circle class="nym-clock-face" r="30" />
+      <circle class="nym-clock-rim" r="30" />
+
+      @for (angle of clockTicks; track $index) {
+        <line class="nym-clock-tick" x1="0" y1="-27" x2="0" y2="-23" [attr.transform]="'rotate(' + angle + ')'" />
+      }
+
+      <!-- Kim giờ + kim phút CHỒNG THẲNG lên nhau tại đúng 12h — khoảnh khắc
+           giao thừa, không phải đồng hồ đang chạy nên không animate quay. -->
+      <line class="nym-clock-hand-hour" x1="0" y1="0" x2="0" y2="-13.5" />
+      <line class="nym-clock-hand-minute" x1="0" y1="0" x2="0" y2="-21.6" />
+      <circle class="nym-clock-pin" r="2.4" />
+
+      <!-- Quầng sáng ở mốc 12 — chỉ animate opacity (không transform), nên
+           không cần tách lớp tĩnh/động như các phần tử khác trong file này. -->
+      <circle class="nym-clock-glow" cx="0" cy="-30" r="4.5" />
+    </g>
+
+    @let midFw = fireworks[1];
+    <g [attr.transform]="'translate(' + midFw.cx + ',' + midFw.cy + ')'">
+      <g
+        class="nym-firework nym-firework--white"
+        [style.animation-duration.s]="midFw.duration"
+        [style.animation-delay.s]="midFw.delay"
+      >
+        @for (angle of fireworkRayAngles; track $index) {
+          <line x1="0" y1="0" x2="0" [attr.y2]="-midFw.radius" [attr.transform]="'rotate(' + angle + ')'" />
+        }
+        <circle class="nym-firework-core" r="1.5" />
+      </g>
+    </g>
+
+    @for (p of midSparks; track $index) {
+      <circle
+        class="nym-spark"
+        [class.nym-spark--gold]="p.tone === 'gold'"
+        [attr.cx]="p.left * 2"
+        [attr.cy]="p.top"
+        [attr.r]="p.size / 2"
+        [style.--nym-drift]="p.drift"
+        [style.opacity]="p.opacity"
+        [style.animation-duration.s]="p.duration"
+        [style.animation-delay.s]="p.delay"
+      />
+    }
+  </svg>
+
+  <!-- Lớp 3: tiền cảnh — 1 pháo hoa gần/lớn nhất + spark rõ nhất. -->
+  <svg class="nym-layer nym-layer--fg" viewBox="0 0 200 160" preserveAspectRatio="xMaxYMin meet" aria-hidden="true">
+    @let fgFw = fireworks[0];
+    <g [attr.transform]="'translate(' + fgFw.cx + ',' + fgFw.cy + ')'">
+      <g
+        class="nym-firework nym-firework--gold"
+        [style.animation-duration.s]="fgFw.duration"
+        [style.animation-delay.s]="fgFw.delay"
+      >
+        @for (angle of fireworkRayAngles; track $index) {
+          <line x1="0" y1="0" x2="0" [attr.y2]="-fgFw.radius" [attr.transform]="'rotate(' + angle + ')'" />
+        }
+        <circle class="nym-firework-core" r="1.8" />
+      </g>
+    </g>
+
+    @for (p of fgSparks; track $index) {
+      <circle
+        class="nym-spark"
+        [class.nym-spark--gold]="p.tone === 'gold'"
+        [attr.cx]="p.left * 2"
+        [attr.cy]="p.top"
+        [attr.r]="p.size / 2"
+        [style.--nym-drift]="p.drift"
+        [style.opacity]="p.opacity"
+        [style.animation-duration.s]="p.duration"
+        [style.animation-delay.s]="p.delay"
+      />
+    }
+  </svg>
+</div>

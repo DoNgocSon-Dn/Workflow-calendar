@@ -1,4 +1,5 @@
 import { CreateEventDto } from './dto/create-event.dto';
+import { RecurrenceRuleDto } from './dto/recurrence-rule.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 
 export interface EventRow {
@@ -14,6 +15,9 @@ export interface EventRow {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  meet_link: string | null;
+  series_id: string | null;
+  recurrence_rule: RecurrenceRuleDto | null;
 }
 
 export interface EventDto {
@@ -26,6 +30,9 @@ export interface EventDto {
   end: string;
   allDay: boolean;
   deletedAt?: string;
+  meetLink?: string;
+  seriesId?: string;
+  recurrenceRule?: RecurrenceRuleDto;
 }
 
 export function toEventDto(row: EventRow): EventDto {
@@ -39,12 +46,16 @@ export function toEventDto(row: EventRow): EventDto {
     end: row.end_at,
     allDay: row.all_day,
     deletedAt: row.deleted_at ?? undefined,
+    meetLink: row.meet_link ?? undefined,
+    seriesId: row.series_id ?? undefined,
+    recurrenceRule: row.recurrence_rule ?? undefined,
   };
 }
 
 export function toEventInsertRow(
   dto: CreateEventDto,
   createdBy: string,
+  series?: { seriesId: string; recurrenceRule: RecurrenceRuleDto | null },
 ): Record<string, unknown> {
   return {
     calendar_id: dto.calendarId,
@@ -55,6 +66,9 @@ export function toEventInsertRow(
     end_at: dto.end,
     all_day: dto.allDay,
     created_by: createdBy,
+    meet_link: dto.meetLink ?? null,
+    series_id: series?.seriesId ?? null,
+    recurrence_rule: series?.recurrenceRule ?? null,
   };
 }
 
@@ -67,6 +81,7 @@ export function toEventUpdateRow(dto: UpdateEventDto): Record<string, unknown> {
   if (dto.start !== undefined) row['start_at'] = dto.start;
   if (dto.end !== undefined) row['end_at'] = dto.end;
   if (dto.allDay !== undefined) row['all_day'] = dto.allDay;
+  if (dto.meetLink !== undefined) row['meet_link'] = dto.meetLink;
   return row;
 }
 

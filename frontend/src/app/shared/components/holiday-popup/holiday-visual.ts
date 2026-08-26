@@ -3,6 +3,9 @@ import { HolidayComposition, HolidayTheme } from '../../../models/holiday-theme.
 import { TetBranchMotif } from './tet-branch-motif';
 import { DongSonDrumMotif } from './dong-son-drum-motif';
 import { VietnamFlagMotif } from './vietnam-flag-motif';
+import { LaborDayMotif } from './labor-day-motif';
+import { NationalDayMotif } from './national-day-motif';
+import { NewYearMotif } from './new-year-motif';
 
 /**
  * Renders the layered "scene" (background glow → decorative layer → focal
@@ -15,7 +18,7 @@ import { VietnamFlagMotif } from './vietnam-flag-motif';
   templateUrl: './holiday-visual.html',
   styleUrl: './holiday-visual.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TetBranchMotif, DongSonDrumMotif, VietnamFlagMotif],
+  imports: [TetBranchMotif, DongSonDrumMotif, VietnamFlagMotif, LaborDayMotif, NationalDayMotif, NewYearMotif],
 })
 export class HolidayVisual {
   readonly composition = input.required<HolidayComposition>();

@@ -47,7 +47,19 @@ export class EventsController {
     @CurrentUser() user: User,
     @Body() dto: CreateEventDto,
   ) {
+    if (dto.recurrenceRule) {
+      return this.eventsService.createSeries(supabase, dto, user.id);
+    }
     return this.eventsService.create(supabase, dto, user.id);
+  }
+
+  @Post('series')
+  createSeries(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Body() dto: CreateEventDto,
+  ) {
+    return this.eventsService.createSeries(supabase, dto, user.id);
   }
 
   @Post('check-conflicts')
@@ -88,15 +100,42 @@ export class EventsController {
   @Patch(':id')
   update(
     @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
     @Param('id') id: string,
     @Body() dto: UpdateEventDto,
   ) {
-    return this.eventsService.update(supabase, id, dto);
+    return this.eventsService.update(supabase, id, dto, user.id);
+  }
+
+  @Patch(':id/series')
+  updateSeries(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Query('scope') scope: string,
+    @Body() dto: UpdateEventDto,
+  ) {
+    return this.eventsService.updateSeries(
+      supabase,
+      id,
+      dto,
+      scope === 'all' ? 'all' : 'following',
+      user.id,
+    );
   }
 
   @Delete(':id')
   remove(@CurrentSupabase() supabase: SupabaseClient, @Param('id') id: string) {
     return this.eventsService.remove(supabase, id);
+  }
+
+  @Delete(':id/series')
+  removeSeries(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @Param('id') id: string,
+    @Query('scope') scope: string,
+  ) {
+    return this.eventsService.removeSeries(supabase, id, scope === 'all' ? 'all' : 'following');
   }
 
   @Post(':id/restore')

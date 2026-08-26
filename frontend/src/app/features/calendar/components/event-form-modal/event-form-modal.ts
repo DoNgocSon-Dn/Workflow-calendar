@@ -24,6 +24,7 @@ import {
   ConflictEvent,
   ReminderDraft,
   ReminderType,
+  SeriesEditScope,
 } from '../../models/calendar.models';
 import {
   addDays,
@@ -36,6 +37,15 @@ import {
 } from '../../utils/date-utils';
 import { CommentsSection } from '../comments-section/comments-section';
 import { TimePicker } from '../time-picker/time-picker';
+import { DatePicker } from '../date-picker/date-picker';
+import {
+  RecurrenceEndType,
+  RecurrenceOption,
+  RecurrenceRule,
+  RecurrenceUnit,
+  buildPresetOptions,
+  describeRecurrence,
+} from '../../utils/recurrence';
 
 function extractErrorMessage(err: unknown, fallback: string): string {
   if (err && typeof err === 'object' && 'error' in err) {
@@ -78,7 +88,7 @@ const DURATION_PRESETS: DurationPreset[] = [
   templateUrl: './event-form-modal.html',
   styleUrl: './event-form-modal.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, TimePicker, CommentsSection],
+  imports: [ReactiveFormsModule, TimePicker, DatePicker, CommentsSection],
 })
 export class EventFormModal {
   private readonly fb = inject(FormBuilder);
@@ -97,6 +107,20 @@ export class EventFormModal {
   readonly closed = output<void>();
 
   readonly durationPresets = DURATION_PRESETS;
+
+  /** Chỉ hiển thị — app chưa hỗ trợ đa múi giờ, đây luôn là múi giờ trình duyệt. */
+  protected readonly timezoneLabel = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  /** Đánh số thứ theo RecurrenceRule.byWeekdays (0 = CN .. 6 = Thứ Bảy). */
+  protected readonly weekdayChips: { value: number; labelKey: string }[] = [
+    { value: 1, labelKey: 'event.weekdayMon' },
+    { value: 2, labelKey: 'event.weekdayTue' },
+    { value: 3, labelKey: 'event.weekdayWed' },
+    { value: 4, labelKey: 'event.weekdayThu' },
+    { value: 5, labelKey: 'event.weekdayFri' },
+    { value: 6, labelKey: 'event.weekdaySat' },
+    { value: 0, labelKey: 'event.weekdaySun' },
+  ];
 
   /** Chỉ áp dụng khi tạo mới — sửa sự kiện có sẵn thì luôn ở chế độ 'event'. */
   readonly createMode = signal<'event' | 'todo'>('event');
@@ -139,6 +163,26 @@ export class EventFormModal {
   readonly remindersOpen = signal(false);
   readonly commentsOpen = signal(false);
 
+  /** Chỉ sửa được lúc TẠO MỚI — sự kiện đã có chỉ hiển thị tóm tắt quy tắc
+   *  lặp (xem describeRecurrence trong template), không cho đổi giữa chừng. */
+  readonly recurrenceRule = signal<RecurrenceRule | null>(null);
+  readonly repeatPickerOpen = signal(false);
+  readonly customRecurrenceOpen = signal(false);
+  readonly customInterval = signal(1);
+  readonly customUnit = signal<RecurrenceUnit>('week');
+  readonly customByWeekdays = signal<Set<number>>(new Set());
+  readonly customEndType = signal<RecurrenceEndType>('never');
+  readonly customUntil = signal('');
+  readonly customCount = signal(10);
+
+  /** Khách mời chờ mời khi đang TẠO MỚI sự kiện — chưa có eventId để gọi
+   *  inviteAttendee() ngay, nên gom lại rồi mời hàng loạt sau khi lưu xong. */
+  readonly pendingGuestEmails = signal<string[]>([]);
+  readonly pendingGuestEmailControl = new FormControl('', {
+    nonNullable: true,
+    validators: [Validators.email],
+  });
+
   /** Tóm tắt một dòng khi phần ngày/giờ đang thu gọn — vd "Thứ Bảy, 29 tháng 8, 9:00 – 10:00". */
   protected readonly dateTimeSummary = computed(() => {
     const v = this.form.getRawValue();
@@ -162,6 +206,12 @@ export class EventFormModal {
     return sameDay
       ? `${dateFmt.format(startDate)}, ${startLabel} – ${endLabel}`
       : `${dateFmt.format(startDate)}, ${startLabel} – ${dateFmt.format(endDate)}, ${endLabel}`;
+  });
+
+  /** Ẩn endDate picker khi start/end cùng ngày — tránh hiển thị ngày trùng lặp. */
+  protected readonly isSameDay = computed(() => {
+    const v = this.form.getRawValue();
+    return v.startDate === v.endDate;
   });
 
   readonly attendees = signal<Attendee[]>([]);
@@ -202,6 +252,7 @@ export class EventFormModal {
     endTime: ['10:00'],
     location: [''],
     description: [''],
+    meetLink: [''],
   });
 
   constructor() {
@@ -233,6 +284,17 @@ export class EventFormModal {
       // được ngay — thêm lời nhắc ngầm sau lưng người dùng còn tệ hơn không thêm.
       this.remindersOpen.set(!evt);
       this.commentsOpen.set(false);
+      this.recurrenceRule.set(evt?.seriesId ? evt.recurrenceRule ?? null : null);
+      this.repeatPickerOpen.set(false);
+      this.customRecurrenceOpen.set(false);
+      this.customInterval.set(1);
+      this.customUnit.set('week');
+      this.customByWeekdays.set(new Set());
+      this.customEndType.set('never');
+      this.customUntil.set('');
+      this.customCount.set(10);
+      this.pendingGuestEmails.set([]);
+      this.pendingGuestEmailControl.reset('');
       if (evt) {
         void this.loadAttendees(evt.id);
         void this.loadReminders(evt.id, evt.start);
@@ -254,6 +316,7 @@ export class EventFormModal {
           endTime: hhmm(evt.end),
           location: evt.location ?? '',
           description: evt.description ?? '',
+          meetLink: evt.meetLink ?? '',
         });
         return;
       }
@@ -272,6 +335,7 @@ export class EventFormModal {
         endTime: hhmm(end),
         location: '',
         description: '',
+        meetLink: '',
       });
     });
 
@@ -436,9 +500,145 @@ export class EventFormModal {
   generateVideoCallLink(): void {
     const roomName = 'Meet-' + Math.random().toString(36).substring(2, 9);
     const link = `https://meet.jit.si/${roomName}`;
-    const currentLoc = this.form.controls.location.value;
-    const newLoc = currentLoc ? `${currentLoc} | ${link}` : link;
-    this.form.patchValue({ location: newLoc });
+    this.form.patchValue({ meetLink: link });
+  }
+
+  removeMeetLink(): void {
+    this.form.patchValue({ meetLink: '' });
+  }
+
+  /** Đọc trực tiếp FormControl thay vì computed() — xem lý do ở selectedCalendar(). */
+  protected recurrenceOptions(): RecurrenceOption[] {
+    const startDateStr = this.form.controls.startDate.value;
+    if (!startDateStr) return [];
+    return buildPresetOptions(fromDateInputValue(startDateStr), this.i18n.locale());
+  }
+
+  protected editRecurrenceSummary(): string {
+    const evt = this.event();
+    if (!evt?.seriesId || !evt.recurrenceRule) return this.i18n.t('event.doesNotRepeat');
+    return describeRecurrence(evt.recurrenceRule, evt.start, this.i18n.locale());
+  }
+
+  protected createRecurrenceSummary(): string {
+    const rule = this.recurrenceRule();
+    if (!rule) return this.i18n.t('event.doesNotRepeat');
+    const startDateStr = this.form.controls.startDate.value;
+    const startDate = startDateStr ? fromDateInputValue(startDateStr) : this.store.today();
+    return describeRecurrence(rule, startDate, this.i18n.locale());
+  }
+
+  protected isRecurrenceOptionSelected(opt: RecurrenceOption): boolean {
+    const current = this.recurrenceRule();
+    if (!opt.rule && !current) return true;
+    if (!opt.rule || !current) return false;
+    return opt.rule.freq === current.freq;
+  }
+
+  selectRecurrenceOption(option: RecurrenceOption): void {
+    if (option.rule?.freq === 'custom') {
+      const existing = this.recurrenceRule();
+      const startDateStr = this.form.controls.startDate.value;
+      const startDate = startDateStr ? fromDateInputValue(startDateStr) : this.store.today();
+      const startWeekday = startDate.getDay();
+
+      if (existing?.freq === 'custom') {
+        this.customInterval.set(existing.interval ?? 1);
+        this.customUnit.set(existing.unit ?? 'week');
+        this.customByWeekdays.set(
+          new Set(existing.byWeekdays && existing.byWeekdays.length > 0 ? existing.byWeekdays : [startWeekday]),
+        );
+        this.customEndType.set(existing.endType ?? 'never');
+        this.customUntil.set(existing.until ?? toDateInputValue(addDays(startDate, 30)));
+        this.customCount.set(existing.count ?? 10);
+      } else {
+        this.customInterval.set(1);
+        this.customUnit.set('week');
+        this.customByWeekdays.set(new Set([startWeekday]));
+        this.customEndType.set('never');
+        this.customUntil.set(toDateInputValue(addDays(startDate, 30)));
+        this.customCount.set(10);
+      }
+      this.customRecurrenceOpen.set(true);
+      this.repeatPickerOpen.set(false);
+      return;
+    }
+    this.recurrenceRule.set(option.rule);
+    this.repeatPickerOpen.set(false);
+    this.customRecurrenceOpen.set(false);
+  }
+
+  toggleCustomWeekday(day: number): void {
+    this.customByWeekdays.update((set) => {
+      const next = new Set(set);
+      if (next.has(day)) next.delete(day);
+      else next.add(day);
+      return next;
+    });
+  }
+
+  applyCustomRecurrence(): void {
+    const endType = this.customEndType();
+    const startDateStr = this.form.controls.startDate.value;
+    const startDate = startDateStr ? fromDateInputValue(startDateStr) : this.store.today();
+    const startWeekday = startDate.getDay();
+
+    let byWeekdays: number[] | undefined;
+    if (this.customUnit() === 'week') {
+      const set = this.customByWeekdays();
+      byWeekdays = set.size > 0 ? Array.from(set) : [startWeekday];
+    }
+
+    const rule: RecurrenceRule = {
+      freq: 'custom',
+      interval: Math.max(1, this.customInterval() || 1),
+      unit: this.customUnit(),
+      byWeekdays,
+      endType,
+      until: endType === 'until' ? (this.customUntil() || toDateInputValue(addDays(startDate, 30))) : undefined,
+      count: endType === 'count' ? Math.max(1, this.customCount() || 1) : undefined,
+    };
+    this.recurrenceRule.set(rule);
+    this.customRecurrenceOpen.set(false);
+  }
+
+  cancelCustomRecurrence(): void {
+    this.customRecurrenceOpen.set(false);
+  }
+
+  addPendingGuest(): void {
+    const email = this.pendingGuestEmailControl.value.trim();
+    if (!email || this.pendingGuestEmailControl.invalid) {
+      this.pendingGuestEmailControl.markAsTouched();
+      return;
+    }
+    if (!this.pendingGuestEmails().includes(email)) {
+      this.pendingGuestEmails.update((list) => [...list, email]);
+    }
+    this.pendingGuestEmailControl.reset('');
+  }
+
+  removePendingGuest(email: string): void {
+    this.pendingGuestEmails.update((list) => list.filter((e) => e !== email));
+  }
+
+  protected guestCount(): number {
+    return this.event() ? this.attendees().length : this.pendingGuestEmails().length;
+  }
+
+  /** Hỏi phạm vi áp dụng khi sửa/xoá một lần lặp thuộc chuỗi lặp lại. Trả về
+   *  null nếu người dùng huỷ — gọi nơi phải dừng lại, không lưu/xoá gì cả. */
+  private async resolveSeriesScope(title: string, message: string): Promise<SeriesEditScope | null> {
+    const choice = await this.dialog.choice(
+      message,
+      [
+        { value: 'this', label: this.i18n.t('event.scopeThis') },
+        { value: 'following', label: this.i18n.t('event.scopeFollowing') },
+        { value: 'all', label: this.i18n.t('event.scopeAll') },
+      ],
+      { title },
+    );
+    return choice as SeriesEditScope | null;
   }
 
   async save(): Promise<void> {
@@ -488,17 +688,46 @@ export class EventFormModal {
       end,
       location: v.location.trim() || undefined,
       description: v.description.trim() || undefined,
+      meetLink: v.meetLink.trim() || undefined,
     };
+
+    const current = this.event();
+    let scope: SeriesEditScope = 'this';
+    if (current?.seriesId) {
+      const resolved = await this.resolveSeriesScope(
+        this.i18n.t('event.editScopeTitle'),
+        this.i18n.t('event.editScopeMessage'),
+      );
+      if (!resolved) return; // Người dùng huỷ — không lưu, không đóng modal.
+      scope = resolved;
+    }
 
     this.saving.set(true);
     try {
-      const current = this.event();
       let eventId: string;
       if (current) {
-        await this.store.updateEvent(current.id, draft);
-        eventId = current.id;
+        if (current.seriesId) {
+          await this.store.updateEventSeries(current.id, draft, scope);
+          eventId = current.id;
+        } else if (this.recurrenceRule()) {
+          // Người dùng biến một sự kiện đơn lẻ thành chuỗi lặp: tạo chuỗi mới và xoá sự kiện cũ
+          const created = await this.store.createEvent(draft, this.recurrenceRule());
+          eventId = created.id;
+          await this.store.deleteEvent(current.id);
+        } else {
+          await this.store.updateEvent(current.id, draft);
+          eventId = current.id;
+        }
       } else {
-        eventId = (await this.store.createEvent(draft)).id;
+        const created = await this.store.createEvent(draft, this.recurrenceRule());
+        eventId = created.id;
+        for (const email of this.pendingGuestEmails()) {
+          try {
+            await this.store.inviteAttendee(eventId, email);
+          } catch {
+            // Sự kiện đã lưu là quan trọng nhất — bỏ qua lỗi mời từng khách lẻ.
+          }
+        }
       }
       await this.saveReminders(eventId);
       this.closed.emit();
@@ -593,9 +822,22 @@ export class EventFormModal {
     }
   }
 
-  remove(): void {
+  async remove(): Promise<void> {
     const current = this.event();
-    if (current) this.store.deleteEvent(current.id);
+    if (!current) {
+      this.closed.emit();
+      return;
+    }
+    if (current.seriesId) {
+      const scope = await this.resolveSeriesScope(
+        this.i18n.t('event.deleteScopeTitle'),
+        this.i18n.t('event.deleteScopeMessage'),
+      );
+      if (!scope) return; // Người dùng huỷ — không xoá, không đóng modal.
+      await this.store.deleteEventSeries(current.id, scope);
+    } else {
+      await this.store.deleteEvent(current.id);
+    }
     this.closed.emit();
   }
 

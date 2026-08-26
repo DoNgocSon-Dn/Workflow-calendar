@@ -1,6 +1,11 @@
 import { Injectable, signal } from '@angular/core';
 
-export type DialogKind = 'confirm' | 'alert' | 'prompt';
+export type DialogKind = 'confirm' | 'alert' | 'prompt' | 'choice';
+
+export interface DialogChoiceOption {
+  readonly value: string;
+  readonly label: string;
+}
 
 export interface DialogRequest {
   readonly kind: DialogKind;
@@ -10,6 +15,8 @@ export interface DialogRequest {
   readonly cancelLabel?: string;
   /** Sơn nút xác nhận màu đỏ — dùng cho hành động phá huỷ (xoá...). */
   readonly danger?: boolean;
+  /** Chỉ dùng khi kind = 'choice' — mỗi lựa chọn hiện thành một nút riêng. */
+  readonly options?: readonly DialogChoiceOption[];
 }
 
 /**
@@ -60,6 +67,27 @@ export class DialogService {
       this.inputValue.set(defaultValue);
       this.open({ kind: 'prompt', message, ...opts }, resolve as (value: unknown) => void);
     });
+  }
+
+  /** Hộp thoại nhiều lựa chọn (mỗi lựa chọn một nút) — vd phạm vi sửa/xoá một
+   *  lần lặp trong chuỗi lặp lại: "Chỉ sự kiện này" / "... và các sự kiện
+   *  sau" / "Tất cả sự kiện". Trả về `value` của nút được bấm, hoặc `null`
+   *  nếu người dùng huỷ (Esc / bấm ra ngoài). */
+  choice(
+    message: string,
+    options: readonly DialogChoiceOption[],
+    opts?: { title?: string },
+  ): Promise<string | null> {
+    return new Promise<string | null>((resolve) => {
+      this.open(
+        { kind: 'choice', message, options, ...opts },
+        resolve as (value: unknown) => void,
+      );
+    });
+  }
+
+  respondChoice(value: string | null): void {
+    this.resolve(value);
   }
 
   private open(request: DialogRequest, resolve: (value: unknown) => void): void {

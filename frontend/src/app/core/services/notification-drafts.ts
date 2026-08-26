@@ -273,6 +273,33 @@ export function eventUpdatedDraft(input: CalendarEventDraftInput): NotificationD
   };
 }
 
+export interface ConflictingEvent {
+  readonly id: string;
+  readonly title: string;
+}
+
+export interface EventConflictDraftInput {
+  readonly eventId: string;
+  readonly eventTitle: string;
+  readonly conflicts: readonly ConflictingEvent[];
+}
+
+export function eventConflictDraft(input: EventConflictDraftInput): NotificationDraft {
+  const [first, ...rest] = input.conflicts;
+  const withWhom = rest.length > 0 ? `"${first.title}" và ${rest.length} sự kiện khác` : `"${first.title}"`;
+  return {
+    // Tập ID sự kiện trùng thay đổi (thêm/bớt) mới báo tiếp; cùng một tập
+    // trùng lưu lại nhiều lần (vd sửa mô tả rồi lưu lại) không sinh thông báo
+    // mới.
+    id: `event-conflict-${input.eventId}-${shortHash([...input.conflicts].map((c) => c.id).sort().join(','))}`,
+    type: 'conflict',
+    title: 'Trùng lịch',
+    message: `"${input.eventTitle}" đang trùng giờ với ${withWhom}.`,
+    createdAt: new Date().toISOString(),
+    relatedId: input.eventId,
+  };
+}
+
 export function eventDeletedDraft(eventId: string, title: string | null): NotificationDraft {
   return {
     id: `event-deleted-${eventId}`,

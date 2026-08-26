@@ -11,6 +11,7 @@ import {
   attendeeStatusDraft,
   calendarInvitationDraft,
   calendarMemberJoinedDraft,
+  eventConflictDraft,
   eventCreatedDraft,
   eventsImportedDraft,
   eventDeletedDraft,
@@ -36,9 +37,11 @@ import {
   Note,
   Reminder,
   ReminderDraft,
+  SeriesEditScope,
   Todo,
   TodoList,
 } from '../models/calendar.models';
+import { RecurrenceRule } from '../utils/recurrence';
 import { TimeFormatService } from '../../../core/time-format/time-format-service';
 import { TimeFormat, addDays, clampToDay, formatTimeLabel, startOfDay } from '../utils/date-utils';
 import { matchScore } from '../utils/search-match';
@@ -87,6 +90,9 @@ interface EventApiDto {
   end: string;
   allDay: boolean;
   deletedAt?: string;
+  meetLink?: string;
+  seriesId?: string;
+  recurrenceRule?: RecurrenceRule;
 }
 
 interface ConflictApiDto {
@@ -270,6 +276,9 @@ function toCalendarEvent(dto: EventApiDto): CalendarEvent {
     end: new Date(dto.end),
     allDay: dto.allDay,
     deletedAt: dto.deletedAt ? new Date(dto.deletedAt) : undefined,
+    meetLink: dto.meetLink,
+    seriesId: dto.seriesId,
+    recurrenceRule: dto.recurrenceRule,
   };
 }
 
@@ -547,6 +556,13 @@ export class CalendarStore {
     this.realtime.on<{ id: string }>('event:deleted', (payload) =>
       this.handleRemoteDeleted(payload.id),
     );
+    this.realtime.on<{ calendarId: string; events: EventApiDto[] }>(
+      'events:bulk-updated',
+      (payload) => this.handleRemoteBulkUpdated(payload),
+    );
+    this.realtime.on<{ calendarId: string; ids: string[] }>('events:bulk-deleted', (payload) =>
+      this.handleRemoteBulkDeleted(payload),
+    );
     this.realtime.on<{ eventId: string; attendee: AttendeeApiDto }>(
       'attendee:invited',
       (payload) => this.handleAttendeeInvited(payload),
@@ -558,6 +574,10 @@ export class CalendarStore {
     this.realtime.on<{ reminderId: string; eventId: string; title: string; startAt: string }>(
       'reminder:fire',
       (payload) => this.handleReminderFire(payload),
+    );
+    this.realtime.on<{ event: EventApiDto; conflicts: ConflictApiDto[] }>(
+      'event:conflict',
+      (payload) => this.handleEventConflict(payload),
     );
     this.realtime.on<{ invite: CalendarInviteApiDto }>('calendar:invited', (payload) =>
       this.handleCalendarInvited(payload),
@@ -782,6 +802,46 @@ export class CalendarStore {
     this.notifications.ingest(eventDeletedDraft(id, title));
   }
 
+  /**
+   * Sửa hàng loạt lần lặp trong một chuỗi lặp lại (scope 'following'/'all').
+   * Không dùng notifyIfNotSelfOrigin() vì đó là thiết kế cho MỘT id — ở đây
+   * so khớp self-origin với TOÀN BỘ id trong lô, vì id được đánh dấu ở
+   * updateEventSeries() chỉ là lần lặp người dùng bấm sửa, không phải cả lô.
+   */
+  private handleRemoteBulkUpdated(payload: { calendarId: string; events: EventApiDto[] }): void {
+    const events = payload.events ?? [];
+    for (const dto of events) this.upsertEvent(toCalendarEvent(dto));
+    if (events.length === 0) return;
+
+    const isSelfOrigin = events.some((e) => this.selfOriginIds.has(e.id));
+    if (isSelfOrigin) {
+      for (const e of events) this.selfOriginIds.delete(e.id);
+      return;
+    }
+    this.notificationQueue.push({
+      title: 'Sự kiện lặp lại đã được cập nhật',
+      body: `${events.length} lần lặp đã được cập nhật.`,
+      kind: 'updated',
+    });
+  }
+
+  private handleRemoteBulkDeleted(payload: { calendarId: string; ids: string[] }): void {
+    const ids = payload.ids ?? [];
+    if (ids.length === 0) return;
+    this.events.update((list) => list.filter((e) => !ids.includes(e.id)));
+
+    const isSelfOrigin = ids.some((id) => this.selfOriginIds.has(id));
+    if (isSelfOrigin) {
+      for (const id of ids) this.selfOriginIds.delete(id);
+      return;
+    }
+    this.notificationQueue.push({
+      title: 'Sự kiện lặp lại đã bị xoá',
+      body: `${ids.length} lần lặp đã bị xoá.`,
+      kind: 'deleted',
+    });
+  }
+
   private async handleAttendeeInvited(payload: {
     eventId: string;
     attendee: AttendeeApiDto;
@@ -853,6 +913,28 @@ export class CalendarStore {
     });
     this.notifications.ingest(
       calendarMemberJoinedDraft(payload.calendarId, calendar.name, payload.member.userId),
+    );
+  }
+
+  /** Backend đã lưu sự kiện xong rồi mới báo — CẢNH BÁO thuần, không chặn gì
+   *  cả. Bắn cả toast (popup) lẫn mục trong chuông thông báo. */
+  private handleEventConflict(payload: { event: EventApiDto; conflicts: ConflictApiDto[] }): void {
+    if (payload.conflicts.length === 0) return;
+    const [first, ...rest] = payload.conflicts;
+    const body =
+      rest.length > 0 ? `Trùng giờ với "${first.title}" và ${rest.length} sự kiện khác.` : `Trùng giờ với "${first.title}".`;
+    this.notificationQueue.push({
+      eventId: payload.event.id,
+      title: `Trùng lịch: ${payload.event.title}`,
+      body,
+      kind: 'updated',
+    });
+    this.notifications.ingest(
+      eventConflictDraft({
+        eventId: payload.event.id,
+        eventTitle: payload.event.title,
+        conflicts: payload.conflicts,
+      }),
     );
   }
 
@@ -1000,8 +1082,27 @@ export class CalendarStore {
     this.notifications.ingest(eventsImportedDraft({ batchId, count, calendarName }));
   }
 
-  async createEvent(draft: CalendarEventDraft): Promise<CalendarEvent> {
+  async createEvent(
+    draft: CalendarEventDraft,
+    recurrenceRule?: RecurrenceRule | null,
+  ): Promise<CalendarEvent> {
     try {
+      if (recurrenceRule) {
+        const created = await firstValueFrom(
+          this.http.post<EventApiDto[] | EventApiDto>(`${this.apiUrl}/events/series`, {
+            ...toEventApiPayload(draft),
+            recurrenceRule,
+          }),
+        );
+        const rawList = Array.isArray(created) ? created : [created];
+        const events = rawList.map(toCalendarEvent);
+        for (const event of events) {
+          this.markSelfOrigin(event.id);
+          this.upsertEvent(event);
+        }
+        return events[0];
+      }
+
       const created = await firstValueFrom(
         this.http.post<EventApiDto>(`${this.apiUrl}/events`, toEventApiPayload(draft)),
       );
@@ -1054,6 +1155,43 @@ export class CalendarStore {
           };
         }),
       );
+    }
+  }
+
+  /** scope 'this' chỉ chuyển thẳng sang updateEvent() hiện có — sự kiện
+   *  không thuộc chuỗi lặp lại nào thì hành vi giữ nguyên như trước. */
+  async updateEventSeries(
+    id: string,
+    changes: Partial<CalendarEventDraft>,
+    scope: SeriesEditScope,
+  ): Promise<void> {
+    if (scope === 'this') return this.updateEvent(id, changes);
+    this.markSelfOrigin(id);
+    try {
+      const updated = await firstValueFrom(
+        this.http.patch<EventApiDto[]>(
+          `${this.apiUrl}/events/${id}/series?scope=${scope}`,
+          toEventApiPayload(changes),
+        ),
+      );
+      for (const dto of updated) this.upsertEvent(toCalendarEvent(dto));
+    } catch (err) {
+      console.warn('Cập nhật chuỗi sự kiện lặp lại thất bại:', err);
+    }
+  }
+
+  /** scope 'this' chỉ chuyển thẳng sang deleteEvent() hiện có. */
+  async deleteEventSeries(id: string, scope: SeriesEditScope): Promise<void> {
+    if (scope === 'this') return this.deleteEvent(id);
+    this.markSelfOrigin(id);
+    try {
+      const result = await firstValueFrom(
+        this.http.delete<{ ids: string[] }>(`${this.apiUrl}/events/${id}/series?scope=${scope}`),
+      );
+      const ids = new Set(result.ids);
+      this.events.update((list) => list.filter((e) => !ids.has(e.id)));
+    } catch (err) {
+      console.warn('Xoá chuỗi sự kiện lặp lại thất bại:', err);
     }
   }
 

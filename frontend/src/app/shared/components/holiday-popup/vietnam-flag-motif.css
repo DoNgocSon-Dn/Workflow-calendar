@@ -28,17 +28,40 @@
   animation-direction: reverse;
 }
 
+/* ---- Dinh Độc Lập: giữ nguyên màu gốc của ảnh, đứng yên hoàn toàn ---- */
+.vfm-palace-image {
+  opacity: 0.96;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+}
 
+/* ---- cột cờ: CỐ ĐỊNH tuyệt đối, không animate ---- */
+.vfm-pole {
+  filter: drop-shadow(1px 0 1px rgba(0, 0, 0, 0.3));
+}
+
+.vfm-pole-highlight {
+  fill: #a8a29e;
+  opacity: 0.6;
+}
+
+.vfm-pole-cap {
+  fill: #d6d3d1;
+  stroke: #57534e;
+  stroke-width: 0.6;
+}
 
 /* ---- lá cờ ---- */
 .vfm-flag-strip {
   /* fill = gradient, gán qua [attr.fill] trong template (id riêng mỗi
      instance) — không đặt cứng ở đây. */
   animation-name: vfmFlagWave;
+  animation-duration: 6.4s;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
-  /* Biên độ riêng từng dải (--vfm-amp, gán qua style ở template) — dải sát
-     cột amp nhỏ, dải đuôi cờ amp lớn, đúng cơ học vải có gió. */
+  /* Biên độ + độ trễ riêng từng dải (--vfm-amp, animation-delay — gán qua
+     style ở template): dải sát cột amp nhỏ + delay 0, dải mép tự do amp lớn
+     + delay lớn nhất — sóng gió lan từ cột ra mép, không phải mọi dải rung
+     đồng thời. */
 }
 
 /* Bóng của cả lá cờ đổ xuống nền — cùng animation với dải vải thật (dùng lại
@@ -53,85 +76,49 @@
 
 .vfm-flag-shadow rect {
   animation-name: vfmFlagWave;
+  animation-duration: 6.4s;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
   fill: currentColor;
 }
 
-.vfm-flag-float {
-  transform-origin: 0px 0px;
-  /* Gió nhẹ lay động toàn bộ cờ nền — rất nhẹ, không làm giao diện liệt mắt */
-  animation: vfmFlagGust 14s ease-in-out infinite;
-  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.25));
-}
-
-/* ---- Dinh Độc Lập: ĐỨNG YÊN hoàn toàn. Không có animation. ---- */
-.vfm-palace-image {
-  opacity: 0.96;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
-}
-
-/* ============================================================
-   CộT Cờ MINI (trên nóc Dinh Độc Lập) — ĐỨNG YÊN
-   ============================================================ */
-.vfm-mini-pole {
-  stroke: #7a6040;
-  stroke-width: 0.7;
-  stroke-linecap: round;
-  /* Không có animation — cột phải cứng và ổn định */
-}
-
-/* ============================================================
-   LÁ Cờ MINI — flutter simulation
-   skewX() với transform-origin tại cạnh TRÁI (neo cột):
-   - Cạnh trái = CỐ ĐỊNH (x=-1 trong local coords)
-   - Cạnh phải (đuôi cờ) = dao động theo gió
-   KHÔNG dùng translateY. KHÔNG dùng skewY.
-   ============================================================ */
-.vfm-mini-flag {
-  fill: #da251d;
+/* ---- sao vàng nhỏ rải rác ---- */
+.vfm-mini-star {
+  fill: #ffd54f;
+  animation-name: vfmStarFade;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
-  /* transform-box: fill-box để transform-origin tính theo bounding-box phần tử */
-  transform-box: fill-box;
+  /* --vfm-star-min / --vfm-star-max gán qua style ở template — mỗi sao một
+     biên độ mờ/duration riêng, KHÔNG nhấp nháy mạnh, không hiệu ứng game. */
 }
 
-/* Dải 1: sát cột — neo tại cạnh TRÁI của rect (0% = x bên trái), giữa chiều cao (50%) */
-.vfm-mini-f1 {
-  transform-origin: left center;
-  animation-name: vfmMiniFlag1;
-  animation-duration: 3.6s;
-  animation-delay: 0s;
+/* ---- chim bồ câu hòa bình (ảnh thật) ---- */
+.vfm-dove-image {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
 }
 
-/* Dải 2: giữa cờ */
-.vfm-mini-f2 {
-  transform-origin: left center;
-  animation-name: vfmMiniFlag2;
-  animation-duration: 3.6s;
-  animation-delay: -0.4s;
+/* Giả lập vỗ cánh bằng khung hình — chỉ có 1 ảnh tĩnh (không có sprite nhiều
+   khung hình thật), nên "tạo frame" bằng cách nén/giãn ảnh theo trục dọc
+   quanh tâm ảnh (transform-origin khớp tâm ảnh đã canh ở x/y offset trong
+   template). scaleX giãn nhẹ bù lại lúc scaleY nén, giữ cảm giác thân chim
+   không bị "phẳng" khi cánh hạ xuống. Chu kỳ nhanh (0.5-0.7s, riêng từng
+   con qua d.flapDuration), HOÀN TOÀN TÁCH RIÊNG khỏi animation bay ngang ở
+   <g class="vfm-dove"> cha — hai nhịp độc lập, không cộng dồn sai lệch. */
+.vfm-dove-flap {
+  transform-origin: 0 0;
+  animation-name: vfmDoveFlap;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
 }
 
-/* Dải 3: đuôi cờ, biên độ lớn nhất */
-.vfm-mini-f3 {
-  transform-origin: left center;
-  animation-name: vfmMiniFlag3;
-  animation-duration: 3.6s;
-  animation-delay: -0.8s;
-}
-
-/* ============================================================
-   NGÔI SAO VÀNG — lắc nhẹ theo nhịp vải
-   ============================================================ */
-.vfm-mini-star-group {
-  animation: vfmMiniStarWarp 3.6s ease-in-out infinite;
-  animation-delay: -0.4s;
-  transform-box: fill-box;
-  transform-origin: left center;
-}
-
-.vfm-mini-star {
-  fill: #ffdd00;
+/* Bay MỘT CHIỀU trái→phải, liên tục lặp lại — mờ dần ở hai đầu quỹ đạo (vào
+   khung/ra khung) thay vì lượn qua lại tại chỗ. Với 4 con lệch pha nhau
+   (xem buildDoves trong .ts), luôn có ít nhất 1-2 con đang hiện rõ tại mọi
+   thời điểm dù từng con có lúc mờ ở mép quỹ đạo riêng của nó. */
+.vfm-dove {
+  animation-name: vfmDoveFlyAcross;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
 }
 
 /* ---- particle đỏ/vàng ---- */
@@ -162,52 +149,6 @@
   }
 }
 
-/* ============================================================
-   KEYFRAME CỜ MINI — 3 dải, neo cột TRÁI (transform-origin: 0% 50%)
-   Dùng skewX để chỉ mép PHẢI (tự do) dao động, cạnh TRÁI (gắn cột) CỐ ĐỊNH.
-   KHÔNG dùng translateY — tránh cờ trôi ra khỏi nóc nhà.
-   ============================================================ */
-
-/* Dải 1: sát cột — biên độ tối thiểu */
-@keyframes vfmMiniFlag1 {
-  0%, 100% { transform: skewX(-1.5deg); }
-  25%       { transform: skewX(2deg);   }
-  50%       { transform: skewX(1deg);   }
-  75%       { transform: skewX(-1deg);  }
-}
-
-/* Dải 2: giữa cờ — biên độ vừa */
-@keyframes vfmMiniFlag2 {
-  0%, 100% { transform: skewX(-3deg);  }
-  25%       { transform: skewX(4.5deg); }
-  50%       { transform: skewX(2.5deg); }
-  75%       { transform: skewX(-2deg);  }
-}
-
-/* Dải 3: đuôi cờ — biên độ lớn nhất */
-@keyframes vfmMiniFlag3 {
-  0%, 100% { transform: skewX(-6deg);  }
-  25%       { transform: skewX(8deg);   }
-  50%       { transform: skewX(5deg);   }
-  75%       { transform: skewX(-4deg);  }
-}
-
-/* Ngôi sao vàng: nghiêng nhẹ theo nhịp vải, vẫn nhận ra rõ */
-@keyframes vfmMiniStarWarp {
-  0%, 100% { transform: skewX(-2deg) scaleX(0.97); }
-  50%       { transform: skewX(2deg) scaleX(1.03);  }
-}
-
-@keyframes vfmFlagGust {
-  0%,
-  100% {
-    transform: rotate(-0.6deg);
-  }
-  50% {
-    transform: rotate(0.6deg);
-  }
-}
-
 @keyframes vfmRibbonFlow {
   0%,
   100% {
@@ -215,6 +156,53 @@
   }
   50% {
     transform: translateX(-6px) translateY(3px);
+  }
+}
+
+@keyframes vfmStarFade {
+  0%,
+  100% {
+    opacity: var(--vfm-star-min);
+  }
+  50% {
+    opacity: var(--vfm-star-max);
+  }
+}
+
+/* Quỹ đạo bay ngang cố định cho mọi con chim — mỗi con lệch pha/tốc độ/kích
+   thước/độ mờ riêng qua duration/delay/scale/opacity (xem template + .ts),
+   không phải copy y hệt nhau. translateY nhẹ ở giữa quỹ đạo tạo cảm giác
+   liệng, không phải bay thẳng cứng. */
+@keyframes vfmDoveFlyAcross {
+  0% {
+    transform: translate(0px, 0px);
+    opacity: 0;
+  }
+  10% {
+    opacity: var(--vfm-dove-op);
+  }
+  50% {
+    transform: translate(120px, -7px);
+  }
+  90% {
+    opacity: var(--vfm-dove-op);
+  }
+  100% {
+    transform: translate(240px, 2px);
+    opacity: 0;
+  }
+}
+
+/* Vỗ cánh — nén dọc (cánh hạ) + giãn ngang nhẹ, rồi trở lại bình thường
+   (cánh nâng). Nhanh và nhỏ (không quá 25% biến dạng) để vẫn đọc rõ là con
+   chim đang bay chứ không phải "nhấp nháy" kỳ lạ. */
+@keyframes vfmDoveFlap {
+  0%,
+  100% {
+    transform: scaleY(1) scaleX(1);
+  }
+  50% {
+    transform: scaleY(0.78) scaleX(1.06);
   }
 }
 
@@ -261,17 +249,14 @@
   opacity: 0.14;
 }
 
-:host-context(.dark) .vfm-palace-image {
-  filter: drop-shadow(0 1px 5px rgba(0, 0, 0, 0.6));
-}
-
 @media (prefers-reduced-motion: reduce) {
   .vfm-ribbon,
   .vfm-ribbon--soft,
   .vfm-flag-strip,
-  .vfm-flag-float,
-  .vfm-mini-flag,
-  .vfm-mini-star-group,
+  .vfm-flag-shadow rect,
+  .vfm-mini-star,
+  .vfm-dove,
+  .vfm-dove-flap,
   .vfm-particle {
     animation: none !important;
     transform: none !important;
@@ -279,5 +264,13 @@
 
   .vfm-particle {
     opacity: 0.35 !important;
+  }
+
+  .vfm-mini-star {
+    opacity: 0.2 !important;
+  }
+
+  .vfm-dove {
+    opacity: var(--vfm-dove-op) !important;
   }
 }

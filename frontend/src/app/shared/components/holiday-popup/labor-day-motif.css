@@ -1,0 +1,301 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* Kim loại xám ấm cho khung bánh răng/lưới kỹ thuật — công cụ lao động
+     (cờ lê/búa) dùng tông cam đất riêng bên dưới, không lẫn vào đây. */
+  color: #78716c;
+}
+
+.ldm-scene {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* 3 lớp độ sâu — mỗi lớp một <svg> riêng để tịnh tiến bằng px thật (không lệ
+   thuộc scale viewBox) khi appHolidayParallax ghi --holiday-px/py lên khung
+   cha (.holiday-backdrop). Không có var thì translate(calc(0 * Npx)) = 0,
+   nên trên mobile/reduced-motion (directive không gắn listener) layer đứng
+   yên tuyệt đối — không cần thêm điều kiện riêng ở đây. */
+.ldm-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.ldm-layer--bg {
+  z-index: 1;
+  transform: translate(calc(var(--holiday-px, 0) * 1.5px), calc(var(--holiday-py, 0) * 1.5px));
+}
+
+.ldm-layer--mid {
+  z-index: 2;
+  transform: translate(calc(var(--holiday-px, 0) * 3.5px), calc(var(--holiday-py, 0) * 3.5px));
+}
+
+.ldm-layer--fg {
+  z-index: 3;
+  transform: translate(calc(var(--holiday-px, 0) * 6px), calc(var(--holiday-py, 0) * 6px));
+}
+
+/* ---- lưới kỹ thuật + silhouette nhà máy (rất mờ, chỉ tạo chiều sâu) ---- */
+.ldm-grid {
+  opacity: 0.1;
+}
+
+.ldm-layer--bg pattern path {
+  stroke: currentColor;
+  opacity: 0.5;
+}
+
+.ldm-factory {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 2;
+  opacity: 0.1;
+}
+
+/* ---- bánh răng ---- */
+.ldm-gear-body,
+.ldm-gear-tooth,
+.ldm-gear-spoke {
+  fill: #78716c;
+}
+
+.ldm-gear-rim {
+  fill: none;
+  stroke: #44403c;
+  stroke-width: 1.6;
+  opacity: 0.55;
+}
+
+.ldm-gear-rim-hi {
+  fill: none;
+  stroke: #fafaf9;
+  stroke-width: 1;
+  opacity: 0.3;
+}
+
+.ldm-gear-hole {
+  fill: #3f3a37;
+  opacity: 0.85;
+}
+
+.ldm-gear {
+  filter: drop-shadow(2px 3px 3px rgba(0, 0, 0, 0.22));
+}
+
+/* Depth: bg mờ nhất, fg rõ/đậm nhất — cùng nguyên tắc particle depth. */
+.ldm-gear--a {
+  opacity: 0.55;
+}
+
+.ldm-gear--d {
+  opacity: 0.5;
+}
+
+.ldm-gear--b {
+  opacity: 0.82;
+}
+
+.ldm-gear--c {
+  opacity: 1;
+  filter: drop-shadow(2px 4px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Bánh răng chạm nhau LUÔN quay ngược chiều nhau — A↔B, B↔C. Dùng
+   animation-name/timing/iteration riêng (không dùng shorthand `animation`)
+   để animation-duration ở khối bên dưới ghi đè được mà không phụ thuộc thứ
+   tự khai báo trong file (giống cách vietnam-flag-motif tách animation-name
+   khỏi duration/delay). */
+.ldm-gear--cw {
+  animation-name: ldmSpinCW;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.ldm-gear--ccw {
+  animation-name: ldmSpinCCW;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.ldm-gear--a {
+  animation-duration: 14s;
+}
+
+.ldm-gear--b {
+  animation-duration: 10s;
+}
+
+.ldm-gear--c {
+  animation-duration: 8s;
+}
+
+.ldm-gear--d {
+  animation-duration: 12s;
+}
+
+/* Floating: cùng keyframe/duration trên mọi bánh răng (dù nằm ở 3 <svg> khác
+   nhau) nên trông như một cụm máy nổi lên chung nhịp — không ảnh hưởng logic
+   rotation vì đây là phần tử CHA bọc ngoài phần tử tự xoay. */
+.ldm-float {
+  animation: ldmFloat 5.5s ease-in-out infinite;
+}
+
+/* ---- mũ bảo hộ (nền) ---- */
+.ldm-hardhat {
+  fill: #ea580c;
+  opacity: 0.32;
+  animation: ldmHardhatSway 6.4s ease-in-out infinite;
+  transform-origin: 0px 0px;
+}
+
+/* ---- cờ lê (giữa) ---- */
+.ldm-wrench {
+  fill: #b45309;
+  filter: drop-shadow(1.5px 2px 2px rgba(0, 0, 0, 0.28));
+  animation: ldmWrenchSway 7.2s ease-in-out infinite;
+  transform-origin: 0px 0px;
+}
+
+/* ---- búa (tiền cảnh) ---- */
+.ldm-hammer {
+  fill: #9a3412;
+  filter: drop-shadow(2px 3px 3px rgba(0, 0, 0, 0.3));
+  animation: ldmHammerFloat 8.4s ease-in-out infinite;
+  transform-origin: 0px 0px;
+}
+
+/* ---- particle cơ khí (vuông/gạch, không hoa/tuyết/confetti) ---- */
+.ldm-particle {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  animation-name: ldmParticleDrift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.ldm-particle--bg {
+  color: #a8a29e;
+}
+
+.ldm-particle--mid {
+  color: #d97706;
+}
+
+.ldm-particle--fg {
+  color: #ea580c;
+}
+
+/* ================= keyframes ================= */
+
+@keyframes ldmSpinCW {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ldmSpinCCW {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes ldmFloat {
+  0%,
+  100% {
+    transform: translateY(-3px);
+  }
+  50% {
+    transform: translateY(3px);
+  }
+}
+
+@keyframes ldmWrenchSway {
+  0%,
+  100% {
+    transform: translateY(-4px) rotateZ(-1deg);
+  }
+  50% {
+    transform: translateY(4px) rotateZ(1deg);
+  }
+}
+
+@keyframes ldmHammerFloat {
+  0%,
+  100% {
+    transform: translateY(-3px) rotateZ(-0.6deg);
+  }
+  50% {
+    transform: translateY(3px) rotateZ(0.6deg);
+  }
+}
+
+@keyframes ldmHardhatSway {
+  0%,
+  100% {
+    transform: translateY(-3px) rotateZ(-0.8deg);
+  }
+  50% {
+    transform: translateY(3px) rotateZ(0.8deg);
+  }
+}
+
+@keyframes ldmParticleDrift {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(10px, -14px);
+    opacity: 0;
+  }
+}
+
+/* ---- dark mode: hạ opacity nền, giữ tiền cảnh rõ ---- */
+:host-context(.dark) .ldm-factory {
+  opacity: 0.14;
+}
+
+:host-context(.dark) .ldm-gear-rim-hi {
+  opacity: 0.2;
+}
+
+:host-context(.dark) .ldm-gear {
+  filter: drop-shadow(2px 3px 4px rgba(0, 0, 0, 0.5));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ldm-float,
+  .ldm-gear--cw,
+  .ldm-gear--ccw,
+  .ldm-hardhat,
+  .ldm-wrench,
+  .ldm-hammer,
+  .ldm-particle {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .ldm-particle {
+    opacity: 0.3 !important;
+  }
+}

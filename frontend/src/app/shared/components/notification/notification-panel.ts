@@ -34,7 +34,7 @@ const TABS: readonly { id: NotificationTabId; labelKey: string }[] = [
   { id: 'event', labelKey: 'notif.tabEvent' },
 ];
 
-const EVENT_RELATED_TYPES = new Set<AppNotification['type']>(['event_invitation', 'event_update', 'reminder']);
+const EVENT_RELATED_TYPES = new Set<AppNotification['type']>(['event_invitation', 'event_update', 'reminder', 'conflict']);
 
 /** Dưới ngưỡng này coi như người dùng vẫn đang ở đầu danh sách. */
 interface NotificationSection {

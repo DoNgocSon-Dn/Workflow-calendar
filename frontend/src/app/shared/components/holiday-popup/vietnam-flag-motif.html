@@ -1,32 +1,64 @@
 <svg class="vfm-scene" viewBox="0 0 200 160" preserveAspectRatio="xMaxYMin meet" aria-hidden="true">
   <defs>
-    <linearGradient [attr.id]="gradId" x1="0%" y1="0%" x2="100%" y2="100%">
+    <!-- gradientUnits="userSpaceOnUse" + toạ độ cố định theo TOÀN BỘ lá cờ
+         (không phải mặc định objectBoundingBox) — lá cờ vẽ bằng nhiều <rect>
+         dải dọc riêng, mỗi rect có bounding box RIÊNG; nếu để mặc định thì
+         gradient lặp lại y hệt trên từng dải, tạo hiệu ứng "rèm lá sách" sọc
+         ngang thay vì một lá cờ liền mạch. Cố định x1/x2 theo mép trái/phải
+         thật của lá cờ để mọi dải cùng chia sẻ MỘT gradient duy nhất. -->
+    <linearGradient
+      [attr.id]="gradId"
+      gradientUnits="userSpaceOnUse"
+      [attr.x1]="flagLeft"
+      [attr.y1]="flagTop"
+      [attr.x2]="flagRight"
+      [attr.y2]="flagBottom"
+    >
       <stop offset="0%" stop-color="#e8362c" />
       <stop offset="55%" stop-color="#da251d" />
       <stop offset="100%" stop-color="#b81d17" />
     </linearGradient>
+    <linearGradient [attr.id]="poleGradId" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#57534e" />
+      <stop offset="100%" stop-color="#292524" />
+    </linearGradient>
   </defs>
 
-  <!-- Dải ruy băng đỏ chảy phía sau, mỗi đoạn cong một nhịp riêng. -->
+  <!-- Dải ruy băng đỏ chảy phía sau, mỗi đoạn cong một nhịp riêng — mềm,
+       opacity thấp, chỉ gợi cảm giác chuyển động chứ không phải đường kẻ. -->
   <path class="vfm-ribbon" d="M-10 96 Q 50 70 95 92 T 210 78" />
   <path class="vfm-ribbon vfm-ribbon--soft" d="M-10 112 Q 55 92 100 108 T 210 100" />
 
-  <!-- Lá cờ — chia dải dọc đung đưa nhẹ nhàng, bóng đổ riêng tạo cảm giác nổi khối. -->
-  <g class="vfm-flag-float">
-    <g class="vfm-flag-shadow">
-      @for (s of strips; track $index) {
-        <rect
-          [attr.x]="s.x"
-          [attr.y]="flagTop"
-          [attr.width]="s.width"
-          [attr.height]="flagBottom - flagTop"
-          [style.--vfm-amp.px]="s.amplitude"
-          [style.animation-duration.s]="s.duration"
-          [style.animation-delay.s]="s.delay"
-          [style.transform-origin]="(s.x + s.width / 2) + 'px ' + ((flagTop + flagBottom) / 2) + 'px'"
-        />
-      }
-    </g>
+  <!-- Cột cờ — CỐ ĐỊNH tuyệt đối, không animate. Chỉ phần vải (bên dưới) mới
+       phấp phới; điểm gắn vải vào cột luôn đứng yên. -->
+  <rect
+    class="vfm-pole"
+    [attr.x]="poleX"
+    y="4"
+    width="4"
+    height="134"
+    rx="1.4"
+    [attr.fill]="'url(#' + poleGradId + ')'"
+  />
+  <rect class="vfm-pole-highlight" [attr.x]="poleX" y="4" width="1.1" height="134" rx="0.5" />
+  <circle class="vfm-pole-cap" [attr.cx]="poleX + 2" cy="4" r="3" />
+
+  <!-- Lá cờ — chia dải dọc, biên độ + độ trễ tăng dần từ cột ra mép tự do
+       (xem buildStrips trong .ts). Bóng đổ riêng tạo cảm giác nổi khối. -->
+  <g class="vfm-flag-shadow">
+    @for (s of strips; track $index) {
+      <rect
+        [attr.x]="s.x"
+        [attr.y]="flagTop"
+        [attr.width]="s.width"
+        [attr.height]="flagBottom - flagTop"
+        [style.--vfm-amp.px]="s.amplitude"
+        [style.animation-delay.ms]="s.delayMs"
+        [style.transform-origin]="poleX + 'px ' + (flagTop + flagBottom) / 2 + 'px'"
+      />
+    }
+  </g>
+  <g class="vfm-flag">
     @for (s of strips; track $index) {
       <rect
         class="vfm-flag-strip"
@@ -36,45 +68,81 @@
         [attr.width]="s.width"
         [attr.height]="flagBottom - flagTop"
         [style.--vfm-amp.px]="s.amplitude"
-        [style.animation-duration.s]="s.duration"
-        [style.animation-delay.s]="s.delay"
-        [style.transform-origin]="(s.x + s.width / 2) + 'px ' + ((flagTop + flagBottom) / 2) + 'px'"
+        [style.animation-delay.ms]="s.delayMs"
+        [style.transform-origin]="poleX + 'px ' + (flagTop + flagBottom) / 2 + 'px'"
       />
     }
+  </g>
 
-    <!-- Dinh Độc Lập — ĐỨNG YÊN hoàn toàn, không animate tòa nhà. -->
-    <g [attr.transform]="'translate(' + palaceX + ', 56)'">
-      <image
-        class="vfm-palace-image"
-        href="/assets/holidays/reunification/independence-palace.png"
-        x="-60"
-        y="-39.3"
-        width="120"
-        height="78.6"
-        preserveAspectRatio="xMidYMid meet"
-      />
+  <!-- Dinh Độc Lập — giữ MÀU GỐC của ảnh (không làm silhouette đen — người
+       dùng yêu cầu giữ nguyên màu), vẽ SAU lá cờ để nổi trên nền vải thay vì
+       bị các dải cờ (tô đặc) vẽ đè lên che mất. Đứng yên hoàn toàn, không
+       animate tòa nhà. Ảnh gốc (independence-palace.png, 560x367) có khoảng
+       trong suốt lớn phía trên và bên phải tòa nhà thật (tòa nhà chỉ chiếm
+       x:[0,446], y:[201,366] trong ảnh) — nếu canh giữa theo KHUNG ảnh thì
+       tòa nhà bị lệch xuống dưới/qua trái so với tâm lá cờ. x/y dưới đây
+       lệch bù để chính TÒA NHÀ (không phải khung ảnh) nằm đúng tâm lá cờ. -->
+  <g [attr.transform]="'translate(' + palaceX + ', ' + palaceY + ')'">
+    <image
+      class="vfm-palace-image"
+      href="/assets/holidays/reunification/independence-palace.png"
+      x="-47.79"
+      y="-60.75"
+      width="120"
+      height="78.6"
+      preserveAspectRatio="xMidYMid meet"
+    />
+  </g>
 
-      <!-- Cột cờ mini trên nóc Dinh — đứng yên tuyệt đối -->
-      <line class="vfm-mini-pole" x1="-1" y1="-39.3" x2="-1" y2="-51" />
+  <!-- Sao vàng nhỏ rải rác — điểm nhấn phụ, opacity thấp, fade rất chậm,
+       KHÔNG nhấp nháy mạnh. -->
+  @for (s of stars; track $index) {
+    <polygon
+      class="vfm-mini-star"
+      points="0,-47 11,-13 47,-13 18,8 29,42 0,21 -29,42 -18,8 -47,-13 -11,-13"
+      [attr.transform]="'translate(' + s.x + ',' + s.y + ') scale(' + s.scale + ')'"
+      [style.--vfm-star-min]="s.minOpacity"
+      [style.--vfm-star-max]="s.maxOpacity"
+      [style.animation-duration.s]="s.duration"
+      [style.animation-delay.s]="s.delay"
+    />
+  }
 
-      <!-- Lá cờ mini: 3 dải phập phồng, neo vào cột (x=-1), đuôi tự do (x tăng dần) -->
-      <!-- Dải 1: sát cột, biên độ nhỏ -->
-      <rect class="vfm-mini-flag vfm-mini-f1" x="-1" y="-51" width="5.2" height="5.2" rx="0" />
-      <!-- Dải 2: giữa -->
-      <rect class="vfm-mini-flag vfm-mini-f2" x="4.1" y="-51" width="4.8" height="5.2" rx="0" />
-      <!-- Dải 3: đuôi cờ, biên độ lớn nhất -->
-      <rect class="vfm-mini-flag vfm-mini-f3" x="8.7" y="-51" width="4.6" height="5.2" rx="0" />
-
-      <!-- Ngôi sao vàng nhỏ biến dạng theo vải (giữa cờ, khoảng x=5) -->
-      <g class="vfm-mini-star-group">
-        <polygon
-          class="vfm-mini-star"
-          points="0,-2.6 0.6,-0.8 2.5,-0.8 1,-0.3 1.5,1.5 0,0.4 -1.5,1.5 -1,-0.3 -2.5,-0.8 -0.6,-0.8"
-          transform="translate(5.5, -48.4)"
-        />
+  <!-- Chim bồ câu hòa bình — bay MỘT CHIỀU trái→phải (không lượn qua lại),
+       4 con, mỗi con kích thước/tốc độ/độ mờ/độ lệch pha khác nhau (xem
+       buildDoves trong .ts). Ảnh thật (161×186, nền trong suốt). Base
+       position đặt TĨNH trong <g> con; <g> ngoài chỉ animate translateX
+       (bay ngang) + translateY nhẹ (liệng) — animation không đè lên vị trí
+       đặt ban đầu. -->
+  @for (d of doves; track $index) {
+    <g
+      class="vfm-dove"
+      [style.--vfm-dove-op]="d.opacity"
+      [style.animation-duration.s]="d.duration"
+      [style.animation-delay.s]="d.delay"
+    >
+      <g [attr.transform]="'translate(' + d.baseX + ',' + d.baseY + ') scale(' + d.scale + ')' + (d.flip ? ' scale(-1,1)' : '')">
+        <!-- Vỗ cánh — không có sprite nhiều khung hình thật (chỉ 1 ảnh tĩnh
+             dove-flying.png) nên giả lập "frame" bằng cách nén/giãn ảnh theo
+             chiều dọc quanh tâm ảnh (transform-origin 0 0, đã canh giữa qua
+             x/y offset dưới), tách RIÊNG animation này khỏi animation bay
+             ngang ở <g> cha — vỗ cánh nhanh (0.5-0.7s), bay ngang chậm
+             (15-22s), hai nhịp độc lập không cộng dồn sai lệch nhau. Mỗi con
+             tốc độ vỗ hơi khác (d.flapDuration) để không đồng bộ như rập
+             khuôn. -->
+        <g class="vfm-dove-flap" [style.animation-duration.s]="d.flapDuration" [style.animation-delay.s]="d.delay">
+          <image
+            class="vfm-dove-image"
+            href="/assets/holidays/reunification/dove-flying.png"
+            x="-80"
+            y="-93"
+            width="161"
+            height="186"
+          />
+        </g>
       </g>
     </g>
-  </g>
+  }
 
   <!-- Particle đỏ/vàng bay chậm qua khung, một số trái→phải, một số ngược
        lại — foreground, nằm dưới event thật (z-index CSS ở nơi gọi lo). -->

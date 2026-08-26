@@ -192,6 +192,161 @@
   color: var(--color-text-secondary);
 }
 
+.allday-timezone-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.timezone-label {
+  font-size: 0.78rem;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+.repeat-readonly-label {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.repeat-options-list {
+  max-height: 14rem;
+  padding: 0.35rem;
+}
+
+.swatch-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.65rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.swatch-option-btn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.swatch-option-btn.active {
+  background: color-mix(in srgb, var(--holiday-accent) 15%, transparent);
+  color: var(--holiday-accent);
+  font-weight: 600;
+}
+
+.option-radio-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border-strong);
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.swatch-option-btn.active .option-radio-dot {
+  border-color: var(--holiday-accent);
+  background: var(--holiday-accent);
+  box-shadow: inset 0 0 0 2.5px var(--color-surface);
+}
+
+.custom-recurrence-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.6rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.custom-interval-input {
+  width: 3.5rem;
+}
+
+.weekday-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.weekday-chip {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.weekday-chip:hover {
+  background: var(--color-surface-hover);
+}
+
+.weekday-chip.active {
+  background: var(--holiday-accent);
+  border-color: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
+}
+
+.custom-recurrence-end {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.custom-count-input {
+  width: 3.5rem;
+}
+
+.custom-recurrence-actions {
+  justify-content: flex-end;
+}
+
+.chip-remove-btn {
+  border: none;
+  background: none;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: 0.2rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chip-remove-btn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.meet-link-row {
+  flex-wrap: nowrap;
+}
+
+.meet-link-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--holiday-accent);
+  text-decoration: none;
+  display: block;
+}
+
+.meet-link-value:hover {
+  text-decoration: underline;
+}
+
 .attendee-list {
   list-style: none;
   margin: 0;

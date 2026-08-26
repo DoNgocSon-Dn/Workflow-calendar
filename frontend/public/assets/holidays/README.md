@@ -23,3 +23,15 @@ giao diện.
 
 File `calendar/hinh/HINH-NEN-TET-1-1.jpg.webp` chưa dùng tới (chưa rõ gán cho
 lễ nào, `tet-nguyen-dan.jpg`/`new-year.jpg` đã có ảnh riêng rồi).
+
+## Ảnh thật ghép trong Holiday 3D Scene (không phải `backgroundImage`)
+
+Khác với bảng trên (ảnh mờ nền popup/lịch), ảnh dưới đây được ghép trực tiếp
+vào scene 3D sau lịch (`CalendarHolidayBackdrop`) qua thẻ SVG `<image>`, đứng
+yên hoàn toàn (không animate) — cùng quy ước với `bocau.png` phía trên:
+
+| File | Dùng ở | Component |
+| --- | --- | --- |
+| `reunification/independence-palace.png` | 30/4 — Dinh Độc Lập | `VietnamFlagMotif` |
+| `reunification/dove-flying.png` | 30/4 và 2/9 — chim bồ câu hòa bình (bay lượn, 2 scene dùng CHUNG file này) | `VietnamFlagMotif`, `NationalDayMotif` |
+| `national-day/skyline.png` | 2/9 — skyline Việt Nam (cột cờ Hà Nội, Dinh Độc Lập, cầu dây văng, nhà thờ Đức Bà...) | `NationalDayMotif` |

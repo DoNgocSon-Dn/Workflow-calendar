@@ -56,19 +56,24 @@
             d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
         </svg>
         <div class="field-content">
-          <label class="all-day-toggle">
-            <input type="checkbox" formControlName="allDay" />
-            {{ i18n.t('calendar.allDay') }}
-          </label>
+          <div class="allday-timezone-row">
+            <label class="all-day-toggle">
+              <input type="checkbox" formControlName="allDay" />
+              {{ i18n.t('calendar.allDay') }}
+            </label>
+            <span class="timezone-label">{{ timezoneLabel }}</span>
+          </div>
 
           @if (dateTimeOpen()) {
           <div class="row date-row">
-            <input class="date-input" type="date" lang="vi" formControlName="startDate" />
+            <app-date-picker formControlName="startDate" />
             @if (!form.controls.allDay.value) {
             <app-time-picker formControlName="startTime" [ariaLabel]="i18n.t('event.startTime')" />
             }
             <span class="to-label">{{ i18n.t('event.to') }}</span>
-            <input class="date-input" type="date" lang="vi" formControlName="endDate" />
+            @if (!isSameDay()) {
+            <app-date-picker formControlName="endDate" />
+            }
             @if (!form.controls.allDay.value) {
             <app-time-picker formControlName="endTime" [ariaLabel]="i18n.t('event.endTime')" />
             }
@@ -112,51 +117,95 @@
             }
           </div>
           }
+
+          <!-- Lặp lại -->
+          @if (!event() || !event()?.seriesId) {
+            @if (customRecurrenceOpen()) {
+              <div class="custom-recurrence-panel">
+                <div class="row custom-recurrence-interval-row">
+                  <span class="presets-label">{{ i18n.t('event.repeatEvery') }}</span>
+                  <input type="number" min="1" max="365" class="date-input custom-interval-input"
+                    [value]="customInterval()" (input)="customInterval.set($any($event.target).valueAsNumber || 1)" />
+                  <select class="date-input" [value]="customUnit()" (change)="customUnit.set($any($event.target).value)">
+                    <option value="day">{{ i18n.t('event.unitDay') }}</option>
+                    <option value="week">{{ i18n.t('event.unitWeek') }}</option>
+                    <option value="month">{{ i18n.t('event.unitMonth') }}</option>
+                    <option value="year">{{ i18n.t('event.unitYear') }}</option>
+                  </select>
+                </div>
+
+                @if (customUnit() === 'week') {
+                <div class="weekday-chip-row">
+                  @for (day of weekdayChips; track day.value) {
+                  <button type="button" class="weekday-chip" [class.active]="customByWeekdays().has(day.value)"
+                    (click)="toggleCustomWeekday(day.value)">
+                    {{ i18n.t(day.labelKey) }}
+                  </button>
+                  }
+                </div>
+                }
+
+                <div class="custom-recurrence-end">
+                  <span class="presets-label">{{ i18n.t('event.repeatEnds') }}</span>
+                  <label class="reminder-row">
+                    <input type="radio" name="recurrenceEndType" [checked]="customEndType() === 'never'"
+                      (change)="customEndType.set('never')" />
+                    {{ i18n.t('event.endsNever') }}
+                  </label>
+                  <label class="reminder-row">
+                    <input type="radio" name="recurrenceEndType" [checked]="customEndType() === 'until'"
+                      (change)="customEndType.set('until')" />
+                    {{ i18n.t('event.endsOn') }}
+                    @if (customEndType() === 'until') {
+                    <input type="date" class="date-input" [value]="customUntil()"
+                      (change)="customUntil.set($any($event.target).value)" />
+                    }
+                  </label>
+                  <label class="reminder-row">
+                    <input type="radio" name="recurrenceEndType" [checked]="customEndType() === 'count'"
+                      (change)="customEndType.set('count')" />
+                    {{ i18n.t('event.endsAfter') }}
+                    @if (customEndType() === 'count') {
+                    <input type="number" min="1" max="730" class="date-input custom-count-input"
+                      [value]="customCount()" (input)="customCount.set($any($event.target).valueAsNumber || 1)" />
+                    {{ i18n.t('event.occurrences') }}
+                    }
+                  </label>
+                </div>
+
+                <div class="row custom-recurrence-actions">
+                  <button type="button" class="text-btn" (click)="cancelCustomRecurrence()">{{ i18n.t('common.cancel') }}</button>
+                  <button type="button" class="primary-btn" (click)="applyCustomRecurrence()">{{ i18n.t('common.save') }}</button>
+                </div>
+              </div>
+            } @else if (repeatPickerOpen()) {
+              <button type="button" class="field-toggle has-value active-picker"
+                (click)="repeatPickerOpen.set(false)">
+                {{ createRecurrenceSummary() }} ▲
+              </button>
+              <div class="calendar-swatches repeat-options-list">
+                @for (opt of recurrenceOptions(); track opt.label) {
+                <button type="button" class="swatch-option-btn"
+                  [class.active]="isRecurrenceOptionSelected(opt)"
+                  (click)="selectRecurrenceOption(opt)">
+                  <span class="option-radio-dot"></span>
+                  <span class="option-label-text">{{ opt.label }}</span>
+                </button>
+                }
+              </div>
+            } @else {
+              <button type="button" class="field-toggle" [class.has-value]="!!recurrenceRule()"
+                (click)="repeatPickerOpen.set(true)">
+                {{ createRecurrenceSummary() }} ▼
+              </button>
+            }
+          } @else {
+            <p class="repeat-readonly-label">{{ i18n.t('event.repeat') }}: {{ editRecurrenceSummary() }}</p>
+          }
         </div>
       </div>
 
-      <!-- Vị trí / link họp -->
-      <div class="field-row">
-        <svg class="field-icon" viewBox="0 0 24 24" width="20" height="20">
-          <path fill="currentColor"
-            d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" />
-        </svg>
-        @if (locationOpen()) {
-        <div class="field-content">
-          <input class="text-input" type="text" formControlName="location"
-            [placeholder]="i18n.t('event.addLocation')" />
-          <button type="button" class="text-btn compact" (click)="generateVideoCallLink()">
-            {{ i18n.t('event.quickMeetLink') }}
-          </button>
-        </div>
-        } @else {
-        <button type="button" class="field-toggle" [class.has-value]="!!form.controls.location.value"
-          (click)="toggleField('location')">
-          {{ form.controls.location.value || i18n.t('event.addLocation') }}
-        </button>
-        }
-      </div>
-
-      <!-- Mô tả -->
-      <div class="field-row">
-        <svg class="field-icon" viewBox="0 0 24 24" width="20" height="20">
-          <path fill="currentColor"
-            d="M4 4h16v2H4zm0 5h16v2H4zm0 5h10v2H4z" />
-        </svg>
-        @if (descriptionOpen()) {
-        <div class="field-content">
-          <textarea class="text-input" rows="3" formControlName="description" [placeholder]="i18n.t('event.addDescription')"></textarea>
-        </div>
-        } @else {
-        <button type="button" class="field-toggle" [class.has-value]="!!form.controls.description.value"
-          (click)="toggleField('description')">
-          {{ form.controls.description.value || i18n.t('event.addDescription') }}
-        </button>
-        }
-      </div>
-
-      <!-- Khách mời (chỉ khi sửa sự kiện đã có) -->
-      @if (event()) {
+      <!-- Khách mời -->
       <div class="field-row">
         <svg class="field-icon" viewBox="0 0 24 24" width="20" height="20">
           <path fill="currentColor"
@@ -164,6 +213,7 @@
         </svg>
         @if (attendeesOpen()) {
         <div class="field-content">
+          @if (event()) {
           <div class="row">
             <input class="text-input" type="email" [formControl]="inviteEmailControl" [placeholder]="i18n.t('event.inviteViaEmail')"
               (keydown.enter)="$event.preventDefault(); invite()" />
@@ -204,15 +254,98 @@
           </div>
           }
           }
+          } @else {
+          <div class="row">
+            <input class="text-input" type="email" [formControl]="pendingGuestEmailControl" [placeholder]="i18n.t('event.inviteViaEmail')"
+              (keydown.enter)="$event.preventDefault(); addPendingGuest()" />
+            <button type="button" class="text-btn compact" (click)="addPendingGuest()">
+              {{ i18n.t('event.invite') }}
+            </button>
+          </div>
+          @if (pendingGuestEmailControl.invalid && pendingGuestEmailControl.touched) {
+          <p class="field-error">{{ i18n.t('event.invalidEmail') }}</p>
+          }
+          @if (pendingGuestEmails().length > 0) {
+          <ul class="attendee-list">
+            @for (email of pendingGuestEmails(); track email) {
+            <li class="attendee-item">
+              <span>{{ email }}</span>
+              <button type="button" class="chip-remove-btn" (click)="removePendingGuest(email)"
+                [attr.aria-label]="i18n.t('common.close')">✕</button>
+            </li>
+            }
+          </ul>
+          }
+          }
         </div>
         } @else {
-        <button type="button" class="field-toggle" [class.has-value]="attendees().length > 0"
+        <button type="button" class="field-toggle" [class.has-value]="guestCount() > 0"
           (click)="toggleField('attendees')">
-          {{ attendees().length > 0 ? i18n.t('event.guestsCount', { count: attendees().length }) : i18n.t('event.addGuests') }}
+          {{ guestCount() > 0 ? i18n.t('event.guestsCount', { count: guestCount() }) : i18n.t('event.addGuests') }}
         </button>
         }
       </div>
-      }
+
+      <!-- Google Meet -->
+      <div class="field-row">
+        <svg class="field-icon" viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor"
+            d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11z" />
+        </svg>
+        <div class="field-content">
+          @if (form.controls.meetLink.value) {
+          <div class="row meet-link-row">
+            <a class="text-input meet-link-value" [href]="form.controls.meetLink.value" target="_blank" rel="noopener noreferrer">
+              {{ form.controls.meetLink.value }}
+            </a>
+            <button type="button" class="text-btn compact" (click)="removeMeetLink()">
+              {{ i18n.t('common.cancel') }}
+            </button>
+          </div>
+          } @else {
+          <button type="button" class="field-toggle" (click)="generateVideoCallLink()">
+            {{ i18n.t('event.addMeetLink') }}
+          </button>
+          }
+        </div>
+      </div>
+
+      <!-- Vị trí -->
+      <div class="field-row">
+        <svg class="field-icon" viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor"
+            d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" />
+        </svg>
+        @if (locationOpen()) {
+        <div class="field-content">
+          <input class="text-input" type="text" formControlName="location"
+            [placeholder]="i18n.t('event.addLocation')" />
+        </div>
+        } @else {
+        <button type="button" class="field-toggle" [class.has-value]="!!form.controls.location.value"
+          (click)="toggleField('location')">
+          {{ form.controls.location.value || i18n.t('event.addLocation') }}
+        </button>
+        }
+      </div>
+
+      <!-- Mô tả -->
+      <div class="field-row">
+        <svg class="field-icon" viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor"
+            d="M4 4h16v2H4zm0 5h16v2H4zm0 5h10v2H4z" />
+        </svg>
+        @if (descriptionOpen()) {
+        <div class="field-content">
+          <textarea class="text-input" rows="3" formControlName="description" [placeholder]="i18n.t('event.addDescription')"></textarea>
+        </div>
+        } @else {
+        <button type="button" class="field-toggle" [class.has-value]="!!form.controls.description.value"
+          (click)="toggleField('description')">
+          {{ form.controls.description.value || i18n.t('event.addDescription') }}
+        </button>
+        }
+      </div>
 
       <!-- Nhắc lịch -->
       <div class="field-row">
@@ -339,7 +472,7 @@
         @if (todoDueDateOpen()) {
         <div class="field-content">
           <div class="row date-row">
-            <input class="date-input" type="date" lang="vi" formControlName="startDate" />
+            <app-date-picker formControlName="startDate" />
             <app-time-picker formControlName="startTime" [ariaLabel]="i18n.t('event.startTime')" />
           </div>
           <button type="button" class="text-btn compact" (click)="todoDueDateOpen.set(false)">

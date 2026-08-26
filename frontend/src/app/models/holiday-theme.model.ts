@@ -92,7 +92,10 @@ export type HolidayArchetype =
   | 'geometric-abstract'
   | 'tet-branch-scene'
   | 'dong-son-drum-scene'
-  | 'vietnam-flag-scene';
+  | 'vietnam-flag-scene'
+  | 'labor-day-scene'
+  | 'national-day-scene'
+  | 'new-year-scene';
 
 export interface HolidayComposition {
   readonly archetype: HolidayArchetype;
