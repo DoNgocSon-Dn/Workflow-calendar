@@ -114,7 +114,7 @@ export class AiController {
   }
 
   /**
-   * Đọc một file .xlsx/.docx/.pdf và đề xuất sự kiện + việc cần làm.
+   * Đọc một file .ics/.csv/.pdf và đề xuất sự kiện + việc cần làm.
    *
    * CỐ Ý KHÔNG lưu bất cứ thứ gì: kết quả chỉ để dựng bảng xem trước trong
    * khung chat. Người dùng chọn xong mới gọi các endpoint tạo sẵn có.
@@ -128,7 +128,7 @@ export class AiController {
         if (!hasAllowedExtension(file.originalname, ALLOWED_AI_FILE_EXTENSIONS)) {
           callback(
             new BadRequestException(
-              'Chỉ hỗ trợ file .xlsx, .docx hoặc .pdf. File .ics và .csv dùng chức năng Import Lịch.',
+              'Chỉ hỗ trợ file .ics, .csv hoặc .pdf.',
             ),
             false,
           );
@@ -150,7 +150,7 @@ export class AiController {
 
     if (!hasAllowedExtension(file.originalname, ALLOWED_AI_FILE_EXTENSIONS)) {
       throw new BadRequestException(
-        'Chỉ hỗ trợ file .xlsx, .docx hoặc .pdf. File .ics và .csv dùng chức năng Import Lịch.',
+        'Chỉ hỗ trợ file .ics, .csv hoặc .pdf.',
       );
     }
 

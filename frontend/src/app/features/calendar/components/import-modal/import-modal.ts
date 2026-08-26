@@ -271,7 +271,7 @@ export class ImportModalComponent {
     // Thuộc tính `accept` chỉ lọc hộp thoại chọn file — kéo-thả hoặc chọn
     // "Tất cả tệp" vẫn lọt, nên phải tự kiểm.
     if (!ALLOWED_EXTENSIONS.some((ext) => name.endsWith(ext))) {
-      return 'Chỉ hỗ trợ file .ics hoặc .csv. File .xlsx, .docx hoặc .pdf hãy gửi cho Trợ lý AI.';
+      return 'Chỉ hỗ trợ file .ics hoặc .csv. File .pdf hãy gửi cho Trợ lý AI.';
     }
     if (file.size > MAX_UPLOAD_BYTES) {
       return `File vượt quá giới hạn ${MAX_UPLOAD_LABEL} (file của bạn ${(file.size / 1024 / 1024).toFixed(1)} MB).`;

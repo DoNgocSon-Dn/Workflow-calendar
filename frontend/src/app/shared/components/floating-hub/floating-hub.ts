@@ -103,8 +103,14 @@ function normalizeTodoContent(content: string): string {
     .toLowerCase();
 }
 
-/** Đúng các định dạng Smart Import AI cũ hỗ trợ, nay đi qua khung chat. */
-const ACCEPTED_FILE_EXT = ['.xlsx', '.xls', '.docx', '.doc', '.pdf'] as const;
+/**
+ * Khớp ALLOWED_AI_FILE_EXTENSIONS ở backend (backend/src/common/limits.ts).
+ *
+ * .ics và .csv trùng với chức năng Import Lịch là CỐ Ý — Import đọc theo đúng
+ * chuẩn, còn Trợ lý AI hiểu được file trình bày tự do. Định dạng Office
+ * (.xlsx/.docx) không còn được nhận.
+ */
+const ACCEPTED_FILE_EXT = ['.ics', '.csv', '.pdf'] as const;
 const ACCEPT_ATTR = ACCEPTED_FILE_EXT.join(',');
 
 /** Khớp giới hạn phía backend để báo lỗi ngay, khỏi tải lên rồi mới bị từ chối. */
@@ -237,7 +243,8 @@ const FILE_SUBJECT =
 
 /** Tên gọi của chính tài liệu — đứng một mình đã đủ rõ, không cần "này". */
 const FILE_NOUN =
-  'file|t[eệ]p|t[aà]i li[eệ]u|[dđ][ií]nh k[eè]m|b[aả]ng t[ií]nh|excel|word|pdf|docx?|xlsx?|' +
+  'file|t[eệ]p|t[aà]i li[eệ]u|[dđ][ií]nh k[eè]m|pdf|' +
+  '\\bics\\b|\\bcsv\\b|' +
   'th[oờ]i kh[oó]a bi[eể]u|th[oờ]i kho[aá] bi[eể]u|tkb';
 
 function mentionsAttachedFile(text: string): boolean {
@@ -884,7 +891,7 @@ export class FloatingHub {
     }
   }
 
-  // --- File đính kèm cho AI (.xlsx/.docx/.pdf) --------------------------
+  // --- File đính kèm cho AI (.ics/.csv/.pdf) ----------------------------
 
   protected readonly acceptAttr = ACCEPT_ATTR;
 
@@ -947,7 +954,7 @@ export class FloatingHub {
     const name = file.name.toLowerCase();
     if (!ACCEPTED_FILE_EXT.some((ext) => name.endsWith(ext))) {
       this.aiError.set(
-        'Chỉ đọc được file .xlsx, .docx hoặc .pdf. File .ics và .csv hãy dùng chức năng Import Lịch.',
+        'Chỉ đọc được file .ics, .csv hoặc .pdf.',
       );
       return;
     }

@@ -31,8 +31,15 @@ export const MAX_BULK_CREATE_EVENTS = 500;
 /** Đuôi file hợp lệ cho import chuẩn. */
 export const ALLOWED_IMPORT_EXTENSIONS = ['.ics', '.csv'] as const;
 
-/** Đuôi file hợp lệ cho Trợ lý AI đọc tài liệu. */
-export const ALLOWED_AI_FILE_EXTENSIONS = ['.xlsx', '.xls', '.docx', '.doc', '.pdf'] as const;
+/**
+ * Đuôi file hợp lệ cho Trợ lý AI đọc tài liệu.
+ *
+ * Trùng .ics/.csv với ALLOWED_IMPORT_EXTENSIONS là CỐ Ý: cùng một file lịch có
+ * thể đưa vào Import Lịch (đọc theo đúng chuẩn, nhanh, không cần mạng) hoặc
+ * đưa cho Trợ lý AI (hiểu được file trình bày tự do). Hai đường phục vụ hai
+ * nhu cầu khác nhau, không phải một cái thay thế cái kia.
+ */
+export const ALLOWED_AI_FILE_EXTENSIONS = ['.ics', '.csv', '.pdf'] as const;
 
 /**
  * Hạn mức cho các thao tác nặng: 10 lượt mỗi giờ.

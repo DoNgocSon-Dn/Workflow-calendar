@@ -47,7 +47,7 @@ export class ImportController {
         if (!hasAllowedExtension(file.originalname, ALLOWED_IMPORT_EXTENSIONS)) {
           callback(
             new BadRequestException(
-              'Chỉ hỗ trợ file .ics hoặc .csv. File .xlsx, .docx hoặc .pdf hãy gửi cho Trợ lý AI.',
+              'Chỉ hỗ trợ file .ics hoặc .csv. File .pdf hãy gửi cho Trợ lý AI.',
             ),
             false,
           );
