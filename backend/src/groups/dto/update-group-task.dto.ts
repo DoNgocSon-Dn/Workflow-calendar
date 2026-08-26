@@ -1,12 +1,14 @@
-import { IsOptional, IsString, IsIn, IsDateString } from 'class-validator';
+import { IsOptional, IsString, IsIn, IsDateString, MaxLength } from 'class-validator';
 
 export class UpdateGroupTaskDto {
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   title?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   description?: string;
 
   @IsOptional()

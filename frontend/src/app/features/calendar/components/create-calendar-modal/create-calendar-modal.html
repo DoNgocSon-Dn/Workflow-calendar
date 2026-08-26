@@ -17,6 +17,7 @@
           type="text"
           class="field-input"
           placeholder="VD: Team Dự án, Gia đình..."
+          maxlength="100"
           [value]="name()"
           (input)="name.set($any($event.target).value)"
           (keydown.enter)="create()"

@@ -6,6 +6,7 @@
       [class.toast--leaving]="isLeaving(item.id)"
       [class.toast--confirming]="isConfirming(item.id)"
       [class.toast--success]="item.kind === 'success'"
+      [class.toast--conflict]="item.kind === 'conflict'"
       role="status"
     >
       <span class="toast__sheen" aria-hidden="true"></span>

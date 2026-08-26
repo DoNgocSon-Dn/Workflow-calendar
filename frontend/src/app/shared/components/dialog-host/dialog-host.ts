@@ -22,7 +22,7 @@ export class DialogHost {
     const req = this.dialog.request();
     if (!req || req.kind === 'alert') return;
     if (req.kind === 'prompt') this.dialog.cancelPrompt();
-    else if (req.kind === 'choice') this.dialog.respondChoice(null);
+    else if (req.kind === 'choice') this.dialog.cancelChoice();
     else this.dialog.respondNo();
   }
 
@@ -31,7 +31,7 @@ export class DialogHost {
     if (!req) return;
     if (req.kind === 'alert') this.dialog.acknowledge();
     else if (req.kind === 'prompt') this.dialog.cancelPrompt();
-    else if (req.kind === 'choice') this.dialog.respondChoice(null);
+    else if (req.kind === 'choice') this.dialog.cancelChoice();
     else this.dialog.respondNo();
   }
 }

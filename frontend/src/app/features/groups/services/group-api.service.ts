@@ -6,6 +6,9 @@ import { AuthStore } from '../../../core/auth/auth-store';
 import {
   Group,
   GroupInvite,
+  GroupInviteLink,
+  GroupInviteLinkPreview,
+  GroupJoinRequest,
   GroupMember,
   GroupMessage,
   GroupMessageAttachment,
@@ -102,6 +105,70 @@ export class GroupApiService {
     return firstValueFrom(
       this.http.patch<GroupInvite>(
         `${environment.apiUrl}/groups/invites/${inviteId}/respond`,
+        { status },
+        { headers: this.authHeaders },
+      ),
+    );
+  }
+
+  /** `null` khi nhóm chưa có link mời nào đang hoạt động. */
+  async getInviteLink(groupId: string): Promise<GroupInviteLink | null> {
+    return firstValueFrom(
+      this.http.get<GroupInviteLink | null>(
+        `${environment.apiUrl}/groups/${groupId}/invite-link`,
+        { headers: this.authHeaders },
+      ),
+    );
+  }
+
+  /** Tạo link mời mới — nếu đã có link active thì link cũ bị thu hồi. */
+  async regenerateInviteLink(groupId: string, role?: string): Promise<GroupInviteLink> {
+    return firstValueFrom(
+      this.http.post<GroupInviteLink>(
+        `${environment.apiUrl}/groups/${groupId}/invite-link`,
+        { role },
+        { headers: this.authHeaders },
+      ),
+    );
+  }
+
+  /** Xem trước nhóm bằng token, trước khi người dùng bấm gửi yêu cầu. */
+  async getInviteLinkPreview(token: string): Promise<GroupInviteLinkPreview> {
+    return firstValueFrom(
+      this.http.get<GroupInviteLinkPreview>(
+        `${environment.apiUrl}/groups/invite-link/preview`,
+        { headers: this.authHeaders, params: { token } },
+      ),
+    );
+  }
+
+  async requestToJoin(token: string): Promise<GroupJoinRequest> {
+    return firstValueFrom(
+      this.http.post<GroupJoinRequest>(
+        `${environment.apiUrl}/groups/invite-link/join`,
+        { token },
+        { headers: this.authHeaders },
+      ),
+    );
+  }
+
+  async listJoinRequests(groupId: string): Promise<GroupJoinRequest[]> {
+    return firstValueFrom(
+      this.http.get<GroupJoinRequest[]>(
+        `${environment.apiUrl}/groups/${groupId}/join-requests`,
+        { headers: this.authHeaders },
+      ),
+    );
+  }
+
+  async decideJoinRequest(
+    groupId: string,
+    requestId: string,
+    status: 'approved' | 'declined',
+  ): Promise<GroupJoinRequest> {
+    return firstValueFrom(
+      this.http.patch<GroupJoinRequest>(
+        `${environment.apiUrl}/groups/${groupId}/join-requests/${requestId}`,
         { status },
         { headers: this.authHeaders },
       ),

@@ -84,6 +84,11 @@
   background: var(--color-surface-hover);
 }
 
+.icon-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--color-danger);
+}
+
 .field-error {
   color: var(--color-danger);
   font-size: 0.8rem;

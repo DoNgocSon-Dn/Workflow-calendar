@@ -95,6 +95,7 @@
           type="text"
           class="new-list-input"
           placeholder="+ Tạo danh sách mới"
+          maxlength="80"
           [value]="newListName()"
           (input)="newListName.set($any($event.target).value)"
           (keydown.enter)="createList()"
@@ -156,6 +157,7 @@
                 <input
                   type="text"
                   class="rename-input"
+                  maxlength="80"
                   [value]="renameDraft()"
                   (input)="renameDraft.set($any($event.target).value)"
                   (keydown.enter)="saveRenameList(list.id)"
@@ -176,6 +178,7 @@
               type="text"
               class="add-todo-input"
               placeholder="+ Thêm việc cần làm"
+              maxlength="300"
               [value]="todoDraft(list.id)"
               (input)="setTodoDraft(list.id, $any($event.target).value)"
               (keydown.enter)="addTodo(list.id)"
@@ -189,6 +192,7 @@
                     <input
                       type="text"
                       class="todo-edit-input"
+                      maxlength="300"
                       [value]="editingTodoContent()"
                       (input)="editingTodoContent.set($any($event.target).value)"
                       (keydown.enter)="saveEditTodo(todo.id)"

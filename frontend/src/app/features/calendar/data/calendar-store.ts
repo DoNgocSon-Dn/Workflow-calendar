@@ -686,6 +686,20 @@ export class CalendarStore {
     return calendar;
   }
 
+  /** Xoá một lịch CÁ NHÂN (không phải lịch nhóm — lịch nhóm xoá qua "Xóa
+   *  nhóm" để không làm nhóm mồ côi calendar_id). Backend cascade xoá luôn
+   *  events/thành viên/lời mời gắn với lịch này. */
+  async deleteCalendar(calendarId: string): Promise<void> {
+    await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/calendars/${calendarId}`));
+    this.calendars.update((list) => list.filter((c) => c.id !== calendarId));
+    this.events.update((list) => list.filter((e) => e.calendarId !== calendarId));
+    this.visibleCalendarIds.update((set) => {
+      const next = new Set(set);
+      next.delete(calendarId);
+      return next;
+    });
+  }
+
   private joinAllCalendarRooms(): void {
     for (const cal of this.calendars()) this.realtime.joinCalendar(cal.id);
   }
@@ -969,7 +983,7 @@ export class CalendarStore {
       eventId: payload.event.id,
       title: `Trùng lịch: ${payload.event.title}`,
       body,
-      kind: 'updated',
+      kind: 'conflict',
     });
     this.notifications.ingest(
       eventConflictDraft({
@@ -1219,19 +1233,21 @@ export class CalendarStore {
     }
   }
 
-  /** scope 'this' chỉ chuyển thẳng sang deleteEvent() hiện có. */
+  /** scope 'this' chỉ chuyển thẳng sang deleteEvent() hiện có.
+   *
+   * KHÔNG nuốt lỗi như deleteEvent(): một chuỗi lặp có thể có hàng chục hàng,
+   * và caller cần biết chắc backend đã xoá thật trước khi báo "Đã xoá" —
+   * ngược với xoá một sự kiện đơn (mất một hàng không sao, tự dọn cục bộ vẫn
+   * ổn), lỡ báo thành công cho cả chuỗi mà backend thất bại thì người dùng cứ
+   * đinh ninh đã xoá trong khi lịch vẫn còn nguyên. */
   async deleteEventSeries(id: string, scope: SeriesEditScope): Promise<void> {
     if (scope === 'this') return this.deleteEvent(id);
     this.markSelfOrigin(id);
-    try {
-      const result = await firstValueFrom(
-        this.http.delete<{ ids: string[] }>(`${this.apiUrl}/events/${id}/series?scope=${scope}`),
-      );
-      const ids = new Set(result.ids);
-      this.events.update((list) => list.filter((e) => !ids.has(e.id)));
-    } catch (err) {
-      console.warn('Xoá chuỗi sự kiện lặp lại thất bại:', err);
-    }
+    const result = await firstValueFrom(
+      this.http.delete<{ ids: string[] }>(`${this.apiUrl}/events/${id}/series?scope=${scope}`),
+    );
+    const ids = new Set(result.ids);
+    this.events.update((list) => list.filter((e) => !ids.has(e.id)));
   }
 
   async deleteEvent(id: string): Promise<void> {

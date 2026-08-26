@@ -193,6 +193,60 @@ export function groupInvitationDraft(input: GroupInvitationDraftInput): Notifica
   };
 }
 
+export interface GroupJoinRequestDraftInput {
+  readonly requestId: string;
+  readonly groupId: string;
+  readonly groupName: string | null;
+  readonly requesterEmail?: string;
+  readonly requesterName?: string;
+  readonly createdAt: string;
+}
+
+/** Hiện cho LEADER/ADMIN khi có người gửi yêu cầu tham gia nhóm qua link mời. */
+export function groupJoinRequestDraft(input: GroupJoinRequestDraftInput): NotificationDraft {
+  const requester = input.requesterName || input.requesterEmail || 'Một người dùng';
+  return {
+    id: `group-join-request-${input.requestId}`,
+    type: 'group_join_request',
+    title: 'Yêu cầu tham gia nhóm',
+    message: `${requester} muốn tham gia nhóm "${input.groupName ?? 'của bạn'}".`,
+    createdAt: input.createdAt,
+    sender: input.requesterEmail
+      ? { name: requester, email: input.requesterEmail }
+      : undefined,
+    relatedId: input.groupId,
+    actionStatus: 'pending',
+    metadata: { requestId: input.requestId, groupId: input.groupId },
+  };
+}
+
+export interface GroupJoinRequestResolvedDraftInput {
+  readonly requestId: string;
+  readonly groupId: string;
+  readonly groupName: string | null;
+  readonly status: 'approved' | 'declined';
+  readonly createdAt: string;
+}
+
+/** Hiện cho người đã gửi yêu cầu, sau khi admin/leader duyệt hoặc từ chối. */
+export function groupJoinRequestResolvedDraft(
+  input: GroupJoinRequestResolvedDraftInput,
+): NotificationDraft {
+  return {
+    id: `group-join-request-resolved-${input.requestId}`,
+    type: 'group_join_request',
+    title: input.status === 'approved' ? 'Yêu cầu được chấp nhận' : 'Yêu cầu bị từ chối',
+    message:
+      input.status === 'approved'
+        ? `Bạn đã được chấp nhận vào nhóm "${input.groupName ?? ''}".`
+        : `Yêu cầu tham gia nhóm "${input.groupName ?? ''}" của bạn đã bị từ chối.`,
+    createdAt: input.createdAt,
+    relatedId: input.groupId,
+    actionStatus: input.status === 'approved' ? 'accepted' : 'declined',
+    metadata: { requestId: input.requestId, groupId: input.groupId },
+  };
+}
+
 export interface SystemNoticeDraftInput {
   readonly id: string;
   readonly title: string;

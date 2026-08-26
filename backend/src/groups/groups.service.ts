@@ -21,6 +21,7 @@ import {
 } from './dto/send-group-message.dto';
 import { UpdateGroupMessageDto } from './dto/update-group-message.dto';
 import { RespondGroupInviteDto } from './dto/respond-group-invite.dto';
+import { DecideJoinRequestDto } from './dto/decide-join-request.dto';
 import {
   DEFAULT_GROUP_ROLE,
   GroupRole,
@@ -65,6 +66,60 @@ function toGroupInviteDto(row: GroupInviteRow): GroupInviteDto {
     status: row.status,
     createdAt: row.created_at,
     inviterEmail: row.inviter_email,
+  };
+}
+
+export interface GroupInviteLinkDto {
+  token: string;
+  groupId: string;
+  role: string;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+export interface GroupJoinRequestDto {
+  id: string;
+  groupId: string;
+  userId: string;
+  role: string;
+  status: 'pending' | 'approved' | 'declined';
+  createdAt: string;
+  requesterEmail?: string;
+  requesterName?: string;
+}
+
+export interface GroupInviteLinkPreviewDto {
+  groupId: string;
+  groupName: string;
+  groupDescription?: string;
+  groupColor: string;
+  role: string;
+  isMember: boolean;
+  myPendingRequestId: string | null;
+}
+
+/** Hàng thô từ RPC list_group_join_requests. */
+interface GroupJoinRequestRow {
+  id: string;
+  group_id: string;
+  user_id: string;
+  role: string;
+  status: string;
+  created_at: string;
+  requester_email: string | null;
+  requester_name: string | null;
+}
+
+function toGroupJoinRequestDto(row: GroupJoinRequestRow): GroupJoinRequestDto {
+  return {
+    id: row.id,
+    groupId: row.group_id,
+    userId: row.user_id,
+    role: normalizeGroupRole(row.role),
+    status: row.status as GroupJoinRequestDto['status'],
+    createdAt: row.created_at,
+    requesterEmail: row.requester_email ?? undefined,
+    requesterName: row.requester_name ?? undefined,
   };
 }
 
@@ -883,6 +938,338 @@ export class GroupsService {
     );
 
     return invite;
+  }
+
+  /**
+   * LEADER/ADMIN của một nhóm — dùng để báo tin có yêu cầu tham gia mới.
+   * Lọc lại từ getMembers() thay vì tự truy vấn, để không lệch khỏi cách
+   * mapMemberRows() đã chuẩn hoá vai trò (owner_id ưu tiên hơn cột role).
+   */
+  private async listAdminUserIds(
+    supabase: SupabaseClient,
+    groupId: string,
+  ): Promise<string[]> {
+    const members = await this.getMembers(supabase, groupId);
+    return members
+      .filter((m) => m.role === GroupRole.LEADER || m.role === GroupRole.ADMIN)
+      .map((m) => m.userId);
+  }
+
+  async getInviteLink(
+    supabase: SupabaseClient,
+    actor: User,
+    groupId: string,
+  ): Promise<GroupInviteLinkDto | null> {
+    const actorRole = await this.requireRole(supabase, actor, groupId);
+    if (!canInvite(actorRole)) {
+      throw new ForbiddenException(
+        'Chỉ trưởng nhóm và quản trị viên mới xem được link mời',
+      );
+    }
+
+    const { data, error } = await supabase
+      .from('group_invite_links')
+      .select('token, group_id, role, created_by, created_at')
+      .eq('group_id', groupId)
+      .is('revoked_at', null)
+      .maybeSingle<{
+        token: string;
+        group_id: string;
+        role: string;
+        created_by: string | null;
+        created_at: string;
+      }>();
+
+    if (error) throw new InternalServerErrorException(error.message);
+    if (!data) return null;
+
+    return {
+      token: data.token,
+      groupId: data.group_id,
+      role: normalizeGroupRole(data.role),
+      createdBy: data.created_by,
+      createdAt: data.created_at,
+    };
+  }
+
+  async createOrRegenerateInviteLink(
+    supabase: SupabaseClient,
+    actor: User,
+    groupId: string,
+    role?: string,
+  ): Promise<GroupInviteLinkDto> {
+    const actorRole = await this.requireRole(supabase, actor, groupId);
+    if (!canInvite(actorRole)) {
+      throw new ForbiddenException(
+        'Chỉ trưởng nhóm và quản trị viên mới được tạo link mời',
+      );
+    }
+
+    const linkRole = normalizeGroupRole(role ?? DEFAULT_GROUP_ROLE);
+    if (!canAssignRole(actorRole, linkRole)) {
+      throw new ForbiddenException(
+        'Bạn không thể tạo link mời với vai trò cao hơn hoặc ngang bằng mình',
+      );
+    }
+
+    const { error: revokeErr } = await supabase
+      .from('group_invite_links')
+      .update({ revoked_at: new Date().toISOString() })
+      .eq('group_id', groupId)
+      .is('revoked_at', null);
+
+    if (revokeErr) throw new InternalServerErrorException(revokeErr.message);
+
+    const { data, error } = await supabase
+      .from('group_invite_links')
+      .insert({
+        group_id: groupId,
+        role: toDbGroupRole(linkRole),
+        created_by: actor.id,
+      })
+      .select('token, group_id, role, created_by, created_at')
+      .single<{
+        token: string;
+        group_id: string;
+        role: string;
+        created_by: string | null;
+        created_at: string;
+      }>();
+
+    if (error || !data) {
+      throw new InternalServerErrorException(
+        error?.message || 'Không thể tạo link mời',
+      );
+    }
+
+    return {
+      token: data.token,
+      groupId: data.group_id,
+      role: normalizeGroupRole(data.role),
+      createdBy: data.created_by,
+      createdAt: data.created_at,
+    };
+  }
+
+  async getInviteLinkPreview(
+    supabase: SupabaseClient,
+    token: string,
+  ): Promise<GroupInviteLinkPreviewDto> {
+    const { data, error } = await supabase
+      .rpc('get_group_invite_link_preview', { p_token: token })
+      .single<{
+        group_id: string;
+        group_name: string;
+        group_description: string | null;
+        group_color: string;
+        role: string;
+        is_member: boolean;
+        my_pending_request_id: string | null;
+      }>();
+
+    if (error) {
+      if (error.message.includes('link not found')) {
+        throw new NotFoundException(
+          'Link mời không hợp lệ hoặc đã bị thu hồi',
+        );
+      }
+      throw new InternalServerErrorException(error.message);
+    }
+
+    return {
+      groupId: data.group_id,
+      groupName: data.group_name,
+      groupDescription: data.group_description ?? undefined,
+      groupColor: data.group_color,
+      role: normalizeGroupRole(data.role),
+      isMember: data.is_member,
+      myPendingRequestId: data.my_pending_request_id,
+    };
+  }
+
+  async requestToJoin(
+    supabase: SupabaseClient,
+    requester: User,
+    token: string,
+  ): Promise<GroupJoinRequestDto> {
+    const { data, error } = await supabase
+      .rpc('request_join_group', { p_token: token })
+      .single<{
+        id: string;
+        group_id: string;
+        user_id: string;
+        role: string;
+        status: string;
+        created_at: string;
+      }>();
+
+    if (error) {
+      if (error.message.includes('link not found')) {
+        throw new NotFoundException(
+          'Link mời không hợp lệ hoặc đã bị thu hồi',
+        );
+      }
+      if (error.message.includes('already a member')) {
+        throw new ConflictException('Bạn đã ở trong nhóm này rồi');
+      }
+      if (error.message.includes('request already pending')) {
+        throw new ConflictException(
+          'Bạn đã gửi yêu cầu tham gia nhóm này rồi',
+        );
+      }
+      throw new InternalServerErrorException(error.message);
+    }
+
+    const request = toGroupJoinRequestDto({
+      id: data.id,
+      group_id: data.group_id,
+      user_id: data.user_id,
+      role: data.role,
+      status: data.status,
+      created_at: data.created_at,
+      requester_email: requester.email ?? null,
+      requester_name: null,
+    });
+
+    // Báo cho LEADER/ADMIN của nhóm — họ chưa ở trong bất kỳ room nào của
+    // requester nên phải bắn thẳng vào room riêng từng người.
+    const adminIds = await this.listAdminUserIds(supabase, request.groupId);
+    for (const adminId of adminIds) {
+      this.realtimeGateway.emitToUser(adminId, 'group:joinRequested', {
+        groupId: request.groupId,
+        request,
+      });
+    }
+
+    return request;
+  }
+
+  async listJoinRequests(
+    supabase: SupabaseClient,
+    actor: User,
+    groupId: string,
+  ): Promise<GroupJoinRequestDto[]> {
+    const actorRole = await this.requireRole(supabase, actor, groupId);
+    if (!canInvite(actorRole)) {
+      throw new ForbiddenException(
+        'Chỉ trưởng nhóm và quản trị viên mới xem được yêu cầu tham gia',
+      );
+    }
+
+    const { data, error } = await supabase.rpc('list_group_join_requests', {
+      p_group_id: groupId,
+    });
+    if (error) throw new InternalServerErrorException(error.message);
+    return (data as GroupJoinRequestRow[]).map(toGroupJoinRequestDto);
+  }
+
+  async decideJoinRequest(
+    supabase: SupabaseClient,
+    actor: User,
+    groupId: string,
+    requestId: string,
+    dto: DecideJoinRequestDto,
+  ): Promise<GroupJoinRequestDto> {
+    const actorRole = await this.requireRole(supabase, actor, groupId);
+    if (!canInvite(actorRole)) {
+      throw new ForbiddenException(
+        'Chỉ trưởng nhóm và quản trị viên mới được duyệt yêu cầu tham gia',
+      );
+    }
+
+    let request: GroupJoinRequestDto;
+
+    if (dto.status === 'approved') {
+      const { data, error } = await supabase
+        .rpc('approve_group_join_request', { p_request_id: requestId })
+        .single<{
+          id: string;
+          group_id: string;
+          user_id: string;
+          role: string;
+          status: string;
+          created_at: string;
+          decided_by: string | null;
+          decided_at: string | null;
+        }>();
+
+      if (error) {
+        if (error.message.includes('request not found')) {
+          throw new NotFoundException('Yêu cầu không tồn tại');
+        }
+        if (error.message.includes('already handled')) {
+          throw new ConflictException('Yêu cầu này đã được xử lý');
+        }
+        if (error.message.includes('not authorized')) {
+          throw new ForbiddenException(
+            'Bạn không có quyền duyệt yêu cầu này',
+          );
+        }
+        throw new InternalServerErrorException(error.message);
+      }
+
+      request = toGroupJoinRequestDto({
+        id: data.id,
+        group_id: data.group_id,
+        user_id: data.user_id,
+        role: data.role,
+        status: data.status,
+        created_at: data.created_at,
+        requester_email: null,
+        requester_name: null,
+      });
+    } else {
+      const { data, error } = await supabase
+        .from('group_join_requests')
+        .update({
+          status: 'declined',
+          decided_by: actor.id,
+          decided_at: new Date().toISOString(),
+        })
+        .eq('id', requestId)
+        .eq('group_id', groupId)
+        .eq('status', 'pending')
+        .select('id, group_id, user_id, role, status, created_at')
+        .maybeSingle<{
+          id: string;
+          group_id: string;
+          user_id: string;
+          role: string;
+          status: string;
+          created_at: string;
+        }>();
+
+      if (error) throw new InternalServerErrorException(error.message);
+      if (!data) {
+        throw new ConflictException(
+          'Yêu cầu không tồn tại hoặc đã được xử lý',
+        );
+      }
+
+      request = toGroupJoinRequestDto({
+        ...data,
+        requester_email: null,
+        requester_name: null,
+      });
+    }
+
+    if (dto.status === 'approved') {
+      const member = await this.getMembers(supabase, groupId).then((members) =>
+        members.find((m) => m.userId === request.userId),
+      );
+      await this.emitToGroupMembers(supabase, groupId, 'group:memberJoined', {
+        groupId,
+        member,
+      });
+    }
+
+    this.realtimeGateway.emitToUser(request.userId, 'group:joinRequestDecided', {
+      groupId,
+      requestId: request.id,
+      status: dto.status,
+    });
+
+    return request;
   }
 
   async updateMemberRole(

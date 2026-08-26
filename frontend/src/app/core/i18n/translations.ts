@@ -268,11 +268,12 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'event.addMeetLink': 'Thêm hội nghị truyền hình trên Google Meet',
     'event.editScopeTitle': 'Sửa sự kiện lặp lại',
     'event.editScopeMessage': 'Áp dụng thay đổi cho:',
-    'event.deleteScopeTitle': 'Xoá sự kiện lặp lại',
-    'event.deleteScopeMessage': 'Bạn muốn xoá sự kiện nào?',
-    'event.scopeThis': 'Chỉ sự kiện này',
-    'event.scopeFollowing': 'Sự kiện này và các sự kiện sau',
+    'event.deleteScopeTitle': 'Xóa sự kiện định kỳ',
+    'event.deleteScopeMessage': '',
+    'event.scopeThis': 'Sự kiện này',
+    'event.scopeFollowing': 'Sự kiện này và các sự kiện tiếp theo',
     'event.scopeAll': 'Tất cả sự kiện',
+    'event.deletedToast': 'Sự kiện đã bị xóa',
 
     // --- group workspace ----------------------------------------------------
     'group.defaultDescription': 'Không gian làm việc nhóm',
@@ -651,10 +652,11 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'event.editScopeTitle': 'Edit recurring event',
     'event.editScopeMessage': 'Apply changes to:',
     'event.deleteScopeTitle': 'Delete recurring event',
-    'event.deleteScopeMessage': 'Which events do you want to delete?',
+    'event.deleteScopeMessage': '',
     'event.scopeThis': 'This event',
     'event.scopeFollowing': 'This and following events',
     'event.scopeAll': 'All events',
+    'event.deletedToast': 'Event deleted',
 
     // --- group workspace ----------------------------------------------------
     'group.defaultDescription': 'Team workspace',

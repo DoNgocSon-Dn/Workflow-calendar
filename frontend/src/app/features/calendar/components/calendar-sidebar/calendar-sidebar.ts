@@ -57,6 +57,18 @@ export class CalendarSidebar implements OnInit {
 
   protected readonly hiddenSectionOpen = signal(false);
 
+  /** Lịch của một nhóm phải xoá qua "Xóa nhóm" (group-workspace-modal) —
+   *  xoá thẳng ở đây sẽ làm nhóm mồ côi calendar_id thay vì mất theo nhóm. */
+  private readonly groupCalendarIds = computed(
+    () => new Set(this.groupStore.groups().map((g) => g.calendarId)),
+  );
+
+  protected readonly deletingCalendarId = signal<string | null>(null);
+
+  protected canDeleteCalendar(cal: { id: string; canEdit: boolean }): boolean {
+    return cal.canEdit && !this.groupCalendarIds().has(cal.id);
+  }
+
   ngOnInit(): void {
     this.groupStore.loadGroups();
   }
@@ -73,6 +85,35 @@ export class CalendarSidebar implements OnInit {
     event.preventDefault();
     event.stopPropagation();
     this.inviteClicked.emit({ calendarId, calendarName });
+  }
+
+  async onDeleteCalendarClicked(event: Event, calendarId: string, calendarName: string): Promise<void> {
+    event.preventDefault();
+    event.stopPropagation();
+    if (this.deletingCalendarId()) return;
+
+    // Phải còn ít nhất một lịch ghi được — nhiều chỗ trong app (trợ lý AI,
+    // import, tạo sự kiện nhanh) giả định defaultWritableCalendar() luôn có.
+    const writableCount = this.store.calendars().filter((c) => c.canEdit).length;
+    if (writableCount <= 1) {
+      await this.dialog.alert('Bạn cần giữ lại ít nhất một lịch có thể chỉnh sửa.');
+      return;
+    }
+
+    const ok = await this.dialog.confirm(
+      `Toàn bộ sự kiện trong lịch "${calendarName}" sẽ bị xóa và KHÔNG thể khôi phục.`,
+      { title: `Xóa lịch "${calendarName}"?`, confirmLabel: 'Đồng ý xóa', danger: true },
+    );
+    if (!ok) return;
+
+    this.deletingCalendarId.set(calendarId);
+    try {
+      await this.store.deleteCalendar(calendarId);
+    } catch (err: any) {
+      await this.dialog.alert(err?.error?.message || 'Không thể xóa lịch này.');
+    } finally {
+      this.deletingCalendarId.set(null);
+    }
   }
 
   onGroupClicked(group: Group): void {

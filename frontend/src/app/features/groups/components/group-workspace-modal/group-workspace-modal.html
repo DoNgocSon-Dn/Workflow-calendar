@@ -46,6 +46,7 @@
             type="text"
             class="text-input"
             placeholder="Tên nhóm"
+            maxlength="100"
             [value]="editName()"
             (input)="editName.set($any($event.target).value)"
           />
@@ -53,6 +54,7 @@
             type="text"
             class="text-input"
             placeholder="Mô tả nhóm (tuỳ chọn)"
+            maxlength="500"
             [value]="editDescription()"
             (input)="editDescription.set($any($event.target).value)"
           />
@@ -139,6 +141,7 @@
                   type="text"
                   class="text-input"
                   placeholder="Tiêu đề task (VD: Viết tài liệu API)..."
+                  maxlength="200"
                   [value]="taskTitle()"
                   (input)="taskTitle.set($any($event.target).value)"
                 />
@@ -146,6 +149,7 @@
                   type="text"
                   class="text-input"
                   placeholder="Mô tả công việc..."
+                  maxlength="2000"
                   [value]="taskDescription()"
                   (input)="taskDescription.set($any($event.target).value)"
                 />
@@ -231,12 +235,20 @@
                       }
                       <select
                         class="assignee-select"
-                        [value]="t.assignedTo || ''"
                         [disabled]="reassigningTaskId() === t.id"
                         (change)="reassignTask(t, $any($event.target).value)"
                       >
+                        <!-- store.members() tải bất đồng bộ nên có thể render SAU select. [value] đặt
+                             trên thẻ select chỉ được Angular gán một lần khi giá trị t.assignedTo đổi —
+                             lúc đó chưa có option nào khớp, trình duyệt tự rơi về option đầu tiên và
+                             không bao giờ tự đồng bộ lại dù option đúng xuất hiện sau đó. Đặt [selected]
+                             trên TỪNG option thay vì [value] trên select: Angular re-check giá trị này
+                             mỗi khi @for render lại (tức là mỗi khi danh sách thành viên đổi). -->
+                        <option value="" [selected]="!t.assignedTo || !store.members().some(m2 => m2.userId === t.assignedTo)">
+                          -- Chưa gán --
+                        </option>
                         @for (m of store.members(); track m.id) {
-                          <option [value]="m.userId">{{ memberDisplayName(m, m.userId) }}</option>
+                          <option [value]="m.userId" [selected]="m.userId === t.assignedTo">{{ memberDisplayName(m, m.userId) }}</option>
                         }
                       </select>
                       <div class="task-actions">
@@ -299,12 +311,20 @@
                       }
                       <select
                         class="assignee-select"
-                        [value]="t.assignedTo || ''"
                         [disabled]="reassigningTaskId() === t.id"
                         (change)="reassignTask(t, $any($event.target).value)"
                       >
+                        <!-- store.members() tải bất đồng bộ nên có thể render SAU select. [value] đặt
+                             trên thẻ select chỉ được Angular gán một lần khi giá trị t.assignedTo đổi —
+                             lúc đó chưa có option nào khớp, trình duyệt tự rơi về option đầu tiên và
+                             không bao giờ tự đồng bộ lại dù option đúng xuất hiện sau đó. Đặt [selected]
+                             trên TỪNG option thay vì [value] trên select: Angular re-check giá trị này
+                             mỗi khi @for render lại (tức là mỗi khi danh sách thành viên đổi). -->
+                        <option value="" [selected]="!t.assignedTo || !store.members().some(m2 => m2.userId === t.assignedTo)">
+                          -- Chưa gán --
+                        </option>
                         @for (m of store.members(); track m.id) {
-                          <option [value]="m.userId">{{ memberDisplayName(m, m.userId) }}</option>
+                          <option [value]="m.userId" [selected]="m.userId === t.assignedTo">{{ memberDisplayName(m, m.userId) }}</option>
                         }
                       </select>
                       <div class="task-actions">
@@ -636,14 +656,14 @@
                         <p class="chat-text chat-text-deleted">Tin nhắn đã bị xóa</p>
                       } @else if (editingMessageId() === msg.id) {
                         <div class="chat-edit-box">
-                          <input
-                            type="text"
-                            class="text-input"
+                          <textarea
+                            class="text-input chat-textarea"
+                            maxlength="2000"
+                            rows="1"
                             [value]="editingText()"
-                            (input)="editingText.set($any($event.target).value)"
-                            (keydown.enter)="saveEditMessage(msg)"
-                            (keydown.escape)="cancelEditMessage()"
-                          />
+                            (input)="onEditInput($event)"
+                            (keydown)="onEditKeydown($event, msg)"
+                          ></textarea>
                           <button type="button" class="btn-mini" (click)="saveEditMessage(msg)">Lưu</button>
                           <button type="button" class="btn-mini btn-mini-ghost" (click)="cancelEditMessage()">Hủy</button>
                         </div>
@@ -715,11 +735,12 @@
                     (hovered)="mentionActiveIndex.set($event)"
                   />
                 }
-                <input
+                <textarea
                   #chatInput
-                  type="text"
-                  class="text-input"
-                  placeholder="Nhập tin nhắn... (gõ @ để nhắc tên)"
+                  class="text-input chat-textarea"
+                  placeholder="Nhập tin nhắn... (gõ @ để nhắc tên, Shift+Enter để xuống dòng)"
+                  maxlength="2000"
+                  rows="1"
                   autocomplete="off"
                   role="combobox"
                   aria-autocomplete="list"
@@ -732,7 +753,7 @@
                   (keyup)="onChatCaretMove($event)"
                   (click)="onChatCaretMove($event)"
                   (blur)="onChatBlur()"
-                />
+                ></textarea>
               </div>
               <button
                 type="button"

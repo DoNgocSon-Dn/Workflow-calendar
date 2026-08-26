@@ -4,7 +4,9 @@
       @if (req.title) {
         <h3 class="dh-title">{{ req.title }}</h3>
       }
-      <p class="dh-message">{{ req.message }}</p>
+      @if (req.message) {
+        <p class="dh-message">{{ req.message }}</p>
+      }
 
       @if (req.kind === 'prompt') {
         <input
@@ -20,9 +22,15 @@
       @if (req.kind === 'choice') {
         <div class="dh-choice-list">
           @for (opt of req.options; track opt.value) {
-            <button type="button" class="dh-btn dh-btn-choice" (click)="dialog.respondChoice(opt.value)">
-              {{ opt.label }}
-            </button>
+            <label class="dh-radio-row">
+              <input
+                type="radio"
+                name="dh-choice"
+                [checked]="dialog.selectedChoice() === opt.value"
+                (change)="dialog.selectedChoice.set(opt.value)"
+              />
+              <span>{{ opt.label }}</span>
+            </label>
           }
         </div>
       }
@@ -30,8 +38,11 @@
       <div class="dh-actions">
         @switch (req.kind) {
           @case ('choice') {
-            <button type="button" class="dh-btn dh-btn-ghost" (click)="dialog.respondChoice(null)">
+            <button type="button" class="dh-btn dh-btn-ghost" (click)="dialog.cancelChoice()">
               {{ req.cancelLabel || 'Hủy' }}
+            </button>
+            <button type="button" class="dh-btn dh-btn-primary" (click)="dialog.submitChoice()">
+              {{ req.confirmLabel || 'OK' }}
             </button>
           }
           @case ('alert') {

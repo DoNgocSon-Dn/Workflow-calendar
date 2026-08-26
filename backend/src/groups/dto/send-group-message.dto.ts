@@ -35,6 +35,7 @@ export class MessageMentionDto {
 export class SendGroupMessageDto {
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   message?: string;
 
   /** Giới hạn 50 để một tin nhắn không thể biến thành cỗ máy spam thông báo. */

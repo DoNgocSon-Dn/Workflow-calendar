@@ -2,6 +2,8 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import {
   Group,
   GroupInvite,
+  GroupInviteLink,
+  GroupJoinRequest,
   GroupMember,
   GroupMessage,
   GroupMessageAttachment,
@@ -19,6 +21,8 @@ import {
   DeadlinePhase,
   GroupMessageDraftInput,
   groupInvitationDraft,
+  groupJoinRequestDraft,
+  groupJoinRequestResolvedDraft,
   groupMentionDraft,
   groupMessageDraft,
   groupTaskAssignedDraft,
@@ -56,6 +60,11 @@ export class GroupStore {
   readonly activeWorkspaceModalOpen = signal<boolean>(false);
   /** Lời mời nhóm đang chờ mình phản hồi. */
   readonly pendingInvites = signal<GroupInvite[]>([]);
+  /** Link mời của nhóm đang mở — null nếu chưa tạo hoặc đã bị thu hồi. */
+  readonly inviteLink = signal<GroupInviteLink | null>(null);
+  readonly loadingInviteLink = signal<boolean>(false);
+  /** Yêu cầu tham gia đang chờ duyệt của nhóm đang mở. */
+  readonly pendingJoinRequests = signal<GroupJoinRequest[]>([]);
 
   /** Đặt bởi các luồng mở workspace từ bên ngoài (ví dụ click thông báo tin
    *  nhắn) để yêu cầu modal mở đúng tab thay vì tab mặc định. */
@@ -159,6 +168,51 @@ export class GroupStore {
         if (joined.calendarId) this.realtime.joinCalendar(joined.calendarId);
       }
     }
+  }
+
+  async loadInviteLink(groupId: string): Promise<void> {
+    this.loadingInviteLink.set(true);
+    try {
+      this.inviteLink.set(await this.api.getInviteLink(groupId));
+    } catch (err) {
+      console.error('Không tải được link mời:', err);
+    } finally {
+      this.loadingInviteLink.set(false);
+    }
+  }
+
+  async regenerateInviteLink(groupId: string, role?: string): Promise<void> {
+    this.loadingInviteLink.set(true);
+    try {
+      this.inviteLink.set(await this.api.regenerateInviteLink(groupId, role));
+    } finally {
+      this.loadingInviteLink.set(false);
+    }
+  }
+
+  async loadPendingJoinRequests(groupId: string): Promise<void> {
+    try {
+      this.pendingJoinRequests.set(await this.api.listJoinRequests(groupId));
+    } catch (err) {
+      console.error('Không tải được yêu cầu tham gia:', err);
+    }
+  }
+
+  async approveJoinRequest(groupId: string, requestId: string): Promise<void> {
+    await this.api.decideJoinRequest(groupId, requestId, 'approved');
+    this.pendingJoinRequests.update((list) => list.filter((r) => r.id !== requestId));
+    this.notifications.respond(`group-join-request-${requestId}`, 'accepted');
+  }
+
+  async declineJoinRequest(groupId: string, requestId: string): Promise<void> {
+    await this.api.decideJoinRequest(groupId, requestId, 'declined');
+    this.pendingJoinRequests.update((list) => list.filter((r) => r.id !== requestId));
+    this.notifications.respond(`group-join-request-${requestId}`, 'declined');
+  }
+
+  /** Dùng bởi trang "Yêu cầu tham gia nhóm" công khai (theo link mời). */
+  async requestToJoinGroup(token: string): Promise<GroupJoinRequest> {
+    return this.api.requestToJoin(token);
   }
 
   readonly activeGroupId = computed(() => this.activeGroup()?.id ?? null);
@@ -328,6 +382,70 @@ export class GroupStore {
           createdAt: payload.invite.createdAt,
         }),
       );
+    });
+
+    // Yêu cầu tham gia mới: chỉ admin/leader nhận, vào room riêng của họ.
+    this.realtime.on<{ groupId: string; request: GroupJoinRequest }>(
+      'group:joinRequested',
+      (payload) => {
+        if (!payload?.request) return;
+        if (this.isActiveGroup(payload.groupId)) {
+          this.pendingJoinRequests.update((list) => [
+            payload.request,
+            ...list.filter((r) => r.id !== payload.request.id),
+          ]);
+        }
+        const groupName =
+          this.groups().find((g) => g.id === payload.groupId)?.name ?? null;
+        this.notifications.ingest(
+          groupJoinRequestDraft({
+            requestId: payload.request.id,
+            groupId: payload.groupId,
+            groupName,
+            requesterEmail: payload.request.requesterEmail,
+            requesterName: payload.request.requesterName,
+            createdAt: payload.request.createdAt,
+          }),
+        );
+      },
+    );
+
+    // Yêu cầu vừa được duyệt: thành viên hiện có refresh danh sách ngay.
+    this.realtime.on<{ groupId: string; member: GroupMember }>(
+      'group:memberJoined',
+      (payload) => {
+        if (!payload?.member) return;
+        if (this.isActiveGroup(payload.groupId)) {
+          this.members.update((list) => [
+            ...list.filter((m) => m.userId !== payload.member.userId),
+            payload.member,
+          ]);
+        }
+      },
+    );
+
+    // Kết quả cho chính người đã gửi yêu cầu — họ chưa ở trong room nào của
+    // nhóm nên phải là room riêng của họ.
+    this.realtime.on<{
+      groupId: string;
+      requestId: string;
+      status: 'approved' | 'declined';
+    }>('group:joinRequestDecided', (payload) => {
+      if (!payload) return;
+      const groupName =
+        this.groups().find((g) => g.id === payload.groupId)?.name ?? null;
+      this.notifications.ingest(
+        groupJoinRequestResolvedDraft({
+          requestId: payload.requestId,
+          groupId: payload.groupId,
+          groupName,
+          status: payload.status,
+          createdAt: new Date().toISOString(),
+        }),
+      );
+      if (payload.status === 'approved') {
+        void this.loadGroups();
+      }
     });
 
     // Deadline do cron backend đẩy (không phải tính ở client).

@@ -1,8 +1,9 @@
-import { IsISO8601, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsISO8601, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class CreateTodoDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(300)
   content!: string;
 
   @IsUUID()
@@ -10,6 +11,7 @@ export class CreateTodoDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   description?: string;
 
   @IsOptional()

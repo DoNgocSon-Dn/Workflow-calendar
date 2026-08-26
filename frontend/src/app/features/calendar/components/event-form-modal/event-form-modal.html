@@ -3,7 +3,15 @@
     (ngSubmit)="onSubmit()">
     <header class="modal-header">
       <input id="event-modal-title" class="title-input" type="text" formControlName="title" [placeholder]="i18n.t('event.addTitle')"
-        autofocus />
+        maxlength="200" autofocus />
+      @if (event()) {
+        <button type="button" class="icon-btn danger" [attr.aria-label]="i18n.t('common.delete')" [title]="i18n.t('common.delete')" (click)="remove()">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path fill="currentColor"
+              d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12ZM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4Z" />
+          </svg>
+        </button>
+      }
       <button type="button" class="icon-btn" [attr.aria-label]="i18n.t('common.close')" (click)="cancel()">
         <svg viewBox="0 0 24 24" width="20" height="20">
           <path fill="currentColor"
@@ -157,8 +165,7 @@
                       (change)="customEndType.set('until')" />
                     {{ i18n.t('event.endsOn') }}
                     @if (customEndType() === 'until') {
-                    <input type="date" class="date-input" [value]="customUntil()"
-                      (change)="customUntil.set($any($event.target).value)" />
+                    <app-date-picker [formControl]="customUntilControl" [ariaLabel]="i18n.t('event.endsOn')" />
                     }
                   </label>
                   <label class="reminder-row">
@@ -318,7 +325,7 @@
         </svg>
         @if (locationOpen()) {
         <div class="field-content">
-          <input class="text-input" type="text" formControlName="location"
+          <input class="text-input" type="text" formControlName="location" maxlength="200"
             [placeholder]="i18n.t('event.addLocation')" />
         </div>
         } @else {
@@ -337,7 +344,7 @@
         </svg>
         @if (descriptionOpen()) {
         <div class="field-content">
-          <textarea class="text-input" rows="3" formControlName="description" [placeholder]="i18n.t('event.addDescription')"></textarea>
+          <textarea class="text-input" rows="3" formControlName="description" maxlength="2000" [placeholder]="i18n.t('event.addDescription')"></textarea>
         </div>
         } @else {
         <button type="button" class="field-toggle" [class.has-value]="!!form.controls.description.value"
@@ -493,7 +500,7 @@
         </svg>
         @if (descriptionOpen()) {
         <div class="field-content">
-          <textarea class="text-input" rows="3" formControlName="description" [placeholder]="i18n.t('event.addDescription')"></textarea>
+          <textarea class="text-input" rows="3" formControlName="description" maxlength="2000" [placeholder]="i18n.t('event.addDescription')"></textarea>
         </div>
         } @else {
         <button type="button" class="field-toggle" [class.has-value]="!!form.controls.description.value"
@@ -530,11 +537,6 @@
     }
 
     <footer class="modal-footer">
-      @if (event()) {
-      <button type="button" class="text-btn danger" (click)="remove()">
-        {{ i18n.t('common.delete') }}
-      </button>
-      }
       <span class="spacer"></span>
       <button type="button" class="text-btn" (click)="cancel()">{{ i18n.t('common.cancel') }}</button>
       @if (createMode() === 'event') {

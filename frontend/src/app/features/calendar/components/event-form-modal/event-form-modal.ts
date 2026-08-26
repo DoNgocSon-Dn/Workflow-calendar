@@ -13,6 +13,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, map } from 'rxjs';
 import { AuthStore } from '../../../../core/auth/auth-store';
+import { NotificationQueue } from '../../../../core/realtime/notification-queue';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { TimeFormatService } from '../../../../core/time-format/time-format-service';
 import { DialogService } from '../../../../core/services/dialog.service';
@@ -204,7 +205,10 @@ export class EventFormModal {
   readonly customUnit = signal<RecurrenceUnit>('week');
   readonly customByWeekdays = signal<Set<number>>(new Set());
   readonly customEndType = signal<RecurrenceEndType>('never');
-  readonly customUntil = signal('');
+  /** FormControl chứ không phải signal — để dùng được <app-date-picker
+   *  [formControl]>, tránh <input type="date"> gốc (Chromium hiện mm/dd/yyyy
+   *  theo ngôn ngữ trình duyệt bất kể `lang` của trang, xem date-picker.ts). */
+  readonly customUntilControl = new FormControl('', { nonNullable: true });
   readonly customCount = signal(10);
 
   /** Khách mời chờ mời khi đang TẠO MỚI sự kiện — chưa có eventId để gọi
@@ -275,15 +279,15 @@ export class EventFormModal {
   });
 
   readonly form = this.fb.nonNullable.group({
-    title: ['', Validators.required],
+    title: ['', [Validators.required, Validators.maxLength(200)]],
     calendarId: [this.store.defaultWritableCalendar()?.id ?? '', Validators.required],
     allDay: [false],
     startDate: [toDateInputValue(this.store.today())],
     startTime: ['09:00'],
     endDate: [toDateInputValue(this.store.today())],
     endTime: ['10:00'],
-    location: [''],
-    description: [''],
+    location: ['', Validators.maxLength(200)],
+    description: ['', Validators.maxLength(2000)],
     meetLink: [''],
   });
 
@@ -323,7 +327,7 @@ export class EventFormModal {
       this.customUnit.set('week');
       this.customByWeekdays.set(new Set());
       this.customEndType.set('never');
-      this.customUntil.set('');
+      this.customUntilControl.reset('');
       this.customCount.set(10);
       this.pendingGuestEmails.set([]);
       this.pendingGuestEmailControl.reset('');
@@ -585,14 +589,14 @@ export class EventFormModal {
           new Set(existing.byWeekdays && existing.byWeekdays.length > 0 ? existing.byWeekdays : [startWeekday]),
         );
         this.customEndType.set(existing.endType ?? 'never');
-        this.customUntil.set(existing.until ?? toDateInputValue(addDays(startDate, 30)));
+        this.customUntilControl.setValue(existing.until ?? toDateInputValue(addDays(startDate, 30)));
         this.customCount.set(existing.count ?? 10);
       } else {
         this.customInterval.set(1);
         this.customUnit.set('week');
         this.customByWeekdays.set(new Set([startWeekday]));
         this.customEndType.set('never');
-        this.customUntil.set(toDateInputValue(addDays(startDate, 30)));
+        this.customUntilControl.setValue(toDateInputValue(addDays(startDate, 30)));
         this.customCount.set(10);
       }
       this.customRecurrenceOpen.set(true);
@@ -631,7 +635,7 @@ export class EventFormModal {
       unit: this.customUnit(),
       byWeekdays,
       endType,
-      until: endType === 'until' ? (this.customUntil() || toDateInputValue(addDays(startDate, 30))) : undefined,
+      until: endType === 'until' ? (this.customUntilControl.value || toDateInputValue(addDays(startDate, 30))) : undefined,
       count: endType === 'count' ? Math.max(1, this.customCount() || 1) : undefined,
     };
     this.recurrenceRule.set(rule);
@@ -896,10 +900,28 @@ export class EventFormModal {
         this.i18n.t('event.deleteScopeMessage'),
       );
       if (!scope) return; // Người dùng huỷ — không xoá, không đóng modal.
-      await this.store.deleteEventSeries(current.id, scope);
+      // deleteEventSeries() văng lỗi thật (khác deleteEvent() luôn tự dọn cục
+      // bộ) — phải bắt ở đây để không báo "Đã xoá" rồi đóng modal trong khi
+      // chuỗi lặp vẫn còn nguyên trên lịch.
+      try {
+        await this.store.deleteEventSeries(current.id, scope);
+      } catch (err) {
+        await this.dialog.alert(extractErrorMessage(err, 'Không thể xoá chuỗi sự kiện lặp lại này.'));
+        return;
+      }
     } else {
       await this.store.deleteEvent(current.id);
     }
+    // Xác nhận cục bộ cho chính người vừa bấm xoá — khác các toast khác trong
+    // store vốn chỉ báo hành động của NGƯỜI KHÁC (self-origin bị lọc bỏ có
+    // chủ đích). Việc xoá đã lưu thật xuống DB (soft-delete) và khôi phục
+    // được qua Thùng rác, nên không cần dựng thêm nút "Hoàn tác" riêng ở đây.
+    this.notificationQueue.push({
+      eventId: current.id,
+      title: this.i18n.t('event.deletedToast'),
+      body: current.title,
+      kind: 'deleted',
+    });
     this.closed.emit();
   }
 

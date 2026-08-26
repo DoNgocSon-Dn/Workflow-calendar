@@ -1,12 +1,14 @@
-import { IsNotEmpty, IsOptional, IsString, IsIn, IsDateString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsIn, IsDateString, MaxLength } from 'class-validator';
 
 export class CreateGroupTaskDto {
   @IsNotEmpty()
   @IsString()
+  @MaxLength(200)
   title: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   description?: string;
 
   @IsOptional()

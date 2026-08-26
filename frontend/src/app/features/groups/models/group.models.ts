@@ -54,6 +54,37 @@ export interface GroupInvite {
   inviterEmail: string | null;
 }
 
+export interface GroupInviteLink {
+  token: string;
+  groupId: string;
+  role: string;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+export type GroupJoinRequestStatus = 'pending' | 'approved' | 'declined';
+
+export interface GroupJoinRequest {
+  id: string;
+  groupId: string;
+  userId: string;
+  role: string;
+  status: GroupJoinRequestStatus;
+  createdAt: string;
+  requesterEmail?: string;
+  requesterName?: string;
+}
+
+export interface GroupInviteLinkPreview {
+  groupId: string;
+  groupName: string;
+  groupDescription?: string;
+  groupColor: string;
+  role: string;
+  isMember: boolean;
+  myPendingRequestId: string | null;
+}
+
 export interface GroupTask {
   id: string;
   groupId: string;

@@ -43,6 +43,14 @@
     toastDim 1.2s ease-in var(--dim-at) both;
 }
 
+/* Trùng lịch là một CẢNH BÁO, không phải một cập nhật bình thường — tách khỏi
+   accent chung của theme để luôn nổi bật màu cam bất kể theme/ngày lễ đang
+   chọn màu gì. */
+.toast--conflict {
+  --accent: #f59e0b;
+  --accent-soft: rgba(245, 158, 11, 0.15);
+}
+
 /* Bay tu phia sau man hinh toi, vuot qua vi tri dich mot chut roi lui ve.
    Overshoot nam o keyframe 72% chu khong nho cubic-bezier, de kiem soat duoc
    bien do va khong bi giat. */

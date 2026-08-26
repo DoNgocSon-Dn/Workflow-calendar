@@ -185,10 +185,16 @@
 }
 
 .tasks-section,
-.members-section,
 .chat-section,
 .calendar-section {
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  animation: fadeInPanel 0.16s ease-out;
+}
+
+.members-section {
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   animation: fadeInPanel 0.16s ease-out;
@@ -401,6 +407,7 @@
 
 .invite-form-row {
   display: flex;
+  align-items: center;
   gap: 10px;
 }
 
@@ -414,8 +421,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  overflow-y: auto;
-  min-height: 0;
+  padding: 4px 4px 20px 4px;
 }
 
 .member-row {
@@ -534,12 +540,17 @@
   transform: rotate(180deg);
 }
 
+.member-row:has(.role-select-btn[aria-expanded="true"]) {
+  z-index: 10;
+  position: relative;
+}
+
 /* Floating custom dropdown menu (Rounded 12px box matching floating UI) */
 .role-dropdown-menu {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  z-index: 100;
+  z-index: 1000;
   min-width: 175px;
   background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
@@ -552,8 +563,20 @@
   animation: roleMenuFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Trong danh sách thành viên: các phần tử từ thứ 2 trở đi mở ngược lên trên để không bị che bởi viền cuộn container */
+.members-list .member-row:nth-child(n+2) .role-dropdown-menu {
+  top: auto;
+  bottom: calc(100% + 6px);
+  animation-name: roleMenuFadeInUp;
+}
+
 @keyframes roleMenuFadeIn {
   from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes roleMenuFadeInUp {
+  from { opacity: 0; transform: translateY(4px) scale(0.97); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
@@ -956,6 +979,7 @@
 
 .chat-input-bar {
   display: flex;
+  align-items: flex-end;
   gap: 10px;
   margin-top: 12px;
   flex: 0 0 auto;
@@ -1364,6 +1388,17 @@
 
 .chat-composer .text-input {
   width: 100%;
+}
+
+/* Cao dần theo số dòng (autoGrowChatInput đặt style.height tay), tới mức tối
+   đa thì cuộn bên trong thay vì đẩy khung chat phình theo. */
+.chat-textarea {
+  display: block;
+  resize: none;
+  overflow-y: auto;
+  max-height: 120px;
+  font-family: inherit;
+  line-height: 1.4;
 }
 
 /* Mở LÊN TRÊN: ô nhập nằm sát đáy khung chat nên popup xổ xuống sẽ tràn ra

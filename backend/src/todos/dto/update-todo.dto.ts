@@ -1,9 +1,10 @@
-import { IsBoolean, IsISO8601, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsBoolean, IsISO8601, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class UpdateTodoDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(300)
   content?: string;
 
   @IsOptional()
@@ -20,6 +21,7 @@ export class UpdateTodoDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   description?: string;
 
   @IsOptional()

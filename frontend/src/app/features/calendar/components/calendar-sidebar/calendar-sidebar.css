@@ -233,6 +233,34 @@
   color: var(--holiday-accent);
 }
 
+.delete-calendar-btn {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  padding: 0.2rem;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  opacity: 0;
+  transition: all 0.15s ease;
+}
+
+.calendar-item:hover .delete-calendar-btn,
+.delete-calendar-btn:focus-visible {
+  opacity: 1;
+}
+
+.delete-calendar-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.delete-calendar-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .group-item {
   border-radius: var(--radius-md);
   /* Gap mặc định 0.65rem là để tách chấm màu khỏi tên; icon nhóm đứng ngay

@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
@@ -22,6 +23,9 @@ import { UpdateGroupTaskDto } from './dto/update-group-task.dto';
 import { SendGroupMessageDto } from './dto/send-group-message.dto';
 import { UpdateGroupMessageDto } from './dto/update-group-message.dto';
 import { RespondGroupInviteDto } from './dto/respond-group-invite.dto';
+import { CreateInviteLinkDto } from './dto/create-invite-link.dto';
+import { RequestJoinGroupDto } from './dto/request-join-group.dto';
+import { DecideJoinRequestDto } from './dto/decide-join-request.dto';
 import { GroupsService } from './groups.service';
 
 @Controller('groups')
@@ -49,6 +53,24 @@ export class GroupsController {
   @Get('tasks/mine')
   async listMyTasks(@CurrentSupabase() supabase: SupabaseClient) {
     return this.groupsService.listMyTasks(supabase);
+  }
+
+  // Token, không phải groupId — cũng phải đứng trước ':id'.
+  @Get('invite-link/preview')
+  async previewInviteLink(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @Query('token') token: string,
+  ) {
+    return this.groupsService.getInviteLinkPreview(supabase, token);
+  }
+
+  @Post('invite-link/join')
+  async requestJoinByToken(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Body() dto: RequestJoinGroupDto,
+  ) {
+    return this.groupsService.requestToJoin(supabase, user, dto.token);
   }
 
   @Post()
@@ -115,6 +137,56 @@ export class GroupsController {
     @Body() dto: InviteGroupMemberDto,
   ) {
     return this.groupsService.inviteMember(supabase, user, groupId, dto);
+  }
+
+  @Get(':id/invite-link')
+  async getInviteLink(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('id') groupId: string,
+  ) {
+    return this.groupsService.getInviteLink(supabase, user, groupId);
+  }
+
+  @Post(':id/invite-link')
+  async regenerateInviteLink(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('id') groupId: string,
+    @Body() dto: CreateInviteLinkDto,
+  ) {
+    return this.groupsService.createOrRegenerateInviteLink(
+      supabase,
+      user,
+      groupId,
+      dto.role,
+    );
+  }
+
+  @Get(':id/join-requests')
+  async listJoinRequests(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('id') groupId: string,
+  ) {
+    return this.groupsService.listJoinRequests(supabase, user, groupId);
+  }
+
+  @Patch(':id/join-requests/:requestId')
+  async decideJoinRequest(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('id') groupId: string,
+    @Param('requestId') requestId: string,
+    @Body() dto: DecideJoinRequestDto,
+  ) {
+    return this.groupsService.decideJoinRequest(
+      supabase,
+      user,
+      groupId,
+      requestId,
+      dto,
+    );
   }
 
   @Patch(':id/members/:userId/role')

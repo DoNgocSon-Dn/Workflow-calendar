@@ -2,6 +2,7 @@ export type NotificationType =
   | 'message'
   | 'task'
   | 'group_invitation'
+  | 'group_join_request'
   | 'event_invitation'
   | 'event_update'
   | 'reminder'
@@ -67,6 +68,7 @@ const CATEGORY_BY_TYPE: Readonly<Record<NotificationType, NotificationCategory |
   message: 'message',
   task: 'task',
   group_invitation: 'group',
+  group_join_request: 'group',
   event_invitation: 'event',
   event_update: 'event',
   reminder: 'event',

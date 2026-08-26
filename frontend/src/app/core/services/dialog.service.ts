@@ -33,6 +33,10 @@ export interface DialogRequest {
 export class DialogService {
   readonly request = signal<DialogRequest | null>(null);
   readonly inputValue = signal('');
+  /** Lựa chọn đang được tick trong hộp thoại kind='choice' — người dùng đổi ý
+   *  vài lần trước khi bấm OK, không đóng ngay khi bấm vào 1 lựa chọn (khác
+   *  hành vi cũ, giờ khớp kiểu "Xóa sự kiện định kỳ" của Google Calendar). */
+  readonly selectedChoice = signal<string | null>(null);
 
   /**
    * Dialog đã trả lời xong nhưng còn đang chạy animation biến mất.
@@ -69,16 +73,17 @@ export class DialogService {
     });
   }
 
-  /** Hộp thoại nhiều lựa chọn (mỗi lựa chọn một nút) — vd phạm vi sửa/xoá một
-   *  lần lặp trong chuỗi lặp lại: "Chỉ sự kiện này" / "... và các sự kiện
-   *  sau" / "Tất cả sự kiện". Trả về `value` của nút được bấm, hoặc `null`
-   *  nếu người dùng huỷ (Esc / bấm ra ngoài). */
+  /** Hộp thoại nhiều lựa chọn (radio + nút OK) — vd phạm vi sửa/xoá một lần
+   *  lặp trong chuỗi lặp lại: "Chỉ sự kiện này" / "... và các sự kiện sau" /
+   *  "Tất cả sự kiện". Trả về `value` của lựa chọn đang tick lúc bấm OK, hoặc
+   *  `null` nếu người dùng huỷ (Esc / bấm ra ngoài / nút Huỷ). */
   choice(
     message: string,
     options: readonly DialogChoiceOption[],
     opts?: { title?: string },
   ): Promise<string | null> {
     return new Promise<string | null>((resolve) => {
+      this.selectedChoice.set(options[0]?.value ?? null);
       this.open(
         { kind: 'choice', message, options, ...opts },
         resolve as (value: unknown) => void,
@@ -86,8 +91,12 @@ export class DialogService {
     });
   }
 
-  respondChoice(value: string | null): void {
-    this.resolve(value);
+  submitChoice(): void {
+    this.resolve(this.selectedChoice());
+  }
+
+  cancelChoice(): void {
+    this.resolve(null);
   }
 
   private open(request: DialogRequest, resolve: (value: unknown) => void): void {

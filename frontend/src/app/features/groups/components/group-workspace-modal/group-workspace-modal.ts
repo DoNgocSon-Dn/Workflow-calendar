@@ -184,7 +184,7 @@ export class GroupWorkspaceModal {
   }
 
   // Chat form
-  protected readonly chatInput = viewChild<ElementRef<HTMLInputElement>>('chatInput');
+  protected readonly chatInput = viewChild<ElementRef<HTMLTextAreaElement>>('chatInput');
   protected readonly chatMessage = signal('');
   protected readonly sendingChat = signal(false);
   protected readonly uploadingAttachment = signal(false);
@@ -236,6 +236,18 @@ export class GroupWorkspaceModal {
         }
         if (targetId) this.store.pendingChatMessageId.set(null);
       }, 50);
+    });
+
+    // Link mời + yêu cầu tham gia chỉ admin/leader xem được (backend trả 403
+    // cho người khác) — chỉ tải khi mở đúng tab Thành viên với đúng quyền,
+    // tránh gọi API thừa (và lỗi 403 vô ích) cho thành viên thường.
+    effect(() => {
+      const group = this.store.activeGroup();
+      if (this.activeTab() !== 'members' || !this.canInviteMembers() || !group) return;
+
+      const groupId = untracked(() => group.id);
+      void this.store.loadInviteLink(groupId);
+      void this.store.loadPendingJoinRequests(groupId);
     });
   }
 
@@ -644,6 +656,25 @@ export class GroupWorkspaceModal {
     this.editingText.set('');
   }
 
+  protected onEditInput(event: Event): void {
+    const el = event.target as HTMLTextAreaElement;
+    this.editingText.set(el.value);
+    this.autoGrowChatInput(el);
+  }
+
+  /** Enter lưu, Shift+Enter xuống dòng — cùng quy tắc với ô soạn tin chính. */
+  protected onEditKeydown(event: KeyboardEvent, msg: GroupMessage): void {
+    if (event.isComposing || event.keyCode === 229) return;
+    if (event.key === 'Escape') {
+      this.cancelEditMessage();
+      return;
+    }
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      void this.saveEditMessage(msg);
+    }
+  }
+
   async saveEditMessage(msg: GroupMessage): Promise<void> {
     const group = this.store.activeGroup();
     const text = this.editingText().trim();
@@ -735,16 +766,25 @@ export class GroupWorkspaceModal {
   /** Đọc lại vị trí con trỏ để biết còn đang gõ trong một mention hay không.
    *  Gọi sau MỌI thao tác đổi nội dung hoặc đổi vị trí con trỏ — đó cũng chính
    *  là cách popup tự đóng khi người dùng xoá dấu @ hoặc click sang chỗ khác. */
-  private syncMentionQuery(el: HTMLInputElement): void {
+  private syncMentionQuery(el: HTMLTextAreaElement): void {
     const caret = el.selectionStart ?? el.value.length;
     this.mentionQuery.set(findActiveMention(el.value, caret));
     this.mentionActiveIndex.set(0);
   }
 
   protected onChatInput(event: Event): void {
-    const el = event.target as HTMLInputElement;
+    const el = event.target as HTMLTextAreaElement;
     this.chatMessage.set(el.value);
     this.syncMentionQuery(el);
+    this.autoGrowChatInput(el);
+  }
+
+  /** Ô nhập cao dần theo số dòng đang gõ, giới hạn bởi max-height trong CSS
+   *  (phần còn lại cuộn được) — reset về 'auto' trước để đo lại scrollHeight
+   *  khi người dùng xoá bớt chữ, nếu không chiều cao chỉ tăng chứ không giảm. */
+  private autoGrowChatInput(el: HTMLTextAreaElement): void {
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
   }
 
   /** Con trỏ di chuyển bằng chuột hoặc phím mũi tên trái/phải/Home/End —
@@ -756,7 +796,7 @@ export class GroupWorkspaceModal {
       const handled = ['ArrowUp', 'ArrowDown', 'Enter', 'Escape', 'Tab'];
       if (handled.includes(event.key)) return;
     }
-    this.syncMentionQuery(event.target as HTMLInputElement);
+    this.syncMentionQuery(event.target as HTMLTextAreaElement);
   }
 
   protected closeMentionPopup(): void {
@@ -791,6 +831,7 @@ export class GroupWorkspaceModal {
     el.value = result.text;
     el.focus();
     el.setSelectionRange(result.caret, result.caret);
+    this.autoGrowChatInput(el);
 
     this.selectedMentions.update((list) => {
       const mention: GroupMessageMention =
@@ -810,8 +851,9 @@ export class GroupWorkspaceModal {
   /**
    * Điều phối bàn phím trong ô nhập chat.
    *
-   * Hai luật quan trọng:
+   * Ba luật quan trọng:
    *   - Popup mention đang mở và có gợi ý thì Enter CHỈ chèn mention, không gửi.
+   *   - Shift+Enter xuống dòng (hành vi mặc định của textarea, không chặn).
    *   - Ngoài ra Enter gửi ngay, không qua bất kỳ độ trễ nào.
    */
   protected onChatKeydown(event: KeyboardEvent): void {
@@ -844,7 +886,7 @@ export class GroupWorkspaceModal {
       }
     }
 
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       this.closeMentionPopup();
       this.sendChat();
@@ -901,6 +943,11 @@ export class GroupWorkspaceModal {
     const mentions = this.resolveMentions(text);
 
     this.chatMessage.set('');
+    // [value] chỉ đồng bộ nội dung, không đụng tới style.height mà
+    // autoGrowChatInput đã đặt tay — phải reset thủ công kẻo ô nhập giữ
+    // nguyên chiều cao cao nhất từng đạt được sau khi gửi.
+    const el = this.chatInput()?.nativeElement;
+    if (el) el.style.height = 'auto';
     this.selectedMentions.set([]);
     this.closeMentionPopup();
     this.attachmentError.set(null);

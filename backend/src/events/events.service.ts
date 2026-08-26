@@ -503,9 +503,6 @@ export class EventsService {
         end: eventDto.end,
         excludeEventId: eventDto.id,
       });
-      this.logger.log(
-        `notifyConflictsSafely: event ${eventDto.id} (${eventDto.title}) userId=${userId} -> ${conflicts.length} conflict(s)`,
-      );
       if (conflicts.length === 0) return;
       this.realtimeGateway.emitToUser(userId, 'event:conflict', {
         event: eventDto,
