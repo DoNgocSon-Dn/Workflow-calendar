@@ -422,3 +422,108 @@
 .dropzone.drag-over > * {
   pointer-events: none;
 }
+
+/* ===================================================================
+   Mở và đóng màn Import
+
+   Đây là một TRANG theo route, không phải modal có lớp phủ — nên nền
+   trang (.page) đóng vai lớp nền, còn .modal là khối nội dung nổi lên.
+   Chỉ animate transform và opacity: hai thuộc tính trình duyệt xử lý được
+   trên compositor, không gây tính lại layout ở từng khung hình.
+   =================================================================== */
+
+.page {
+  animation: pageIn 0.18s ease-out both;
+}
+
+@keyframes pageIn {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Khối nội dung theo sau nền một nhịp rất ngắn: nền phản hồi trước cho cảm
+   giác giao diện đã nhận lệnh, rồi không gian làm việc mới dựng lên. */
+.modal {
+  animation: modalIn 0.26s cubic-bezier(0.16, 1, 0.3, 1) 0.04s both;
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+}
+
+/* Nội dung bên trong nối tiếp nhau theo đúng thứ tự mắt đọc: tiêu đề →
+   phần thân (ghi chú + vùng thả file) → hàng nút. Độ trễ giữ ở mức vài chục
+   mili giây; lớn hơn là người dùng bắt đầu thấy mình phải chờ. */
+.modal-header {
+  animation: contentIn 0.24s ease-out 0.10s both;
+}
+
+.modal-body {
+  animation: contentIn 0.24s ease-out 0.16s both;
+}
+
+.modal-footer {
+  animation: contentIn 0.24s ease-out 0.22s both;
+}
+
+@keyframes contentIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Đóng: đảo lại chuyển động mở, nhanh hơn. Lớp is-closing nằm trên chính
+   phần tử host của component, do đó dùng :host() để với tới. Thời lượng
+   phải khớp EXIT_MS trong import-modal.ts — lệch nhau thì hoặc trang nhảy
+   biến mất giữa animation, hoặc đứng đơ một nhịp sau khi animation xong. */
+:host(.is-closing) .page {
+  animation: pageOut 0.18s ease-in forwards;
+  /* Đang rời đi thì không nhận thao tác nữa — tránh bấm thêm vào một màn
+     hình sắp không còn tồn tại. */
+  pointer-events: none;
+}
+
+:host(.is-closing) .modal {
+  animation: modalOut 0.18s ease-in forwards;
+}
+
+/* Các khối con phải bỏ animation vào của chúng, nếu không "both" giữ lại
+   trạng thái cuối và chúng không mờ theo khối cha. */
+:host(.is-closing) .modal-header,
+:host(.is-closing) .modal-body,
+:host(.is-closing) .modal-footer {
+  animation: none;
+}
+
+@keyframes pageOut {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modalOut {
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
+  }
+}
+
+/* Người tắt hiệu ứng chuyển động vẫn phải thấy đủ mọi bước của luồng —
+   rút gần như bằng 0 chứ không xoá, để mã đợi animation vẫn chạy đúng. */
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .modal,
+  .modal-header,
+  .modal-body,
+  .modal-footer,
+  :host(.is-closing) .page,
+  :host(.is-closing) .modal {
+    animation-duration: 0.01s;
+    animation-delay: 0s;
+  }
+}

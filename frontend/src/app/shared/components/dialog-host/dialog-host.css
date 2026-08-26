@@ -103,3 +103,37 @@
   from { opacity: 0; transform: scale(0.97) translateY(6px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
+
+/* Đóng: đảo lại đúng chuyển động lúc mở, nhanh hơn một chút — biến mất nên
+   dứt khoát hơn xuất hiện. Trong lúc chạy, lớp phủ không nhận chuột nữa để
+   không ai bấm trúng nút của một dialog đã trả lời xong. */
+.dh-overlay.is-closing {
+  animation: dhFadeOut 0.14s ease-in forwards;
+  pointer-events: none;
+}
+
+.dh-dialog.is-closing {
+  animation: dhPopOut 0.14s ease-in forwards;
+}
+
+@keyframes dhFadeOut {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes dhPopOut {
+  to {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dh-overlay,
+  .dh-dialog,
+  .dh-overlay.is-closing,
+  .dh-dialog.is-closing {
+    animation-duration: 0.01s;
+  }
+}

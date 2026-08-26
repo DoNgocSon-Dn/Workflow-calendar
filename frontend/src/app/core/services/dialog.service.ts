@@ -27,6 +27,17 @@ export class DialogService {
   readonly request = signal<DialogRequest | null>(null);
   readonly inputValue = signal('');
 
+  /**
+   * Dialog đã trả lời xong nhưng còn đang chạy animation biến mất.
+   * Host đọc cờ này để đổi sang animation đóng thay vì gỡ phần tử ngay,
+   * vốn khiến dialog "tắt phụt" giữa chừng.
+   */
+  readonly closing = signal(false);
+
+  /** Khớp thời lượng keyframe đóng trong dialog-host.css. */
+  private static readonly EXIT_MS = 140;
+  private exitTimer: ReturnType<typeof setTimeout> | null = null;
+
   private resolver: ((value: unknown) => void) | null = null;
 
   confirm(
@@ -55,6 +66,15 @@ export class DialogService {
     // Hai lệnh gọi chồng nhau (hiếm, nhưng có thể xảy ra) — huỷ cái cũ với
     // giá trị "từ chối" an toàn thay vì để Promise treo vĩnh viễn.
     this.resolver?.(request.kind === 'confirm' ? false : null);
+
+    // Dialog mới mở đè lên một dialog đang biến mất: dừng hẹn giờ dọn dẹp,
+    // nếu không nó sẽ nổ ít mili giây sau và xoá mất dialog vừa mở.
+    if (this.exitTimer) {
+      clearTimeout(this.exitTimer);
+      this.exitTimer = null;
+    }
+    this.closing.set(false);
+
     this.resolver = resolve;
     this.request.set(request);
   }
@@ -83,7 +103,18 @@ export class DialogService {
   private resolve(value: unknown): void {
     const resolver = this.resolver;
     this.resolver = null;
-    this.request.set(null);
+
+    // Trả lời NGAY, rồi mới chạy animation biến mất. Đợi animation xong
+    // mới resolve sẽ làm mọi thao tác sau đó trễ thêm — và với luồng huỷ
+    // import, ta MUỐN trang bắt đầu đóng chồng lên lúc dialog đang mờ đi,
+    // để hai chuyển động nối liền chứ không giật cục.
     resolver?.(value);
+
+    this.closing.set(true);
+    this.exitTimer = setTimeout(() => {
+      this.exitTimer = null;
+      this.closing.set(false);
+      this.request.set(null);
+    }, DialogService.EXIT_MS);
   }
 }

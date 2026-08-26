@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { DialogService } from '../../../../core/services/dialog.service';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../../environments/environment';
 import { CalendarStore } from '../../data/calendar-store';
@@ -106,12 +107,19 @@ function fromDatetimeLocal(dtLocalStr: string): string {
   // Nghe ở cấp document vì vùng thả file là một <label>, không nhận được
   // focus nên sự kiện paste không bao giờ bay tới nó. Trang này chỉ tồn tại
   // lúc route đang active, nên phạm vi này là đúng.
-  host: { '(document:paste)': 'onPaste($event)' },
+  host: {
+    '(document:paste)': 'onPaste($event)',
+    // Escape phải đi qua CÙNG một chốt kiểm tra như nút Hủy — nếu không sẽ
+    // thành nghịch lý: bấm Hủy thì được hỏi, nhấn Escape thì mất trắng.
+    '(document:keydown.escape)': 'onEscape($event)',
+    '[class.is-closing]': 'closing()',
+  },
 })
 export class ImportModalComponent {
   private readonly http = inject(HttpClient);
   protected readonly store = inject(CalendarStore);
   private readonly router = inject(Router);
+  private readonly dialog = inject(DialogService);
 
   readonly selectedFile = signal<File | null>(null);
   readonly parsing = signal(false);
@@ -479,7 +487,8 @@ export class ImportModalComponent {
       }
 
       this.importSuccess.set(true);
-      setTimeout(() => this.cancel(), 1200);
+      // importSuccess() = true nên isImportDirty() đã là false — không hỏi lại.
+      setTimeout(() => void this.cancel(), 1200);
     } catch (err: any) {
       this.parseError.set(err?.error?.message || 'Lỗi khi lưu sự kiện hàng loạt.');
     } finally {
@@ -487,7 +496,65 @@ export class ImportModalComponent {
     }
   }
 
-  cancel(): void {
-    void this.router.navigate(['/calendar']);
+  /**
+   * Phiên import đã có thứ để mất hay chưa.
+   *
+   * Chỉ hỏi lại khi người dùng thực sự có nguy cơ mất công sức: đã chọn/thả/
+   * dán một file, hoặc đã đọc ra được danh sách sự kiện. Hỏi khi màn hình còn
+   * trống chỉ làm phiền và khiến người ta bấm bừa qua cảnh báo về sau.
+   *
+   * Import xong thì hết dirty — dữ liệu đã nằm trong lịch, không còn gì để mất.
+   */
+  readonly isImportDirty = computed(
+    () => !this.importSuccess() && (this.selectedFile() !== null || this.eventsPreview().length > 0),
+  );
+
+  /** Đang chạy animation rời trang. Cũng là chốt chặn double-click. */
+  protected readonly closing = signal(false);
+
+  /** Khớp thời lượng keyframe pageOut trong import-modal.css. */
+  private static readonly EXIT_MS = 180;
+
+  onEscape(event: Event): void {
+    // Dialog xác nhận đang mở thì Escape thuộc về nó — DialogHost tự xử lý.
+    // Không chặn ở đây sẽ đóng cả hai lớp cùng lúc.
+    if (this.dialog.request()) return;
+    event.preventDefault();
+    void this.cancel();
+  }
+
+  async cancel(): Promise<void> {
+    // Bấm liên tục hoặc Escape dồn dập không được xếp chồng nhiều lần đóng.
+    if (this.closing()) return;
+
+    if (this.isImportDirty()) {
+      const confirmed = await this.dialog.confirm(
+        'Dữ liệu hoặc file bạn đã thêm sẽ không được lưu. Bạn có chắc chắn muốn hủy?',
+        {
+          title: 'Hủy quá trình import?',
+          confirmLabel: 'Hủy Import',
+          cancelLabel: 'Tiếp tục Import',
+          danger: true,
+        },
+      );
+      // "Tiếp tục Import": không đụng gì tới file/dữ liệu đang có.
+      if (!confirmed) return;
+    }
+
+    this.leave();
+  }
+
+  /**
+   * Chạy animation rời trang rồi mới điều hướng.
+   *
+   * Điều hướng ngay sẽ gỡ component tức thì và animation không kịp hiện frame
+   * nào. Dialog xác nhận (nếu có) đang mờ dần cùng lúc này — hai chuyển động
+   * chồng lên nhau nên mắt thấy một dòng chảy liền mạch.
+   */
+  private leave(): void {
+    this.closing.set(true);
+    setTimeout(() => {
+      void this.router.navigate(['/calendar']);
+    }, ImportModalComponent.EXIT_MS);
   }
 }
