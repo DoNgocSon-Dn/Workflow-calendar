@@ -362,11 +362,18 @@ export class GroupsService {
       );
     }
 
-    // 3. Insert leader into group_members
+    // 3. Hàng thành viên cho chính người tạo, với vai trò trưởng nhóm.
     //
-    // Giá trị phải là 'leader'. Migration 15 đã loại 'owner' khỏi ràng buộc
-    // CHECK của cột này, nên ghi chuỗi cũ sẽ bị CSDL từ chối và nhóm vừa tạo
-    // ra không có hàng trưởng nhóm nào.
+    // PHẢI đi qua toDbGroupRole(), không ghi thẳng chuỗi. Trước đây chỗ này ghi
+    // cứng 'owner' — giá trị đó đã bị migration 15 loại khỏi ràng buộc CHECK
+    // (chỉ còn 'leader'/'admin'/'member'), nên lệnh insert luôn bị từ chối.
+    //
+    // Và vì kết quả KHÔNG được kiểm tra, nó hỏng trong IM LẶNG: nhóm vẫn tạo
+    // xong, API vẫn trả về thành công, nhưng người tạo không có hàng nào trong
+    // group_members. Đến lúc mời bạn thì policy group_invites_insert đòi
+    // is_group_member(...) = true, nên báo "new row violates row-level security
+    // policy for table group_invites" — lỗi lộ ra ở một chỗ hoàn toàn khác với
+    // chỗ thật sự hỏng. Kiểm tra error ngay tại đây để không tái diễn.
     const { error: memberError } = await supabase.from('group_members').insert({
       group_id: groupId,
       user_id: user.id,
@@ -379,7 +386,7 @@ export class GroupsService {
     if (memberError) {
       await supabase.from('groups').delete().eq('id', groupId);
       throw new InternalServerErrorException(
-        memberError.message || 'Không thể tạo nhóm mới',
+        memberError.message || 'Không thể thêm người tạo vào nhóm',
       );
     }
 
