@@ -19,9 +19,9 @@
   background: var(--color-surface);
   color: var(--color-text);
   border-radius: var(--radius-xl);
-  width: 92%;
-  max-width: 960px;
-  height: min(760px, 88vh);
+  width: 96%;
+  max-width: 1440px;
+  height: 92vh;
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-modal);
   display: flex;

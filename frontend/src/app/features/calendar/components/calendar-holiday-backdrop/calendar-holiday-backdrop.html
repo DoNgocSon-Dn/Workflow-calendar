@@ -1,0 +1,20 @@
+@if (activeScene(); as scene) {
+  <div
+    class="holiday-backdrop"
+    [class.holiday-backdrop--dong-son]="scene === 'dong-son-drum-scene'"
+    [class.holiday-backdrop--flag]="scene === 'vietnam-flag-scene'"
+    aria-hidden="true"
+  >
+    @switch (scene) {
+      @case ('tet-branch-scene') {
+        <app-tet-branch-motif class="holiday-backdrop__motif" />
+      }
+      @case ('dong-son-drum-scene') {
+        <app-dong-son-drum-motif class="holiday-backdrop__motif" />
+      }
+      @case ('vietnam-flag-scene') {
+        <app-vietnam-flag-motif class="holiday-backdrop__motif" />
+      }
+    }
+  </div>
+}

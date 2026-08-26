@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { AuthStore } from '../auth/auth-store';
 import { SUPABASE_CLIENT } from '../supabase-client';
+import { NotificationSoundService } from './notification-sound.service';
 
 export interface BirthdayPopupData {
   readonly userName: string;
@@ -15,6 +16,7 @@ const SHOWN_PREFIX = 'workflow_birthday_shown_';
 export class BirthdayPopupService {
   private readonly authStore = inject(AuthStore);
   private readonly supabase = inject(SUPABASE_CLIENT);
+  private readonly sound = inject(NotificationSoundService);
 
   readonly visible = signal<boolean>(false);
   readonly data = signal<BirthdayPopupData | null>(null);
@@ -134,6 +136,7 @@ export class BirthdayPopupService {
       isPreview,
     });
     this.visible.set(true);
+    this.sound.notifyKind('default');
 
     if (!isPreview) {
       const now = new Date();

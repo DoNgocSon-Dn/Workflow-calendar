@@ -61,7 +61,7 @@
                   (mousedown)="selectSearchResult(result)"
                 >
                   <span class="search-result__dot" [style.background]="colorHex[store.calendarColor().get(result.calendarId) ?? 'blue']"></span>
-                  <span class="search-result__title">{{ result.title }}</span>
+                  <span class="search-result__title" appOverflowTooltip>{{ result.title }}</span>
                   <span class="search-result__date">{{ searchResultDateLabel(result) }}</span>
                 </button>
               </li>

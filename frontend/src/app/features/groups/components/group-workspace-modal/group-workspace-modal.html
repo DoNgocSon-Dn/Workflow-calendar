@@ -212,7 +212,7 @@
                   class="kanban-col-body"
                   [class.drag-over]="dragOverStatus() === 'todo'"
                   (dragover)="onColumnDragOver('todo', $event)"
-                  (dragleave)="onColumnDragLeave('todo')"
+                  (dragleave)="onColumnDragLeave('todo', $event)"
                   (drop)="onColumnDrop('todo', $event)"
                 >
                   @for (t of todoTasks(); track t.id) {
@@ -235,7 +235,6 @@
                         [disabled]="reassigningTaskId() === t.id"
                         (change)="reassignTask(t, $any($event.target).value)"
                       >
-                        <option value="">Chưa giao</option>
                         @for (m of store.members(); track m.id) {
                           <option [value]="m.userId">{{ memberDisplayName(m, m.userId) }}</option>
                         }
@@ -281,7 +280,7 @@
                   class="kanban-col-body"
                   [class.drag-over]="dragOverStatus() === 'in_progress'"
                   (dragover)="onColumnDragOver('in_progress', $event)"
-                  (dragleave)="onColumnDragLeave('in_progress')"
+                  (dragleave)="onColumnDragLeave('in_progress', $event)"
                   (drop)="onColumnDrop('in_progress', $event)"
                 >
                   @for (t of inProgressTasks(); track t.id) {
@@ -304,7 +303,6 @@
                         [disabled]="reassigningTaskId() === t.id"
                         (change)="reassignTask(t, $any($event.target).value)"
                       >
-                        <option value="">Chưa giao</option>
                         @for (m of store.members(); track m.id) {
                           <option [value]="m.userId">{{ memberDisplayName(m, m.userId) }}</option>
                         }
@@ -350,7 +348,7 @@
                   class="kanban-col-body"
                   [class.drag-over]="dragOverStatus() === 'done'"
                   (dragover)="onColumnDragOver('done', $event)"
-                  (dragleave)="onColumnDragLeave('done')"
+                  (dragleave)="onColumnDragLeave('done', $event)"
                   (drop)="onColumnDrop('done', $event)"
                 >
                   @for (t of doneTasks(); track t.id) {

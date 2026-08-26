@@ -3,6 +3,7 @@ import { Clock } from '../clock';
 import { Holiday } from '../../models/holiday-theme.model';
 import { resolveHolidaysForDate } from '../../features/calendar/utils/holiday-resolver';
 import { scheduleVietnamMidnightTick, todayInVietnam } from '../utils/vietnam-time';
+import { NotificationSoundService } from './notification-sound.service';
 
 const DISMISS_KEY_PREFIX = 'holiday-popup-dismissed:';
 const NOTIFICATIONS_ENABLED_KEY = 'holiday-notifications-enabled';
@@ -49,6 +50,7 @@ function resolveActivePopupHoliday(today: Date): Holiday | null {
 @Injectable({ providedIn: 'root' })
 export class HolidayPopupService {
   private readonly clock = inject(Clock);
+  private readonly sound = inject(NotificationSoundService);
 
   /** Theo giờ VN, cập nhật lại quanh nửa đêm — không phải giá trị tính một
    *  lần lúc service khởi tạo (bug cũ: tab mở xuyên nửa đêm sẽ đứng ở ngày
@@ -77,6 +79,15 @@ export class HolidayPopupService {
       } catch {
         // Ignore write failures (private browsing quota, etc.).
       }
+    });
+
+    // `visible` là computed, có thể tính lại nhiều lần trong lúc vẫn đang
+    // true — chỉ kêu tiếng ở đúng cạnh lên (vừa chuyển từ ẩn sang hiện).
+    let wasVisible = false;
+    effect(() => {
+      const isVisible = this.visible();
+      if (isVisible && !wasVisible) this.sound.notifyKind('default');
+      wasVisible = isVisible;
     });
 
     scheduleVietnamMidnightTick(this.clock, () => {

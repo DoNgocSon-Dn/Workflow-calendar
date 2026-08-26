@@ -1,0 +1,77 @@
+:host {
+  /* Nằm trong .view-area (position:relative) — nhét ngay sau <main> mở thẻ,
+     trước lưới lịch thật (app-month-view/time-grid-view/agenda-view đã có
+     z-index:1 riêng ở calendar-page.css) nên tự động ở LỚP DƯỚI mà không
+     cần đụng tới CSS của .view-area. */
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.holiday-backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Neo ở góc trên-phải, đủ lớn để "cảm" được nhưng không lấn hết vùng lịch —
+   cành rủ xuống từ đây, phần còn lại của lưới lịch vẫn đọc rõ như thường. */
+.holiday-backdrop__motif {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(56vw, 620px);
+  height: min(74%, 560px);
+  opacity: 0.85;
+  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.08));
+}
+
+@media (max-width: 900px) {
+  .holiday-backdrop__motif {
+    width: min(78vw, 420px);
+    height: min(52%, 340px);
+    opacity: 0.7;
+  }
+}
+
+/* Trống đồng là một khối tròn gọn, không cần trải rộng như cành mai/đào —
+   spec: chiếm khoảng 20–30% chiều cao vùng lịch, vẫn neo góc trên-phải. */
+.holiday-backdrop--dong-son .holiday-backdrop__motif {
+  width: min(30vw, 340px);
+  height: min(42%, 340px);
+  opacity: 0.9;
+}
+
+@media (max-width: 900px) {
+  .holiday-backdrop--dong-son .holiday-backdrop__motif {
+    width: min(48vw, 240px);
+    height: min(32%, 220px);
+    opacity: 0.75;
+  }
+}
+
+/* Lá cờ và Dinh Độc Lập nằm chính giữa màn hình (tâm lưới lịch) làm chìm
+   nền trang trọng cho ngày Giải phóng miền Nam 30/4. */
+.holiday-backdrop--flag .holiday-backdrop__motif {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, -50%);
+  width: min(55vw, 600px);
+  height: min(65%, 480px);
+  opacity: 0.55;
+}
+
+@media (max-width: 900px) {
+  .holiday-backdrop--flag .holiday-backdrop__motif {
+    top: 50%;
+    left: 50%;
+    right: auto;
+    transform: translate(-50%, -50%);
+    width: min(80vw, 360px);
+    height: min(50%, 300px);
+    opacity: 0.45;
+  }
+}

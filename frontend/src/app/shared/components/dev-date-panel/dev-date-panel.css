@@ -1,0 +1,94 @@
+:host {
+  display: contents;
+}
+
+.dev-date-panel {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  font-family: var(--font-sans, system-ui);
+}
+
+.dev-date-panel__toggle {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid #92400e;
+  background: #fbbf24;
+  color: #451a03;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+/* Viền đỏ nhấp nháy nhẹ khi đang giả lập — tránh quên mất mình không còn ở
+   ngày thật, dễ hiểu nhầm bug thành hành vi giả lập. */
+.dev-date-panel--flagged .dev-date-panel__toggle {
+  border-color: #b91c1c;
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.35);
+}
+
+.dev-date-panel__card {
+  width: 240px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #1c1917;
+  color: #fafaf9;
+  border: 1px solid #44403c;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  font-size: 12.5px;
+}
+
+.dev-date-panel__title {
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+
+.dev-date-panel__status {
+  margin: 0 0 8px;
+  color: #fde68a;
+}
+
+.dev-date-panel__status--real {
+  color: #a8a29e;
+}
+
+.dev-date-panel__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #57534e;
+  background: #292524;
+  color: inherit;
+  margin-bottom: 8px;
+}
+
+.dev-date-panel__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dev-date-panel__btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #57534e;
+  background: #292524;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.dev-date-panel__btn--primary {
+  background: #fbbf24;
+  border-color: #92400e;
+  color: #451a03;
+  font-weight: 600;
+}

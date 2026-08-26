@@ -1,0 +1,96 @@
+<svg class="vfm-scene" viewBox="0 0 200 160" preserveAspectRatio="xMaxYMin meet" aria-hidden="true">
+  <defs>
+    <linearGradient [attr.id]="gradId" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e8362c" />
+      <stop offset="55%" stop-color="#da251d" />
+      <stop offset="100%" stop-color="#b81d17" />
+    </linearGradient>
+  </defs>
+
+  <!-- Dải ruy băng đỏ chảy phía sau, mỗi đoạn cong một nhịp riêng. -->
+  <path class="vfm-ribbon" d="M-10 96 Q 50 70 95 92 T 210 78" />
+  <path class="vfm-ribbon vfm-ribbon--soft" d="M-10 112 Q 55 92 100 108 T 210 100" />
+
+  <!-- Lá cờ — chia dải dọc đung đưa nhẹ nhàng, bóng đổ riêng tạo cảm giác nổi khối. -->
+  <g class="vfm-flag-float">
+    <g class="vfm-flag-shadow">
+      @for (s of strips; track $index) {
+        <rect
+          [attr.x]="s.x"
+          [attr.y]="flagTop"
+          [attr.width]="s.width"
+          [attr.height]="flagBottom - flagTop"
+          [style.--vfm-amp.px]="s.amplitude"
+          [style.animation-duration.s]="s.duration"
+          [style.animation-delay.s]="s.delay"
+          [style.transform-origin]="(s.x + s.width / 2) + 'px ' + ((flagTop + flagBottom) / 2) + 'px'"
+        />
+      }
+    </g>
+    @for (s of strips; track $index) {
+      <rect
+        class="vfm-flag-strip"
+        [attr.fill]="'url(#' + gradId + ')'"
+        [attr.x]="s.x"
+        [attr.y]="flagTop"
+        [attr.width]="s.width"
+        [attr.height]="flagBottom - flagTop"
+        [style.--vfm-amp.px]="s.amplitude"
+        [style.animation-duration.s]="s.duration"
+        [style.animation-delay.s]="s.delay"
+        [style.transform-origin]="(s.x + s.width / 2) + 'px ' + ((flagTop + flagBottom) / 2) + 'px'"
+      />
+    }
+
+    <!-- Dinh Độc Lập — ĐỨNG YÊN hoàn toàn, không animate tòa nhà. -->
+    <g [attr.transform]="'translate(' + palaceX + ', 56)'">
+      <image
+        class="vfm-palace-image"
+        href="/assets/holidays/reunification/independence-palace.png"
+        x="-60"
+        y="-39.3"
+        width="120"
+        height="78.6"
+        preserveAspectRatio="xMidYMid meet"
+      />
+
+      <!-- Cột cờ mini trên nóc Dinh — đứng yên tuyệt đối -->
+      <line class="vfm-mini-pole" x1="-1" y1="-39.3" x2="-1" y2="-51" />
+
+      <!-- Lá cờ mini: 3 dải phập phồng, neo vào cột (x=-1), đuôi tự do (x tăng dần) -->
+      <!-- Dải 1: sát cột, biên độ nhỏ -->
+      <rect class="vfm-mini-flag vfm-mini-f1" x="-1" y="-51" width="5.2" height="5.2" rx="0" />
+      <!-- Dải 2: giữa -->
+      <rect class="vfm-mini-flag vfm-mini-f2" x="4.1" y="-51" width="4.8" height="5.2" rx="0" />
+      <!-- Dải 3: đuôi cờ, biên độ lớn nhất -->
+      <rect class="vfm-mini-flag vfm-mini-f3" x="8.7" y="-51" width="4.6" height="5.2" rx="0" />
+
+      <!-- Ngôi sao vàng nhỏ biến dạng theo vải (giữa cờ, khoảng x=5) -->
+      <g class="vfm-mini-star-group">
+        <polygon
+          class="vfm-mini-star"
+          points="0,-2.6 0.6,-0.8 2.5,-0.8 1,-0.3 1.5,1.5 0,0.4 -1.5,1.5 -1,-0.3 -2.5,-0.8 -0.6,-0.8"
+          transform="translate(5.5, -48.4)"
+        />
+      </g>
+    </g>
+  </g>
+
+  <!-- Particle đỏ/vàng bay chậm qua khung, một số trái→phải, một số ngược
+       lại — foreground, nằm dưới event thật (z-index CSS ở nơi gọi lo). -->
+  <g class="vfm-particles">
+    @for (p of particles; track $index) {
+      <circle
+        class="vfm-particle"
+        [class.vfm-particle--gold]="p.gold"
+        [class.vfm-particle--reverse]="p.reverse"
+        [attr.cx]="p.left * 2"
+        [attr.cy]="p.top"
+        [attr.r]="p.size / 2"
+        [style.opacity]="p.opacity"
+        [style.animation-duration.s]="p.duration"
+        [style.animation-delay.s]="p.delay"
+      />
+    }
+  </g>
+</svg>

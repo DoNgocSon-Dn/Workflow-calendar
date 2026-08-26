@@ -1,11 +1,12 @@
 import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
 /**
- * Hiện toàn bộ nội dung của một ô nhập khi nội dung dài hơn bề rộng ô.
+ * Hiện toàn bộ nội dung của một ô/nhãn khi nội dung dài hơn bề rộng nhìn thấy.
  *
- * Dùng cho các ô nằm trong bảng, nơi cột không được phép giãn theo nội dung:
- * ô giữ nguyên kích thước, phần thừa bị cắt bằng `text-overflow: ellipsis`, và
- * người dùng xem đủ chữ bằng cách rê chuột hoặc tab vào ô.
+ * Dùng cho ô nhập trong bảng, hoặc nhãn/tiêu đề bị cắt bằng
+ * `text-overflow: ellipsis` (kết quả tìm kiếm, chip sự kiện...) — nơi phần tử
+ * không được phép giãn theo nội dung. Đọc `.value` nếu là ô nhập, còn lại đọc
+ * `.textContent`, nên dùng chung được cho cả input lẫn span/button.
  *
  * Ba điểm khiến nó không thể làm bằng thuộc tính `title` sẵn có của trình duyệt:
  *  - `title` không hiện khi focus bằng bàn phím, chỉ hiện khi rê chuột.
@@ -20,13 +21,20 @@ import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
     '(focus)': 'show()',
     '(blur)': 'hide()',
     // Gõ thêm chữ có thể khiến nội dung vừa đủ tràn (hoặc hết tràn) — cập nhật
-    // lại trong lúc tooltip đang mở thay vì để nó hiện chữ cũ.
+    // lại trong lúc tooltip đang mở thay vì để nó hiện chữ cũ. Vô hại với các
+    // phần tử không phải ô nhập: chúng không bao giờ bắn sự kiện 'input'.
     '(input)': 'refresh()',
   },
 })
 export class OverflowTooltip {
-  private readonly host = inject<ElementRef<HTMLInputElement>>(ElementRef);
+  private readonly host = inject<ElementRef<HTMLElement & { value?: string }>>(ElementRef);
   private tip: HTMLDivElement | null = null;
+
+  /** Ô nhập đọc `.value`; nhãn/tiêu đề (span, button...) đọc `.textContent`. */
+  private text(): string {
+    const el = this.host.nativeElement;
+    return (el.value ?? el.textContent ?? '').trim();
+  }
 
   /** Đủ rộng để đọc thoải mái, đủ hẹp để không che mất cả bảng. */
   private static readonly MAX_WIDTH = 420;
@@ -47,7 +55,7 @@ export class OverflowTooltip {
     // lên điều gì khi font còn co giãn theo chữ.
     if (el.scrollWidth <= el.clientWidth) return;
 
-    const text = el.value.trim();
+    const text = this.text();
     if (!text) return;
 
     if (!this.tip) {
@@ -74,11 +82,12 @@ export class OverflowTooltip {
     if (!this.tip) return;
     const el = this.host.nativeElement;
     // Sửa chữ cho ngắn lại thì không còn lý do hiện tooltip nữa.
-    if (el.scrollWidth <= el.clientWidth || !el.value.trim()) {
+    const text = this.text();
+    if (el.scrollWidth <= el.clientWidth || !text) {
       this.hide();
       return;
     }
-    this.tip.textContent = el.value.trim();
+    this.tip.textContent = text;
     this.reposition();
   }
 

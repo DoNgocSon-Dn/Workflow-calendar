@@ -19,8 +19,12 @@
 .toast {
   --life: 7s;
   --dim-at: 5.8s;
-  --accent: #a855f7;
-  --accent-soft: rgba(168, 85, 247, 0.15);
+  /* Trước đây là tím cứng (#a855f7), lệch hẳn với nút "Xem chi tiết" bên dưới
+     (dùng --holiday-accent, xanh) — cùng một card mà hai màu chủ đạo khác
+     nhau. Đổi về đúng token accent của app để đồng bộ, và tự đổi theo theme
+     sáng/tối lẫn màu ngày lễ như phần còn lại của giao diện. */
+  --accent: var(--holiday-accent);
+  --accent-soft: var(--holiday-accent-soft);
 
   position: relative;
   display: flex;

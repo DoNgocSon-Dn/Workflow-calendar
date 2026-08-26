@@ -8,6 +8,7 @@ import { Clock } from '../../../core/clock';
 import { NotificationKind, NotificationQueue } from '../../../core/realtime/notification-queue';
 import { NotificationService } from '../../../core/services/notification.service';
 import {
+  attendeeStatusDraft,
   calendarInvitationDraft,
   calendarMemberJoinedDraft,
   eventCreatedDraft,
@@ -507,6 +508,7 @@ export class CalendarStore {
     this.realtime.connect();
     this.joinAllCalendarRooms();
     this.bindRealtimeListenersOnce();
+    void this.checkMissedReminders();
   }
 
   // loadAll() chạy lại mỗi khi authStore.user() đổi (token refresh, khôi phục
@@ -519,10 +521,13 @@ export class CalendarStore {
     this.realtimeListenersBound = true;
 
     this.realtime.onConnect(() => this.joinAllCalendarRooms());
-    // Kết nối lại thì kéo lại sự kiện + lời mời đã lỡ trong lúc mất mạng.
+    // Kết nối lại thì kéo lại sự kiện + lời mời đã lỡ trong lúc mất mạng, và cả
+    // nhắc lịch đã bắn lúc offline (reminder:fire chỉ tới được socket đang mở —
+    // rớt mạng đúng lúc cron chạy thì mất, không có gì lưu để bù nếu không hỏi).
     this.realtime.onReconnect(() => {
       void this.refreshEvents();
       void this.refreshPendingInvites();
+      void this.checkMissedReminders();
     });
     this.realtime.on<EventApiDto>('event:created', (dto) => this.handleRemoteCreated(dto));
     this.realtime.on<EventApiDto>('event:updated', (dto) => this.handleRemoteUpdated(dto));
@@ -729,6 +734,16 @@ export class CalendarStore {
       body: '',
       kind: 'updated',
     });
+    const eventTitle = this.events().find((e) => e.id === payload.eventId)?.title ?? null;
+    this.notifications.ingest(
+      attendeeStatusDraft({
+        eventId: payload.eventId,
+        attendeeId: payload.attendee.id,
+        attendeeEmail: payload.attendee.email,
+        eventTitle,
+        status: payload.attendee.status === 'accepted' ? 'accepted' : 'declined',
+      }),
+    );
   }
 
   private handleCalendarInvited(payload: { invite: CalendarInviteApiDto }): void {
@@ -783,6 +798,26 @@ export class CalendarStore {
       kind: 'reminder',
     });
     this.notifications.ingest(reminderDraft(payload));
+  }
+
+  /**
+   * Bù lại nhắc lịch đã bắn lúc tab đóng / máy ngủ / mất mạng — reminder:fire
+   * chỉ tới được socket đang mở tại đúng khoảnh khắc cron chạy, không có gì
+   * lưu để phát lại nếu không chủ động hỏi. Gọi 1 lần lúc load app và mỗi lần
+   * socket reconnect; dùng lại đúng handleReminderFire nên hiện y hệt một
+   * nhắc lịch vừa nhận realtime (toast + mục trong chuông thông báo).
+   */
+  private async checkMissedReminders(): Promise<void> {
+    try {
+      const missed = await firstValueFrom(
+        this.http.get<
+          { reminderId: string; eventId: string; title: string; startAt: string }[]
+        >(`${this.apiUrl}/reminders/missed`),
+      );
+      for (const reminder of missed) this.handleReminderFire(reminder);
+    } catch (err) {
+      console.error('Không kiểm tra được nhắc lịch bị lỡ:', err);
+    }
   }
 
   private async refreshEvents(): Promise<void> {

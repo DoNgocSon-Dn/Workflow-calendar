@@ -2,13 +2,14 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AiModule } from './ai/ai.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { CalendarsModule } from './calendars/calendars.module';
 import { CommentsModule } from './comments/comments.module';
+import { UserThrottlerGuard } from './common/user-throttler.guard';
 import configuration from './config/configuration';
 import { validate } from './config/env.validation';
 import { EventsModule } from './events/events.module';
@@ -49,6 +50,6 @@ import { TodosModule } from './todos/todos.module';
     SystemNotificationsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [AppService, { provide: APP_GUARD, useClass: UserThrottlerGuard }],
 })
 export class AppModule {}

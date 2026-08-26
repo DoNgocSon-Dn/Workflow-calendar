@@ -181,6 +181,9 @@
   fill: color-mix(in srgb, currentColor 60%, #fde047);
 }
 
+/* ---- tet-branch-scene: nghệ thuật thật nằm trong <app-tet-branch-motif>
+   (dùng chung với lớp nền sau lịch) — không có CSS riêng ở đây. ---- */
+
 /* ---- tree-scene ---- */
 .pine {
   fill: #14532d;

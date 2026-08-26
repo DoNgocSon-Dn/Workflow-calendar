@@ -33,8 +33,11 @@ export const HOLIDAYS: readonly Holiday[] = [
       accent: '#B91C1C',
       textColor: '#241A1A',
       subtitleColor: '#5b4444',
-      composition: { archetype: 'floral-arrangement', variant: 'tet' },
-      decoration: { particleEmoji: ['🌸', '🧧', '✨'], particleAnimation: 'float', particleCount: 14 },
+      // Cành mai/đào + lì xì đong đưa vẽ ngay trong scene (xem
+      // 'tet-branch-scene' ở holiday-visual.html) — bỏ 🧧 khỏi particle nổi để
+      // khỏi trùng với phong bao đã treo thật trên cành.
+      composition: { archetype: 'tet-branch-scene' },
+      decoration: { particleEmoji: ['🌸', '✨'], particleAnimation: 'float', particleCount: 14 },
       backgroundImage: '/assets/holidays/tet-nguyen-dan.jpg',
     },
     content: {
@@ -85,8 +88,10 @@ export const HOLIDAYS: readonly Holiday[] = [
       accent: '#e8b34a',
       textColor: '#fff7ed',
       subtitleColor: 'rgba(255, 247, 237, 0.78)',
-      composition: { archetype: 'star-emblem', variant: 'medal', ribbonAngle: 18 },
-      decoration: { particleEmoji: ['⭐'], particleAnimation: 'twinkle', particleCount: 6 },
+      // Cờ Tổ quốc phấp phới + sao vàng + dải ruy băng + skyline mờ — trang
+      // trọng/hiện đại, không hình ảnh chiến tranh/vũ khí.
+      composition: { archetype: 'vietnam-flag-scene' },
+      decoration: { particleAnimation: 'float' },
       backgroundImage: '/assets/holidays/reunification-day.jpg',
     },
     content: {
@@ -593,13 +598,25 @@ export const HOLIDAYS: readonly Holiday[] = [
     officialHoliday: true,
     popupEnabled: true,
     dateRule: { kind: 'lunar', month: 3, day: 10 },
-    // Keeps the plain generic 'le-lon' look (no bespoke composition) — only
-    // adding a photo backdrop, not a full re-theme.
+    // Trống đồng Đông Sơn — trang nghiêm, không màu mè: nền nâu đất/đồng cổ,
+    // KHÔNG particle hoa/emoji (spec: "không làm scene vui nhộn"). Bụi đồng
+    // (bronze dust) được scene tự vẽ trong DongSonDrumMotif, không đi qua
+    // particleEmoji chung.
     theme: {
-      ...resolveGenericHolidayTheme('le-lon'),
+      background: '#2b1c10',
+      accent: '#c98a3a',
+      textColor: '#fdf3e0',
+      subtitleColor: 'rgba(253, 243, 224, 0.82)',
+      composition: { archetype: 'dong-son-drum-scene' },
+      decoration: { particleAnimation: 'float' },
       backgroundImage: '/assets/holidays/hung-kings.jpg',
     },
-    content: { title: 'Giỗ Tổ Hùng Vương', titleEn: 'Hung Kings Commemoration Day' },
+    content: {
+      title: 'Giỗ Tổ Hùng Vương',
+      subtitle: 'Mùng 10 tháng 3 Âm lịch — Đời đời nhớ ơn các Vua Hùng',
+      titleEn: 'Hung Kings Commemoration Day',
+      subtitleEn: 'The 10th day of the 3rd lunar month — In eternal gratitude to the Hung Kings',
+    },
   },
   {
     id: 'vesak',

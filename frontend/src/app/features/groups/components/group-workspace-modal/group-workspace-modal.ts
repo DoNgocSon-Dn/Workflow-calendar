@@ -511,7 +511,13 @@ export class GroupWorkspaceModal {
     this.dragOverStatus.set(status);
   }
 
-  onColumnDragLeave(status: 'todo' | 'in_progress' | 'done'): void {
+  onColumnDragLeave(status: 'todo' | 'in_progress' | 'done', event: DragEvent): void {
+    // dragleave nổi bọt từ các task-item con mỗi khi chuột lướt qua chúng —
+    // chỉ coi là "rời cột" khi con trỏ thực sự ra khỏi container, không thì
+    // viền chấm nhấp nháy liên tục trong lúc kéo.
+    const container = event.currentTarget as HTMLElement;
+    const related = event.relatedTarget as Node | null;
+    if (related && container.contains(related)) return;
     if (this.dragOverStatus() === status) this.dragOverStatus.set(null);
   }
 

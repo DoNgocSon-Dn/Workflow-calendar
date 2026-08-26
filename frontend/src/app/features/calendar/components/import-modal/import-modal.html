@@ -14,6 +14,8 @@
         <p class="mode-note">
           📄 Hỗ trợ file <strong>.ics</strong> và <strong>.csv</strong>.
           File .xlsx, .docx hoặc .pdf hãy đính kèm cho <strong>Trợ lý AI</strong> ở bong bóng ✨.
+          <br />
+          ⏱️ Mỗi tài khoản chỉ đọc file được tối đa <strong>10 lần/giờ</strong> — vượt quá sẽ phải đợi.
         </p>
 
         <div class="upload-section">
@@ -36,8 +38,10 @@
               <span class="upload-text">Thả file để import</span>
             } @else {
               <span class="upload-icon">📁</span>
-              <span class="upload-text">Nhấn để chọn file .ics hoặc .csv</span>
-              <span class="upload-hint">hoặc kéo file vào đây, hoặc nhấn Ctrl + V</span>
+              <span class="upload-copy">
+                <span class="upload-text">Nhấn để chọn file .ics hoặc .csv</span>
+                <span class="upload-hint">hoặc kéo file vào đây, hoặc nhấn Ctrl + V</span>
+              </span>
             }
           </label>
 
@@ -95,51 +99,42 @@
               </div>
             }
 
-            <div class="preview-table-container">
-              <table class="preview-table">
-                <thead>
-                  <tr>
-                    <th>Tiêu đề</th>
-                    <th>Thời gian bắt đầu</th>
-                    <th>Thời gian kết thúc</th>
-                    <th>Địa điểm</th>
-                    <th>Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (item of eventsPreview(); track $index) {
-                    <tr [class.warning-row]="item.needsReview">
-                      <td>
-                        <input
-                          type="text"
-                          [(ngModel)]="item.title"
-                          class="table-input title-input"
-                          placeholder="Tiêu đề sự kiện"
-                          appOverflowTooltip
-                        />
-                      </td>
-                      <td>
-                        <input type="datetime-local" [(ngModel)]="item.startLocal" class="table-input datetime-input" />
-                      </td>
-                      <td>
-                        <input type="datetime-local" [(ngModel)]="item.endLocal" class="table-input datetime-input" />
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          [(ngModel)]="item.location"
-                          class="table-input location-input"
-                          placeholder="Địa điểm / ghi chú"
-                          appOverflowTooltip
-                        />
-                      </td>
-                      <td>
-                        <button type="button" class="danger-btn" (click)="removeEvent($index)">Xóa</button>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
+            <div class="preview-list">
+              @for (item of eventsPreview(); track $index) {
+                <div class="preview-card" [class.warning-row]="item.needsReview">
+                  <div class="preview-card__title-row">
+                    <span class="preview-card__index">{{ $index + 1 }}</span>
+                    <input
+                      type="text"
+                      [(ngModel)]="item.title"
+                      class="table-input title-input"
+                      placeholder="Tiêu đề sự kiện"
+                      appOverflowTooltip
+                    />
+                    <button type="button" class="danger-btn" (click)="removeEvent($index)">Xóa</button>
+                  </div>
+                  <div class="preview-card__fields">
+                    <div class="preview-field">
+                      <label class="preview-field__label">Bắt đầu</label>
+                      <input type="datetime-local" [(ngModel)]="item.startLocal" class="table-input datetime-input" />
+                    </div>
+                    <div class="preview-field">
+                      <label class="preview-field__label">Kết thúc</label>
+                      <input type="datetime-local" [(ngModel)]="item.endLocal" class="table-input datetime-input" />
+                    </div>
+                    <div class="preview-field preview-field--location">
+                      <label class="preview-field__label">Địa điểm</label>
+                      <input
+                        type="text"
+                        [(ngModel)]="item.location"
+                        class="table-input location-input"
+                        placeholder="Địa điểm / ghi chú"
+                        appOverflowTooltip
+                      />
+                    </div>
+                  </div>
+                </div>
+              }
             </div>
           </div>
         }

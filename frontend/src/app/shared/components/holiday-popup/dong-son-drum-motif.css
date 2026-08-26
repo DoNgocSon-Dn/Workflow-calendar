@@ -1,0 +1,259 @@
+:host {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  color: #c98a3a;
+}
+
+.dsd-scene {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* ---- thân trống & bóng đổ ---- */
+.dsd-shadow {
+  fill: #1a0f06;
+  opacity: 0.28;
+  filter: blur(4px);
+}
+
+.dsd-body {
+  fill: #6b4a1f;
+}
+
+.dsd-body-band {
+  fill: none;
+  stroke: #4a3116;
+  stroke-width: 2;
+  opacity: 0.6;
+}
+
+.dsd-highlight {
+  fill: none;
+  stroke: #f3d9a1;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  opacity: 0.45;
+  filter: blur(0.5px);
+}
+
+/* ---- khung kim loại viền ngoài (tự vẽ) ---- */
+.dsd-rim {
+  fill: #a9722f;
+  stroke: #4a3116;
+  stroke-width: 1.4;
+}
+
+.dsd-tick--outer {
+  fill: #4a3116;
+  opacity: 0.55;
+}
+
+/* ---- ảnh hoa văn/chim thật ----
+   Nền trắng của ảnh gốc đã được xoá thành alpha thật lúc build asset (xem
+   scripts xử lý ảnh) — không dùng mix-blend-mode nữa, vì nó chỉ "biến mất"
+   đúng khi có SẴN một hình đặc ngay phía sau để blend (đúng cho mặt trống có
+   .dsd-rim lót dưới, nhưng SAI cho chim/hoạ tiết trôi tự do không có gì lót
+   — multiply với nền trong suốt/nội dung lịch phía sau sẽ hiện cả khối trắng). */
+.dsd-photo {
+  image-rendering: auto;
+}
+
+.dsd-face-spin {
+  transform-origin: 148px 58px;
+  animation: dsdFaceSpin 70s linear infinite;
+}
+
+.dsd-bird-photo,
+.dsd-glyph-photo {
+  /* Mờ dần ở mép — che vết crop dính hình hàng xóm trong ảnh sprite gốc,
+     không cần cắt ảnh tuyệt đối chính xác. */
+  mask-image: radial-gradient(ellipse 62% 62% at 50% 50%, black 55%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 62% 62% at 50% 50%, black 55%, transparent 100%);
+}
+
+.dsd-glyph-ring {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  opacity: 0.3;
+}
+
+/* ---- bụi đồng (bronze dust) ---- */
+.dsd-dust-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.dsd-dust {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f3d9a1 0%, #c98a3a 70%, transparent 100%);
+  animation-name: dsdDustDrift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+/* ================= animation ================= */
+
+.dsd-drum-float {
+  transform-origin: 0px 0px;
+  animation: dsdDrumFloat 8.4s ease-in-out infinite;
+}
+
+.dsd-flybird {
+  transform-origin: 0px 0px;
+}
+
+.dsd-flybird--back {
+  animation: dsdBirdFloatA 7.2s ease-in-out infinite;
+}
+
+.dsd-flybird--mid {
+  animation: dsdBirdFloatB 5.8s ease-in-out infinite -1.6s;
+}
+
+.dsd-flybird--front {
+  animation: dsdBirdFloatC 6.6s ease-in-out infinite -3.1s;
+}
+
+.dsd-glyph-float {
+  transform-origin: 0px 0px;
+}
+
+.dsd-glyph-float--a {
+  animation: dsdGlyphFloat 9.1s ease-in-out infinite;
+}
+
+.dsd-glyph-float--b {
+  animation: dsdGlyphFloat 7.4s ease-in-out infinite -2.2s;
+}
+
+.dsd-glyph-float--c {
+  animation: dsdGlyphFloat 10.3s ease-in-out infinite -4.6s;
+}
+
+@keyframes dsdFaceSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dsdDrumFloat {
+  0%,
+  100% {
+    transform: translateY(-5px) rotate(-0.5deg);
+  }
+  50% {
+    transform: translateY(5px) rotate(0.5deg);
+  }
+}
+
+@keyframes dsdBirdFloatA {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(-4deg) scale(1);
+  }
+  50% {
+    transform: translate(-6px, -5px) rotate(4deg) scale(1.05);
+  }
+}
+
+@keyframes dsdBirdFloatB {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(3deg) scale(1);
+  }
+  50% {
+    transform: translate(7px, -6px) rotate(-3deg) scale(0.97);
+  }
+}
+
+@keyframes dsdBirdFloatC {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(-3deg) scale(1);
+  }
+  50% {
+    transform: translate(-8px, 6px) rotate(5deg) scale(1.06);
+  }
+}
+
+@keyframes dsdGlyphFloat {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translateY(-6px) rotate(8deg);
+    opacity: 0.4;
+  }
+}
+
+@keyframes dsdDustDrift {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(6px, -22px);
+    opacity: 0;
+  }
+}
+
+/* ---- dark mode: trống sáng ấm hơn, bóng sâu hơn, bụi bớt chói ---- */
+:host-context(.dark) .dsd-body {
+  fill: #4a3116;
+}
+
+:host-context(.dark) .dsd-rim {
+  fill: #c98a3a;
+}
+
+:host-context(.dark) .dsd-shadow {
+  opacity: 0.45;
+}
+
+:host-context(.dark) .dsd-highlight {
+  opacity: 0.3;
+}
+
+/* Giữ nguyên multiply ở cả 2 theme — nó dựa vào nền TRẮNG của ảnh gốc để
+   "xoá" phần nền, không phụ thuộc sáng/tối. Chỉ tăng độ sáng nét hoa văn một
+   chút ở dark mode để không bị chìm vào nền đồng đã tối sẵn. */
+:host-context(.dark) .dsd-photo {
+  filter: brightness(1.25) contrast(1.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dsd-drum-float,
+  .dsd-face-spin,
+  .dsd-flybird--back,
+  .dsd-flybird--mid,
+  .dsd-flybird--front,
+  .dsd-glyph-float--a,
+  .dsd-glyph-float--b,
+  .dsd-glyph-float--c {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .dsd-dust {
+    animation: none !important;
+    opacity: 0.3 !important;
+  }
+}

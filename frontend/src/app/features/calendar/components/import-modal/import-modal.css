@@ -9,7 +9,6 @@
   background: var(--color-surface);
   color: var(--color-text);
   width: 100%;
-  max-width: 1100px;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -91,19 +90,20 @@
   gap: var(--space-4);
 }
 
-/* Thu gọn lại so với trước — chỉ cần đủ chỗ cho icon + 2 dòng chữ, phần dư
-   thừa nhường lại cho khoảng cách quanh nó (modal-body/upload-section đã nới
-   gap) để cả khu vực import bớt cảm giác bị dồn sát nhau. */
+/* Icon + chữ nằm NGANG (không xếp cột) và dãn ra hai bên bằng gap lớn — xếp
+   cột co cụm hết vào giữa, để trống hẳn hai bên của khung kéo-thả rộng, nhìn
+   mất cân đối. Padding ngang cũng lớn hơn padding dọc vì lý do tương tự. */
 .dropzone {
   border: 2px dashed var(--color-border-strong);
   border-radius: var(--radius-lg);
-  padding: var(--space-4);
-  text-align: center;
+  padding: var(--space-4) var(--space-6);
+  text-align: left;
   cursor: pointer;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: var(--space-1);
+  justify-content: flex-start;
+  gap: var(--space-3);
   transition: border-color 0.2s;
 }
 
@@ -116,7 +116,15 @@
 }
 
 .upload-icon {
-  font-size: 1.5rem;
+  font-size: 2rem;
+  flex: 0 0 auto;
+}
+
+.upload-copy {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
 .upload-text {
@@ -194,47 +202,98 @@
   min-width: 220px;
 }
 
-.preview-table-container {
-  /* Trang riêng có cả chiều cao viewport để dùng — cho bảng giãn theo thay vì
-     ràng buộc 280px cố định như hồi còn là modal nhỏ. */
+/* Mỗi sự kiện là một "card": tiêu đề chiếm trọn bề rộng ở trên, ba ô giờ bắt
+   đầu / giờ kết thúc / địa điểm nằm thành một hàng ngang bên dưới — thay cho
+   bảng nhiều cột cũ vốn bị bóp chật ở màn hẹp và không tận dụng được bề rộng
+   khi trang đã chiếm toàn màn hình. */
+.preview-list {
   flex: 1 1 auto;
   min-height: 220px;
-  /* Trước chỉ overflow-y — bảng bị ép vừa đúng bề rộng modal nên các ô input
-     (title/datetime/location đều có min-width riêng) bị bóp nhỏ lại, chữ mất
-     dấu ba chấm cũng không đọc hết. Thêm overflow-x: bảng được phép rộng hơn
-     khung nhìn, cuộn ngang thay vì bóp cột. */
-  overflow: auto;
-  border: 1px solid var(--color-border);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-right: 2px;
+}
+
+/* Nền + viền trái màu accent để mỗi thẻ nổi hẳn lên khỏi nền trang (trước đây
+   chỉ có viền mảnh cùng tông nền, gần như vô hình trên nền tối) — cùng ngôn
+   ngữ hình ảnh với chip sự kiện ngoài lịch (border-left màu). */
+.preview-card {
+  border: 1px solid var(--color-border-strong);
+  border-left: 4px solid var(--holiday-accent);
   border-radius: var(--radius-md);
-}
-
-.preview-table {
-  width: 100%;
-  /* Không bao giờ hẹp hơn tổng min-width tự nhiên của các cột — đây là thứ
-     thật sự chặn việc bị bóp, "width: 100%" một mình không đủ vì table-layout
-     auto vẫn co cột xuống dưới min-width của input bên trong khi container
-     chật. */
-  min-width: max-content;
-  border-collapse: collapse;
-  font-size: 0.8125rem;
-}
-
-.preview-table th,
-.preview-table td {
-  padding: 0.5rem 0.625rem;
-  border-bottom: 1px solid var(--color-border);
-  text-align: left;
-}
-
-.preview-table th {
+  padding: var(--space-3) var(--space-4);
   background: var(--color-surface-hover);
-  color: var(--color-text-tertiary);
-  position: sticky;
-  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.warning-row {
-  background: color-mix(in srgb, var(--color-warning) 15%, transparent);
+.preview-card:hover {
+  background: var(--color-surface-hover-strong);
+}
+
+.preview-card.warning-row {
+  border-left-color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 14%, var(--color-surface-hover));
+}
+
+.preview-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Số thứ tự — giúp đối chiếu nhanh với file gốc và đếm được đang xem sự kiện
+   thứ mấy trong danh sách dài mà không phải đếm thủ công. */
+.preview-card__index {
+  flex: 0 0 auto;
+  width: 1.6rem;
+  height: 1.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-hover-strong);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.preview-card__title-row .title-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.preview-card__fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.preview-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1 1 200px;
+}
+
+.preview-field--location {
+  flex: 1.4 1 240px;
+}
+
+.preview-field__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  /* tertiary quá mờ trên nền tối, gần như không đọc được — secondary vẫn đủ
+     nhẹ để không lấn át giá trị bên dưới nhưng đọc được ngay không cần nheo mắt. */
+  color: var(--color-text-secondary);
 }
 
 .field-error {

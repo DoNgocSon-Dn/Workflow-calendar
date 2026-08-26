@@ -20,6 +20,15 @@ export class RemindersController {
     return this.remindersService.listForEvent(supabase, eventId);
   }
 
+  // Route tĩnh 'reminders/missed' phải đứng TRƯỚC 'reminders/:id/snooze' bên
+  // dưới — không có tham số cố định nên thứ tự khai báo không xung đột với
+  // 'events/:eventId/reminders' (khác tiền tố), nhưng vẫn giữ quy ước đặt
+  // route tĩnh lên trước cho nhất quán với GroupsController.
+  @Get('reminders/missed')
+  listMissed(@CurrentSupabase() supabase: SupabaseClient, @CurrentUser() user: User) {
+    return this.remindersService.listMissed(supabase, user.id);
+  }
+
   @Put('events/:eventId/reminders')
   setForEvent(
     @CurrentSupabase() supabase: SupabaseClient,

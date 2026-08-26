@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { Clock } from '../../../core/clock';
 import { TranslationService } from '../../../core/i18n/translation.service';
 import { HolidayPopupService } from '../../../core/services/holiday-popup.service';
 import {
@@ -49,6 +50,7 @@ function buildParticles(decoration: HolidayDecoration): readonly HolidayParticle
 })
 export class HolidayPopup {
   private readonly popupService = inject(HolidayPopupService);
+  private readonly clock = inject(Clock);
   protected readonly i18n = inject(TranslationService);
 
   protected readonly holiday = this.popupService.activeHoliday;
@@ -80,14 +82,16 @@ export class HolidayPopup {
     return raw ? this.popupService.resolveText(raw) : null;
   });
 
-  /** The popup only ever shows on the day it matches, so "today" is simply now. */
+  /** The popup only ever shows on the day it matches, so "today" is simply
+   *  now — via `Clock` (not `new Date()`) so it stays consistent with the
+   *  dev date override used to test holiday features. */
   protected readonly dateLabel = computed(() =>
     new Intl.DateTimeFormat(this.i18n.locale() === 'en' ? 'en-US' : 'vi-VN', {
       weekday: 'long',
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
-    }).format(new Date()),
+    }).format(this.clock.now()),
   );
 
   protected readonly particles = computed<readonly HolidayParticleView[]>(() =>

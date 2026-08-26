@@ -1,0 +1,37 @@
+@if (isDev) {
+  <div class="dev-date-panel" [class.dev-date-panel--flagged]="activeOverrideLabel()">
+    @if (open()) {
+      <div class="dev-date-panel__card" role="group" aria-label="Giả lập ngày (chỉ dev)">
+        <p class="dev-date-panel__title">🛠 Giả lập "hôm nay"</p>
+        @if (activeOverrideLabel(); as label) {
+          <p class="dev-date-panel__status">Đang giả lập: <strong>{{ label }}</strong></p>
+        } @else {
+          <p class="dev-date-panel__status dev-date-panel__status--real">Đang dùng ngày thật của máy</p>
+        }
+        <input
+          type="date"
+          class="dev-date-panel__input"
+          [value]="draftDate()"
+          (input)="onDraftChange($any($event.target).value)"
+        />
+        <div class="dev-date-panel__actions">
+          <button type="button" class="dev-date-panel__btn dev-date-panel__btn--primary" (click)="apply()">
+            Áp dụng (reload trang)
+          </button>
+          <button type="button" class="dev-date-panel__btn" (click)="reset()">
+            Về ngày thật
+          </button>
+        </div>
+      </div>
+    }
+    <button
+      type="button"
+      class="dev-date-panel__toggle"
+      (click)="toggleOpen()"
+      [attr.aria-expanded]="open()"
+      aria-label="Bật/tắt bảng giả lập ngày (dev)"
+    >
+      🛠
+    </button>
+  </div>
+}

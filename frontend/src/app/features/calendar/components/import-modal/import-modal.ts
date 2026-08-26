@@ -45,12 +45,18 @@ function isServerRejection(err: unknown): err is HttpErrorResponse {
 }
 
 function serverErrorMessage(err: HttpErrorResponse, fallback: string): string {
+  // 429/413 phải kiểm TRƯỚC khi đọc body.message: ThrottlerException mặc định
+  // của NestJS tự đặt message thành chuỗi kỹ thuật "ThrottlerException: Too
+  // Many Requests" — đó VẪN LÀ một message hợp lệ (khác rỗng), nên nếu đọc
+  // body.message trước thì câu tiếng Việt thân thiện bên dưới không bao giờ
+  // được dùng tới cho đúng hai mã lỗi mà mình đã biết rõ nguyên nhân.
+  if (err.status === 429) return 'Bạn đã vượt quá giới hạn import. Vui lòng thử lại sau.';
+  if (err.status === 413) return 'File vượt quá giới hạn cho phép.';
+
   const body = err.error as { message?: string | string[] } | undefined;
   const msg = body?.message;
   if (Array.isArray(msg)) return msg.join(", ");
   if (typeof msg === 'string' && msg.trim()) return msg;
-  if (err.status === 429) return 'Bạn đã vượt quá giới hạn import. Vui lòng thử lại sau.';
-  if (err.status === 413) return 'File vượt quá giới hạn cho phép.';
   return fallback;
 }
 

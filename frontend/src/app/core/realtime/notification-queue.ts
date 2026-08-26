@@ -12,7 +12,12 @@ export interface NotificationItem {
 }
 
 const SNOOZE_MS = 5 * 60 * 1000;
-const MAX_VISIBLE = 2;
+/** Import/tạo hàng loạt bắn về nhiều "Sự kiện mới" gần như cùng lúc — 2 làm
+ *  người dùng tưởng nhầm là các thông báo còn lại bị mất, trong khi chúng chỉ
+ *  đang xếp hàng chờ (7s/toast thì vài chục sự kiện phải đợi rất lâu mới thấy
+ *  hết). Nâng lên 4 để một đợt import vẫn thấy rõ nhiều toast xếp chồng ngay,
+ *  không phải chờ toast trước tự tắt mới thấy cái tiếp theo. */
+const MAX_VISIBLE = 4;
 
 @Injectable({ providedIn: 'root' })
 export class NotificationQueue {

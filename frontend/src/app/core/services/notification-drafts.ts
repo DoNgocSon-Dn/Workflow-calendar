@@ -255,6 +255,29 @@ export function eventDeletedDraft(eventId: string, title: string | null): Notifi
   };
 }
 
+export interface AttendeeStatusDraftInput {
+  readonly eventId: string;
+  readonly attendeeId: string;
+  readonly attendeeEmail: string;
+  readonly eventTitle: string | null;
+  readonly status: 'accepted' | 'declined';
+}
+
+export function attendeeStatusDraft(input: AttendeeStatusDraftInput): NotificationDraft {
+  const label = input.status === 'accepted' ? 'đã đồng ý tham gia' : 'đã từ chối tham gia';
+  const eventPart = input.eventTitle ? ` sự kiện "${input.eventTitle}"` : ' sự kiện của bạn';
+  return {
+    // Cùng người, cùng trạng thái phát lại thì bị loại; đổi ý (accepted <->
+    // declined) lại là id khác nên vẫn báo tiếp.
+    id: `attendee-status-${input.eventId}-${input.attendeeId}-${input.status}`,
+    type: 'event_update',
+    title: 'Phản hồi lời mời',
+    message: `${input.attendeeEmail} ${label}${eventPart}.`,
+    createdAt: new Date().toISOString(),
+    relatedId: input.eventId,
+  };
+}
+
 export function eventInvitationDraft(eventId: string, eventTitle: string | null): NotificationDraft {
   return {
     id: `event-invite-${eventId}`,

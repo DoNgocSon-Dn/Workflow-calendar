@@ -4,6 +4,7 @@ import { AuthStore } from '../../../core/auth/auth-store';
 import { DensityService } from '../../../core/density/density-service';
 import { NotificationQueue } from '../../../core/realtime/notification-queue';
 import { CalendarHeader } from '../components/calendar-header/calendar-header';
+import { CalendarHolidayBackdrop } from '../components/calendar-holiday-backdrop/calendar-holiday-backdrop';
 import { CalendarSidebar } from '../components/calendar-sidebar/calendar-sidebar';
 import { CreateCalendarModal } from '../components/create-calendar-modal/create-calendar-modal';
 import { EventFormModal } from '../components/event-form-modal/event-form-modal';
@@ -30,6 +31,7 @@ import { LoginSuccessTransition } from '../../auth/login-success-transition/logi
 import { BirthdayPopup } from '../../../shared/components/birthday-popup/birthday-popup';
 import { BirthdayPopupService } from '../../../core/services/birthday-popup.service';
 import { consumeOauthRedirect } from '../../../core/auth/oauth-redirect-flag';
+import { DevDatePanel } from '../../../shared/components/dev-date-panel/dev-date-panel';
 
 interface ModalState {
   event: CalendarEvent | null;
@@ -46,6 +48,7 @@ interface ModalState {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CalendarHeader,
+    CalendarHolidayBackdrop,
     CalendarSidebar,
     MonthView,
     TimeGridView,
@@ -63,6 +66,7 @@ interface ModalState {
     BirthdayPopup,
     HolidayInfoModal,
     LoginSuccessTransition,
+    DevDatePanel,
   ],
 })
 export class CalendarPage {

@@ -1,0 +1,90 @@
+<svg class="motif" viewBox="0 0 200 160" preserveAspectRatio="xMaxYMin meet" aria-hidden="true">
+  <!-- Cành "mọc" từ ngoài khung tranh vào (góc trên-phải) rồi rung nhẹ quanh
+       đúng gốc đó — 3 lớp g lồng nhau: dịch tới gốc, xoay, dịch ngược lại để
+       phần cây vẽ bằng toạ độ tuyệt đối như bình thường. -->
+  <g transform="translate(198,-8)">
+    <g class="tet-branch-sway">
+      <g transform="translate(-198,8)">
+        <path
+          class="tet-branch-trunk"
+          d="M198 -8 C 162 16, 150 4, 120 24 C 94 42, 80 34, 52 50 C 34 60, 24 62, 8 58"
+        />
+        <path class="tet-branch-twig" d="M150 4 C 140 -10, 132 -16, 120 -20" />
+        <path class="tet-branch-twig" d="M120 24 C 128 10, 136 4, 148 0" />
+        <path class="tet-branch-twig" d="M94 42 C 86 28, 78 22, 66 20" />
+        <path class="tet-branch-twig" d="M52 50 C 46 62, 40 68, 28 70" />
+
+        <!-- Hoa đào (hồng) và mai (vàng) xen kẽ dọc cành. -->
+        <g class="tet-blossom tet-blossom--dao" transform="translate(120,-20) scale(0.42)">
+          <ellipse cx="0" cy="-14" rx="7" ry="13" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(72)" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(144)" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(216)" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(288)" />
+          <circle class="tet-blossom-center" r="4.5" />
+        </g>
+        <g class="tet-blossom tet-blossom--mai" transform="translate(163,4) scale(0.34)">
+          <ellipse cx="0" cy="-14" rx="7" ry="13" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(72)" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(144)" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(216)" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(288)" />
+          <circle class="tet-blossom-center" r="4.5" />
+        </g>
+        <g class="tet-blossom tet-blossom--mai" transform="translate(148,0) scale(0.3)">
+          <ellipse cx="0" cy="-14" rx="7" ry="13" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(72)" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(144)" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(216)" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(288)" />
+          <circle class="tet-blossom-center" r="4.5" />
+        </g>
+        <g class="tet-blossom tet-blossom--dao" transform="translate(66,20) scale(0.36)">
+          <ellipse cx="0" cy="-14" rx="7" ry="13" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(72)" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(144)" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(216)" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(288)" />
+          <circle class="tet-blossom-center" r="4.5" />
+        </g>
+        <g class="tet-blossom tet-blossom--dao" transform="translate(28,70) scale(0.4)">
+          <ellipse cx="0" cy="-14" rx="7" ry="13" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(72)" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(144)" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(216)" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(288)" />
+          <circle class="tet-blossom-center" r="4.5" />
+        </g>
+        <g class="tet-blossom tet-blossom--mai" transform="translate(8,58) scale(0.3)">
+          <ellipse cx="0" cy="-14" rx="7" ry="13" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(72)" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(144)" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(216)" />
+          <ellipse cx="0" cy="-14" rx="7" ry="13" transform="rotate(288)" />
+          <circle class="tet-blossom-center" r="4.5" />
+        </g>
+
+        <!-- Lì xì treo dây, mỗi cái đong đưa riêng (chu kỳ/độ trễ khác nhau)
+             như hai vật thể lủng lẳng độc lập, không lắc đồng bộ. -->
+        <g transform="translate(120,24)">
+          <g class="tet-envelope-swing">
+            <line class="tet-string" x1="0" y1="0" x2="0" y2="22" />
+            <g transform="translate(0,36)">
+              <rect class="tet-lixi" x="-11" y="-13" width="22" height="26" rx="3" />
+              <circle class="tet-lixi-seal" r="4.2" />
+            </g>
+          </g>
+        </g>
+        <g transform="translate(52,50)">
+          <g class="tet-envelope-swing tet-envelope-swing--b">
+            <line class="tet-string" x1="0" y1="0" x2="0" y2="17" />
+            <g transform="translate(0,28)">
+              <rect class="tet-lixi" x="-8.5" y="-10.5" width="17" height="21" rx="2.5" />
+              <circle class="tet-lixi-seal" r="3.3" />
+            </g>
+          </g>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

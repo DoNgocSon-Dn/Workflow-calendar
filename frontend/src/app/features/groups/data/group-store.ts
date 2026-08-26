@@ -671,9 +671,22 @@ export class GroupStore {
 
   async updateTask(groupId: string, taskId: string, updates: Partial<GroupTask>): Promise<GroupTask> {
     this.markTaskSelfOrigin(taskId);
-    const updated = await this.api.updateTask(groupId, taskId, updates);
-    this.tasks.update((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
-    return updated;
+    // Cập nhật lạc quan trước — kéo-thả đổi cột phải thấy ngay, không chờ
+    // round-trip server mới nhảy vào khung. Lỗi thì trả lại giá trị cũ.
+    const previous = this.tasks().find((t) => t.id === taskId);
+    if (previous) {
+      this.tasks.update((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t)));
+    }
+    try {
+      const updated = await this.api.updateTask(groupId, taskId, updates);
+      this.tasks.update((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+      return updated;
+    } catch (err) {
+      if (previous) {
+        this.tasks.update((prev) => prev.map((t) => (t.id === taskId ? previous : t)));
+      }
+      throw err;
+    }
   }
 
   async deleteTask(groupId: string, taskId: string): Promise<void> {

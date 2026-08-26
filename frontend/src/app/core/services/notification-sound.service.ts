@@ -76,6 +76,16 @@ export class NotificationSoundService {
    * Trả về `true` nếu thực sự phát; người gọi không cần quan tâm.
    */
   notify(notification: AppNotification): boolean {
+    return this.notifyKind(this.resolveKind(notification));
+  }
+
+  /**
+   * Như `notify()` nhưng cho các popup KHÔNG đi qua Notification Center (sinh
+   * nhật, ngày lễ...) nên không có sẵn `AppNotification` để suy ra loại tiếng.
+   * Vẫn tôn trọng đúng ba điều kiện lọc (toggle, mở khoá, cooldown) — không
+   * phải đường tắt như `preview()`.
+   */
+  notifyKind(kind: SoundKind = 'default'): boolean {
     if (!this.enabled() || !this.unlocked) return false;
 
     // Cooldown DÙNG CHUNG cho mọi loại tiếng: tin nhắn và task ập tới cùng lúc
@@ -83,7 +93,7 @@ export class NotificationSoundService {
     const now = Date.now();
     if (now - this.lastPlayedAt < MIN_SOUND_INTERVAL_MS) return false;
 
-    this.play(this.resolveKind(notification));
+    this.play(kind);
     this.lastPlayedAt = now;
     return true;
   }

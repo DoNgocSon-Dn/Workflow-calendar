@@ -246,6 +246,18 @@
   --holiday-surface-tint: color-mix(in srgb, #e2574f 10%, transparent);
 }
 
+:root[data-holiday='hung-kings'] {
+  --holiday-accent: #8a5a1f;
+  --holiday-accent-soft: color-mix(in srgb, #8a5a1f 12%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #8a5a1f 6%, transparent);
+  --holiday-border: color-mix(in srgb, #8a5a1f 35%, var(--color-border-strong));
+}
+:root.dark[data-holiday='hung-kings'] {
+  --holiday-accent: #c98a3a;
+  --holiday-accent-soft: color-mix(in srgb, #c98a3a 20%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, #c98a3a 10%, transparent);
+}
+
 :root[data-holiday='labor-day'] {
   --holiday-accent: #b45309;
   --holiday-accent-soft: color-mix(in srgb, #b45309 12%, var(--color-surface));

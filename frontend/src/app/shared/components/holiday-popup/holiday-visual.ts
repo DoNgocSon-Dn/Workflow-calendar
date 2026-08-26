@@ -1,5 +1,8 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { HolidayComposition, HolidayTheme } from '../../../models/holiday-theme.model';
+import { TetBranchMotif } from './tet-branch-motif';
+import { DongSonDrumMotif } from './dong-son-drum-motif';
+import { VietnamFlagMotif } from './vietnam-flag-motif';
 
 /**
  * Renders the layered "scene" (background glow → decorative layer → focal
@@ -12,6 +15,7 @@ import { HolidayComposition, HolidayTheme } from '../../../models/holiday-theme.
   templateUrl: './holiday-visual.html',
   styleUrl: './holiday-visual.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [TetBranchMotif, DongSonDrumMotif, VietnamFlagMotif],
 })
 export class HolidayVisual {
   readonly composition = input.required<HolidayComposition>();

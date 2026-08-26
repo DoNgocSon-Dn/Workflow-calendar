@@ -1,0 +1,119 @@
+<svg class="dsd-scene" viewBox="0 0 200 160" preserveAspectRatio="xMaxYMin meet" aria-hidden="true">
+  <defs>
+    <clipPath [attr.id]="clipId">
+      <circle cx="148" cy="58" r="40" />
+    </clipPath>
+  </defs>
+
+  <!-- Trống "mọc" từ góc trên-phải, rung nhẹ lên-xuống như đang lơ lửng.
+       Cùng kỹ thuật 3 lớp g với cành mai: dịch tới tâm, xoay/nhún, dịch
+       ngược lại — animation xoay quanh đúng tâm trống. -->
+  <g transform="translate(148,58)">
+    <g class="dsd-drum-float">
+      <g transform="translate(-148,-58)">
+        <!-- Bóng đổ dưới đất — co giãn nhẹ theo nhịp nổi của trống để trông
+             như vật thể thật đang lơ lửng, không dán chết vào nền. -->
+        <ellipse class="dsd-shadow" cx="148" cy="98" rx="46" ry="8" />
+
+        <!-- Thân trống (mặt bên hình trụ, nhìn hơi chéo từ trên xuống). -->
+        <path class="dsd-body" d="M108 58 A40 28 0 0 0 188 58 L188 84 A40 16 0 0 1 108 84 Z" />
+        <path class="dsd-body-band" d="M111 70 A37 24 0 0 0 185 70" />
+
+        <!-- Mặt trống — một phép scale(1,0.7) duy nhất "ép phẳng" cả cụm
+             thành hình bầu dục để trông như đang nhìn trống từ góc nghiêng. -->
+        <g transform="translate(148,58) scale(1,0.7) translate(-148,-58)">
+          <!-- Khung kim loại viền ngoài — phần duy nhất còn tự vẽ, vì đây là
+               thân trống chứ không phải hoa văn. -->
+          <circle class="dsd-rim" cx="148" cy="58" r="40" />
+          @for (t of outerTicks; track $index) {
+            <rect
+              class="dsd-tick dsd-tick--outer"
+              x="146.3"
+              y="17"
+              width="3.4"
+              height="6"
+              [attr.transform]="t.transform"
+            />
+          }
+
+          <!-- Hoa văn mặt trống — ẢNH THẬT (không tự vẽ), cắt tròn theo viền
+               trống rồi xoay chậm liên tục. mix-blend-mode:multiply xoá nền
+               trắng của ảnh, chỉ còn lại nét hoa văn đồng. -->
+          <g [attr.clip-path]="'url(#' + clipId + ')'">
+            <g class="dsd-face-spin">
+              <image
+                class="dsd-photo dsd-face-image"
+                href="/assets/holidays/dong-son/drum-face.png"
+                x="98"
+                y="8"
+                width="100"
+                height="100"
+                preserveAspectRatio="xMidYMid slice"
+              />
+            </g>
+          </g>
+        </g>
+
+        <!-- Ánh sáng hắt nhẹ lên viền trên-trái — gợi khối 3D thay vì gradient. -->
+        <path class="dsd-highlight" d="M114 44 A40 28 0 0 1 176 40" />
+      </g>
+    </g>
+  </g>
+
+  <!-- Chim Lạc bay quanh trống — CẮT RA từ ảnh hoa văn thật (không tự vẽ),
+       mỗi con một chu kỳ/biên độ riêng để không bay đồng bộ. Bọc thêm một
+       <g transform> ở ngoài để đặt vị trí/scale bằng ATTRIBUTE — CSS
+       animation nhắm vào transform trên CHÍNH element có attribute đó sẽ đè
+       mất luôn translate/scale gốc, nên phần animate phải là group con. -->
+  <g transform="translate(70,26) scale(0.62)">
+    <g class="dsd-flybird dsd-flybird--back">
+      <image class="dsd-photo dsd-bird-photo" href="/assets/holidays/dong-son/bird-small.png" x="-9" y="-9.5" width="18" height="19" />
+    </g>
+  </g>
+  <g transform="translate(178,108) scale(0.9)">
+    <g class="dsd-flybird dsd-flybird--mid">
+      <image class="dsd-photo dsd-bird-photo" href="/assets/holidays/dong-son/bird-heron.png" x="-17" y="-8.5" width="34" height="17" />
+    </g>
+  </g>
+  <g transform="translate(96,120) scale(1.05)">
+    <g class="dsd-flybird dsd-flybird--front">
+      <image class="dsd-photo dsd-bird-photo" href="/assets/holidays/dong-son/bird-heron.png" x="-17" y="-8.5" width="34" height="17" />
+    </g>
+  </g>
+
+  <!-- Hoạ tiết Đông Sơn trôi lơ lửng phía sau, tách khỏi trống — hoạ tiết
+       "mắt tam giác" cắt từ ảnh thật + 2 vòng tròn đơn giản (hình học thuần,
+       không phải hoa văn sáng tác). -->
+  <g transform="translate(56,64) scale(0.4)">
+    <g class="dsd-glyph-float dsd-glyph-float--a">
+      <image class="dsd-photo dsd-glyph-photo" href="/assets/holidays/dong-son/triangle-eye.png" x="-11" y="-11" width="22" height="22" />
+    </g>
+  </g>
+  <g transform="translate(112,132)">
+    <g class="dsd-glyph-float dsd-glyph-float--b">
+      <circle class="dsd-glyph-ring" r="4.5" />
+    </g>
+  </g>
+  <g transform="translate(40,132)">
+    <g class="dsd-glyph-float dsd-glyph-float--c">
+      <circle class="dsd-glyph-ring" r="3.5" />
+    </g>
+  </g>
+</svg>
+
+<!-- Bụi đồng (bronze dust) — layer HTML riêng, mỗi hạt một pha animation
+     (không random một lần rồi đứng yên: spec đòi chuyển động thật). -->
+<div class="dsd-dust-layer" aria-hidden="true">
+  @for (d of dust; track $index) {
+    <span
+      class="dsd-dust"
+      [style.left.%]="d.left"
+      [style.top.%]="d.top"
+      [style.width.px]="d.size"
+      [style.height.px]="d.size"
+      [style.opacity]="d.opacity"
+      [style.animation-duration.s]="d.duration"
+      [style.animation-delay.s]="d.delay"
+    ></span>
+  }
+</div>
