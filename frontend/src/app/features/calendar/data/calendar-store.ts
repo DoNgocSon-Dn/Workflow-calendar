@@ -787,6 +787,15 @@ export class CalendarStore {
     for (const dto of events) this.upsertEvent(toCalendarEvent(dto));
     if (events.length === 0) return;
 
+    // Cả lô chỉ có đúng một người tạo (import, chuỗi sự kiện lặp lại từ form
+    // hoặc từ AI) — kiểm phần tử đầu là đủ. Cách này KHÔNG phụ thuộc batchId:
+    // import (bulkCreate) có gửi kèm batchId nên có thể chống trùng theo
+    // cách cũ bên dưới, nhưng chuỗi lặp lại (createSeries — cả đường thủ công
+    // lẫn đường AI) chưa từng gửi batchId, nên nếu chỉ dựa vào batchId thì
+    // MỌI lần chính người dùng tự tạo một chuỗi lặp lại sẽ luôn nhận thêm một
+    // toast "Đã nhập N sự kiện" thừa, dù form/khung chat đã tự báo kết quả rồi.
+    if (this.isCreatedByCurrentUser(events[0])) return;
+
     const calendarName = this.calendars().find((c) => c.id === payload.calendarId)?.name ?? null;
     const message = `Đã nhập ${events.length} sự kiện vào lịch${calendarName ? ` "${calendarName}"` : ''}.`;
 
@@ -1633,8 +1642,15 @@ export class CalendarStore {
       this.http.post<AiChatResult>(`${this.apiUrl}/ai/chat`, { message, calendarId, history }),
     );
     if (result.intent === 'create_event') {
-      this.markSelfOrigin(result.event.id);
-      this.upsertEvent(toCalendarEvent(result.event));
+      // events (nếu có) là TOÀN BỘ chuỗi lặp lại — mỗi lần xuất hiện phải
+      // được đánh dấu self-origin và đưa vào lịch riêng, không chỉ mỗi
+      // `event` đầu tiên, nếu không các lần xuất hiện còn lại sẽ hiện lên
+      // kèm một thông báo "Sự kiện mới" tưởng như do người khác tạo.
+      const events = result.events?.length ? result.events : [result.event];
+      for (const dto of events) {
+        this.markSelfOrigin(dto.id);
+        this.upsertEvent(toCalendarEvent(dto));
+      }
     }
     return result;
   }
@@ -1650,7 +1666,16 @@ export interface AiSuggestedTodo {
 }
 
 export type AiChatResult =
-  | { intent: 'create_event'; event: EventApiDto }
+  | {
+      intent: 'create_event';
+      /** Sự kiện đầu tiên — luôn có mặt, kể cả khi `events` chứa cả chuỗi
+       *  lặp lại, để mã cũ chỉ đọc `event` vẫn chạy đúng. */
+      event: EventApiDto;
+      /** Toàn bộ các lần xuất hiện đã tạo — chỉ có khi đây là một lịch LẶP
+       *  LẠI theo nhiều thứ trong tuần (vd "lịch 246"). Vắng mặt (hoặc chỉ 1
+       *  phần tử) nghĩa là một sự kiện một lần như trước giờ. */
+      events?: readonly EventApiDto[];
+    }
   | { intent: 'create_todos'; goal: string; todos: readonly AiSuggestedTodo[] }
   | { intent: 'chat'; reply: string }
   | {

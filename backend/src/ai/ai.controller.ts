@@ -79,18 +79,32 @@ export class AiController {
     });
 
     if (parsed.intent === 'create_event' && parsed.title && parsed.start_at && parsed.end_at) {
-      const event = await this.eventsService.create(
-        supabase,
-        {
-          calendarId: dto.calendarId,
-          title: parsed.title,
-          start: parsed.start_at,
-          end: parsed.end_at,
-          allDay: false,
-          ...(parsed.location ? { location: parsed.location } : {}),
-        },
-        user.id,
-      );
+      const baseDto = {
+        calendarId: dto.calendarId,
+        title: parsed.title,
+        start: parsed.start_at,
+        end: parsed.end_at,
+        allDay: false,
+        ...(parsed.location ? { location: parsed.location } : {}),
+      };
+
+      // Câu nói mô tả một lịch LẶP LẠI theo nhiều thứ cố định (vd "lịch 246",
+      // "T3 T5 T7") — vật chất hoá cả chuỗi qua createSeries() (đúng cơ chế
+      // form tạo sự kiện thủ công đã dùng cho lịch lặp) thay vì chỉ lưu một
+      // sự kiện đơn lẻ vào đúng thứ đầu tiên rồi bỏ quên các thứ còn lại.
+      if (parsed.recurrence_rule) {
+        const events = await this.eventsService.createSeries(
+          supabase,
+          { ...baseDto, recurrenceRule: parsed.recurrence_rule },
+          user.id,
+        );
+        // `event` (số ít) giữ lại cho tương thích ngược với client cũ/thẻ sự
+        // kiện chỉ hiển thị MỘT lần xuất hiện; `events` (đầy đủ) để client
+        // mới cập nhật lịch và báo đúng số lượng đã tạo.
+        return { intent: 'create_event' as const, event: events[0], events };
+      }
+
+      const event = await this.eventsService.create(supabase, baseDto, user.id);
       return { intent: 'create_event' as const, event };
     }
 

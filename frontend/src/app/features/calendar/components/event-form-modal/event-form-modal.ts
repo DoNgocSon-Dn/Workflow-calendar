@@ -17,6 +17,7 @@ import { TranslationService } from '../../../../core/i18n/translation.service';
 import { TimeFormatService } from '../../../../core/time-format/time-format-service';
 import { DialogService } from '../../../../core/services/dialog.service';
 import { NotificationQueue } from '../../../../core/realtime/notification-queue';
+import { NotificationSoundService } from '../../../../core/services/notification-sound.service';
 import { CalendarStore } from '../../data/calendar-store';
 import {
   Attendee,
@@ -108,6 +109,7 @@ export class EventFormModal {
   private readonly timeFormatService = inject(TimeFormatService);
   private readonly dialog = inject(DialogService);
   private readonly notificationQueue = inject(NotificationQueue);
+  private readonly notificationSound = inject(NotificationSoundService);
 
   readonly event = input<CalendarEvent | null>(null);
   readonly defaultStart = input<Date | null>(null);
@@ -790,6 +792,12 @@ export class EventFormModal {
       title: 'Đã tạo sự kiện',
       body: `"${title}" đã được lưu vào lịch của bạn.`,
     });
+    // notifySaved() chỉ chạy ĐÚNG MỘT LẦN, ngay trong save() lúc backend vừa
+    // xác nhận tạo xong — không phải một effect() chạy lại theo state, nên
+    // reload trang hay Angular render lại UI không thể khiến tiếng kêu lần
+    // hai. notifyKind() tự lo phần còn lại (bật/tắt, đã mở khoá autoplay hay
+    // chưa, cooldown chống dồn tiếng) — ở đây không cần thêm điều kiện nào.
+    this.notificationSound.notifyKind('default');
   }
 
   setCreateMode(mode: 'event' | 'todo'): void {

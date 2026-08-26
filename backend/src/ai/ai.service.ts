@@ -15,6 +15,30 @@ export interface AiSuggestedTodo {
  *  dữ kiện để tạo sự kiện — phải hỏi lại người dùng, không được điền hộ. */
 export type AiMissingField = 'date' | 'time' | 'title';
 
+/**
+ * Lịch lặp lại theo các thứ cố định trong tuần — kết quả của việc hiểu các
+ * cách gọi tắt phổ biến ("246", "357", "thứ 2 4 6", "T3 T5 T7"...).
+ *
+ * `byWeekdays` theo đúng quy ước 0 = Chủ nhật .. 6 = Thứ Bảy — khớp với
+ * `RecurrenceRuleDto.byWeekdays` ở backend/src/events/dto/recurrence-rule.dto.ts
+ * VÀ khớp luôn với `Date.getDay()`/`getUTCDay()` của JavaScript, nên không
+ * cần quy đổi ở bất kỳ đâu trong toàn bộ luồng.
+ */
+export interface AiWeeklyRecurrence {
+  readonly freq: 'custom';
+  readonly interval: 1;
+  readonly unit: 'week';
+  readonly byWeekdays: number[];
+  /** Có mặt khi người dùng cho một khoảng NGÀY tường minh để giới hạn lịch
+   *  lặp (vd "357 từ 13/07/2026 tới 29/08/2026") — vắng mặt thì lịch lặp
+   *  không giới hạn ngày kết thúc (materialize tới trần an toàn ở backend:
+   *  RECURRENCE_MAX_OCCURRENCES / RECURRENCE_HORIZON_YEARS). */
+  readonly endType?: 'until';
+  /** ISO 8601 — cuối ngày kết thúc theo giờ Việt Nam. Chỉ có khi endType
+   *  là 'until'. */
+  readonly until?: string;
+}
+
 export interface AiParsedIntent {
   intent: 'create_event' | 'create_todos' | 'chat' | 'unclear';
   title?: string;
@@ -24,7 +48,10 @@ export interface AiParsedIntent {
   description?: string;
   allDay?: boolean;
   attendees?: string[];
-  recurrence_rule?: string | null;
+  /** Có giá trị khi câu nói mô tả một lịch LẶP LẠI theo nhiều thứ cố định
+   *  trong tuần (vd "lịch 246", "T2 T4 T6") — null khi chỉ là một sự kiện
+   *  một lần. */
+  recurrence_rule?: AiWeeklyRecurrence | null;
   /** Câu trả lời tự nhiên khi intent là 'chat' (hỏi về lịch hoặc trò chuyện chung). */
   reply?: string;
   /** Danh sách việc đề xuất khi intent là 'create_todos'. */
@@ -303,6 +330,47 @@ QUY TẮC BẮT BUỘC:
     };
   }
 
+  /**
+   * Lọc lại `recurrence_rule` do Gemini trả về trước khi tin dùng.
+   *
+   * Khác với các trường text (title, location...) — chỗ sai lệch cùng lắm là
+   * hiển thị hơi kỳ — giá trị này đi thẳng vào `createSeries()` để ghi HÀNG
+   * LOẠT sự kiện xuống CSDL, nên một hình dạng bịa/lệch (freq lạ, số thứ
+   * ngoài 0-6, mảng rỗng...) phải bị loại bỏ hoàn toàn (coi như không lặp)
+   * thay vì được dùng nguyên văn.
+   */
+  private sanitizeAiRecurrenceRule(raw: unknown): AiWeeklyRecurrence | null {
+    if (!raw || typeof raw !== 'object') return null;
+    const value = raw as Partial<AiWeeklyRecurrence>;
+    if (value.freq !== 'custom' || value.unit !== 'week') return null;
+    if (!Array.isArray(value.byWeekdays)) return null;
+
+    const byWeekdays = [
+      ...new Set(
+        value.byWeekdays.filter(
+          (d): d is number => typeof d === 'number' && Number.isInteger(d) && d >= 0 && d <= 6,
+        ),
+      ),
+    ].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
+
+    if (byWeekdays.length === 0) return null;
+
+    // "until" chỉ được tin khi parse ra một thời điểm hợp lệ — model có thể
+    // trả về chuỗi rỗng, sai định dạng, hoặc quên gửi kèm endType.
+    const until =
+      value.endType === 'until' && typeof value.until === 'string' && !Number.isNaN(new Date(value.until).getTime())
+        ? value.until
+        : undefined;
+
+    return {
+      freq: 'custom',
+      interval: 1,
+      unit: 'week',
+      byWeekdays,
+      ...(until ? { endType: 'until' as const, until } : {}),
+    };
+  }
+
   private async callGemini(
     userText: string,
     apiKey: string,
@@ -356,8 +424,23 @@ Nhiệm vụ: Đọc câu nói MỚI NHẤT của người dùng, xác định �
   "description": "mô tả chi tiết nếu có, hoặc rỗng",
   "allDay": false,
   "attendees": ["danh sách tên hoặc email nếu có"],
-  "recurrence_rule": null
+  "recurrence_rule": "null NẾU là sự kiện MỘT LẦN. Nếu người dùng mô tả một lịch LẶP LẠI theo nhiều thứ cố định trong tuần (xem QUY TẮC LỊCH LẶP THEO THỨ bên dưới) thì điền { \"freq\": \"custom\", \"interval\": 1, \"unit\": \"week\", \"byWeekdays\": [<danh sách số, 0=Chủ nhật..6=Thứ Bảy>], \"endType\": \"until\" (CHỈ khi người dùng cho một khoảng ngày kết thúc tường minh), \"until\": \"<ISO 8601 — hết ngày kết thúc đó>\" }, và \"start_at\" là lần xuất hiện SỚM NHẤT của một trong các thứ đó — tính từ khoảng ngày người dùng cho (nếu có) hoặc từ hôm nay trở đi (nếu không có khoảng ngày)."
 }
+
+QUY TẮC LỊCH LẶP THEO THỨ (bắt buộc, hay gặp khi tạo lịch học/lịch làm):
+- "246" / "lịch 246" / "thứ 246" / "thứ 2 4 6" / "thứ 2, 4, 6" / "T2 T4 T6" đều là CÙNG MỘT quy ước gọi tắt của sinh viên/dân văn phòng Việt Nam cho lịch lặp vào Thứ 2 + Thứ 4 + Thứ 6 (byWeekdays: [1,3,5]).
+- "357" / "lịch 357" / "thứ 357" / "thứ 3 5 7" / "thứ 3, 5, 7" / "T3 T5 T7" là lịch lặp vào Thứ 3 + Thứ 5 + Thứ 7 (byWeekdays: [2,4,6]).
+- "CN" / "cn" / "Chủ nhật" / "chủ nhật" đều là Chủ nhật (weekday = 0) — CHỈ dùng để xác định NGÀY, không tự ý biến thành lịch lặp lại nếu người dùng không nói gì thêm về việc lặp (vd "CN 9h họp nhóm" một mình, KHÔNG kèm khoảng ngày, là MỘT cuộc họp duy nhất vào Chủ nhật tới, recurrence_rule = null).
+- CHỈ áp dụng cách hiểu "246"/"357" là ngày trong tuần khi câu nói đang nói về lịch học/lịch làm/lịch hẹn/ca học/ca làm/thời gian biểu/hoạt động lặp lại. TUYỆT ĐỐI KHÔNG áp dụng nếu rõ ràng đó là một con số thông thường khác (số tiền, số lượng, mã số, số điện thoại...) — ví dụ "tôi có 246 nghìn đồng" hay "mã đơn hàng 357" KHÔNG phải là ngày trong tuần.
+- Khi đã xác định được recurrence_rule mà KHÔNG có khoảng ngày tường minh, "start_at" là lần xuất hiện SỚM NHẤT của một trong các thứ trong byWeekdays, tính từ "Thời điểm hiện tại" ở trên trở đi (kể cả hôm nay nếu hôm nay đúng là một trong các thứ đó).
+
+QUY TẮC BẮT BUỘC khi câu nói CÓ CẢ nhóm/thứ trong tuần LẪN một khoảng ngày tường minh (vd "từ ngày 13/07/2026 tới 29/08/2026", "từ 01/09/2026 đến 30/11/2026" — định dạng Việt Nam dd/mm/yyyy, ngày đứng TRƯỚC tháng, TUYỆT ĐỐI không đọc nhầm "13/07/2026" thành tháng 13):
+- Đây là lịch LẶP LẠI, GIỚI HẠN trong đúng khoảng ngày đó — không phải một sự kiện đơn và không phải thiếu thông tin ngày. TUYỆT ĐỐI không trả lời "chưa chắc chắn về thời gian" hay hỏi lại ngày bắt đầu/ngày kết thúc/các thứ trong tuần khi đã đọc được đầy đủ ba thứ này (nhóm thứ + ngày bắt đầu + ngày kết thúc).
+- "start_at" = lần xuất hiện SỚM NHẤT của một trong các thứ trong byWeekdays, tính từ chính NGÀY BẮT ĐẦU người dùng cho (không phải từ hôm nay) — kể cả khi ngày đó đã qua so với "Thời điểm hiện tại", vì người dùng đã chủ động chỉ định khoảng ngày cụ thể.
+- "endType": "until", "until" = 23:59:59 (+07:00) của chính NGÀY KẾT THÚC người dùng cho — để lần lặp cuối cùng rơi đúng vào ngày đó (nếu ngày đó khớp thứ cần lặp) vẫn được tính.
+- Ngày bắt đầu phải <= ngày kết thúc. Chỉ hỏi lại khi khoảng ngày THỰC SỰ không hợp lệ (vd ngày kết thúc đứng trước ngày bắt đầu) hoặc không parse được — không phải vì nghi ngờ chung chung.
+- CHƯA có giờ bắt đầu/kết thúc thì trả "unclear" với missingFields CHỈ gồm ["time"] (KHÔNG có "date") — nhóm thứ và khoảng ngày đã đủ rõ, chỉ còn thiếu giờ trong ngày. TUYỆT ĐỐI không dùng missingFields ["date"] hay câu "chưa chắc chắn về thời gian" trong trường hợp này.
+- Tin nhắn TRƯỚC đã cho đủ nhóm thứ + khoảng ngày (AI đã hỏi lại giờ), tin nhắn NÀY chỉ trả lời giờ (vd "9h đến 11h") thì LẤY nhóm thứ + khoảng ngày đó từ lịch sử hội thoại, ghép với giờ vừa cho, trả về "create_event" NGAY — không hỏi lại bất cứ điều gì đã biết.
 
 2) Người dùng hỏi về lịch của họ (vd "hôm nay tôi có gì", "tuần sau rảnh không", "cuộc họp lúc mấy giờ") HOẶC chỉ đang trò chuyện/hỏi đáp chung (chào hỏi, hỏi kiến thức, tâm sự...) — KHÔNG có ý định tạo sự kiện mới:
 {
@@ -387,13 +470,15 @@ QUY TẮC BẮT BUỘC cho "create_todos":
 - Từ 3 đến 8 việc. Nhiều hơn sẽ quá tải người đọc.
 
 4) Câu nói muốn tạo sự kiện nhưng THIẾU ngày hoặc giờ, và KHÔNG suy ra được từ lịch sử hội thoại ở trên:
-{ "intent": "unclear", "title": "tiêu đề đoán được", "missingFields": ["date"], "startTime": "HH:mm nếu đã hiểu được", "endTime": "HH:mm nếu đã hiểu được" }
+{ "intent": "unclear", "title": "tiêu đề đoán được", "missingFields": ["date"] hoặc ["time"] hoặc ["date","time"] — CHỈ liệt kê đúng những gì THỰC SỰ còn thiếu, "startTime": "HH:mm nếu đã hiểu được", "endTime": "HH:mm nếu đã hiểu được" }
+- Ví dụ: đã có nhóm/thứ trong tuần + khoảng ngày bắt đầu/kết thúc nhưng chưa có giờ → missingFields CHỈ là ["time"], KHÔNG có "date".
 
 QUY TẮC BẮT BUỘC cho thời gian (áp dụng cho cả "create_event" và "unclear"):
 - KHOẢNG thời gian phải giữ NGUYÊN cả hai đầu. "từ 9h-17h", "9h đến 17h", "8h tới 10h30", "9 giờ đến 11 giờ", "1h chiều đến 5h chiều" — end_at lấy đúng giờ người dùng nói, KHÔNG cắt còn 1 tiếng.
 - Chỉ dùng mặc định 1 giờ khi người dùng THỰC SỰ không nói giờ kết thúc và cũng không nói thời lượng.
-- Người dùng KHÔNG nói ngày (và lịch sử hội thoại cũng không có) thì TRẢ VỀ "unclear" với missingFields ["date"] — TUYỆT ĐỐI không lấy hôm nay hay ngày bất kỳ. Điền "startTime"/"endTime" để không bắt người dùng gõ lại.
-- Người dùng ĐÃ nói ngày ở tin nhắn trước rồi tin nhắn này chỉ nói "thêm vào lịch" thì LẤY ngày đó từ lịch sử hội thoại, không hỏi lại.
+- "từ ngày 13/07/2026 tới 29/08/2026" (có dấu / hoặc - giữa các số) là một KHOẢNG NGÀY, khác hẳn "từ 9h đến 17h" (một KHOẢNG GIỜ) — không được nhầm hai loại này với nhau, và không được coi khoảng ngày là "chưa rõ ngày".
+- Người dùng KHÔNG nói ngày NÀO CẢ (không thứ, không khoảng ngày, không "hôm nay/mai"...) và lịch sử hội thoại cũng không có thì TRẢ VỀ "unclear" với missingFields ["date"] — TUYỆT ĐỐI không lấy hôm nay hay ngày bất kỳ. Điền "startTime"/"endTime" để không bắt người dùng gõ lại.
+- Người dùng ĐÃ nói ngày (một ngày đơn, HOẶC một nhóm thứ + khoảng ngày — xem QUY TẮC LỊCH LẶP THEO THỨ ở trên) ở tin nhắn trước, tin nhắn này chỉ nói "thêm vào lịch" hoặc chỉ trả lời giờ, thì LẤY thông tin ngày/nhóm thứ/khoảng ngày đó từ lịch sử hội thoại, không hỏi lại.
 
 Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự kiện — mọi câu hỏi/trò chuyện khác đều dùng "chat".`;
 
@@ -428,6 +513,11 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự k
                 const start = new Date(parsed.start_at);
                 parsed.end_at = new Date(start.getTime() + 60 * 60 * 1000).toISOString();
               }
+              // Model có thể trả về một hình dạng sai lệch (freq lạ, số thứ
+              // ngoài 0-6, byWeekdays rỗng...) — đây là dữ liệu sẽ đi thẳng
+              // vào createSeries() để ghi hàng loạt xuống CSDL, nên phải lọc
+              // lại chứ không tin nguyên văn như các trường text khác.
+              parsed.recurrence_rule = this.sanitizeAiRecurrenceRule(parsed.recurrence_rule);
               return parsed;
             }
             return parsed;
@@ -465,8 +555,13 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự k
     lower: string,
     from: number,
   ): { hour: number; minute: number; index: number; length: number } | null {
+    // "h(?!\p{L})": chữ "h" phải KHÔNG có chữ cái đứng ngay sau nó. Thiếu rào
+    // này thì "T6 học" (mã lịch "246"/nhóm thứ "T2 T4 T6" đứng sát một hoạt
+    // động bắt đầu bằng "h" — "học", "họp", "hẹn"...) bị đọc nhầm số "6" +
+    // chữ "h" đầu tiên của "học" thành mốc giờ "6h", trong khi câu không hề
+    // nói giờ nào cả. Cần \u flag để \p{L} nhận diện được cả chữ cái có dấu.
     const re =
-      /(\d{1,2})\s*(?:h|:|gi\u1EDD|(?=\s*r\u01B0\u1EE1i))\s*(?:(\d{1,2})|(r\u01B0\u1EE1i))?\s*(s\u00E1ng|tr\u01B0a|chi\u1EC1u|t\u1ED1i|am|pm)?/gi;
+      /(\d{1,2})\s*(?:h(?!\p{L})|:|gi\u1EDD|(?=\s*r\u01B0\u1EE1i))\s*(?:(\d{1,2})|(r\u01B0\u1EE1i))?\s*(s\u00E1ng|tr\u01B0a|chi\u1EC1u|t\u1ED1i|am|pm)?/giu;
     re.lastIndex = from;
     const m = re.exec(lower);
     if (!m) return null;
@@ -503,6 +598,10 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự k
     const VN_OFFSET_MS = 7 * 60 * 60 * 1000;
     const now = new Date(Date.now() + VN_OFFSET_MS);
     let targetDate = new Date(now);
+    // Đưa lên đầu hàm (trước đây chỉ khai báo ở cuối, ngay trước return) vì
+    // logic khoảng-ngày-tường-minh bên dưới cũng cần quy đổi "until" sang UTC
+    // thật NGAY khi tính ra, không đợi tới cuối hàm.
+    const toRealIso = (d: Date) => new Date(d.getTime() - VN_OFFSET_MS).toISOString();
 
     // 1. Phân tích ngày
     let dateMatched = false;
@@ -519,9 +618,28 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự k
       dateMatched = true;
     }
 
-    // Thứ 2 -> Thứ 7, Chủ nhật (ví dụ: "thứ 2 tuần sau", "thứ 6")
-    const dayOfWeekMatch = lower.match(/(?:thứ|t)\s*([2-7]|hai|ba|tư|bốn|năm|sáu|bảy)|chủ nhật|cn/i);
-    if (dayOfWeekMatch) {
+    // Nhóm nhiều thứ ghép lại kiểu "246"/"357"/"thứ 2 4 6"/"T2 T4 T6" — PHẢI
+    // xét TRƯỚC mốc thứ đơn ngay bên dưới: "thứ 2 4 6" cũng khớp một phần với
+    // regex thứ đơn (bắt được "thứ 2" rồi bỏ qua "4 6" phía sau), nên nếu xét
+    // sau thì câu này bị hiểu sai thành lịch một lần vào Thứ 2 thay vì lịch
+    // lặp cả ba thứ.
+    const weekdayGroup = this.parseWeekdayGroup(lower);
+
+    // Thứ 2 -> Thứ 7, Chủ nhật (ví dụ: "thứ 2 tuần sau", "thứ 6", "CN") — bỏ
+    // qua nếu câu đã được hiểu là một NHÓM nhiều thứ ở trên, để không bị ghi
+    // đè nhầm về một mốc thứ đơn.
+    const dayOfWeekMatch = weekdayGroup
+      ? null
+      : lower.match(/(?:thứ|t)\s*([2-7]|hai|ba|tư|bốn|năm|sáu|bảy)|chủ nhật|cn/i);
+
+    // "Thứ trong tuần" quy về MỘT hình dạng chung — dù đến từ nhóm nhiều thứ
+    // hay một thứ đơn — để khối khoảng-ngày bên dưới xử lý đồng nhất cho cả
+    // hai (vd "CN từ 01/09 đến 30/09" và "357 từ 13/07 đến 29/08" đều là lịch
+    // lặp giới hạn trong một khoảng ngày, chỉ khác số lượng thứ).
+    let resolvedWeekdays: number[] | null = null;
+    if (weekdayGroup) {
+      resolvedWeekdays = weekdayGroup.weekdays;
+    } else if (dayOfWeekMatch) {
       const dayMap: Record<string, number> = {
         '2': 1, hai: 1,
         '3': 2, ba: 2,
@@ -532,7 +650,45 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự k
         'chủ nhật': 0, cn: 0,
       };
       const dayKey = dayOfWeekMatch[1] ? dayOfWeekMatch[1].toLowerCase() : 'chủ nhật';
-      const targetDay = dayMap[dayKey] ?? 1;
+      resolvedWeekdays = [dayMap[dayKey] ?? 1];
+    }
+
+    // Khoảng NGÀY tường minh ("từ ngày 13/07/2026 tới 29/08/2026") — khác hẳn
+    // khoảng GIỜ ("từ 9h đến 17h") được nhận diện riêng ở bước 2 bên dưới.
+    const dateRange = this.parseDateRange(lower, now);
+
+    let recurrenceRule: AiWeeklyRecurrence | null = null;
+
+    if (resolvedWeekdays && dateRange) {
+      // Có ĐỦ nhóm/thứ trong tuần + khoảng ngày tường minh — coi là ĐỦ để
+      // tạo lịch lặp GIỚI HẠN trong khoảng đó, không hỏi lại ngày. Lấy lần
+      // xuất hiện sớm nhất TỪ NGÀY BẮT ĐẦU (không phải từ "hôm nay") — người
+      // dùng đã chủ động chỉ định khoảng ngày cụ thể nên phải tôn trọng
+      // nguyên văn, kể cả khi khoảng đó đã bắt đầu trong quá khứ.
+      targetDate = this.nearestDateForWeekdays(dateRange.start, resolvedWeekdays);
+      dateMatched = true;
+      recurrenceRule = {
+        freq: 'custom',
+        interval: 1,
+        unit: 'week',
+        byWeekdays: resolvedWeekdays,
+        endType: 'until',
+        // Hết ngày kết thúc (23:59:59) — để lần lặp cuối rơi đúng vào ngày đó
+        // (nếu ngày đó khớp thứ cần lặp) vẫn được tính, không bị cắt vì so
+        // sánh theo mốc 00:00.
+        until: toRealIso(this.endOfDay(dateRange.end)),
+      };
+    } else if (weekdayGroup) {
+      // Nhóm nhiều thứ, KHÔNG kèm khoảng ngày — hành vi đã có: lặp từ lần
+      // xuất hiện gần nhất, không giới hạn ngày kết thúc (backend tự chặn ở
+      // RECURRENCE_MAX_OCCURRENCES / RECURRENCE_HORIZON_YEARS).
+      targetDate = this.nearestDateForWeekdays(targetDate, weekdayGroup.weekdays);
+      dateMatched = true;
+      recurrenceRule = { freq: 'custom', interval: 1, unit: 'week', byWeekdays: weekdayGroup.weekdays };
+    } else if (dayOfWeekMatch && resolvedWeekdays) {
+      // Một thứ ĐƠN, không kèm khoảng ngày — HÀNH VI CŨ, giữ nguyên y hệt:
+      // một sự kiện MỘT LẦN vào lần xuất hiện gần nhất của thứ đó.
+      const targetDay = resolvedWeekdays[0];
       const currentDay = targetDate.getUTCDay();
       let diff = targetDay - currentDay;
       if (lower.includes('tuần sau') || lower.includes('tuần tới')) {
@@ -544,8 +700,16 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự k
       dateMatched = true;
     }
 
-    // Ngày cụ thể dd/mm hoặc dd-mm
-    const dateSpecificMatch = lower.match(/ngày\s*(\d{1,2})[/-](\d{1,2})(?:[/-](\d{4}))?|(\d{1,2})[/-](\d{1,2})(?:[/-](\d{4}))/);
+    // Ngày cụ thể dd/mm hoặc dd-mm — bỏ qua nếu câu đã được hiểu là một
+    // KHOẢNG ngày tường minh ở trên: dateRange.matchedText chứa CẢ hai đầu
+    // mút (vd "13/07/2026" bên trong "từ ngày 13/07/2026 tới 29/08/2026"),
+    // nên nếu vẫn chạy regex đơn này thì nó sẽ khớp trúng ngày ĐẦU của
+    // khoảng rồi ghi đè targetDate đã được canh đúng thứ cần lặp ở trên
+    // (vd Thứ 3 gần nhất từ 13/07 trở đi) về lại đúng 13/07 — có thể KHÔNG
+    // phải một Thứ 3/5/7 nào cả.
+    const dateSpecificMatch = dateRange
+      ? null
+      : lower.match(/ngày\s*(\d{1,2})[/-](\d{1,2})(?:[/-](\d{4}))?|(\d{1,2})[/-](\d{1,2})(?:[/-](\d{4}))/);
     if (dateSpecificMatch) {
       const day = parseInt(dateSpecificMatch[1] || dateSpecificMatch[4], 10);
       const month = parseInt(dateSpecificMatch[2] || dateSpecificMatch[5], 10) - 1;
@@ -700,6 +864,8 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự k
       /\b(hôm nay|sáng nay|trưa nay|chiều nay|tối nay|ngày mai|sáng mai|trưa mai|chiều mai|tối mai|ngày mốt|ngày kia|mốt|mai)\b/gi;
     titleSource = titleSource.replace(DATE_PHRASE_RE, ' ');
     if (dayOfWeekMatch) stripMatch(dayOfWeekMatch[0]);
+    if (weekdayGroup) stripMatch(weekdayGroup.matchedText);
+    if (dateRange) stripMatch(dateRange.matchedText);
     titleSource = titleSource.replace(/\btuần sau\b|\btuần tới\b/gi, ' ');
     if (dateSpecificMatch) stripMatch(dateSpecificMatch[0]);
     if (durationMatch) stripMatch(durationMatch[0]);
@@ -802,7 +968,12 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự k
     // Không âm thầm tạo sự kiện trong quá khứ (vd nói "8h sáng nay" lúc đã là
     // 16h) — coi là chưa rõ ý định thay vì tự suy đoán, tái dùng route
     // "unclear" đã có sẵn để người dùng xác nhận/sửa lại qua form nhập tay.
-    if (targetDate.getTime() < now.getTime()) {
+    //
+    // BỎ QUA rào này khi người dùng đã cho một khoảng ngày TƯỜNG MINH
+    // (dateRange): họ chủ động chỉ định "từ 13/07 tới 29/08", không phải suy
+    // đoán mơ hồ như "sáng nay" — tôn trọng nguyên văn dù khoảng đó có bắt
+    // đầu trong quá khứ so với "Thời điểm hiện tại" của trợ lý.
+    if (targetDate.getTime() < now.getTime() && !dateRange) {
       return {
         intent: 'unclear',
         title,
@@ -812,10 +983,6 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự k
       };
     }
 
-    // Quy đổi từ Date "giả UTC" (mang giờ Việt Nam) về đúng thời điểm UTC
-    // thật trước khi xuất ISO string — xem giải thích ở đầu hàm.
-    const toRealIso = (d: Date) => new Date(d.getTime() - VN_OFFSET_MS).toISOString();
-
     return {
       intent: 'create_event',
       title,
@@ -823,7 +990,180 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự k
       end_at: toRealIso(endDate),
       allDay: false,
       ...(location ? { location } : {}),
+      ...(recurrenceRule ? { recurrence_rule: recurrenceRule } : {}),
     };
+  }
+
+  /** 0 = Chủ nhật .. 6 = Thứ Bảy — cùng quy ước với `Date.getUTCDay()` của
+   *  JavaScript và với `RecurrenceRuleDto.byWeekdays` ở backend, nên không
+   *  cần quy đổi ở bất kỳ bước nào trong luồng tạo lịch lặp. */
+  private static readonly WEEKDAY_DIGIT_MAP: Record<string, number> = {
+    '2': 1,
+    '3': 2,
+    '4': 3,
+    '5': 4,
+    '6': 5,
+    '7': 6,
+  };
+
+  /** Đơn vị đo lường/tiền tệ/định danh hay gặp ngay sau một chuỗi 3 chữ số —
+   *  có mặt thì gần như chắc chắn đó là một con số thông thường (giá tiền, số
+   *  lượng...), không phải mã lịch "246"/"357". */
+  private static readonly NON_SCHEDULE_UNIT_AFTER =
+    /^\s*(nghìn|triệu|tỷ|đồng|vnđ|vnd|%|người|cuốn|quyển|chiếc|cái|kg|gam|lần|tuổi|điểm|trang|km|đô|usd)\b/i;
+
+  /** "số 246", "mã 357" — số hiệu/mã định danh, không phải ngày trong tuần. */
+  private static readonly NON_SCHEDULE_PREFIX_BEFORE = /(?:số|mã|stt|id|code)\s*$/i;
+
+  /**
+   * Gộp một danh sách chữ số thứ (2-7, theo `WEEKDAY_DIGIT_MAP`) thành mảng
+   * thứ trong tuần đã loại trùng và sắp theo đúng thứ tự Thứ 2 → Chủ nhật.
+   */
+  private uniqueSortedWeekdays(digits: readonly string[]): number[] {
+    const set = new Set(
+      digits
+        .map((d) => AiService.WEEKDAY_DIGIT_MAP[d])
+        .filter((w): w is number => w !== undefined),
+    );
+    return [...set].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
+  }
+
+  /**
+   * Chuỗi 3 chữ số "246"/"357" đứng TRẦN TRỤI (không có "thứ"/"T" đứng
+   * trước) có thật sự đang gọi lịch không, hay chỉ là một con số bình
+   * thường (giá tiền, số lượng, mã đơn hàng, số điện thoại...)?
+   *
+   * Không thể phân biệt tuyệt đối bằng quy tắc — đây là suy đoán hợp lý dựa
+   * trên ngữ cảnh NGAY SÁT chuỗi số, đúng tinh thần "không được áp dụng máy
+   * móc nếu chuỗi số đó rõ ràng đang là một con số thông thường".
+   */
+  private isScheduleWeekdayCodeContext(lower: string, match: RegExpMatchArray): boolean {
+    const start = match.index ?? 0;
+    const end = start + match[0].length;
+
+    // ".246"/",246" mà ngay trước dấu chấm/phẩy lại là một chữ số khác — đây
+    // chắc chắn là một phần của số lớn hơn có dấu phân cách hàng nghìn (vd
+    // "12.246"), không phải mã lịch đứng một mình.
+    const before2 = lower.slice(Math.max(0, start - 2), start);
+    if (/\d[.,]$/.test(before2)) return false;
+
+    const after = lower.slice(end, end + 14);
+    if (AiService.NON_SCHEDULE_UNIT_AFTER.test(after)) return false;
+
+    const beforeWord = lower.slice(Math.max(0, start - 6), start);
+    if (AiService.NON_SCHEDULE_PREFIX_BEFORE.test(beforeWord)) return false;
+
+    return true;
+  }
+
+  /**
+   * Nhận diện các cách gọi tắt lịch lặp theo thứ trong tuần: mã số quen
+   * thuộc với sinh viên/dân văn phòng Việt Nam ("246" = Thứ 2+4+6, "357" =
+   * Thứ 3+5+7), và các biến thể liệt kê nhiều thứ ("thứ 2 4 6", "thứ 2, 4,
+   * 6", "T2 T4 T6"...). Trả về danh sách thứ (0=CN..6=T7) đã loại trùng và
+   * sắp theo thứ tự trong tuần, hoặc null nếu câu không nói tới dạng này.
+   *
+   * Biến thể có "thứ"/"T" đứng trước KHÔNG cần thêm rào chắn ngữ cảnh: không
+   * ai viết "thứ" hay "T" ngay trước một con số thông thường không liên quan
+   * tới lịch — bản thân tiền tố đã là tín hiệu đủ mạnh.
+   */
+  private parseWeekdayGroup(lower: string): { weekdays: number[]; matchedText: string } | null {
+    // Cụm liệt kê có tiền tố — xét TRƯỚC mã số trần trụi bên dưới, để
+    // "T2 T4 T6" không lỡ bị nhánh dưới nuốt mất một phần.
+    const clusterMatch = lower.match(
+      /(?:thứ|t)\s*[2-7](?:\s*[,、]?\s*(?:và|va)?\s*(?:thứ|t)?\s*[2-7]){1,2}/i,
+    );
+    if (clusterMatch) {
+      const digits = [...clusterMatch[0].matchAll(/[2-7]/g)].map((m) => m[0]);
+      const weekdays = this.uniqueSortedWeekdays(digits);
+      if (weekdays.length >= 2) {
+        return { weekdays, matchedText: clusterMatch[0] };
+      }
+    }
+
+    // Mã số trần trụi: đúng 3 chữ số, mọi chữ số đều 2-7 (khớp Thứ 2..Thứ 7).
+    // \b ở hai đầu đã tự loại các số dài hơn có "246"/"357" nằm bên trong (vd
+    // "12463" không khớp vì không có ranh giới từ giữa "1" và "2").
+    const packedMatch = lower.match(/\b([2-7]{3})\b/);
+    if (packedMatch && this.isScheduleWeekdayCodeContext(lower, packedMatch)) {
+      const digits = packedMatch[1].split('');
+      const weekdays = this.uniqueSortedWeekdays(digits);
+      if (weekdays.length >= 2) {
+        return { weekdays, matchedText: packedMatch[0] };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Ngày GẦN NHẤT (tính từ `base` trở đi, kể cả chính `base`) mà thứ trong
+   * tuần nằm trong `weekdays`. Dùng khi câu chỉ nói "lịch 246" mà không kèm
+   * mốc ngày cụ thể nào khác — lịch lặp phải bắt đầu từ lần xuất hiện sớm
+   * nhất, không phải một ngày ngẫu nhiên.
+   *
+   * `base` là Date "giả UTC" mang giờ Việt Nam (xem giải thích ở đầu
+   * `parseLocalVietnameseEvent`) nên dùng getUTCDay()/setUTCDate() — không
+   * phụ thuộc timezone máy chạy.
+   */
+  private nearestDateForWeekdays(base: Date, weekdays: readonly number[]): Date {
+    const set = new Set(weekdays);
+    const result = new Date(base);
+    for (let i = 0; i < 7; i++) {
+      if (set.has(result.getUTCDay())) return result;
+      result.setUTCDate(result.getUTCDate() + 1);
+    }
+    // Không thể xảy ra (weekdays luôn có ít nhất 1 phần tử hợp lệ 0-6), nhưng
+    // TypeScript cần một nhánh trả về để hàm luôn có kiểu Date.
+    return result;
+  }
+
+  /**
+   * Khoảng NGÀY tường minh: "từ (ngày )?dd/mm(/yyyy)? (đến|tới|cho đến|cho
+   * tới) (ngày )?dd/mm(/yyyy)?" — ví dụ "từ ngày 13/07/2026 tới 29/08/2026",
+   * "từ 01/09/2026 đến 30/11/2026".
+   *
+   * Phân biệt được với khoảng GIỜ ("từ 9h đến 17h") nhờ dấu `/` hoặc `-`
+   * BẮT BUỘC giữa ngày/tháng — một mốc giờ tiếng Việt không bao giờ viết
+   * theo dạng đó, nên hai loại khoảng này không bao giờ khớp nhầm vào nhau.
+   *
+   * Định dạng CỐ ĐỊNH là dd/mm/yyyy (ngày đứng trước) — nhóm bắt số 1 luôn
+   * là ngày, nhóm số 2 luôn là tháng, không được đọc ngược thành mm/dd.
+   *
+   * Năm bị bỏ trống ở một đầu thì mượn năm của đầu kia; bỏ trống cả hai thì
+   * lấy năm hiện tại — cùng tinh thần khoan dung với `dateSpecificMatch`.
+   *
+   * Trả về null nếu không khớp, không parse được, hoặc ngày bắt đầu đứng SAU
+   * ngày kết thúc (Bước 3: startDate phải <= endDate).
+   */
+  private parseDateRange(
+    lower: string,
+    now: Date,
+  ): { start: Date; end: Date; matchedText: string } | null {
+    const match = lower.match(
+      /từ\s*(?:ngày\s*)?(\d{1,2})[/-](\d{1,2})(?:[/-](\d{4}))?\s*(?:đến|tới|cho đến|cho tới)\s*(?:ngày\s*)?(\d{1,2})[/-](\d{1,2})(?:[/-](\d{4}))?/i,
+    );
+    if (!match) return null;
+
+    const [, d1, m1, y1, d2, m2, y2] = match;
+    const year1 = y1 ? parseInt(y1, 10) : y2 ? parseInt(y2, 10) : now.getUTCFullYear();
+    const year2 = y2 ? parseInt(y2, 10) : year1;
+
+    const start = new Date(Date.UTC(year1, parseInt(m1, 10) - 1, parseInt(d1, 10)));
+    const end = new Date(Date.UTC(year2, parseInt(m2, 10) - 1, parseInt(d2, 10)));
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+    if (start.getTime() > end.getTime()) return null;
+
+    return { start, end, matchedText: match[0] };
+  }
+
+  /** 23:59:59.999 cùng ngày (Date "giả UTC" mang giờ Việt Nam) — để lần lặp
+   *  cuối cùng rơi vào bất kỳ giờ nào trong NGÀY kết thúc vẫn được tính, thay
+   *  vì bị cắt vì so sánh theo đúng mốc 00:00:00. */
+  private endOfDay(date: Date): Date {
+    const end = new Date(date);
+    end.setUTCHours(23, 59, 59, 999);
+    return end;
   }
 }
 

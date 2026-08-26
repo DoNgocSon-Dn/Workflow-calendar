@@ -12,6 +12,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { OverflowTooltip } from '../../directives/overflow-tooltip';
 import { AuthStore } from '../../../core/auth/auth-store';
+import { NotificationQueue } from '../../../core/realtime/notification-queue';
+import { NotificationSoundService } from '../../../core/services/notification-sound.service';
 import {
   AiChatHistoryEntry,
   AiFileAnalysis,
@@ -345,6 +347,30 @@ function buildEventCard(event: {
   };
 }
 
+/**
+ * Câu xác nhận khi AI tạo một lịch LẶP LẠI theo nhiều thứ trong tuần (vd
+ * "lịch 246", "T3 T5 T7") — thay cho thẻ sự kiện đơn (buildEventCard) vốn chỉ
+ * hiển thị được đúng MỘT lần xuất hiện.
+ *
+ * Đọc thẳng thứ trong tuần từ NGÀY THỰC TẾ của các sự kiện đã tạo (không phải
+ * từ recurrence rule gửi kèm) — đây là những gì đã thật sự được ghi vào lịch,
+ * nên không thể lệch với những gì người dùng sắp thấy trên lưới lịch.
+ */
+function buildRecurringConfirmation(events: readonly { start: string }[]): string {
+  const weekdays = [...new Set(events.map((e) => new Date(e.start).getDay()))].sort(
+    (a, b) => ((a + 6) % 7) - ((b + 6) % 7),
+  );
+  const weekdayFmt = new Intl.DateTimeFormat('vi-VN', { weekday: 'long' });
+  // 2024-01-07 là Chủ nhật — mốc tham chiếu bất kỳ, chỉ cần đúng thứ.
+  const names = weekdays
+    .map((wd) => {
+      const label = weekdayFmt.format(new Date(2024, 0, 7 + wd));
+      return label.charAt(0).toUpperCase() + label.slice(1);
+    })
+    .join(', ');
+  return `Đã tạo ${events.length} sự kiện lặp lại vào ${names}.`;
+}
+
 @Component({
   selector: 'app-floating-hub',
   templateUrl: './floating-hub.html',
@@ -355,6 +381,8 @@ function buildEventCard(event: {
 export class FloatingHub {
   private readonly store = inject(CalendarStore);
   private readonly authStore = inject(AuthStore);
+  private readonly notificationQueue = inject(NotificationQueue);
+  private readonly notificationSound = inject(NotificationSoundService);
 
   protected readonly fabSize = FAB_SIZE;
   protected readonly panelGap = PANEL_GAP;
@@ -694,7 +722,33 @@ export class FloatingHub {
       const result = await this.store.sendAiChat(text, calendarId, history);
       if (result.intent === 'create_event') {
         this.lastCreatedEventId.set(result.event.id);
-        this.pushEventMessage('Đã thêm vào lịch của bạn.', buildEventCard(result.event));
+        const createdCount = result.events?.length ?? 1;
+        // events có từ 2 phần tử trở lên = một lịch LẶP LẠI theo nhiều thứ
+        // trong tuần (vd "lịch 246") — báo rõ số lượng và các thứ đã tạo,
+        // thay vì dựng thẻ cho MỘT sự kiện rồi im lặng bỏ qua các lần lặp còn
+        // lại (người dùng sẽ tưởng chỉ có một buổi được tạo).
+        if (createdCount > 1) {
+          this.pushMessage('assistant', buildRecurringConfirmation(result.events!));
+        } else {
+          this.pushEventMessage('Đã thêm vào lịch của bạn.', buildEventCard(result.event));
+        }
+
+        // Toast + âm thanh xác nhận: MỘT bộ duy nhất cho CẢ YÊU CẦU, dù AI vừa
+        // tạo 1 sự kiện hay cả một chuỗi lặp lại N sự kiện — gọi đúng MỘT lần
+        // ở đây (không lặp qua từng event) nên không có nguy cơ ra N toast
+        // hay N tiếng kêu cho một request. Đây là lệnh gọi mệnh lệnh bên
+        // trong send(), chạy đúng một lần ngay khi request thành công — không
+        // phải effect() theo dõi state — nên reload trang hay Angular render
+        // lại UI không thể kích hoạt lại nó.
+        this.notificationQueue.push({
+          kind: 'success',
+          title: createdCount > 1 ? 'Đã tạo lịch thành công' : 'Đã tạo sự kiện',
+          body:
+            createdCount > 1
+              ? `Đã thêm ${createdCount} sự kiện vào lịch của bạn.`
+              : `"${result.event.title}" đã được lưu vào lịch của bạn.`,
+        });
+        this.notificationSound.notifyKind('default');
       } else if (result.intent === 'create_todos') {
         const proposal = this.buildProposal(result.goal, result.todos);
         if (proposal.rows.length) {
@@ -724,6 +778,15 @@ export class FloatingHub {
             `Bạn muốn xếp ${what}${when} vào ngày nào? Nhắn giúp mình ngày cụ thể ` +
               '(vd "ngày mai", "thứ 2 tuần sau", "30/8") nhé.',
           );
+        } else if (missing.includes('time') && !missing.includes('date') && !missing.includes('title')) {
+          // Thiếu GIỜ là tình huống RIÊNG với "thiếu ngày" ở trên, không phải
+          // cùng một nhánh "chưa chắc chắn chung chung": ngày/thứ trong tuần
+          // (kể cả một lịch LẶP LẠI đã có đủ khoảng ngày bắt đầu/kết thúc, vd
+          // "357 từ 13/07 tới 29/08") đã hiểu xong, chỉ còn thiếu khung giờ.
+          // Hỏi lại ngày ở đây sẽ bắt người dùng gõ lại thứ/khoảng ngày vừa
+          // nói — đúng điều yêu cầu này cấm.
+          const what = result.title ? `Lịch ${result.title.toLowerCase()}` : 'Lịch này';
+          this.pushMessage('assistant', `${what} vào khung giờ nào? (vd "9h đến 11h")`);
         } else {
           this.pushMessage(
             'assistant',
