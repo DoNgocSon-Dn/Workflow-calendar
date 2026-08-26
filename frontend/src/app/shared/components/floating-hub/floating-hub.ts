@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { OverflowTooltip } from '../../directives/overflow-tooltip';
 import { AuthStore } from '../../../core/auth/auth-store';
 import {
   AiChatHistoryEntry,
@@ -349,7 +350,7 @@ function buildEventCard(event: {
   templateUrl: './floating-hub.html',
   styleUrl: './floating-hub.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [FormsModule, OverflowTooltip],
 })
 export class FloatingHub {
   private readonly store = inject(CalendarStore);
@@ -746,6 +747,7 @@ export class FloatingHub {
 
     this.pushMessage('user', text || 'Đọc giúp mình file này.', undefined, undefined, file.name);
     this.draft.set('');
+    this.cancelChipExit();
     this.pendingFile.set(null);
     this.sending.set(true);
     this.aiError.set(null);
@@ -1010,6 +1012,7 @@ export class FloatingHub {
       return;
     }
 
+    this.cancelChipExit();
     this.pendingFile.set(file);
     // Câu thông báo lấy từ utility chung nên ba nguồn file nói giống hệt nhau.
     this.aiError.set(skippedFilesMessage(skipped));
@@ -1068,8 +1071,33 @@ export class FloatingHub {
     this.handleFile(picked.file, picked.skipped);
   }
 
+  /** Chip đang chạy animation rời đi — vẫn còn trong DOM cho tới khi xong. */
+  protected readonly removingFile = signal(false);
+
+  /** Khớp thời lượng keyframe chipOut trong floating-hub.css. */
+  private static readonly CHIP_EXIT_MS = 130;
+  private chipExitTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Huỷ lần rời đi đang dang dở. Không có bước này thì chọn file mới ngay sau
+   *  khi bấm × sẽ bị hẹn giờ cũ xoá mất. */
+  private cancelChipExit(): void {
+    if (this.chipExitTimer) {
+      clearTimeout(this.chipExitTimer);
+      this.chipExitTimer = null;
+    }
+    this.removingFile.set(false);
+  }
+
   clearPendingFile(): void {
-    this.pendingFile.set(null);
+    if (!this.pendingFile() || this.removingFile()) return;
+    // Gỡ khỏi state SAU animation, nếu không chip biến mất tức thì và composer
+    // giật một nhịp.
+    this.removingFile.set(true);
+    this.chipExitTimer = setTimeout(() => {
+      this.pendingFile.set(null);
+      this.chipExitTimer = null;
+      this.removingFile.set(false);
+    }, FloatingHub.CHIP_EXIT_MS);
   }
 
   // --- Sự kiện do AI đọc từ file (bảng xem trước, CHƯA lưu) -------------

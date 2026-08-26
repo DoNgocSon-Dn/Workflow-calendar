@@ -982,8 +982,16 @@
 
 /* Nội dung panel phải nằm TRÊN lớp sóng. Thiếu luật này thì .panel-ripple
    (đã định vị, z-index 0) sẽ vẽ đè lên tabs và nội dung — đúng cái phải
-   tránh: sóng là mép card đang lộ ra, không phải hình tròn dán lên chữ. */
-.panel > *:not(.panel-ripple) {
+   tránh: sóng là mép card đang lộ ra, không phải hình tròn dán lên chữ.
+
+   PHẢI loại trừ .drop-overlay. Luật này có độ ưu tiên (0,2,0), cao hơn
+   .drop-overlay (0,1,0), nên nó GHI ĐÈ position:absolute thành relative và
+   z-index 5 thành 1. Lớp phủ khi kéo file vì thế rơi vào luồng bình thường,
+   trở thành con đầu tiên của panel: một khối cao 58px chiếm chỗ thật, đẩy
+   tabs xuống và ép vùng tin nhắn co lại — đúng "khối trắng nổi giữa giao
+   diện" người dùng báo. Thêm phần tử định vị nào làm con trực tiếp của
+   .panel thì cũng phải loại trừ ở đây. */
+.panel > *:not(.panel-ripple):not(.drop-overlay) {
   position: relative;
   z-index: 1;
 }
@@ -1277,6 +1285,9 @@
   pointer-events: none;
 }
 
+/* Thẻ file đã đính kèm. Nằm trong luồng của .composer-area, ngay trên ô nhập
+   — CỐ Ý không định vị tuyệt đối: chỗ của nó phải do flex chia, để khi có
+   file thì composer cao lên và vùng tin nhắn tự co, không có gì bị che. */
 .attachment-chip {
   display: flex;
   align-items: center;
@@ -1286,6 +1297,35 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
+  /* Chỉ transform + opacity: không thuộc tính nào gây tính lại layout. */
+  animation: chipIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* "Đặt vào" chỗ, không nảy: nhích lên rất ngắn rồi dừng hẳn. */
+@keyframes chipIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.985);
+  }
+}
+
+.attachment-chip.is-leaving {
+  animation: chipOut 0.13s ease-in both;
+  pointer-events: none;
+}
+
+@keyframes chipOut {
+  to {
+    opacity: 0;
+    transform: translateY(3px) scale(0.985);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attachment-chip,
+  .attachment-chip.is-leaving {
+    animation-duration: 0.01s;
+  }
 }
 
 .attachment-chip__icon {

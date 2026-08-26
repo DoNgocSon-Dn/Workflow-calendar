@@ -560,7 +560,7 @@
 
           <!-- File đã chọn nhưng chưa gửi. Xoá được trước khi gửi. -->
           @if (pendingFile(); as f) {
-            <div class="attachment-chip">
+            <div class="attachment-chip" [class.is-leaving]="removingFile()">
               <span class="attachment-chip__icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -568,7 +568,7 @@
                 </svg>
               </span>
               <span class="attachment-chip__info">
-                <span class="attachment-chip__name">{{ f.name }}</span>
+                <span class="attachment-chip__name" appOverflowTooltip>{{ f.name }}</span>
                 <span class="attachment-chip__meta">{{ pendingFileExt() }} · {{ pendingFileSizeLabel() }}</span>
               </span>
               <button
