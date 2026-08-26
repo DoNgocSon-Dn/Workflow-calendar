@@ -9,6 +9,7 @@
   background: var(--color-surface);
   color: var(--color-text);
   width: 100%;
+  max-width: 1100px;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -90,20 +91,19 @@
   gap: var(--space-4);
 }
 
-/* Icon + chữ nằm NGANG (không xếp cột) và dãn ra hai bên bằng gap lớn — xếp
-   cột co cụm hết vào giữa, để trống hẳn hai bên của khung kéo-thả rộng, nhìn
-   mất cân đối. Padding ngang cũng lớn hơn padding dọc vì lý do tương tự. */
+/* Thu gọn lại so với trước — chỉ cần đủ chỗ cho icon + 2 dòng chữ, phần dư
+   thừa nhường lại cho khoảng cách quanh nó (modal-body/upload-section đã nới
+   gap) để cả khu vực import bớt cảm giác bị dồn sát nhau. */
 .dropzone {
   border: 2px dashed var(--color-border-strong);
   border-radius: var(--radius-lg);
-  padding: var(--space-4) var(--space-6);
-  text-align: left;
+  padding: var(--space-4);
+  text-align: center;
   cursor: pointer;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  gap: var(--space-3);
+  gap: var(--space-1);
   transition: border-color 0.2s;
 }
 
@@ -116,15 +116,7 @@
 }
 
 .upload-icon {
-  font-size: 2rem;
-  flex: 0 0 auto;
-}
-
-.upload-copy {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: var(--space-1);
+  font-size: 1.5rem;
 }
 
 .upload-text {
@@ -202,98 +194,115 @@
   min-width: 220px;
 }
 
-/* Mỗi sự kiện là một "card": tiêu đề chiếm trọn bề rộng ở trên, ba ô giờ bắt
-   đầu / giờ kết thúc / địa điểm nằm thành một hàng ngang bên dưới — thay cho
-   bảng nhiều cột cũ vốn bị bóp chật ở màn hẹp và không tận dụng được bề rộng
-   khi trang đã chiếm toàn màn hình. */
-.preview-list {
+/* ===================================================================
+   Hover / focus cho hai cột sửa được: Tiêu đề và Địa điểm
+
+   CỐ Ý không gộp vào .table-input: cột ngày giờ và ô chọn lịch dùng chung
+   luật đó nhưng không nằm trong phạm vi yêu cầu.
+   =================================================================== */
+
+.title-input,
+.location-input {
+  /* Chỉ những thuộc tính không gây tính lại layout. Ngắn để ô không có cảm
+     giác ì khi lia chuột nhanh qua nhiều hàng. */
+  transition:
+    border-color 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.16s ease;
+}
+
+/* Kích hoạt từ Ô CHỨA chứ không từ chính input.
+
+   Input nhích lên 1px mà lại là thứ nghe hover thì sinh vòng lặp nhấp nháy:
+   con trỏ nằm sát mép dưới, ô nhích lên khiến con trỏ rơi ra ngoài ->
+   mouseleave -> ô tụt về -> mouseenter -> lặp vô tận. Ô <td> không hề di
+   chuyển nên vòng lặp đó không thể xảy ra, và vùng bắt hover cũng rộng rãi
+   hơn cho người dùng. */
+.preview-table td:hover > .title-input:not(:focus),
+.preview-table td:hover > .location-input:not(:focus) {
+  border-color: color-mix(in srgb, var(--holiday-accent) 55%, var(--color-border-strong));
+  background: color-mix(in srgb, var(--color-surface) 92%, var(--holiday-accent));
+  /* Nổi rất nhẹ — đủ để mắt nhận ra, không thành vệt sáng chói trên nền tối. */
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--holiday-accent) 18%, transparent);
+  transform: translateY(-1px);
+}
+
+/* Focus phải rõ hơn hover: viền ăn hẳn màu accent và có thêm vòng sáng.
+
+   Giữ nguyên translateY của hover để lúc bấm chuột vào ô không bị giật 1px.
+   Vòng sáng vẽ bằng box-shadow thay cho outline mặc định — outline không bo
+   theo border-radius trên mọi trình duyệt, và để cả hai cùng lúc thì thành
+   hai đường viền chồng nhau. Vòng này dày và tương phản đủ để thay thế. */
+.title-input:focus,
+.location-input:focus {
+  outline: none;
+  border-color: var(--holiday-accent);
+  background: var(--color-surface);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--holiday-accent) 32%, transparent),
+    0 2px 6px color-mix(in srgb, var(--holiday-accent) 20%, transparent);
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title-input,
+  .location-input {
+    transition-duration: 0.01s;
+  }
+
+  /* Bỏ luôn phần dịch chuyển — người tắt hiệu ứng vẫn thấy đủ tín hiệu qua
+     màu viền, nền và vòng sáng. */
+  .preview-table td:hover > .title-input:not(:focus),
+  .preview-table td:hover > .location-input:not(:focus),
+  .title-input:focus,
+  .location-input:focus {
+    transform: none;
+  }
+}
+
+.preview-table-container {
+  /* Trang riêng có cả chiều cao viewport để dùng — cho bảng giãn theo thay vì
+     ràng buộc 280px cố định như hồi còn là modal nhỏ. */
   flex: 1 1 auto;
   min-height: 220px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding-right: 2px;
-}
-
-/* Nền + viền trái màu accent để mỗi thẻ nổi hẳn lên khỏi nền trang (trước đây
-   chỉ có viền mảnh cùng tông nền, gần như vô hình trên nền tối) — cùng ngôn
-   ngữ hình ảnh với chip sự kiện ngoài lịch (border-left màu). */
-.preview-card {
-  border: 1px solid var(--color-border-strong);
-  border-left: 4px solid var(--holiday-accent);
+  /* Trước chỉ overflow-y — bảng bị ép vừa đúng bề rộng modal nên các ô input
+     (title/datetime/location đều có min-width riêng) bị bóp nhỏ lại, chữ mất
+     dấu ba chấm cũng không đọc hết. Thêm overflow-x: bảng được phép rộng hơn
+     khung nhìn, cuộn ngang thay vì bóp cột. */
+  overflow: auto;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: var(--space-3) var(--space-4);
+}
+
+.preview-table {
+  width: 100%;
+  /* Không bao giờ hẹp hơn tổng min-width tự nhiên của các cột — đây là thứ
+     thật sự chặn việc bị bóp, "width: 100%" một mình không đủ vì table-layout
+     auto vẫn co cột xuống dưới min-width của input bên trong khi container
+     chật. */
+  min-width: max-content;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.preview-table th,
+.preview-table td {
+  padding: 0.5rem 0.625rem;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.preview-table th {
   background: var(--color-surface-hover);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  transition: background 0.15s ease, border-color 0.15s ease;
+  color: var(--color-text-tertiary);
+  position: sticky;
+  top: 0;
 }
 
-.preview-card:hover {
-  background: var(--color-surface-hover-strong);
-}
-
-.preview-card.warning-row {
-  border-left-color: var(--color-warning);
-  background: color-mix(in srgb, var(--color-warning) 14%, var(--color-surface-hover));
-}
-
-.preview-card__title-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-/* Số thứ tự — giúp đối chiếu nhanh với file gốc và đếm được đang xem sự kiện
-   thứ mấy trong danh sách dài mà không phải đếm thủ công. */
-.preview-card__index {
-  flex: 0 0 auto;
-  width: 1.6rem;
-  height: 1.6rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-full);
-  background: var(--color-surface-hover-strong);
-  color: var(--color-text-secondary);
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.preview-card__title-row .title-input {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-.preview-card__fields {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-}
-
-.preview-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  flex: 1 1 200px;
-}
-
-.preview-field--location {
-  flex: 1.4 1 240px;
-}
-
-.preview-field__label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  /* tertiary quá mờ trên nền tối, gần như không đọc được — secondary vẫn đủ
-     nhẹ để không lấn át giá trị bên dưới nhưng đọc được ngay không cần nheo mắt. */
-  color: var(--color-text-secondary);
+.warning-row {
+  background: color-mix(in srgb, var(--color-warning) 15%, transparent);
 }
 
 .field-error {

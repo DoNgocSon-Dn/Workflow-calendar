@@ -231,6 +231,35 @@ export function eventCreatedDraft(input: CalendarEventDraftInput): NotificationD
   };
 }
 
+export interface EventsImportedDraftInput {
+  /** Do client sinh, cũng chính là khoá chống trùng. */
+  readonly batchId: string;
+  readonly count: number;
+  readonly calendarName?: string | null;
+}
+
+/**
+ * Một lần import file = MỘT thông báo tổng, không phải N thông báo "Sự kiện mới".
+ *
+ * `batchId` nằm trong id nên hai đường về cùng một lần import — phản hồi HTTP
+ * của chính người bấm import và gói socket phát cho cả phòng lịch — luôn cho ra
+ * cùng một id; `ingest()` giữ cái tới trước và bỏ cái sau.
+ *
+ * CỐ Ý không đặt `relatedId`: panel coi `event_update` là loại mở được sự kiện,
+ * mà một lô thì không trỏ về sự kiện đơn lẻ nào. Bấm vào chỉ đánh dấu đã đọc.
+ */
+export function eventsImportedDraft(input: EventsImportedDraftInput): NotificationDraft {
+  const where = input.calendarName ? ` "${input.calendarName}"` : '';
+  return {
+    id: `events-imported-${input.batchId}`,
+    type: 'event_update',
+    title: 'Import lịch hoàn tất',
+    message: `Đã nhập ${input.count} sự kiện vào lịch${where}.`,
+    createdAt: new Date().toISOString(),
+    metadata: { count: String(input.count) },
+  };
+}
+
 export function eventUpdatedDraft(input: CalendarEventDraftInput): NotificationDraft {
   return {
     // Giờ bắt đầu/kết thúc nằm trong id: dời lịch lần nữa sẽ báo tiếp, còn cùng

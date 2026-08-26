@@ -10,7 +10,7 @@ import { AiFileImportService } from './services/ai-file-import.service';
   imports: [AuthModule, EventsModule],
   controllers: [ImportController],
   providers: [ImportService, IcsImportService, AiFileImportService],
-  // Trợ lý AI dùng lại đúng bộ trích xuất .xlsx/.docx/.pdf này.
+  // Trợ lý AI dùng lại đúng bộ trích xuất này.
   exports: [AiFileImportService],
 })
 export class ImportModule {}

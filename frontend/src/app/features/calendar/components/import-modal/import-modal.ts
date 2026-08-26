@@ -2,8 +2,10 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
@@ -138,10 +140,21 @@ export class ImportModalComponent {
   readonly importSuccess = signal(false);
 
   constructor() {
-    const cals = this.store.calendars();
-    if (cals.length > 0) {
-      this.selectedCalendarId.set(cals[0].id);
-    }
+    // Danh sách lịch nạp bất đồng bộ nên lúc component được dựng nó gần như
+    // luôn còn RỖNG — đọc một lần trong constructor thì ô chọn lịch đứng trống
+    // và người dùng bấm Lưu vào hư không. Effect đặt mặc định ngay khi lịch về.
+    //
+    // Lấy lịch GHI ĐƯỢC chứ không phải lịch đầu danh sách: API trả theo
+    // created_at nên đầu danh sách thường là lịch nhóm chỉ-đọc, chọn sẵn nó
+    // khiến người dùng bấm Lưu rồi mới ăn lỗi quyền.
+    effect(() => {
+      const writable = this.store.defaultWritableCalendar();
+      if (!writable) return;
+      // Người dùng đã tự chọn thì tôn trọng — untracked để lần họ đổi lựa chọn
+      // không kích hoạt lại effect này.
+      if (untracked(() => this.selectedCalendarId())) return;
+      this.selectedCalendarId.set(writable.id);
+    });
   }
 
   protected readonly selectedFileExt = computed(() => {
@@ -264,7 +277,7 @@ export class ImportModalComponent {
     // Thuộc tính `accept` chỉ lọc hộp thoại chọn file — kéo-thả hoặc chọn
     // "Tất cả tệp" vẫn lọt, nên phải tự kiểm.
     if (!ALLOWED_EXTENSIONS.some((ext) => name.endsWith(ext))) {
-      return 'Chỉ hỗ trợ file .ics hoặc .csv. File .xlsx, .docx hoặc .pdf hãy gửi cho Trợ lý AI.';
+      return 'Chỉ hỗ trợ file .ics hoặc .csv. File .pdf hãy gửi cho Trợ lý AI.';
     }
     if (file.size > MAX_UPLOAD_BYTES) {
       return `File vượt quá giới hạn ${MAX_UPLOAD_LABEL} (file của bạn ${(file.size / 1024 / 1024).toFixed(1)} MB).`;
@@ -448,23 +461,21 @@ export class ImportModalComponent {
 
     this.importing.set(true);
     try {
-      const dtos = events.map((e) => ({
+      const drafts = events.map((e) => ({
         calendarId: calId,
         title: e.title,
-        start: fromDatetimeLocal(e.startLocal),
-        end: fromDatetimeLocal(e.endLocal),
+        start: new Date(fromDatetimeLocal(e.startLocal)),
+        end: new Date(fromDatetimeLocal(e.endLocal)),
         allDay: e.allDay,
         location: e.location,
         description: e.description,
       }));
 
       try {
-        await firstValueFrom(
-          this.http.post(`${environment.apiUrl}/events/bulk-create`, {
-            calendarId: calId,
-            events: dtos,
-          }),
-        );
+        // Qua store chứ không gọi HTTP thẳng: store là chỗ duy nhất biết cách
+        // đưa sự kiện vào lưới lịch, nhận ra tiếng vọng socket của chính mình,
+        // và dựng thông báo "Đã nhập N sự kiện" cho chuông.
+        await this.store.importEvents(calId, drafts);
       } catch (backendErr: unknown) {
         if (isServerRejection(backendErr)) {
           // Cùng lý do như trên: server từ chối thì dừng, không vòng qua
@@ -479,17 +490,12 @@ export class ImportModalComponent {
           return;
         }
         console.warn('Lưu bulk lên backend thất bại, tự động tạo sự kiện cục bộ:', backendErr);
-        for (const e of events) {
-          await this.store.createEvent({
-            title: e.title,
-            calendarId: calId,
-            start: new Date(fromDatetimeLocal(e.startLocal)),
-            end: new Date(fromDatetimeLocal(e.endLocal)),
-            allDay: e.allDay,
-            location: e.location,
-            description: e.description,
-          });
+        for (const draft of drafts) {
+          await this.store.createEvent(draft);
         }
+        // Đường dự phòng không đi qua bulk-create nên phải tự báo, nếu không
+        // người dùng offline sẽ thấy màn hình báo thành công mà chuông trống.
+        this.store.notifyEventsImported(calId, drafts.length);
       }
 
       this.importSuccess.set(true);

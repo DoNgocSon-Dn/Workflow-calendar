@@ -13,6 +13,8 @@ import { SupabaseService } from '../supabase/supabase.service';
 interface SocketData {
   user: User;
   supabase: SupabaseClient;
+  /** Xác thực xong hay chưa. Xem chú thích ở handleConnection. */
+  ready: Promise<void>;
 }
 
 type AppSocket = Socket<
@@ -42,7 +44,28 @@ export class RealtimeGateway implements OnGatewayConnection {
 
   constructor(private readonly supabaseService: SupabaseService) {}
 
-  async handleConnection(client: AppSocket): Promise<void> {
+  /**
+   * Xác thực socket vừa kết nối.
+   *
+   * Gán `client.data.ready` NGAY trong nhánh đồng bộ, trước mọi `await`.
+   *
+   * Socket.IO báo 'connect' cho client ngay khi bắt tay xong, không chờ hàm này
+   * chạy hết — mà việc xác thực phải gọi sang Supabase nên mất vài trăm mili
+   * giây. Client lại join phòng ngay trong handler 'connect', nên message
+   * joinCalendar tới nơi khi `client.data.supabase` còn undefined. Trước đây
+   * nó lặng lẽ rơi về anon client, RLS trả về rỗng, và join bị từ chối là
+   * "forbidden" — hệ quả là KHÔNG phòng lịch nào được tham gia và toàn bộ
+   * realtime của lịch (event:created/updated/deleted, nhắc lịch, lời mời) im
+   * lặng biến mất. Giữ promise ở đây để joinCalendar chờ đúng lúc.
+   */
+  handleConnection(client: AppSocket): void {
+    client.data.ready = this.authenticate(client);
+    // Lỗi đã được nuốt bên trong authenticate; bắt ở đây chỉ để promise không
+    // thành unhandled rejection khi joinCalendar không bao giờ được gọi.
+    void client.data.ready.catch(() => undefined);
+  }
+
+  private async authenticate(client: AppSocket): Promise<void> {
     const token = client.handshake.auth?.['token'] as string | undefined;
     if (!token) {
       client.disconnect();
@@ -69,7 +92,14 @@ export class RealtimeGateway implements OnGatewayConnection {
   ): Promise<{ ok: boolean; error?: string }> {
     if (!payload?.calendarId) return { ok: false, error: 'invalid_id' };
 
-    const supabase = client.data?.supabase ?? this.supabaseService.getAnonClient();
+    // Chờ xác thực xong. Không có bước này thì join tới trước lúc có supabase
+    // của người dùng và luôn hỏng.
+    await client.data?.ready;
+
+    const supabase = client.data?.supabase;
+    // KHÔNG rơi về anon client: anon không đọc được gì qua RLS nên câu trả lời
+    // sẽ là "forbidden" giả, che mất lỗi thật là chưa xác thực.
+    if (!supabase) return { ok: false, error: 'unauthorized' };
 
     const { data: cal } = await supabase
       .from('calendars')

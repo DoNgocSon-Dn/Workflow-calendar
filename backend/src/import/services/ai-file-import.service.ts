@@ -2,14 +2,12 @@ import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppConfig } from '../../config/configuration';
 import { ParsedImportEvent } from './ics-import.service';
-import * as xlsx from 'xlsx';
 // pdf-parse v2 KHÔNG còn xuất ra một hàm gọi thẳng như v1 — nó xuất lớp
 // PDFParse. Code cũ gọi pdfParse(buffer) nên ném TypeError với MỌI file PDF,
 // và lỗi đó bị catch bên dưới nuốt thành một câu chung chung.
 import { PDFParse } from 'pdf-parse';
 import { getPath } from 'pdf-parse/worker';
 import { pathToFileURL } from 'url';
-import * as mammoth from 'mammoth';
 
 // Khởi tạo worker path cho pdf-parse v2 tương thích trên môi trường Windows / Node ESM
 try {
@@ -24,26 +22,20 @@ export class AiFileImportService {
 
   constructor(private readonly configService: ConfigService<AppConfig, true>) {}
 
+  /**
+   * Lấy chữ trong file để đưa cho AI đọc.
+   *
+   * Chỉ còn hai nhánh: PDF phải giải nén qua pdf.js, còn lại (.ics, .csv)
+   * vốn đã là văn bản thuần nên đọc thẳng. Định dạng nhị phân của Office
+   * (.xlsx/.docx) không còn được nhận nên nhánh xử lý chúng đã bỏ.
+   */
   async extractTextFromFile(file: Express.Multer.File): Promise<string> {
     const filename = file.originalname.toLowerCase();
     try {
-      if (filename.endsWith('.xlsx') || filename.endsWith('.xls') || filename.endsWith('.csv')) {
-        const workbook = xlsx.read(file.buffer, { type: 'buffer' });
-        let fullText = '';
-        for (const sheetName of workbook.SheetNames) {
-          const sheet = workbook.Sheets[sheetName];
-          fullText += `--- Sheet: ${sheetName} ---\n`;
-          fullText += xlsx.utils.sheet_to_csv(sheet) + '\n\n';
-        }
-        return fullText;
-      } else if (filename.endsWith('.pdf')) {
+      if (filename.endsWith('.pdf')) {
         return await this.extractPdfText(file.buffer);
-      } else if (filename.endsWith('.docx') || filename.endsWith('.doc')) {
-        const result = await mammoth.extractRawText({ buffer: file.buffer });
-        return result.value;
-      } else {
-        return file.buffer.toString('utf-8');
       }
+      return file.buffer.toString('utf-8');
     } catch (err) {
       this.logger.error(`Lỗi đọc file ${file.originalname}:`, err);
       throw new BadRequestException(

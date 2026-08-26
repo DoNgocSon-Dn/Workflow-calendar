@@ -86,10 +86,23 @@ export class EventsService {
     return eventDto;
   }
 
+  /**
+   * Tạo nhiều sự kiện trong một lần (import file).
+   *
+   * Phát MỘT gói `events:bulk-created` cho mỗi lịch thay vì N gói
+   * `event:created`: import 20 dòng mà bắn 20 gói thì client dựng 20 thông
+   * báo "Sự kiện mới" và 20 popup nổi — đúng nội dung nhưng sai hình thức.
+   * Người dùng chỉ cần biết "đã nhập 20 sự kiện".
+   *
+   * `batchId` do client sinh ra và được trả lại nguyên vẹn trong gói tin, để
+   * chính người bấm import nhận ra tiếng vọng của mình dù gói socket về TRƯỚC
+   * hay SAU phản hồi HTTP.
+   */
   async bulkCreate(
     supabase: SupabaseClient,
     dtos: CreateEventDto[],
     createdBy: string,
+    batchId?: string,
   ): Promise<EventDto[]> {
     if (dtos.length === 0) return [];
     const rows = dtos.map((dto) => toEventInsertRow(dto, createdBy));
@@ -101,8 +114,21 @@ export class EventsService {
 
     if (error) throw new InternalServerErrorException(error.message);
     const eventDtos = (data ?? []).map(toEventDto);
+
+    // Gom theo lịch: một lô về nguyên tắc có thể chạm nhiều lịch, và mỗi phòng
+    // chỉ được nhận đúng phần sự kiện của mình.
+    const byCalendar = new Map<string, EventDto[]>();
     for (const dto of eventDtos) {
-      this.realtimeGateway.emitToCalendar(dto.calendarId, 'event:created', dto);
+      const list = byCalendar.get(dto.calendarId);
+      if (list) list.push(dto);
+      else byCalendar.set(dto.calendarId, [dto]);
+    }
+    for (const [calendarId, events] of byCalendar) {
+      this.realtimeGateway.emitToCalendar(calendarId, 'events:bulk-created', {
+        calendarId,
+        batchId,
+        events,
+      });
     }
     return eventDtos;
   }
