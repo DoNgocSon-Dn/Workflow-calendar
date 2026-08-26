@@ -1,8 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-  <!-- Cùng hình logo với app-brand-logo (idle, không có ngày) — thân trắng,
-       viền + gáy + chữ W màu xanh thương hiệu (#2563eb, = --color-accent mặc
-       định). Favicon không đọc được CSS custom property của trang nên phải
-       ghim cứng màu ở đây, khớp giá trị light-theme mặc định. -->
+  <!-- Cùng hình logo với app-brand-logo (idle, không có ngày): thân trắng,
+       viền + gáy + chữ W màu xanh thương hiệu #2563eb, đúng giá trị mặc định
+       của biến accent trong styles.css. Favicon không đọc được biến CSS của
+       trang nên màu phải ghim cứng ở đây.
+
+       TUYỆT ĐỐI không viết hai dấu gạch ngang liền nhau trong comment này.
+       SVG là XML, mà XML cấm chuỗi đó bên trong comment. Bản trước ghi tên
+       biến CSS nguyên văn (có tiền tố hai gạch) nên cả file hỏng cú pháp,
+       trình duyệt không dựng nổi ảnh và tab rơi về icon mặc định. -->
   <rect x="3.6" y="4.6" width="16.8" height="15.8" rx="2" fill="#fff" />
   <path d="M3.6 7.9V6.6a2 2 0 0 1 2-2h12.8a2 2 0 0 1 2 2v1.3z" fill="#2563eb" />
   <path

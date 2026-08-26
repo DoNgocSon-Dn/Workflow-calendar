@@ -1864,6 +1864,322 @@ footer a {
   background: rgba(217, 131, 36, 0.16);
 }
 
+/* ══ Lớp "Lịch âm & Ngày lễ" — chỉ bật ở STAGE 4 ══
+
+   Màu lễ trên số ngày và hai nhãn nhỏ (Quốc khánh 2/9, Vu Lan) là NỘI DUNG
+   của stage 4. Hiện sẵn từ stage 0 thì tới lúc giới thiệu đúng tính năng đó
+   không còn gì để khoe — người xem đã nhìn thấy nó suốt từ đầu.
+
+   Chỉ tắt trong chế độ scrollytelling (.is-enhanced). Bản TĨNH — không JS —
+   vẫn hiện đầy đủ, vì ở đó cả 5 khối nội dung nằm cạnh nhau và không có khái
+   niệm "chưa tới lượt".
+
+   Dùng opacity chứ KHÔNG dùng display: hai nhãn vẫn giữ chỗ trong bố cục,
+   nên lúc chúng hiện ra bảng không bị giật một nhịp vì cao thêm. */
+.scrolly.is-enhanced .board .bhol {
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+.scrolly.is-enhanced .board.show-lunar .bhol {
+  opacity: 1;
+}
+
+.scrolly.is-enhanced .board .bday b,
+.scrolly.is-enhanced .board .bday em {
+  transition: color 0.45s ease, opacity 0.45s ease;
+}
+
+/* Chưa tới lượt: hai ngày lễ trông y hệt mọi ngày thường. */
+.scrolly.is-enhanced .board:not(.show-lunar) .bday.is-hol b,
+.scrolly.is-enhanced .board:not(.show-lunar) .bday.is-lunar b {
+  color: var(--ink);
+}
+
+.scrolly.is-enhanced .board:not(.show-lunar) .bday.is-hol em,
+.scrolly.is-enhanced .board:not(.show-lunar) .bday.is-lunar em {
+  color: inherit;
+  opacity: 0.6;
+}
+/* ══ Chuông thông báo trên bảng 3D ══
+   Nằm trong .board-top, cùng hàng với thanh lệnh. Chỉ sáng ở stage 2 —
+   cùng cơ chế class với lớp lịch âm ở stage 4, để mỗi tính năng chỉ xuất
+   hiện đúng lúc nó được giới thiệu. */
+.board-bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: var(--ink);
+  opacity: 0.55;
+}
+
+.board-bell b {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 12px;
+  height: 12px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: #e5484d;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 12px;
+  text-align: center;
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.scrolly.is-enhanced .board .board-bell {
+  transition: opacity 0.4s ease, color 0.4s ease;
+}
+
+.scrolly.is-enhanced .board.show-notif .board-bell {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.scrolly.is-enhanced .board.show-notif .board-bell b {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ══ Thẻ mô phỏng bảng thông báo (stage 2) ══ */
+
+.pop-notif {
+  width: min(330px, 92%);
+}
+
+.notif-ico {
+  display: inline-flex;
+  color: var(--accent);
+}
+
+/* Nhãn số nằm sát tiêu đề, đẩy hết phần còn lại sang phải bằng auto margin
+   thay vì một spacer rỗng. */
+.notif-count {
+  margin-left: auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.notif-tabs {
+  display: flex;
+  gap: 3px;
+  margin: 8px 0 9px;
+  /* Năm nhãn trong một thẻ hẹp: cho phép tràn thì chữ bị cắt cụt giữa từ.
+     Thu nhỏ chữ và bóp padding để cả năm cùng vừa một hàng. */
+  flex-wrap: nowrap;
+}
+
+.ntab {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 0;
+  border-radius: 6px;
+  font-size: 8.5px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: color-mix(in srgb, var(--ink) 55%, transparent);
+}
+
+.ntab.on {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+
+.notif-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 6px 0;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+.notif-row.is-invite {
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+/* TÊN PHẢI CÓ TIỀN TỐ RIÊNG. Bản đầu đặt tên chấm là "nav-dot" với biến thể
+   "ev" — mà "ev" đã là lớp của KHỐI SỰ KIỆN trên bảng lịch, mang sẵn
+   position: absolute cùng padding riêng. Cái chấm 6px vì thế bị biến thành
+   một thanh xanh đè lên tiêu đề dòng thông báo. Trong một file CSS phẳng dài
+   hơn 2000 dòng, đặt tên chung chung là gài mìn cho chính mình. */
+.nrow-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-top: 4px;
+  border-radius: 50%;
+}
+
+.nrow-dot--event { background: var(--accent); }
+.nrow-dot--msg { background: #22c55e; }
+.nrow-dot--invite { background: #d98324; }
+
+.notif-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.notif-body b {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.notif-body i {
+  font-style: normal;
+  font-size: 9.5px;
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--ink) 62%, transparent);
+  /* Tin nhắn dài không được đẩy thẻ rộng ra — cắt bằng ellipsis một dòng. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* ══ Bảng thông báo xổ ra từ chuông, NẰM TRONG bảng lịch ══
+
+   Neo tuyệt đối vào .board-face (đã position: absolute) nên nó phủ lên lưới
+   giờ thay vì chen vào luồng — bảng lịch giữ nguyên chiều cao, không co giãn
+   một nhịp khi bảng thông báo hiện ra hay biến mất.
+
+   Toạ độ tính từ mép phải, thẳng hàng với chuông trong .board-top. */
+.board-drop {
+  position: absolute;
+  top: 46px;
+  right: 18px;
+  z-index: 4;
+  width: 208px;
+  padding: 9px 10px 10px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--line));
+  background: var(--card);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transform: translateY(-8px) scale(0.96);
+  transform-origin: 88% 0;
+  pointer-events: none;
+  transition: opacity 0.32s ease, transform 0.32s cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+
+.scrolly.is-enhanced .board.show-notif .board-drop {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.bdrop-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bdrop-top b {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.bdrop-badge {
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--accent);
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.bdrop-acts {
+  display: flex;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.bdrop-acts span {
+  font-size: 8px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.bdrop-tabs {
+  display: flex;
+  gap: 2px;
+  margin: 7px 0 6px;
+}
+
+.bdrop-tabs span {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 0;
+  border-radius: 5px;
+  font-size: 7px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: color-mix(in srgb, var(--ink) 52%, transparent);
+}
+
+.bdrop-tabs span.on {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+
+.bdrop-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--ink) 48%, transparent);
+}
+
+.bdrop-group b {
+  padding: 0 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 14%, transparent);
+  font-size: 7.5px;
+}
+
+.bdrop-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 4px 0;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
+}
+
+/* Chữ trong bảng xổ nhỏ hơn thẻ bên cột chữ, vì nó phải vừa một khung 208px
+   nằm ngay trong bảng lịch. Ghi đè cỡ chữ của .notif-body dùng chung. */
+.bdrop-item .notif-body b {
+  font-size: 8.5px;
+}
+
+.bdrop-item .notif-body i {
+  font-size: 8px;
+}
 .board-grid {
   flex: 1;
   display: grid;
@@ -2073,13 +2389,8 @@ footer a {
 }
 
 /* Stage 2 — thẻ email tách khỏi bảng */
-.pop-email {
+.pop-notif {
   border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
-}
-
-.mail-ico {
-  color: var(--accent);
-  font-size: 13px;
 }
 
 .pop-btns {

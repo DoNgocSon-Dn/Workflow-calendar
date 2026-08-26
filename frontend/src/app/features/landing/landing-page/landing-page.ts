@@ -675,7 +675,7 @@ export class LandingPage implements OnInit, AfterViewInit {
     const nodes = q('.node');
     const dots = q('.stage-dots li');
     const popAi = q('.pop-ai');
-    const popEmail = q('.pop-email');
+    const popNotif = q('.pop-notif');
     const popWarn = q('.pop-warn');
     const popLunar = q('.pop-lunar');
     const cmdText = scrolly.querySelector('.cmd-text') as HTMLElement | null;
@@ -683,7 +683,7 @@ export class LandingPage implements OnInit, AfterViewInit {
     const copy = scrolly.querySelector('.scrolly-copy') as HTMLElement | null;
     const boardWrap = scrolly.querySelector('.board-wrap') as HTMLElement | null;
 
-    const PHRASE = 'Họp với Hùng thứ 6 tuần sau lúc 3 giờ chiều';
+    const PHRASE = 'Họp với Hùng thứ 6 lúc 3 giờ chiều';
 
     /** Mốc bắt đầu của 5 stage trên timeline — dùng cho chấm chỉ báo. */
     const STAGE_AT = [0, 2.4, 4.6, 6.6, 8.6];
@@ -718,7 +718,7 @@ export class LandingPage implements OnInit, AfterViewInit {
     // z: đẩy node ra trước mặt bảng theo trục Z thật, không chỉ dựa vào
     // z-index — trong preserve-3d thì vị trí Z mới là thứ quyết định.
     gsap.set(nodes, { opacity: 0, scale: 0.55, z: 60 });
-    gsap.set([popAi, popEmail, popWarn, popLunar], { opacity: 0, y: 26 });
+    gsap.set([popAi, popNotif, popWarn, popLunar], { opacity: 0, y: 26 });
     gsap.set(q('.ev-ai'), { opacity: 0, scale: 0.7 });
     gsap.set(q('.ev-clash'), { opacity: 0 });
     gsap.set(board, { rotateX: 5, rotateY: -13, scale: 1, xPercent: 0, yPercent: 0 });
@@ -779,6 +779,33 @@ export class LandingPage implements OnInit, AfterViewInit {
             }
           }
           dots.forEach((d, k) => d.classList.toggle('on', k === i));
+
+          // Màu ngày lễ + hai nhãn nhỏ chỉ sáng lên ở stage 4 (Lịch âm &
+          // Ngày lễ Việt Nam). Bật/tắt bằng class chứ không tween: onUpdate
+          // chạy mỗi frame khi cuộn, tạo tween ở đây là đẻ ra hàng trăm
+          // tween chồng nhau. classList.toggle là thao tác rẻ và tự bỏ qua
+          // khi giá trị không đổi; phần chuyển màu mượt do CSS transition lo.
+          //
+          // Bám theo `t` chứ KHÔNG theo `i`. Vòng lặp trên cố ý lấy sớm 0.4s
+          // (`STAGE_AT[k] - 0.4`) để chấm chỉ báo sáng lên cho nhạy tay — với
+          // một cái chấm thì sớm chút là tốt, nhưng với cả lớp màu ngày lễ thì
+          // 0.4s đó rơi đúng vào lúc chữ vẫn còn đang ở stage 3, thành ra khoe
+          // trước nội dung của stage 4.
+          //
+          // So thẳng với STAGE_AT[4] = 8.6, không trừ gì cả: đúng mốc
+          // showStep(tl, 4, 8.6) — lớp lịch âm sáng lên cùng nhịp với chữ của
+          // chính nó, và kịp hoàn tất trước khi thẻ pop-up hiện ở 9.0.
+          // `t` suy ra từ progress nên cuộn ngược lên là điều kiện tự sai,
+          // lớp lịch âm tắt lại — không cần xử lý riêng cho chiều ngược.
+          board.classList.toggle('show-lunar', t >= STAGE_AT[4]);
+
+          // Chuông + nhãn số chỉ sáng trong ĐÚNG stage 2, nên dùng khoảng chứ
+          // không dùng ngưỡng: qua stage 3 là tắt lại, trả bảng về trạng thái
+          // sạch cho phần phát hiện xung đột.
+          board.classList.toggle(
+            'show-notif',
+            t >= STAGE_AT[2] && t < STAGE_AT[3],
+          );
         },
       },
     });
@@ -817,15 +844,15 @@ export class LandingPage implements OnInit, AfterViewInit {
 
     tl.to(q('.ev-ai'), { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(2)' }, 3.9);
 
-    // ══ STAGE 2 — Realtime & Email: chữ PHẢI, bảng TRÁI, nghiêng về phải ══
+    // ══ STAGE 2 — Trung tâm thông báo: chữ PHẢI, bảng TRÁI, nghiêng về phải ══
     showStep(tl, 2, 4.6);
     swapSides(tl, 1, 4.55);
     tl.to([popAi], { opacity: 0, y: -24, duration: 0.5 }, 4.5)
       .to(board, { rotateX: 5, rotateY: 14, scale: 1.06, xPercent: 0, yPercent: 0 }, 4.6)
-      // Thẻ email bay vào từ phía bảng — stage này bảng ở bên TRÁI nên
-      // thẻ vào từ trái, vẫn đọc ra là "tách khỏi lịch bay sang".
+      // Bảng thông báo bay ra từ phía chiếc lịch — stage này bảng ở bên TRÁI
+      // nên thẻ vào từ trái, đọc ra là "bật ra từ chuông trên lịch".
       .fromTo(
-        popEmail,
+        popNotif,
         { opacity: 0, x: -60, y: 30, rotateY: -34 },
         { opacity: 1, x: 0, y: 0, rotateY: 0, duration: 0.85 },
         5.05,
@@ -835,7 +862,7 @@ export class LandingPage implements OnInit, AfterViewInit {
     // ══ STAGE 3 — Phát hiện xung đột: chữ TRÁI, bảng PHẢI, nghiêng về trái ══
     showStep(tl, 3, 6.6);
     swapSides(tl, -1, 6.55);
-    tl.to(popEmail, { opacity: 0, y: -28, duration: 0.5 }, 6.5)
+    tl.to(popNotif, { opacity: 0, y: -28, duration: 0.5 }, 6.5)
       .to(board, { rotateX: 3, rotateY: -12, scale: 1.14, xPercent: 0, yPercent: -6 }, 6.6)
       .to(q('.ev-ai'), { opacity: 0.25, duration: 0.4 }, 6.6)
       .to(q('.ev-clash'), { opacity: 1, duration: 0.5, stagger: 0.18 }, 7.1)

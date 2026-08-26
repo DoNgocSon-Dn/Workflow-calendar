@@ -199,7 +199,7 @@
           <div class="feature-index">01 / Trợ lý AI</div>
           <h3>Gõ một câu, lịch tự được tạo</h3>
           <p>
-            Chỉ cần gõ "Họp với Hùng thứ 6 tuần sau lúc 3 giờ chiều". Trợ lý AI hiểu ngôn ngữ
+            Chỉ cần gõ "Họp với Hùng thứ 6 lúc 3 giờ chiều". Trợ lý AI hiểu ngôn ngữ
             tự nhiên tiếng Việt và tự tạo đúng sự kiện. Câu mơ hồ sẽ được chuyển sang form thủ
             công để bạn xác nhận, không bao giờ tạo lịch rác.
           </p>
@@ -210,32 +210,73 @@
 
           <div class="pop pop-ai" aria-hidden="true">
             <div class="pop-head">Trợ lý AI</div>
-            <p class="pop-quote">"Họp với Hùng thứ 6 tuần sau lúc 3 giờ chiều"</p>
+            <p class="pop-quote">"Họp với Hùng thứ 6 lúc 3 giờ chiều"</p>
             <div class="pop-foot"><span class="pop-tick">✓</span> Đã tạo sự kiện · Thứ 6, 15:00</div>
           </div>
         </article>
 
         <article class="copy-step" data-step="2">
-          <div class="feature-index">02 / Realtime &amp; Email</div>
-          <h3>Mời người khác, không cần họ mở app</h3>
+          <div class="feature-index">02 / Trung tâm thông báo</div>
+          <h3>Biết ngay việc cần biết</h3>
           <p>
-            Mọi thay đổi được đồng bộ theo thời gian thực. Người được mời có thể phản hồi trực tiếp
-            qua nút "Đồng ý / Từ chối" ngay trong email mà không cần tạo tài khoản hay đăng nhập.
+            Sự kiện mới, tin nhắn nhóm, lời mời tham gia — tất cả đổ về một nơi và hiện
+            ngay khi vừa xảy ra, không cần tải lại trang. Lọc thông báo theo từng danh mục
+            để nắm bắt nhanh việc quan trọng và phản hồi lời mời tức thì.
           </p>
           <div class="chip-row">
-            <span class="chip">Đồng bộ real-time</span>
-            <span class="chip">Xác nhận ngay trong email</span>
+            <span class="chip">Hiện ngay tức thì</span>
+            <span class="chip">Xử lý ngay trong thông báo</span>
           </div>
 
-          <div class="pop pop-email" aria-hidden="true">
+          <!-- Mô phỏng đúng bảng thông báo thật của app: nhãn số chưa đọc, hàng
+               lọc năm nhóm, và một lời mời trả lời được ngay tại chỗ. -->
+          <div class="pop pop-notif" aria-hidden="true">
             <div class="pop-head">
-              <span class="mail-ico">✉</span> Lời mời họp nhóm
+              <span class="notif-ico">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+                </svg>
+              </span>
+              Thông báo
+              <span class="notif-count">3 mới</span>
             </div>
-            <p class="pop-title">Họp thiết kế · Thứ 6, 15:00 - 16:00</p>
-            <p class="pop-sub">Gửi tới son&#64;congty.vn, không cần đăng nhập</p>
+
+            <div class="notif-tabs">
+              <span class="ntab on">Tất cả</span>
+              <span class="ntab">Chưa đọc</span>
+              <span class="ntab">Tin nhắn</span>
+              <span class="ntab">Công việc</span>
+              <span class="ntab">Sự kiện</span>
+            </div>
+
+            <div class="notif-row">
+              <span class="nrow-dot nrow-dot--event"></span>
+              <span class="notif-body">
+                <b>Sự kiện mới</b>
+                <i>"đi học" đã được thêm vào lịch · 12:00</i>
+              </span>
+            </div>
+
+            <div class="notif-row">
+              <span class="nrow-dot nrow-dot--msg"></span>
+              <span class="notif-body">
+                <b>Tin nhắn nhóm</b>
+                <i>Sơn đã nhắn trong nhóm "bài học"</i>
+              </span>
+            </div>
+
+            <div class="notif-row is-invite">
+              <span class="nrow-dot nrow-dot--invite"></span>
+              <span class="notif-body">
+                <b>Lời mời tham gia nhóm</b>
+                <i>Sơn mời bạn vào nhóm "lambai"</i>
+              </span>
+            </div>
+
             <div class="pop-btns">
-              <span class="pbtn yes">✓ Đồng ý</span>
-              <span class="pbtn no">✕ Từ chối</span>
+              <span class="pbtn yes">Chấp nhận</span>
+              <span class="pbtn no">Từ chối</span>
             </div>
           </div>
         </article>
@@ -310,7 +351,62 @@
                   <span class="cmd-text"></span>
                   <span class="cmd-caret"></span>
                 </div>
+
+                <!-- Chuông + nhãn số chưa đọc, đúng chỗ nó nằm trong app thật.
+                     Chỉ sáng lên ở stage 2 để nó là một phần của phần giới
+                     thiệu thông báo, không phải đồ trang trí đứng sẵn từ đầu. -->
+                <span class="board-bell">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+                  </svg>
+                  <b>3</b>
+                </span>
               </header>
+
+              <!-- Bảng thông báo XỔ RA từ chuông, nằm ngay trong mặt bảng lịch
+                   giống hệt app thật. Đặt absolute nên nó phủ lên lưới giờ mà
+                   không đẩy lưới xuống — bảng giữ nguyên chiều cao khi bảng
+                   thông báo hiện ra. -->
+              <div class="board-drop">
+                <div class="bdrop-top">
+                  <b>Thông báo</b>
+                  <span class="bdrop-badge">3 mới</span>
+                </div>
+                <div class="bdrop-acts">
+                  <span>Đánh dấu tất cả đã đọc</span>
+                  <span>Xóa tất cả</span>
+                </div>
+                <div class="bdrop-tabs">
+                  <span class="on">Tất cả</span>
+                  <span>Chưa đọc</span>
+                  <span>Tin nhắn</span>
+                  <span>Công việc</span>
+                  <span>Sự kiện</span>
+                </div>
+                <div class="bdrop-group">MỚI <b>3</b></div>
+                <div class="bdrop-item">
+                  <span class="nrow-dot nrow-dot--event"></span>
+                  <span class="notif-body">
+                    <b>Sự kiện mới</b>
+                    <i>"đi học" đã được thêm vào lịch · 12:00</i>
+                  </span>
+                </div>
+                <div class="bdrop-item">
+                  <span class="nrow-dot nrow-dot--msg"></span>
+                  <span class="notif-body">
+                    <b>Tin nhắn nhóm</b>
+                    <i>Sơn đã nhắn trong nhóm "bài học"</i>
+                  </span>
+                </div>
+                <div class="bdrop-item">
+                  <span class="nrow-dot nrow-dot--invite"></span>
+                  <span class="notif-body">
+                    <b>Lời mời tham gia nhóm</b>
+                    <i>Sơn mời bạn vào nhóm "lambai"</i>
+                  </span>
+                </div>
+              </div>
 
               <!-- Tuần 1–7/9/2025. Ngày âm lấy từ chính convertSolarToLunar()
                    của app; 2/9 Quốc khánh (lễ dương) và 6/9 = rằm tháng 7,
@@ -366,7 +462,7 @@
 
             <!-- 4 node bung ra ở stage 0 -->
             <div class="node n1"><i>✦</i>Trợ lý AI</div>
-            <div class="node n2"><i>⇄</i>Realtime &amp; Email</div>
+            <div class="node n2"><i>◔</i>Trung tâm thông báo</div>
             <div class="node n3"><i>⚠</i>Phát hiện xung đột</div>
             <div class="node n4"><i>☾</i>Lịch âm &amp; ngày lễ</div>
           </div>
