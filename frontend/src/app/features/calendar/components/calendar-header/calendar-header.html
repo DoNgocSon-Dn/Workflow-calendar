@@ -44,7 +44,7 @@
         aria-controls="search-results-list"
         [attr.aria-expanded]="searchResultsOpen()"
         [placeholder]="i18n.t('header.searchPlaceholder')"
-        [value]="store.searchQuery()"
+        [value]="store.searchInput()"
         (input)="store.setSearchQuery($any($event.target).value)"
         (focus)="searchFocused.set(true)"
         (blur)="onSearchBlur()"

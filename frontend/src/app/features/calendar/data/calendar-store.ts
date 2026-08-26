@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged, firstValueFrom } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { environment } from '../../../../environments/environment';
 import { AuthStore } from '../../../core/auth/auth-store';
 import { Clock } from '../../../core/clock';
@@ -274,6 +275,14 @@ function eventTimeLabel(event: CalendarEvent, format: TimeFormat): string {
   return `${formatTimeLabel(event.start, 'vi', format)} - ${formatTimeLabel(event.end, 'vi', format)}`;
 }
 
+/**
+ * Gõ xong rồi mới lọc, thay vì lọc lại sau từng phím.
+ *
+ * Đủ dài để một người gõ liên tục không kích hoạt lọc giữa chừng, đủ ngắn
+ * để dừng tay là thấy kết quả ngay.
+ */
+const SEARCH_DEBOUNCE_MS = 500;
+
 @Injectable({ providedIn: 'root' })
 export class CalendarStore {
   private readonly clock = inject(Clock);
@@ -302,7 +311,21 @@ export class CalendarStore {
   readonly calendarsLoading = signal(false);
   readonly visibleCalendarIds = signal<Set<string>>(new Set());
   readonly events = signal<CalendarEvent[]>([]);
+  /**
+   * Chữ đang nằm trong ô tìm kiếm — cập nhật NGAY từng phím.
+   *
+   * Ô nhập phải bind vào đây chứ không phải `searchQuery`: bind vào giá trị
+   * đã debounce sẽ khiến ô bị ghi đè bằng chữ cũ giữa lúc đang gõ.
+   */
+  readonly searchInput = signal('');
+
+  /**
+   * Từ khoá THỰC SỰ đang lọc, chỉ đổi sau khi người dùng ngừng gõ.
+   * Mọi thứ dẫn xuất (visibleEvents, searchResults) đọc từ đây.
+   */
   readonly searchQuery = signal('');
+
+  private readonly searchInput$ = new Subject<string>();
   readonly pendingInvites = signal<CalendarInvite[]>([]);
 
   readonly todos = signal<Todo[]>([]);
@@ -344,8 +367,27 @@ export class CalendarStore {
       .map((r) => r.event);
   });
 
+  /**
+   * Gọi từ mỗi lần gõ. Ô nhập cập nhật tức thì, còn việc lọc chờ người dùng
+   * ngừng tay — xem `SEARCH_DEBOUNCE_MS`.
+   */
   setSearchQuery(q: string): void {
-    this.searchQuery.set(q);
+    this.searchInput.set(q);
+    this.searchInput$.next(q);
+  }
+
+  /**
+   * Xoá tức thì, không chờ debounce — dùng khi người dùng đã chọn xong một
+   * kết quả và ô tìm kiếm phải trống ngay.
+   *
+   * Vẫn phải đẩy chuỗi rỗng vào luồng: một lần gõ đang chờ trong hàng đợi
+   * debounce sẽ nổ sau đó và ghi đè lại từ khoá vừa xoá. Đẩy chuỗi rỗng vào
+   * khiến debounceTime bỏ giá trị cũ và chỉ giữ giá trị mới nhất.
+   */
+  clearSearch(): void {
+    this.searchInput.set('');
+    this.searchQuery.set('');
+    this.searchInput$.next('');
   }
 
   readonly calendarColor = computed(() => {
@@ -382,6 +424,14 @@ export class CalendarStore {
   private loadedUserId: string | null = null;
 
   constructor() {
+    // debounceTime tự huỷ giá trị trước mỗi khi có phím mới, nên không bao
+    // giờ có hai bộ đếm chạy song song và luôn chỉ lọc theo giá trị mới nhất.
+    // distinctUntilChanged chặn việc lọc lại khi từ khoá không đổi (gõ rồi
+    // xoá về đúng chuỗi cũ). takeUntilDestroyed huỷ đăng ký khi store chết.
+    this.searchInput$
+      .pipe(debounceTime(SEARCH_DEBOUNCE_MS), distinctUntilChanged(), takeUntilDestroyed())
+      .subscribe((q) => this.searchQuery.set(q));
+
     this.notificationQueue.onSnoozeReminder = (reminderId, minutes) => {
       void this.snoozeReminder(reminderId, minutes);
     };

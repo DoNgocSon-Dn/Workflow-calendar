@@ -152,7 +152,8 @@ export class CalendarHeader {
    *  calendar to the event's date — no modal, the grid itself is the result. */
   selectSearchResult(event: CalendarEvent): void {
     this.store.goTo(event.start);
-    this.store.setSearchQuery('');
+    // Xoa NGAY, khong cho debounce: nguoi dung da chon xong.
+    this.store.clearSearch();
     this.searchFocused.set(false);
   }
 
