@@ -245,6 +245,14 @@ export class TasksPage {
   async logout(): Promise<void> {
     this.closeUserMenu();
     await this.authStore.signOut();
-    await this.router.navigate(['/login']);
+    // Về LANDING, không về /login. Đăng xuất là "tôi xong việc rồi", nên
+    // điểm đến đúng là trang giới thiệu — nơi còn nút đăng nhập nếu họ đổi ý.
+    // Đẩy thẳng vào /login là ngầm bảo "đăng nhập lại đi", trong khi họ vừa
+    // chủ động thoát ra.
+    //
+    // authGuard vẫn giữ /login cho trường hợp KHÁC hẳn: vào thẳng /calendar
+    // khi chưa có phiên. Lúc đó người dùng đang MUỐN vào, chỉ thiếu đăng
+    // nhập — đưa họ tới đúng chỗ cần là hợp lý.
+    await this.router.navigate(['/landing']);
   }
 }
