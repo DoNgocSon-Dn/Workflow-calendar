@@ -228,9 +228,27 @@ function isPlanIntent(text: string): boolean {
  * tích" hay "đọc" đứng một mình thì bỏ qua, vì chúng xuất hiện tự nhiên
  * trong tên sự kiện ("họp phân tích dữ liệu").
  */
+/** Danh từ có thể đang trỏ vào tài liệu vừa đính kèm. CỐ Ý không có danh từ
+ *  chỉ thời gian ("tuần", "tháng", "sáng") — "tuần này" là mốc thời gian, không
+ *  phải cái file. */
+const FILE_SUBJECT =
+  'file|t[eệ]p|t[aà]i li[eệ]u|b[aả]ng( t[ií]nh| bi[eể]u)?|danh s[aá]ch|n[oộ]i dung|' +
+  'd[uữ] li[eệ]u|th[oô]ng tin|l[iị]ch( h[oọ]c| thi| bi[eể]u)?|c[aá]i';
+
+/** Tên gọi của chính tài liệu — đứng một mình đã đủ rõ, không cần "này". */
+const FILE_NOUN =
+  'file|t[eệ]p|t[aà]i li[eệ]u|[dđ][ií]nh k[eè]m|b[aả]ng t[ií]nh|excel|word|pdf|docx?|xlsx?|' +
+  'th[oờ]i kh[oó]a bi[eể]u|th[oờ]i kho[aá] bi[eể]u|tkb';
+
 function mentionsAttachedFile(text: string): boolean {
-  return /(file|t[eệ]p|t[aà]i li[eệ]u|[dđ][ií]nh k[eè]m|b[aả]ng t[ií]nh|excel|word|pdf|docx?|xlsx?|tr[ií]ch xu[aấ]t|n[oộ]i dung (n[aà]y|tr[eê]n)|trong (n[aà]y|đ[oó])|[dđ][oọ]c (c[aá]i )?(n[aà]y|gi[uú]p))/i.test(
-    text,
+  // Hàm này CHỈ được gọi khi đã có file đính kèm, nên "lịch học này" không thể
+  // trỏ vào thứ gì khác ngoài tài liệu đó.
+  const demonstrative = new RegExp(`(${FILE_SUBJECT})\\s*(n[aà]y|[đd][oó]|tr[eê]n)`, 'i');
+  const named = new RegExp(`(${FILE_NOUN})`, 'i');
+  return (
+    named.test(text) ||
+    demonstrative.test(text) ||
+    /(tr[ií]ch xu[aấ]t|[dđ][oọ]c (c[aá]i )?(n[aà]y|gi[uú]p))/i.test(text)
   );
 }
 
@@ -582,7 +600,7 @@ export class FloatingHub {
       return;
     }
 
-    const calendarId = this.store.calendars()[0]?.id;
+    const calendarId = this.store.defaultWritableCalendar()?.id;
     if (!calendarId) {
       this.aiError.set('Bạn chưa có lịch nào để tạo sự kiện.');
       return;

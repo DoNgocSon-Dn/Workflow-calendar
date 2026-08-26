@@ -73,6 +73,7 @@ interface CalendarApiDto {
   id: string;
   name: string;
   color: string;
+  canEdit?: boolean;
 }
 
 interface EventApiDto {
@@ -219,7 +220,14 @@ function toAttendee(dto: AttendeeApiDto): Attendee {
 }
 
 function toCalendarDef(dto: CalendarApiDto): CalendarDef {
-  return { id: dto.id, name: dto.name, color: dto.color as CalendarColor };
+  // Backend cũ chưa gửi canEdit — coi như ghi được để không khoá nhầm người
+  // dùng ra khỏi chính lịch của họ; RLS vẫn là lớp chặn thật.
+  return {
+    id: dto.id,
+    name: dto.name,
+    color: dto.color as CalendarColor,
+    canEdit: dto.canEdit !== false,
+  };
 }
 
 // Một số tài khoản đang mang nhiều lịch "Cá nhân" trùng hệt nhau do lỗi tự tạo
@@ -573,9 +581,27 @@ export class CalendarStore {
     });
   }
 
+  /**
+   * Lịch mà những chỗ TỰ CHỌN hộ người dùng nên ghi vào (trợ lý AI, import).
+   *
+   * Không phải phần tử đầu danh sách: API trả theo created_at nên đầu danh
+   * sách thường là một lịch NHÓM mà người dùng chỉ được xem. Ghi vào đó thì
+   * RLS chặn và người dùng nhận lỗi 500 không hiểu vì sao.
+   */
+  readonly defaultWritableCalendar = computed<CalendarDef | null>(
+    () => this.calendars().find((c) => c.canEdit) ?? null,
+  );
+
   async ensureCalendarExists(): Promise<CalendarDef> {
-    if (this.calendars().length > 0) {
-      return this.calendars()[0];
+    const writable = this.defaultWritableCalendar();
+    if (writable) return writable;
+    // Chỉ có lịch chỉ-đọc: tạo cho người dùng một lịch riêng thay vì ném họ
+    // vào lỗi quyền.
+    if (this.calendars().length > 0 && !this.calendars().some((c) => c.canEdit)) {
+      const cal = await this.createDefaultCalendarOnce();
+      this.calendars.update((list) => [...list, cal]);
+      this.visibleCalendarIds.update((set) => new Set([...set, cal.id]));
+      return cal;
     }
     try {
       const cal = await this.createDefaultCalendarOnce();
@@ -588,6 +614,7 @@ export class CalendarStore {
         id: 'default-local-calendar',
         name: 'Cá nhân',
         color: 'blue',
+        canEdit: true,
       };
       this.calendars.set([fallbackCal]);
       this.visibleCalendarIds.set(new Set([fallbackCal.id]));

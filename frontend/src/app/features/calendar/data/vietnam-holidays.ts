@@ -8,6 +8,9 @@ export const VN_HOLIDAY_CALENDAR_DEF: CalendarDef = {
   id: VN_HOLIDAY_CALENDAR_ID,
   name: 'Ngày lễ ở Việt Nam',
   color: 'green',
+  // Lịch dựng sẵn, không nằm trên server — không ai thêm sự kiện vào đây được,
+  // và cũng không được phép trở thành lịch mặc định khi tự chọn hộ người dùng.
+  canEdit: false,
 };
 
 const EVENT_ID_SEPARATOR = '::';

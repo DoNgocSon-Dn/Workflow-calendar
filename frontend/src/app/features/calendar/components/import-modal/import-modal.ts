@@ -2,8 +2,10 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
@@ -132,10 +134,21 @@ export class ImportModalComponent {
   readonly importSuccess = signal(false);
 
   constructor() {
-    const cals = this.store.calendars();
-    if (cals.length > 0) {
-      this.selectedCalendarId.set(cals[0].id);
-    }
+    // Danh sách lịch nạp bất đồng bộ nên lúc component được dựng nó gần như
+    // luôn còn RỖNG — đọc một lần trong constructor thì ô chọn lịch đứng trống
+    // và người dùng bấm Lưu vào hư không. Effect đặt mặc định ngay khi lịch về.
+    //
+    // Lấy lịch GHI ĐƯỢC chứ không phải lịch đầu danh sách: API trả theo
+    // created_at nên đầu danh sách thường là lịch nhóm chỉ-đọc, chọn sẵn nó
+    // khiến người dùng bấm Lưu rồi mới ăn lỗi quyền.
+    effect(() => {
+      const writable = this.store.defaultWritableCalendar();
+      if (!writable) return;
+      // Người dùng đã tự chọn thì tôn trọng — untracked để lần họ đổi lựa chọn
+      // không kích hoạt lại effect này.
+      if (untracked(() => this.selectedCalendarId())) return;
+      this.selectedCalendarId.set(writable.id);
+    });
   }
 
   protected readonly selectedFileExt = computed(() => {

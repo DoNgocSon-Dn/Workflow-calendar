@@ -21,6 +21,9 @@ export interface CalendarDef {
   id: string;
   name: string;
   color: CalendarColor;
+  /** Người dùng có được thêm/sửa sự kiện trong lịch này không. Lịch nhóm mà
+   *  họ chỉ được xem sẽ là false — backend tính, client không tự đoán. */
+  canEdit: boolean;
 }
 
 export interface CalendarEvent {
