@@ -247,6 +247,52 @@ const FILE_NOUN =
   '\\bics\\b|\\bcsv\\b|' +
   'th[oờ]i kh[oó]a bi[eể]u|th[oờ]i kho[aá] bi[eể]u|tkb';
 
+
+/**
+ * Câu đã tự nêu một mốc thời gian cụ thể hay chưa.
+ *
+ * CỐ Ý không tính "tuần này"/"tháng này": đó là khoảng mơ hồ, không ghim được
+ * một buổi nào — "tạo lịch tuần này" kèm file vẫn là bảo đọc file.
+ */
+function hasConcreteTime(text: string): boolean {
+  return (
+    // 9h, 9 giờ, 19:30
+    /\d{1,2}\s*(h\b|gi[oờ]|:\d{2})/i.test(text) ||
+    // 12/10, 12-10
+    /\d{1,2}\s*[/-]\s*\d{1,2}/.test(text) ||
+    /(h[oô]m nay|h[oô]m qua|ng[aà]y mai|ng[aà]y m[oố]t|s[aá]ng mai|t[oố]i nay|chi[eề]u nay)/i.test(text) ||
+    /\b(mai|m[oố]t)\b/i.test(text) ||
+    /th[uứ]\s*[2-7]|ch[uủ] nh[aậ]t/i.test(text) ||
+    // "trong 7 ngày", "2 tuần nữa"
+    /\d+\s*(ng[aà]y|tu[aầ]n|th[aá]ng|ti[eế]ng|ph[uú]t|gi[oờ])/i.test(text)
+  );
+}
+
+const CREATE_VERB =
+  't[aạ]o|th[eê]m|l[eê]n|x[eế]p|s[aắ]p x[eế]p|nh[aậ]p|import|[dđ][uư]a v[aà]o|cho v[aà]o|l[aậ]p|d[uự]ng';
+
+const CALENDAR_NOUN =
+  'l[iị]ch|s[uự] ki[eệ]n|calendar|th[oờ]i kh[oó]a bi[eể]u|th[oờ]i kho[aá] bi[eể]u|tkb|' +
+  'vi[eệ]c c[aầ]n l[aà]m|to.?do|nhi[eệ]m v[uụ]|deadline';
+
+/**
+ * Người dùng bảo dựng lịch/việc nhưng KHÔNG nêu mốc thời gian nào.
+ *
+ * Kèm file mà nói "tạo cho tôi cái lịch" thì dữ liệu chỉ có thể nằm trong
+ * file — đó chính là lý do người ta đính kèm nó. Không đọc file lúc này là
+ * bắt người dùng phải nói thêm một câu thừa.
+ *
+ * Ngược lại "Họp team 9h sáng mai" đã tự đủ dữ kiện: đem file đi đọc lúc đó
+ * là làm sai việc, và yêu cầu thật của họ bị nuốt mất.
+ */
+function wantsCalendarFromFile(text: string): boolean {
+  const asksToBuild = new RegExp(
+    `(${CREATE_VERB}).{0,20}(${CALENDAR_NOUN})`,
+    'i',
+  ).test(text);
+  return asksToBuild && !hasConcreteTime(text);
+}
+
 function mentionsAttachedFile(text: string): boolean {
   // Hàm này CHỈ được gọi khi đã có file đính kèm, nên "lịch học này" không thể
   // trỏ vào thứ gì khác ngoài tài liệu đó.
@@ -600,9 +646,10 @@ export class FloatingHub {
     // Chỉ đính kèm file mà không gõ gì cũng là một yêu cầu hợp lệ.
     if ((!text && !file) || this.sending()) return;
 
-    // Có file thì CHỈ đọc file khi người dùng thật sự nói về nó — hoặc khi họ
-    // không gõ gì, lúc đó đính kèm chính là toàn bộ yêu cầu.
-    if (file && (!text || mentionsAttachedFile(text))) {
+    // Đọc file khi: không gõ gì (đính kèm chính là yêu cầu), hoặc câu có nhắc
+    // tới tài liệu, hoặc câu bảo dựng lịch mà không kèm mốc thời gian nào —
+    // lúc đó dữ liệu chỉ có thể nằm trong file.
+    if (file && (!text || mentionsAttachedFile(text) || wantsCalendarFromFile(text))) {
       await this.handleFileSend(file, text);
       return;
     }
@@ -1133,10 +1180,10 @@ export class FloatingHub {
     this.eventProposalError.set(null);
     try {
       const calendar = await this.store.ensureCalendarExists();
-      for (const row of picked) {
+      const drafts = picked.map((row) => {
         const start = new Date(row.startLocal);
         const end = row.endLocal ? new Date(row.endLocal) : new Date(start.getTime() + 3_600_000);
-        await this.store.createEvent({
+        return {
           title: row.title.trim(),
           calendarId: calendar.id,
           start,
@@ -1144,8 +1191,16 @@ export class FloatingHub {
           allDay: row.allDay,
           ...(row.location.trim() ? { location: row.location.trim() } : {}),
           ...(row.description ? { description: row.description } : {}),
-        });
-      }
+        };
+      });
+      // MỘT request cho cả lô, không phải N lần createEvent.
+      //
+      // Mỗi createEvent làm server phát một gói event:created cho phòng lịch.
+      // Gói đó thường về TRƯỚC phản hồi HTTP nên chưa kịp nhận ra là do chính
+      // mình vừa tạo — xác nhận 3 sự kiện là nổ 3 popup và chuông cộng 3.
+      // importEvents gửi kèm một batchId nên cả lô chỉ còn một gói socket và
+      // đúng một dòng thông báo, giống hệt màn hình Import.
+      await this.store.importEvents(calendar.id, drafts);
       this.eventProposal.set(null);
       this.pushMessage(
         'assistant',
