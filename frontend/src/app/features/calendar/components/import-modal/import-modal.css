@@ -171,6 +171,10 @@
   border-radius: var(--radius-sm);
   width: 100%;
   box-sizing: border-box;
+  /* Nội dung dài hơn ô thì cắt bằng dấu ba chấm, để người dùng NHÌN RA là còn
+     chữ phía sau. Trình duyệt chỉ áp dụng khi ô không được focus — lúc bấm vào
+     sửa, ô cuộn ngang như thường và giá trị thật không hề bị đụng tới. */
+  text-overflow: ellipsis;
 }
 
 .title-input {

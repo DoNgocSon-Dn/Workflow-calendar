@@ -110,7 +110,13 @@
                   @for (item of eventsPreview(); track $index) {
                     <tr [class.warning-row]="item.needsReview">
                       <td>
-                        <input type="text" [(ngModel)]="item.title" class="table-input title-input" placeholder="Tiêu đề sự kiện" />
+                        <input
+                          type="text"
+                          [(ngModel)]="item.title"
+                          class="table-input title-input"
+                          placeholder="Tiêu đề sự kiện"
+                          appOverflowTooltip
+                        />
                       </td>
                       <td>
                         <input type="datetime-local" [(ngModel)]="item.startLocal" class="table-input datetime-input" />
@@ -119,7 +125,13 @@
                         <input type="datetime-local" [(ngModel)]="item.endLocal" class="table-input datetime-input" />
                       </td>
                       <td>
-                        <input type="text" [(ngModel)]="item.location" class="table-input location-input" placeholder="Địa điểm / ghi chú" />
+                        <input
+                          type="text"
+                          [(ngModel)]="item.location"
+                          class="table-input location-input"
+                          placeholder="Địa điểm / ghi chú"
+                          appOverflowTooltip
+                        />
                       </td>
                       <td>
                         <button type="button" class="danger-btn" (click)="removeEvent($index)">Xóa</button>
