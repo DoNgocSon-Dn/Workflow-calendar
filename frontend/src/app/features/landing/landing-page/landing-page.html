@@ -64,10 +64,12 @@
     </div>
 
     <div class="links">
+      <a href="#about" [class.is-active]="activeSection() === 'about'" [attr.aria-current]="activeSection() === 'about' ? 'true' : null" (click)="scrollToSection($event, 'about')">Giới thiệu</a>
       <a href="#features" [class.is-active]="activeSection() === 'features'" [attr.aria-current]="activeSection() === 'features' ? 'true' : null" (click)="scrollToSection($event, 'features')">Tính năng</a>
       <a href="#showcase" [class.is-active]="activeSection() === 'showcase'" [attr.aria-current]="activeSection() === 'showcase' ? 'true' : null" (click)="scrollToSection($event, 'showcase')">Khả năng</a>
       <a href="#process" [class.is-active]="activeSection() === 'process'" [attr.aria-current]="activeSection() === 'process' ? 'true' : null" (click)="scrollToSection($event, 'process')">Quy trình</a>
       <a href="#trust" [class.is-active]="activeSection() === 'trust'" [attr.aria-current]="activeSection() === 'trust' ? 'true' : null" (click)="scrollToSection($event, 'trust')">Bảo mật</a>
+      <a href="#faq" [class.is-active]="activeSection() === 'faq'" [attr.aria-current]="activeSection() === 'faq' ? 'true' : null" (click)="scrollToSection($event, 'faq')">Hỏi đáp</a>
     </div>
 
     <div class="nav-right">
@@ -105,10 +107,12 @@
     <div class="mobile-menu-scrim" (click)="closeMobileMenu()" aria-hidden="true"></div>
   }
   <div id="mobileMenu" class="mobile-menu" [class.is-open]="mobileMenuOpen()">
+    <a href="#about" [class.is-active]="activeSection() === 'about'" [attr.aria-current]="activeSection() === 'about' ? 'true' : null" (click)="scrollToSection($event, 'about')">Giới thiệu</a>
     <a href="#features" [class.is-active]="activeSection() === 'features'" [attr.aria-current]="activeSection() === 'features' ? 'true' : null" (click)="scrollToSection($event, 'features')">Tính năng</a>
     <a href="#showcase" [class.is-active]="activeSection() === 'showcase'" [attr.aria-current]="activeSection() === 'showcase' ? 'true' : null" (click)="scrollToSection($event, 'showcase')">Khả năng</a>
     <a href="#process" [class.is-active]="activeSection() === 'process'" [attr.aria-current]="activeSection() === 'process' ? 'true' : null" (click)="scrollToSection($event, 'process')">Quy trình</a>
     <a href="#trust" [class.is-active]="activeSection() === 'trust'" [attr.aria-current]="activeSection() === 'trust' ? 'true' : null" (click)="scrollToSection($event, 'trust')">Bảo mật</a>
+    <a href="#faq" [class.is-active]="activeSection() === 'faq'" [attr.aria-current]="activeSection() === 'faq' ? 'true' : null" (click)="scrollToSection($event, 'faq')">Hỏi đáp</a>
     <a class="mobile-menu-cta" routerLink="/login">Bắt đầu miễn phí</a>
   </div>
 
@@ -137,6 +141,8 @@
         <span class="line"><span>Tối ưu lịch trình,</span></span>
         <span class="line"><span><em>liền mạch mọi khoảnh khắc.</em></span></span>
       </h1>
+      <!-- CHỈ chữ thuần, không thẻ con: splitHeroText() đọc textContent rồi
+           ghi đè innerHTML để tách cụm, nên mọi thẻ đặt ở đây đều bị xoá. -->
       <p class="hero-sub">
         Lịch thông minh có trợ lý AI hiểu tiếng Việt, tự phát hiện trùng giờ, đồng bộ real-time và hiển thị sẵn ngày âm cùng ngày lễ Việt Nam trên từng ô lịch.
       </p>
@@ -146,8 +152,19 @@
         <!-- CTA phụ cho người chưa sẵn sàng đăng nhập. .btn-ghost vốn đã được
              style đầy đủ nhưng không có ai dùng — chỗ trống này chính là nơi
              nó được dựng ra để đứng. -->
-        <a class="btn-ghost" href="#features" (click)="scrollToSection($event, 'features')">Xem tính năng</a>
+        <a class="btn-ghost" href="#about" (click)="scrollToSection($event, 'about')">Workflow là gì?</a>
       </div>
+
+      <!-- Bốn điều người ta cần biết TRƯỚC khi bấm "Bắt đầu miễn phí": giá,
+           cách đăng nhập, chạy ở đâu, ngôn ngữ. Trước đây ba ý đầu chỉ xuất
+           hiện ở khối CTA cuối trang, tức là sau khi người đọc đã phải tự
+           đoán suốt cả trang. -->
+      <ul class="hero-facts">
+        <li>Miễn phí toàn bộ, không có gói trả phí</li>
+        <li>Đăng nhập Google, không cần đặt mật khẩu</li>
+        <li>Chạy thẳng trên trình duyệt, không cần cài đặt</li>
+        <li>Giao diện Tiếng Việt &amp; English</li>
+      </ul>
     </div>
 
     <div class="scroll-hint">
@@ -158,19 +175,85 @@
 
   <!-- MARQUEE TICKER -->
   <div class="marquee-wrap">
+    <!-- Danh sách phải được lặp NGUYÊN VẸN hai lần thì animation cuộn tới
+         -50% mới nối liền thành vòng. Muốn thêm/bớt mục thì sửa cả hai nửa. -->
     <div class="marquee">
       <span><b>Trợ lý AI</b>: gõ một câu, lịch tự được tạo</span>
+      <span><b>Kéo &amp; thả</b>: kéo trên lưới để tạo, kéo mép để đổi thời lượng</span>
       <span><b>Phát hiện trùng lịch</b>: cảnh báo ngay khi đang tạo sự kiện</span>
+      <span><b>Bốn chế độ xem</b>: Tháng, Tuần, Ngày, Lịch biểu</span>
       <span><b>Đồng bộ real-time</b>: cập nhật tức thì trên mọi thiết bị</span>
       <span><b>Xác nhận qua email</b>: không cần mở app hay đăng nhập</span>
-      <span><b>Lịch âm &amp; ngày lễ</b>: Tết, Vu Lan, Trung Thu, Quốc khánh</span>
+      <span><b>49 ngày lễ dựng sẵn</b>: Tết, Vu Lan, Trung Thu, Quốc khánh</span>
+      <span><b>Ngày âm trên từng ô lịch</b>: tính bằng quy tắc, năm nào cũng đúng</span>
+      <span><b>Nhiều lịch</b>: mỗi lịch một màu, chia sẻ riêng từng lịch</span>
+      <span><b>Không gian nhóm</b>: chat, giao việc, lịch chung một chỗ</span>
+      <span><b>Song ngữ</b>: Tiếng Việt &amp; English, đổi trong một cú bấm</span>
+      <span><b>Miễn phí</b>: không có gói trả phí</span>
+
       <span><b>Trợ lý AI</b>: gõ một câu, lịch tự được tạo</span>
+      <span><b>Kéo &amp; thả</b>: kéo trên lưới để tạo, kéo mép để đổi thời lượng</span>
       <span><b>Phát hiện trùng lịch</b>: cảnh báo ngay khi đang tạo sự kiện</span>
+      <span><b>Bốn chế độ xem</b>: Tháng, Tuần, Ngày, Lịch biểu</span>
       <span><b>Đồng bộ real-time</b>: cập nhật tức thì trên mọi thiết bị</span>
       <span><b>Xác nhận qua email</b>: không cần mở app hay đăng nhập</span>
-      <span><b>Lịch âm &amp; ngày lễ</b>: Tết, Vu Lan, Trung Thu, Quốc khánh</span>
+      <span><b>49 ngày lễ dựng sẵn</b>: Tết, Vu Lan, Trung Thu, Quốc khánh</span>
+      <span><b>Ngày âm trên từng ô lịch</b>: tính bằng quy tắc, năm nào cũng đúng</span>
+      <span><b>Nhiều lịch</b>: mỗi lịch một màu, chia sẻ riêng từng lịch</span>
+      <span><b>Không gian nhóm</b>: chat, giao việc, lịch chung một chỗ</span>
+      <span><b>Song ngữ</b>: Tiếng Việt &amp; English, đổi trong một cú bấm</span>
+      <span><b>Miễn phí</b>: không có gói trả phí</span>
     </div>
   </div>
+
+  <!-- ═══════════ WORKFLOW LÀ GÌ ═══════════
+       Khối này trước đây không tồn tại: trang nhảy thẳng từ hero sang danh
+       sách tính năng, nên người vào lần đầu đọc xong cả màn hero vẫn chưa
+       biết đây là sản phẩm gì, cho ai, thay thế cái gì. -->
+  <section class="section-pad" id="about">
+    <div class="kicker reveal">Workflow là gì</div>
+    <h2 class="section-title reveal">Một chiếc lịch, <span class="dim">thay cho ba ứng dụng.</span></h2>
+    <p class="section-desc reveal">
+      Workflow là ứng dụng lịch chạy trên trình duyệt, làm cho người Việt và những
+      nhóm nhỏ làm việc cùng nhau. Thay vì một app lịch để xếp giờ, một app chat để
+      bàn bạc và một app ghi chú để nhớ việc, cả ba nằm chung trên đúng cái lịch mà
+      công việc đang diễn ra.
+    </p>
+
+    <div class="about-grid">
+      <div class="about-card reveal">
+        <div class="about-label">Dành cho ai</div>
+        <p>
+          Người đi làm và sinh viên cần một chiếc lịch có sẵn ngày âm, ngày rằm và
+          ngày lễ Việt Nam. Cùng với đó là nhóm học tập, nhóm dự án, câu lạc bộ —
+          những nhóm cần lịch chung nhưng không muốn dựng cả một hệ thống quản lý.
+        </p>
+      </div>
+      <div class="about-card reveal">
+        <div class="about-label">Giải quyết việc gì</div>
+        <p>
+          Ba việc mất thời gian nhất khi xếp lịch: gõ tay từng ô trong form, phát
+          hiện ra trùng giờ khi đã muộn, và tra ngày âm ở một chỗ khác. Trợ lý AI,
+          cảnh báo xung đột và lịch âm dựng sẵn xử lý đúng ba việc đó.
+        </p>
+      </div>
+      <div class="about-card reveal">
+        <div class="about-label">Chạy ở đâu</div>
+        <p>
+          Trải nghiệm mượt mà ngay trên trình duyệt web: không tải về, không cài
+          đặt rườm rà. Đăng nhập duy nhất bằng Google là bắt đầu làm việc ngay.
+        </p>
+      </div>
+      <div class="about-card reveal">
+        <div class="about-label">Chi phí</div>
+        <p>
+          Miễn phí toàn bộ. Không có gói trả phí, không có tính năng bị khoá, không
+          cần thẻ ngân hàng. Giao diện có sẵn hai ngôn ngữ Tiếng Việt và English,
+          đổi qua lại ngay trong phần Cài đặt.
+        </p>
+      </div>
+    </div>
+  </section>
 
   <!-- CORE FEATURES SECTION
        Đây là phần MỞ ĐẦU của #scrolly ngay bên dưới, không phải một section
@@ -179,7 +262,33 @@
   <section class="section-pad section-pad--lead" id="features">
     <div class="kicker reveal">Tính năng cốt lõi</div>
     <h2 class="section-title reveal">Một chiếc lịch <span class="dim">biết suy nghĩ</span> thay bạn.</h2>
-    <p class="section-desc reveal">Nền tảng của Workflow. Mọi tính năng đều được tối ưu để bạn làm việc nhẹ nhàng, không vướng bận.</p>
+    <p class="section-desc reveal">Bốn tính năng dưới đây là nền tảng của Workflow. Cuộn tiếp để xem từng cái hoạt động ngay trên giao diện lịch thật.</p>
+
+    <!-- Mục lục của phần trình diễn ngay bên dưới. Trước đây section này chỉ
+         có ba dòng chữ rồi hết, nên ai bấm "Tính năng" trên nav sẽ rơi vào một
+         khoảng gần như trống và phải tự đoán là còn phải cuộn tiếp. -->
+    <ol class="feature-toc reveal">
+      <li>
+        <span class="ftoc-num">01</span>
+        <b>Trợ lý AI</b>
+        <i>Gõ một câu tiếng Việt, sự kiện tự được tạo</i>
+      </li>
+      <li>
+        <span class="ftoc-num">02</span>
+        <b>Trung tâm thông báo</b>
+        <i>Mọi hoạt động đổ về một nơi, hiện ngay tức thì</i>
+      </li>
+      <li>
+        <span class="ftoc-num">03</span>
+        <b>Phát hiện xung đột</b>
+        <i>Cảnh báo trùng giờ ngay lúc đang tạo sự kiện</i>
+      </li>
+      <li>
+        <span class="ftoc-num">04</span>
+        <b>Lịch âm &amp; ngày lễ</b>
+        <i>Ngày âm dưới mỗi ngày dương, 49 ngày lễ dựng sẵn</i>
+      </li>
+    </ol>
   </section>
 
   <!-- ═══════════ 3D SCROLL SHOWCASE (Stage 0 → 4) ═══════════ -->
@@ -220,16 +329,20 @@
           <h3>Biết ngay việc cần biết</h3>
           <p>
             Sự kiện mới, tin nhắn nhóm, lời mời tham gia — tất cả đổ về một nơi và hiện
-            ngay khi vừa xảy ra, không cần tải lại trang. Lọc thông báo theo từng danh mục
-            để nắm bắt nhanh việc quan trọng và phản hồi lời mời tức thì.
+            ngay khi vừa xảy ra, không cần tải lại trang. Sáu bộ lọc (Tất cả, Chưa đọc,
+            Tin nhắn, Công việc, Sự kiện, Nhóm) giúp nắm nhanh việc quan trọng, và lời mời
+            thì bấm đồng ý ngay trong thông báo. Mất mạng thì có báo rõ để bạn biết là
+            đang tạm dừng chứ không phải hết việc.
           </p>
           <div class="chip-row">
             <span class="chip">Hiện ngay tức thì</span>
+            <span class="chip">Sáu bộ lọc</span>
             <span class="chip">Xử lý ngay trong thông báo</span>
           </div>
 
           <!-- Mô phỏng đúng bảng thông báo thật của app: nhãn số chưa đọc, hàng
-               lọc năm nhóm, và một lời mời trả lời được ngay tại chỗ. -->
+               lọc sáu nhóm, và một lời mời trả lời được ngay tại chỗ. Sáu tab
+               này phải khớp notif.tab* trong core/i18n/translations.ts. -->
           <div class="pop pop-notif" aria-hidden="true">
             <div class="pop-head">
               <span class="notif-ico">
@@ -248,6 +361,7 @@
               <span class="ntab">Tin nhắn</span>
               <span class="ntab">Công việc</span>
               <span class="ntab">Sự kiện</span>
+              <span class="ntab">Nhóm</span>
             </div>
 
             <div class="notif-row">
@@ -307,15 +421,12 @@
           <div class="feature-index">04 / Lịch âm &amp; Ngày lễ Việt Nam</div>
           <h3>Âm lịch và ngày lễ Việt, <em>có sẵn từ đầu.</em></h3>
           <p>
-            Mỗi ngày dương đều kèm ngày âm ngay bên dưới, nên rằm mùng một hay ngày giỗ không
-            phải tra ở đâu khác. Lịch dựng sẵn 14 ngày lễ dương và 14 ngày lễ âm: Tết, Giỗ Tổ,
-            Phật Đản, Vu Lan, Trung Thu, Ông Công Ông Táo. Lịch cũng tự đánh dấu mùng 1 cùng ngày rằm
-            của mọi tháng.
+            Dễ dàng theo dõi ngày âm, ngày giỗ và các dịp lễ Việt Nam ngay trên lịch mà không
+            cần tra cứu riêng, mọi dữ liệu đều được hệ thống tự động cập nhật chính xác mỗi năm.
           </p>
           <div class="chip-row">
-            <span class="chip">Ngày âm dưới mỗi ngày dương</span>
-            <span class="chip">28 ngày lễ dựng sẵn</span>
-            <span class="chip">Tự nhận mùng 1 &amp; ngày rằm</span>
+            <span class="chip">Xem song song âm – dương</span>
+            <span class="chip">Đầy đủ ngày lễ Việt Nam</span>
           </div>
 
           <div class="pop pop-lunar" aria-hidden="true">
@@ -383,6 +494,7 @@
                   <span>Tin nhắn</span>
                   <span>Công việc</span>
                   <span>Sự kiện</span>
+                  <span>Nhóm</span>
                 </div>
                 <div class="bdrop-group">MỚI <b>3</b></div>
                 <div class="bdrop-item">
@@ -490,39 +602,110 @@
 
     <div class="gallery">
       <div class="gallery-row">
+        <div class="gallery-card gallery-card--wide reveal">
+          <span class="tag">Bốn chế độ xem</span>
+          <h5>Tháng, Tuần, Ngày hay Lịch biểu</h5>
+          <p>
+            Tháng để nhìn tổng quan, mỗi ô kèm sẵn ngày âm. Tuần và Ngày
+            chia lưới theo khung giờ — chỗ để xếp giờ cho chính xác. Lịch biểu đọc
+            tuần tự dạng danh sách, hợp những hôm lịch dày. Thanh bên có lịch nhỏ để nhảy
+            nhanh sang bất kỳ ngày nào mà không mất chỗ đang xem.
+          </p>
+        </div>
         <div class="gallery-card reveal">
+          <span class="tag">Kéo &amp; thả</span>
+          <h5>Sửa lịch bằng chuột, không cần mở form</h5>
+          <p>
+            Kéo một vệt trên lưới giờ là tạo được sự kiện đúng khung đó. Kéo cả khối sang
+            giờ khác để dời. Kéo mép dưới để đổi thời lượng.
+          </p>
+        </div>
+      </div>
+
+      <div class="gallery-row">
+        <div class="gallery-card reveal">
+          <span class="tag">Tìm kiếm</span>
+          <h5>Gõ vài chữ là ra đúng sự kiện</h5>
+          <p>
+            Ô tìm kiếm ngay trên thanh công cụ, kết quả xổ xuống trong lúc gõ kèm màu lịch
+            và ngày diễn ra. Bấm một kết quả là lịch nhảy thẳng tới đúng ngày của nó.
+          </p>
+        </div>
+        <div class="gallery-card gallery-card--wide reveal">
+          <span class="tag">Nhiều lịch</span>
+          <h5>Tách việc riêng khỏi việc chung, rồi chia sẻ từng lịch</h5>
+          <p>
+            Tạo bao nhiêu lịch cũng được — đi làm, gia đình, học hành — mỗi lịch một màu
+            riêng và bật/tắt hiển thị độc lập ở thanh bên, nên lúc cần tập trung thì ẩn bớt
+            đi. Từng lịch chia sẻ được riêng: mời người khác qua email với quyền
+            chỉnh sửa hoặc chỉ xem.
+          </p>
+        </div>
+      </div>
+
+      <div class="gallery-row">
+        <div class="gallery-card gallery-card--wide reveal">
           <span class="tag">Import lịch</span>
           <h5>Nhập lịch hàng loạt trong vài giây</h5>
-          <p>Import chuẩn từ file .ics/.csv, hoặc để AI tự đọc lịch trình từ file Excel/Word/PDF không theo khuôn mẫu nào. Xem trước, sửa lại rồi mới lưu.</p>
+          <p>
+            Hai lối vào cho hai kiểu file. Import Lịch đọc .ics và .csv
+            theo đúng chuẩn — nhanh và chắc chắn. Còn file trình bày tự do thì gửi cho
+            Trợ lý AI: nó đọc được .ics, .csv và .pdf rồi tự rút lịch trình ra.
+            Cả hai đều cho xem trước, tự tick sẵn những dòng đủ dữ liệu, bạn sửa lại rồi mới lưu.
+          </p>
         </div>
         <div class="gallery-card reveal">
           <span class="tag">Nhắc nhở</span>
           <h5>Nhắc nhở đa cấp, đúng kênh</h5>
-          <p>Đặt nhiều mốc nhắc cho một sự kiện (15 phút, 1 giờ, 1 ngày trước) qua popup trong app hoặc email. Chưa xử lý kịp thì bấm hoãn để được nhắc lại sau.</p>
+          <p>
+            Ba mốc dựng sẵn (15 phút, 1 giờ, 1 ngày trước) và thêm bao nhiêu mốc tuỳ chỉnh
+            cũng được. Mỗi mốc chọn riêng kênh: popup trong app hay email. Chưa xử lý kịp
+            thì bấm hoãn để được nhắc lại sau.
+          </p>
         </div>
       </div>
+
       <div class="gallery-row">
         <div class="gallery-card gallery-card--wide reveal">
           <span class="tag">Không gian nhóm</span>
           <h5>Không gian làm việc cho cả nhóm</h5>
-          <p>Chat real-time, giao task kèm deadline và trạng thái, lịch chung của nhóm, tất cả nằm một chỗ. Mời thành viên qua email, phân quyền chủ nhóm / quản trị / thành viên / khách.</p>
+          <p>
+            Chat real-time, giao task kèm deadline và trạng thái, lịch chung của nhóm, tất cả
+            nằm một chỗ. Mời thành viên qua email và phân bốn cấp quyền:
+            Trưởng nhóm, Quản trị viên, Thành viên, Khách (chỉ xem,
+            không nhắn tin). Ghế Trưởng nhóm chỉ sang tay qua chức năng chuyển quyền riêng —
+            không ai tự gán cho mình được.
+          </p>
         </div>
         <div class="gallery-card reveal">
           <span class="tag">Cá nhân &amp; đội nhóm</span>
           <h5>Ghi chú riêng, bình luận chung</h5>
-          <p>Lịch cá nhân có ghi chú (notes) riêng tư; lịch nhóm có bình luận (comment) ngay trong sự kiện để mọi người trao đổi.</p>
+          <p>
+            Lịch cá nhân có ghi chú riêng tư; lịch nhóm có bình luận ngay trong sự kiện. Mỗi
+            sự kiện còn có địa điểm, mô tả và tuỳ chọn cả ngày cho việc không gắn với
+            một khung giờ cụ thể.
+          </p>
         </div>
       </div>
+
       <div class="gallery-row">
         <div class="gallery-card reveal">
-          <span class="tag">Bốn chế độ xem</span>
-          <h5>Tháng, Tuần, Ngày hay Lịch biểu</h5>
-          <p>Đổi góc nhìn tuỳ việc đang làm: nhìn tổng quan cả tháng, chia khung giờ theo tuần/ngày, hoặc đọc danh sách tuần tự trong Lịch biểu.</p>
+          <span class="tag">Thùng rác</span>
+          <h5>Xoá nhầm vẫn lấy lại được</h5>
+          <p>
+            Sự kiện xoá đi nằm trong thùng rác chờ khôi phục, chỉ mất hẳn khi chính bạn xoá
+            vĩnh viễn.
+          </p>
         </div>
         <div class="gallery-card gallery-card--wide reveal">
-          <span class="tag">Thùng rác &amp; cá nhân hoá</span>
-          <h5>Xoá nhầm vẫn lấy lại được</h5>
-          <p>Sự kiện xoá đi nằm trong thùng rác chờ khôi phục, chỉ mất hẳn khi bạn tự xoá vĩnh viễn. Kèm giao diện sáng/tối, đổi màu nhấn, chỉnh mật độ lịch và in lịch ra giấy.</p>
+          <span class="tag">Cá nhân hoá &amp; song ngữ</span>
+          <h5>Chỉnh cho vừa mắt mình</h5>
+          <p>
+            Giao diện sáng/tối, đổi màu nhấn, mật độ lịch thoáng hay gọn, giờ 12 hay 24, ảnh
+            đại diện, âm thanh thông báo đặt riêng cho tin nhắn và cho việc chung, cùng nền
+            động tự đổi theo mùa lễ. Toàn bộ giao diện có sẵn Tiếng Việt và
+            English, đổi qua lại ngay trong Cài đặt. Cần bản cứng thì in lịch ra giấy.
+          </p>
         </div>
       </div>
     </div>
@@ -560,8 +743,8 @@
       </div>
       <div class="process-step reveal">
         <div class="process-num">04</div>
-        <h4>Trao đổi ngay tại sự kiện</h4>
-        <p>Bình luận trong sự kiện nhóm, ghi chú riêng cho lịch cá nhân. Mọi thứ nằm cạnh đúng cái lịch, không tản mát sang chỗ khác.</p>
+        <h4>Cộng tác trong nhóm</h4>
+        <p>Mỗi nhóm có bảng task, trò chuyện và lịch chung. Giao việc kèm người làm, hạn chót, phân quyền.</p>
       </div>
     </div>
   </section>
@@ -638,6 +821,90 @@
     </div>
   </section>
 
+  <!-- FAQ
+       Dùng <details>/<summary> chứ không tự dựng accordion bằng div + click:
+       trình duyệt lo sẵn vai trò, trạng thái đóng/mở và điều hướng bàn phím,
+       nên không phải gắn aria-expanded hay bắt phím Enter/Space bằng tay. -->
+  <section class="section-pad" id="faq">
+    <div class="kicker reveal">Hỏi đáp</div>
+    <h2 class="section-title reveal">Những câu <span class="dim">hay được hỏi nhất.</span></h2>
+
+    <div class="faq-list">
+      <details class="faq-item reveal">
+        <summary>Workflow có mất phí không?</summary>
+        <p>
+          Không. Miễn phí toàn bộ — không có gói trả phí, không có tính năng bị khoá lại
+          để bán riêng, và không cần khai báo thẻ ngân hàng ở bất kỳ bước nào.
+        </p>
+      </details>
+
+
+      <details class="faq-item reveal">
+        <summary>Tôi đăng nhập bằng cách nào?</summary>
+        <p>
+          Bằng tài khoản Google. Không có bước đặt mật khẩu, nên cũng không có mật khẩu
+          nào để quên. Lần đầu đăng nhập là tài khoản được tạo luôn, mất khoảng 30 giây.
+        </p>
+      </details>
+
+      <details class="faq-item reveal">
+        <summary>Tôi chuyển lịch cũ từ nơi khác sang được không?</summary>
+        <p>
+          Được. Hầu hết ứng dụng lịch (kể cả Google Calendar) đều xuất ra file .ics —
+          đưa file đó vào Import Lịch là xong. File .csv cũng nhận. Nếu thời
+          khoá biểu của bạn nằm trong một file trình bày tự do, gửi cho Trợ lý AI:
+          nó đọc được .ics, .csv và .pdf. Cả hai đường đều cho xem trước và sửa lại
+          trước khi lưu, nên không sợ nhập nhầm hàng loạt.
+        </p>
+      </details>
+
+      <details class="faq-item reveal">
+        <summary>Ai xem được lịch của tôi?</summary>
+        <p>
+          Chỉ bạn, và những người bạn chủ động chia sẻ. Quyền truy cập được kiểm tra ở
+          tầng cơ sở dữ liệu chứ không phải ở giao diện — nghĩa là một người có kỹ thuật
+          cố gọi thẳng vào hệ thống vẫn không đọc được lịch không thuộc về họ.
+        </p>
+      </details>
+
+      <details class="faq-item reveal">
+        <summary>Người tôi mời có phải tạo tài khoản không?</summary>
+        <p>
+          Không. Lời mời gửi qua email kèm hai nút Đồng ý / Từ chối bấm được ngay trong
+          mail. Đường dẫn đó gắn riêng cho từng người, dùng một lần là hết hiệu lực và tự
+          hết hạn sau 7 ngày — email có bị chuyển tiếp thì người khác cũng không trả lời
+          thay được.
+        </p>
+      </details>
+
+      <details class="faq-item reveal">
+        <summary>Trợ lý AI có tự tạo lịch sai không?</summary>
+        <p>
+          Câu nào đủ rõ thì nó tạo thẳng. Câu nào mơ hồ — thiếu ngày, thiếu giờ — thì nó
+          chuyển sang form thủ công để bạn tự điền và xác nhận, chứ không đoán bừa. Số
+          lượt gọi mỗi giờ cũng có giới hạn để không ai lạm dụng được.
+        </p>
+      </details>
+
+      <details class="faq-item reveal">
+        <summary>Có sự kiện lặp lại hằng tuần không?</summary>
+        <p>
+          Hiện chưa có. Lịch lặp theo chu kỳ là tính năng còn nằm trong kế hoạch, chưa
+          làm xong nên chúng tôi không hứa trước. Trong lúc đó, thời khoá biểu cố định
+          có thể nhập một lần bằng file .csv hoặc .ics qua Import Lịch.
+        </p>
+      </details>
+
+      <details class="faq-item reveal">
+        <summary>Lỡ xoá nhầm một sự kiện thì sao?</summary>
+        <p>
+          Nó nằm trong thùng rác chờ bạn khôi phục, không mất ngay. Chỉ khi bạn tự bấm
+          xoá vĩnh viễn thì mới mất hẳn.
+        </p>
+      </details>
+    </div>
+  </section>
+
   <!-- CTA STORY SECTION -->
   <section class="cta-section" id="story">
     <!-- Trang trí: lưới mờ dần + quầng sáng + vệt sao rơi. Tất cả đều
@@ -663,6 +930,9 @@
       <p class="sub reveal">Đăng nhập bằng Google là dùng được ngay, không cần đặt mật khẩu, không có gói trả phí.</p>
       <div class="hero-cta reveal">
         <a class="btn-primary" routerLink="/login">Bắt đầu miễn phí</a>
+        <!-- Lối thoát cho người còn lăn tăn: đẩy họ sang Hỏi đáp thay vì để
+             khối cuối trang chỉ có một cửa duy nhất là đăng nhập. -->
+        <a class="btn-ghost" href="#faq" (click)="scrollToSection($event, 'faq')">Còn thắc mắc?</a>
       </div>
     </div>
   </section>
@@ -703,12 +973,18 @@
       </span>
       <span>Workflow</span>
     </div>
+    <!-- Chưa có route /terms và /privacy nên footer KHÔNG trỏ tới chúng: một
+         link 404 ở chân trang bào mòn niềm tin nhanh hơn là không có link.
+         Khi hai trang đó được dựng thì thêm vào đây. -->
     <div class="f-links">
+      <a href="#about" (click)="scrollToSection($event, 'about')">Giới thiệu</a>
       <a href="#features" (click)="scrollToSection($event, 'features')">Tính năng</a>
       <a href="#showcase" (click)="scrollToSection($event, 'showcase')">Khả năng</a>
       <a href="#trust" (click)="scrollToSection($event, 'trust')">Bảo mật</a>
+      <a href="#faq" (click)="scrollToSection($event, 'faq')">Hỏi đáp</a>
+      <a href="mailto:tpken249&#64;gmail.com">Liên hệ</a>
       <a routerLink="/login">Đăng nhập</a>
     </div>
-    <div>© {{ currentYear }} Workflow</div>
+    <div>© {{ currentYear }} Workflow · Miễn phí, không có gói trả phí</div>
   </footer>
 </div>

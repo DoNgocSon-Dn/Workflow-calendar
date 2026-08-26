@@ -55,10 +55,12 @@ export class LandingPage implements OnInit, AfterViewInit {
     readonly nav: string;
     readonly sections: readonly string[];
   }> = [
+    { nav: 'about', sections: ['about'] },
     { nav: 'features', sections: ['features', 'scrolly'] },
     { nav: 'showcase', sections: ['showcase'] },
     { nav: 'process', sections: ['process'] },
     { nav: 'trust', sections: ['trust'] },
+    { nav: 'faq', sections: ['faq'] },
   ];
 
   /** Bảo đảm finishIntro() chỉ chạy một lần dù bị gọi từ mấy nguồn. */
@@ -282,7 +284,9 @@ export class LandingPage implements OnInit, AfterViewInit {
     // Gỡ cổng chỉ cho phần hero: .reveal vẫn cần cổng vì ScrollTrigger còn
     // phải reveal chúng khi người dùng cuộn xuống.
     gsap.set(
-      host.querySelectorAll('.hero-eyebrow, .hero-sub, .hero-cta, .hero-word, .hero-phrase'),
+      host.querySelectorAll(
+        '.hero-eyebrow, .hero-sub, .hero-cta, .hero-facts, .hero-word, .hero-phrase',
+      ),
       { opacity: 1, y: 0, filter: 'blur(0px)', clearProps: 'filter' },
     );
 
@@ -328,6 +332,7 @@ export class LandingPage implements OnInit, AfterViewInit {
     titleStagger: 0.085,
     sub: 1.05,
     cta: 1.3,
+    facts: 1.5,
   } as const;
 
   private get reducedMotion(): boolean {
@@ -494,7 +499,14 @@ export class LandingPage implements OnInit, AfterViewInit {
         { opacity: 1, filter: 'blur(0px)', duration: 0.8 * scale, stagger: reduced ? 0.02 : 0.11 },
         CUE.sub * scale,
       )
-      .to(host.querySelector('.hero-cta'), { opacity: 1, duration: 0.9 * scale }, CUE.cta * scale);
+      .to(host.querySelector('.hero-cta'), { opacity: 1, duration: 0.9 * scale }, CUE.cta * scale)
+      // Bốn dòng thông tin (giá, đăng nhập, nền tảng, ngôn ngữ) vào SAU nút CTA
+      // một nhịp: mắt bắt nút trước, rồi mới đọc phần chú thích dưới nó.
+      .to(
+        host.querySelector('.hero-facts'),
+        { opacity: 1, y: 0, duration: 0.8 * scale },
+        CUE.facts * scale,
+      );
 
     if (!reduced) this.startAmbientDrift();
     return tl;
@@ -668,6 +680,22 @@ export class LandingPage implements OnInit, AfterViewInit {
     // Giảm chuyển động: giữ nguyên layout xếp dọc tĩnh, vẫn đọc được đủ 5 khối.
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
+    /** Dưới ngưỡng này bố cục xếp chồng, không còn hai vùng trái/phải. */
+    const SPLIT_MIN_WIDTH = 1100;
+
+    // Màn hẹp KHÔNG bật scrollytelling nữa.
+    //
+    // Trước đây nó vẫn pin và vẫn chạy hết timeline, nhưng dưới 1100px thì cột
+    // chữ nằm đè lên bảng, nên CSS phải dìm bảng xuống opacity 0.3 + blur 2px
+    // để chữ còn đọc được. Kết quả: đúng phần đắt nhất trang — giao diện lịch
+    // thật — biến thành một vệt mờ, và người dùng mobile cuộn qua 5 màn chữ
+    // liên tiếp mà không nhìn thấy sản phẩm lần nào.
+    //
+    // Bố cục tĩnh (.scrolly:not(.is-enhanced)) đã có sẵn và tốt hơn hẳn ở khổ
+    // hẹp: 5 khối chữ xếp dọc kèm thẻ pop của từng khối, cộng một bảng lịch
+    // hiện rõ nguyên vẹn. Không bật gì cả là rơi thẳng vào đó.
+    if (window.innerWidth < SPLIT_MIN_WIDTH) return;
+
     scrolly.classList.add('is-enhanced');
 
     const q = gsap.utils.selector(scrolly);
@@ -688,8 +716,18 @@ export class LandingPage implements OnInit, AfterViewInit {
     /** Mốc bắt đầu của 5 stage trên timeline — dùng cho chấm chỉ báo. */
     const STAGE_AT = [0, 2.4, 4.6, 6.6, 8.6];
 
-    /** Dưới ngưỡng này bố cục xếp chồng, không còn hai vùng trái/phải. */
-    const SPLIT_MIN_WIDTH = 1100;
+    /**
+     * Mốc BUNG bảng thông báo trên bảng lịch, tách khỏi mốc bật chuông.
+     *
+     * Stage 2 mở ở 4.6 và bảng lịch trượt sang vị trí mới bằng một tween
+     * duration 1, nên nó chỉ đứng yên ở 5.6. Bung bảng thông báo ngay từ 4.6
+     * thì nó xổ ra trong lúc bảng còn đang bay — hai chuyển động chồng nhau,
+     * mắt không kịp bắt cái nào.
+     *
+     * Chuông vẫn sáng từ 4.6: có thông báo tới trước, rồi bảng mới mở ra.
+     * Đọc thành một chuỗi nhân quả thay vì hai thứ cùng nổ một lúc.
+     */
+    const NOTIF_DROP_AT = 5.6;
 
     /**
      * side = -1 nửa trái, +1 nửa phải.
@@ -802,10 +840,10 @@ export class LandingPage implements OnInit, AfterViewInit {
           // Chuông + nhãn số chỉ sáng trong ĐÚNG stage 2, nên dùng khoảng chứ
           // không dùng ngưỡng: qua stage 3 là tắt lại, trả bảng về trạng thái
           // sạch cho phần phát hiện xung đột.
-          board.classList.toggle(
-            'show-notif',
-            t >= STAGE_AT[2] && t < STAGE_AT[3],
-          );
+          // Chuông sáng ngay khi vào stage 2; bảng xổ đợi bảng lịch đứng yên.
+          const inNotifStage = t >= STAGE_AT[2] && t < STAGE_AT[3];
+          board.classList.toggle('show-notif', inNotifStage);
+          board.classList.toggle('drop-open', inNotifStage && t >= NOTIF_DROP_AT);
         },
       },
     });
