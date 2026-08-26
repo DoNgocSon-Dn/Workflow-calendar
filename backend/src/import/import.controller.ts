@@ -81,6 +81,7 @@ export class ImportController {
     @CurrentUser() user: User,
     @Body('calendarId') calendarId: string,
     @Body('events') events: CreateEventDto[],
+    @Body('batchId') batchId?: string,
   ) {
     if (!calendarId) {
       throw new BadRequestException('Vui lòng chọn lịch để lưu sự kiện.');
@@ -99,6 +100,12 @@ export class ImportController {
       ...e,
       calendarId,
     }));
-    return this.eventsService.bulkCreate(supabase, dtos, user.id);
+    // batchId chỉ để client nhận lại tiếng vọng của chính mình — không đụng
+    // tới dữ liệu nên chỉ cần chặn kiểu và độ dài, không cần là UUID hợp lệ.
+    const safeBatchId =
+      typeof batchId === 'string' && batchId.length > 0 && batchId.length <= 64
+        ? batchId
+        : undefined;
+    return this.eventsService.bulkCreate(supabase, dtos, user.id, safeBatchId);
   }
 }

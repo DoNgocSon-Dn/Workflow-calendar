@@ -442,23 +442,21 @@ export class ImportModalComponent {
 
     this.importing.set(true);
     try {
-      const dtos = events.map((e) => ({
+      const drafts = events.map((e) => ({
         calendarId: calId,
         title: e.title,
-        start: fromDatetimeLocal(e.startLocal),
-        end: fromDatetimeLocal(e.endLocal),
+        start: new Date(fromDatetimeLocal(e.startLocal)),
+        end: new Date(fromDatetimeLocal(e.endLocal)),
         allDay: e.allDay,
         location: e.location,
         description: e.description,
       }));
 
       try {
-        await firstValueFrom(
-          this.http.post(`${environment.apiUrl}/events/bulk-create`, {
-            calendarId: calId,
-            events: dtos,
-          }),
-        );
+        // Qua store chứ không gọi HTTP thẳng: store là chỗ duy nhất biết cách
+        // đưa sự kiện vào lưới lịch, nhận ra tiếng vọng socket của chính mình,
+        // và dựng thông báo "Đã nhập N sự kiện" cho chuông.
+        await this.store.importEvents(calId, drafts);
       } catch (backendErr: unknown) {
         if (isServerRejection(backendErr)) {
           // Cùng lý do như trên: server từ chối thì dừng, không vòng qua
@@ -473,17 +471,12 @@ export class ImportModalComponent {
           return;
         }
         console.warn('Lưu bulk lên backend thất bại, tự động tạo sự kiện cục bộ:', backendErr);
-        for (const e of events) {
-          await this.store.createEvent({
-            title: e.title,
-            calendarId: calId,
-            start: new Date(fromDatetimeLocal(e.startLocal)),
-            end: new Date(fromDatetimeLocal(e.endLocal)),
-            allDay: e.allDay,
-            location: e.location,
-            description: e.description,
-          });
+        for (const draft of drafts) {
+          await this.store.createEvent(draft);
         }
+        // Đường dự phòng không đi qua bulk-create nên phải tự báo, nếu không
+        // người dùng offline sẽ thấy màn hình báo thành công mà chuông trống.
+        this.store.notifyEventsImported(calId, drafts.length);
       }
 
       this.importSuccess.set(true);

@@ -11,6 +11,7 @@ import {
   calendarInvitationDraft,
   calendarMemberJoinedDraft,
   eventCreatedDraft,
+  eventsImportedDraft,
   eventDeletedDraft,
   eventInvitationDraft,
   eventUpdatedDraft,
@@ -525,6 +526,10 @@ export class CalendarStore {
       void this.refreshPendingInvites();
     });
     this.realtime.on<EventApiDto>('event:created', (dto) => this.handleRemoteCreated(dto));
+    this.realtime.on<{ calendarId: string; batchId?: string; events: EventApiDto[] }>(
+      'events:bulk-created',
+      (payload) => this.handleRemoteBulkCreated(payload),
+    );
     this.realtime.on<EventApiDto>('event:updated', (dto) => this.handleRemoteUpdated(dto));
     this.realtime.on<{ id: string }>('event:deleted', (payload) =>
       this.handleRemoteDeleted(payload.id),
@@ -676,6 +681,46 @@ export class CalendarStore {
         timeLabel,
         start: dto.start,
         end: dto.end,
+      }),
+    );
+  }
+
+  /**
+   * Một lô sự kiện vừa được import vào lịch mà ta đang tham gia.
+   *
+   * Luôn đưa sự kiện vào lưới — kể cả khi chính ta là người import, vì gói
+   * này có thể về trước phản hồi HTTP. Nhưng chỉ BÁO khi người khác làm:
+   * người vừa bấm import đã tự dựng thông báo tổng ở importEvents(), báo
+   * thêm lần nữa là trùng.
+   */
+  private handleRemoteBulkCreated(payload: {
+    calendarId: string;
+    batchId?: string;
+    events: EventApiDto[];
+  }): void {
+    const events = payload.events ?? [];
+    for (const dto of events) this.upsertEvent(toCalendarEvent(dto));
+    if (events.length === 0) return;
+
+    const calendarName = this.calendars().find((c) => c.id === payload.calendarId)?.name ?? null;
+    const message = `Đã nhập ${events.length} sự kiện vào lịch${calendarName ? ` "${calendarName}"` : ''}.`;
+
+    // Khoá chống trùng là batchId chứ không phải id sự kiện: cả lô chỉ có
+    // đúng một gói tin nên xoá-khi-trúng vẫn đúng.
+    if (payload.batchId && !this.notifyIfNotSelfOrigin(payload.batchId, 'created', 'Import lịch hoàn tất', message)) {
+      return;
+    }
+    if (!payload.batchId) {
+      this.notificationQueue.push({ title: 'Import lịch hoàn tất', body: message, kind: 'created' });
+    }
+
+    this.notifications.ingest(
+      eventsImportedDraft({
+        // Thiếu batchId (client cũ) thì dựng khoá từ chính nội dung lô, để
+        // socket phát lại không đẻ ra thông báo thứ hai.
+        batchId: payload.batchId ?? `${payload.calendarId}-${events.map((e) => e.id).join('.')}`,
+        count: events.length,
+        calendarName,
       }),
     );
   }
@@ -849,6 +894,48 @@ export class CalendarStore {
 
   toggleSidebarCollapsed(): void {
     this.sidebarCollapsed.update((v) => !v);
+  }
+
+  /**
+   * Lưu cả danh sách sự kiện đọc được từ file, trong MỘT request.
+   *
+   * Ném lỗi nguyên vẹn cho người gọi — màn hình Import cần phân biệt được
+   * "server từ chối" với "không gọi tới được server" để quyết định có dùng
+   * đường dự phòng hay không, nên ở đây không nuốt lỗi.
+   */
+  async importEvents(
+    calendarId: string,
+    drafts: readonly CalendarEventDraft[],
+  ): Promise<CalendarEvent[]> {
+    const batchId = crypto.randomUUID();
+    // Đánh dấu TRƯỚC khi gọi: server phát socket ngay khi insert xong nên gói
+    // tin hoàn toàn có thể về trước phản hồi HTTP này.
+    this.markSelfOrigin(batchId);
+
+    const created = await firstValueFrom(
+      this.http.post<EventApiDto[]>(`${this.apiUrl}/events/bulk-create`, {
+        calendarId,
+        batchId,
+        events: drafts.map((d) => toEventApiPayload(d)),
+      }),
+    );
+
+    const events = (created ?? []).map(toCalendarEvent);
+    for (const event of events) this.upsertEvent(event);
+    this.notifyEventsImported(calendarId, events.length, batchId);
+    return events;
+  }
+
+  /**
+   * Thông báo tổng cho một lần import.
+   *
+   * Tách ra công khai vì màn hình Import còn một đường dự phòng (mất mạng thì
+   * tạo từng sự kiện một) — đường đó cũng phải báo đúng như đường chính.
+   */
+  notifyEventsImported(calendarId: string, count: number, batchId = crypto.randomUUID()): void {
+    if (count <= 0) return;
+    const calendarName = this.calendars().find((c) => c.id === calendarId)?.name ?? null;
+    this.notifications.ingest(eventsImportedDraft({ batchId, count, calendarName }));
   }
 
   async createEvent(draft: CalendarEventDraft): Promise<CalendarEvent> {
