@@ -93,6 +93,8 @@ interface EventApiDto {
   meetLink?: string;
   seriesId?: string;
   recurrenceRule?: RecurrenceRule;
+  /** Ai tạo sự kiện. Dùng để nhận ra tiếng vọng realtime của chính mình. */
+  createdBy?: string;
 }
 
 interface ConflictApiDto {
@@ -719,9 +721,40 @@ export class CalendarStore {
     return true;
   }
 
+  /**
+   * Sự kiện này có phải do chính người dùng đang đăng nhập tạo ra không.
+   *
+   * Đây là câu trả lời ĐÁNG TIN, khác với `selfOriginIds`: nó dựa trên
+   * `created_by` do server ghi, nên đúng bất kể gói socket tới trước hay sau
+   * phản hồi HTTP. `selfOriginIds` chỉ được đánh dấu SAU khi phản hồi HTTP về
+   * (vì trước đó client chưa biết id), mà backend lại phát `event:created`
+   * ngay lúc insert — nên gói socket gần như luôn thắng cuộc đua và lọt qua
+   * được chốt chặn đó. Đó chính là lý do một lần tạo sự kiện lại hiện hai
+   * thông báo: "Đã tạo sự kiện" từ form, và "Sự kiện mới" từ tiếng vọng này.
+   *
+   * Trả về false khi backend chưa gửi `createdBy` (bản cũ) để rơi về cách
+   * nhận diện cũ thay vì im lặng bỏ qua thông báo của người khác.
+   */
+  private isCreatedByCurrentUser(dto: EventApiDto): boolean {
+    const userId = this.authStore.user()?.id;
+    return !!userId && !!dto.createdBy && dto.createdBy === userId;
+  }
+
   private handleRemoteCreated(dto: EventApiDto): void {
     const event = toCalendarEvent(dto);
+    // Vẫn phải cập nhật lịch: gói tin này cũng là cách các tab khác của chính
+    // người dùng thấy được sự kiện vừa tạo. Chỉ phần THÔNG BÁO mới bị bỏ.
     this.upsertEvent(event);
+
+    // Người dùng vừa tự tay tạo sự kiện thì form đã báo "Đã tạo sự kiện" rồi —
+    // không cần một thông báo thứ hai kiểu "Sự kiện mới" với các nút Xem chi
+    // tiết / Hoãn / Bỏ qua, vốn dành cho việc do NGƯỜI KHÁC làm hoặc cho nhắc
+    // lịch tới giờ.
+    if (this.isCreatedByCurrentUser(dto)) {
+      this.selfOriginIds.delete(event.id);
+      return;
+    }
+
     const timeLabel = eventTimeLabel(event, this.timeFormatService.format());
     if (!this.notifyIfNotSelfOrigin(event.id, 'created', `Sự kiện mới: ${event.title}`, timeLabel)) {
       return;
@@ -1082,55 +1115,52 @@ export class CalendarStore {
     this.notifications.ingest(eventsImportedDraft({ batchId, count, calendarName }));
   }
 
+  /**
+   * Tạo sự kiện. Ném lỗi nếu backend không lưu được — CỐ Ý không có đường lùi.
+   *
+   * Trước đây hàm này bắt mọi lỗi rồi tự dựng một sự kiện `local-<timestamp>`
+   * chỉ nằm trong bộ nhớ và trả về như thể đã lưu thành công. Hậu quả đúng
+   * bằng chức năng của một cái lịch: người dùng thấy sự kiện hiện lên, form
+   * đóng lại như bình thường, rồi tải lại trang là mất sạch — vì bản ghi đó
+   * chưa bao giờ tới cơ sở dữ liệu. Tệ hơn, `console.warn` là dấu vết duy
+   * nhất, nên chính lỗi thật (mất mạng? 400? RLS từ chối?) cũng bị giấu luôn.
+   *
+   * Sự kiện chỉ được coi là đã tạo khi backend trả về bản ghi thật. Lỗi để
+   * nguyên cho phía gọi hiển thị, vì chỉ ở đó mới biết đặt thông báo ở đâu
+   * cho người dùng nhìn thấy.
+   */
   async createEvent(
     draft: CalendarEventDraft,
     recurrenceRule?: RecurrenceRule | null,
   ): Promise<CalendarEvent> {
-    try {
-      if (recurrenceRule) {
-        const created = await firstValueFrom(
-          this.http.post<EventApiDto[] | EventApiDto>(`${this.apiUrl}/events/series`, {
-            ...toEventApiPayload(draft),
-            recurrenceRule,
-          }),
-        );
-        const rawList = Array.isArray(created) ? created : [created];
-        const events = rawList.map(toCalendarEvent);
-        for (const event of events) {
-          this.markSelfOrigin(event.id);
-          this.upsertEvent(event);
-        }
-        return events[0];
-      }
-
+    if (recurrenceRule) {
       const created = await firstValueFrom(
-        this.http.post<EventApiDto>(`${this.apiUrl}/events`, toEventApiPayload(draft)),
+        this.http.post<EventApiDto[] | EventApiDto>(`${this.apiUrl}/events/series`, {
+          ...toEventApiPayload(draft),
+          recurrenceRule,
+        }),
       );
-      const event = toCalendarEvent(created);
-      this.markSelfOrigin(event.id);
-      // upsert chứ KHÔNG append: server phát event:created cho cả phòng lịch
-      // ngay khi insert xong, nên gói socket có thể về TRƯỚC phản hồi HTTP này.
-      // Khi đó handleRemoteCreated đã thêm sự kiện vào danh sách (và chưa thể
-      // nhận ra là tự mình tạo, vì markSelfOrigin cần id chỉ có ở đây), append
-      // thêm lần nữa sẽ tạo hai bản ghi trùng id.
-      this.upsertEvent(event);
-      return event;
-    } catch (err) {
-      console.warn('Lưu sự kiện lên backend thất bại, tự động lưu cục bộ:', err);
-      const fallbackCalId = draft.calendarId || (this.calendars()[0]?.id ?? 'default-local-calendar');
-      const localEvent: CalendarEvent = {
-        id: 'local-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9),
-        calendarId: fallbackCalId,
-        title: draft.title,
-        location: draft.location,
-        description: draft.description,
-        start: draft.start,
-        end: draft.end,
-        allDay: draft.allDay,
-      };
-      this.events.update((list) => [...list, localEvent]);
-      return localEvent;
+      const rawList = Array.isArray(created) ? created : [created];
+      const events = rawList.map(toCalendarEvent);
+      for (const event of events) {
+        this.markSelfOrigin(event.id);
+        this.upsertEvent(event);
+      }
+      return events[0];
     }
+
+    const created = await firstValueFrom(
+      this.http.post<EventApiDto>(`${this.apiUrl}/events`, toEventApiPayload(draft)),
+    );
+    const event = toCalendarEvent(created);
+    this.markSelfOrigin(event.id);
+    // upsert chứ KHÔNG append: server phát event:created cho cả phòng lịch
+    // ngay khi insert xong, nên gói socket có thể về TRƯỚC phản hồi HTTP này.
+    // Khi đó handleRemoteCreated đã thêm sự kiện vào danh sách (và chưa thể
+    // nhận ra là tự mình tạo, vì markSelfOrigin cần id chỉ có ở đây), append
+    // thêm lần nữa sẽ tạo hai bản ghi trùng id.
+    this.upsertEvent(event);
+    return event;
   }
 
   async updateEvent(id: string, changes: Partial<CalendarEventDraft>): Promise<void> {

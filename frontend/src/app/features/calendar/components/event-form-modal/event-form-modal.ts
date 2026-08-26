@@ -8,6 +8,7 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, map } from 'rxjs';
@@ -15,11 +16,13 @@ import { AuthStore } from '../../../../core/auth/auth-store';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { TimeFormatService } from '../../../../core/time-format/time-format-service';
 import { DialogService } from '../../../../core/services/dialog.service';
+import { NotificationQueue } from '../../../../core/realtime/notification-queue';
 import { CalendarStore } from '../../data/calendar-store';
 import {
   Attendee,
   CALENDAR_COLOR_HEX,
   CalendarColor,
+  CalendarDef,
   CalendarEvent,
   ConflictEvent,
   ReminderDraft,
@@ -48,6 +51,13 @@ import {
 } from '../../utils/recurrence';
 
 function extractErrorMessage(err: unknown, fallback: string): string {
+  // status 0 = request không tới được server (mất mạng, backend chưa chạy,
+  // CORS). Body lúc này là một ProgressEvent, không có `message` nào để đọc,
+  // nên nếu không tách riêng thì người dùng chỉ nhận được câu báo lỗi chung
+  // chung trong khi nguyên nhân thật lại rất cụ thể và tự sửa được.
+  if (err instanceof HttpErrorResponse && err.status === 0) {
+    return 'Không kết nối được tới server. Sự kiện CHƯA được lưu — kiểm tra kết nối rồi thử lại.';
+  }
   if (err && typeof err === 'object' && 'error' in err) {
     const inner = (err as { error?: { message?: string | string[] } }).error;
     const msg = inner?.message;
@@ -97,6 +107,7 @@ export class EventFormModal {
   protected readonly i18n = inject(TranslationService);
   private readonly timeFormatService = inject(TimeFormatService);
   private readonly dialog = inject(DialogService);
+  private readonly notificationQueue = inject(NotificationQueue);
 
   readonly event = input<CalendarEvent | null>(null);
   readonly defaultStart = input<Date | null>(null);
@@ -145,7 +156,26 @@ export class EventFormModal {
       year: String(lunar.year),
     });
   });
-  readonly calendars = this.store.calendars;
+  /**
+   * Lịch được phép chọn làm nơi lưu sự kiện.
+   *
+   * Chỉ những lịch GHI ĐƯỢC. `canEdit` do backend tính từ vai trò trong
+   * calendar_members, không phải client tự đoán.
+   *
+   * Trước đây ô chọn lịch liệt kê thẳng store.calendars(), gồm cả lịch nhóm mà
+   * người dùng chỉ có vai trò `viewer`. Mà API trả lịch theo created_at, nên
+   * một lịch nhóm rất dễ đứng ĐẦU danh sách và trở thành lựa chọn mặc định —
+   * bấm Lưu là RLS chặn ngay ở tầng CSDL ("new row violates row-level security
+   * policy for table events"), trong khi người dùng không hề cố ý chọn nó.
+   *
+   * Lịch của sự kiện ĐANG SỬA luôn được giữ lại kể cả khi không ghi được, nếu
+   * không ô chọn lịch sẽ trống trơn lúc mở một sự kiện thuộc lịch chỉ-xem.
+   */
+  readonly selectableCalendars = computed<CalendarDef[]>(() => {
+    const currentId = this.event()?.calendarId;
+    return this.store.calendars().filter((c) => c.canEdit || c.id === currentId);
+  });
+
   readonly calendarsLoading = this.store.calendarsLoading;
   readonly colorHex = CALENDAR_COLOR_HEX;
   readonly rangeError = signal(false);
@@ -244,7 +274,7 @@ export class EventFormModal {
 
   readonly form = this.fb.nonNullable.group({
     title: ['', Validators.required],
-    calendarId: [this.store.calendars()[0]?.id ?? '', Validators.required],
+    calendarId: [this.store.defaultWritableCalendar()?.id ?? '', Validators.required],
     allDay: [false],
     startDate: [toDateInputValue(this.store.today())],
     startTime: ['09:00'],
@@ -327,7 +357,7 @@ export class EventFormModal {
       const end = defEnd ?? addMinutes(start, 60);
       this.form.reset({
         title: defTitle,
-        calendarId: this.store.calendars()[0]?.id ?? '',
+        calendarId: this.store.defaultWritableCalendar()?.id ?? '',
         allDay: defAllDay,
         startDate: toDateInputValue(start),
         startTime: hhmm(start),
@@ -340,12 +370,14 @@ export class EventFormModal {
     });
 
     effect(() => {
-      const cals = this.calendars();
+      const cals = this.selectableCalendars();
       if (cals.length > 0) {
         if (!this.form.controls.calendarId.value) {
-          this.form.patchValue({ calendarId: cals[0].id });
+          this.form.patchValue({ calendarId: this.store.defaultWritableCalendar()?.id ?? cals[0].id });
         }
       } else if (!this.calendarsLoading()) {
+        // Không còn lịch nào ghi được (ví dụ chỉ được mời xem lịch nhóm) —
+        // ensureCalendarExists tạo cho họ một lịch riêng thay vì để form kẹt.
         void this.store.ensureCalendarExists();
       }
     });
@@ -371,11 +403,13 @@ export class EventFormModal {
     // lịch mặc định ngay khi dữ liệu tới, miễn là đang tạo sự kiện mới và
     // người dùng chưa tự chọn một lịch hợp lệ khác.
     effect(() => {
-      const cals = this.store.calendars();
+      const cals = this.selectableCalendars();
       if (this.event() || cals.length === 0) return;
       const control = this.form.controls.calendarId;
+      // Giá trị hiện tại phải nằm trong danh sách GHI ĐƯỢC — một id trỏ vào
+      // lịch chỉ-xem cũng bị coi là không hợp lệ và được thay bằng mặc định.
       if (!cals.some((c) => c.id === control.value)) {
-        control.setValue(cals[0].id);
+        control.setValue(this.store.defaultWritableCalendar()?.id ?? cals[0].id);
       }
     });
   }
@@ -645,7 +679,7 @@ export class EventFormModal {
     this.saveError.set(null);
 
     const currentCalId = this.form.controls.calendarId.value;
-    if (!currentCalId || this.calendars().length === 0) {
+    if (!currentCalId || this.selectableCalendars().length === 0) {
       try {
         const cal = await this.store.ensureCalendarExists();
         this.form.patchValue({ calendarId: cal.id });
@@ -730,12 +764,32 @@ export class EventFormModal {
         }
       }
       await this.saveReminders(eventId);
+
+      // Chỉ báo thành công SAU khi backend đã trả về bản ghi thật —
+      // store.createEvent ném lỗi nếu không lưu được, nên tới được dòng này
+      // nghĩa là sự kiện đã nằm trong cơ sở dữ liệu và sẽ còn nguyên sau khi
+      // tải lại trang. Đóng form trước rồi mới báo, để toast không bị modal che.
       this.closed.emit();
+      if (!current) this.notifySaved(draft.title);
     } catch (err) {
+      // Form KHÔNG đóng: lỗi hiện ngay dưới nút Lưu, nội dung người dùng vừa
+      // nhập còn nguyên để bấm lưu lại.
       this.saveError.set(extractErrorMessage(err, this.i18n.t('event.genericError')));
     } finally {
       this.saving.set(false);
     }
+  }
+
+  /** Dùng lại đúng hàng đợi toast của app (NotificationQueue → app-notification-popup)
+   *  thay vì dựng thêm một lớp thông báo riêng: nhờ vậy nó thừa hưởng sẵn theo
+   *  theme, animation vào/ra, tự tắt theo thanh đếm giờ, và xếp chồng đúng chỗ
+   *  với các thông báo khác. */
+  private notifySaved(title: string): void {
+    this.notificationQueue.push({
+      kind: 'success',
+      title: 'Đã tạo sự kiện',
+      body: `"${title}" đã được lưu vào lịch của bạn.`,
+    });
   }
 
   setCreateMode(mode: 'event' | 'todo'): void {
@@ -881,7 +935,10 @@ export class EventFormModal {
    *  thường được template gọi lại mỗi vòng change detection là đủ. */
   protected selectedCalendar(): { name: string; color: CalendarColor } | null {
     const id = this.form.controls.calendarId.value;
-    return this.calendars().find((c) => c.id === id) ?? null;
+    // Tra trong danh sách ĐẦY ĐỦ, không phải danh sách lọc: nhãn chỉ để hiển
+    // thị, và một sự kiện cũ vẫn cần hiện đúng tên lịch kể cả khi lịch đó nay
+    // chỉ còn quyền xem.
+    return this.store.calendars().find((c) => c.id === id) ?? null;
   }
 
   protected statusLabel(status: Attendee['status']): string {

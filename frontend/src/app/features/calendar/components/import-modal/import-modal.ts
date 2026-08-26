@@ -489,7 +489,14 @@ export class ImportModalComponent {
           this.importing.set(false);
           return;
         }
-        console.warn('Lưu bulk lên backend thất bại, tự động tạo sự kiện cục bộ:', backendErr);
+        // Thử lại bằng đường tạo từng sự kiện một. Có ích thật khi bulk hỏng vì
+        // kích thước lô (payload quá lớn) chứ không phải vì mất mạng.
+        //
+        // KHÔNG còn là "tạo cục bộ": store.createEvent đã bỏ đường lùi ghi vào
+        // bộ nhớ, nên nếu backend vẫn không lưu được thì lỗi bay lên catch bên
+        // ngoài và người dùng nhận báo lỗi — thay vì thấy màn hình "import
+        // thành công" rồi mất sạch sau khi tải lại trang.
+        console.warn('Lưu bulk lên backend thất bại, thử tạo từng sự kiện:', backendErr);
         for (const draft of drafts) {
           await this.store.createEvent(draft);
         }

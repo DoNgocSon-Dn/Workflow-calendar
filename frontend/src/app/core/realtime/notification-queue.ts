@@ -1,6 +1,18 @@
 import { Injectable, computed, signal } from '@angular/core';
 
-export type NotificationKind = 'created' | 'updated' | 'deleted' | 'reminder' | 'invite';
+/**
+ * `success` là loại DUY NHẤT báo kết quả một thao tác do chính người dùng vừa
+ * bấm, khác hẳn các loại còn lại (chúng báo việc xảy ra ở nơi khác: người khác
+ * sửa lịch, tới giờ nhắc, có lời mời). Khác biệt đó có thật trên giao diện —
+ * toast `success` không có nút "Hoãn", vì hoãn một lời xác nhận là vô nghĩa.
+ */
+export type NotificationKind =
+  | 'created'
+  | 'updated'
+  | 'deleted'
+  | 'reminder'
+  | 'invite'
+  | 'success';
 
 export interface NotificationItem {
   id: string;

@@ -33,6 +33,15 @@ export interface EventDto {
   meetLink?: string;
   seriesId?: string;
   recurrenceRule?: RecurrenceRuleDto;
+  /**
+   * Ai đã tạo sự kiện này.
+   *
+   * Client cần nó để nhận ra gói realtime `event:created` là tiếng vọng của
+   * chính thao tác mình vừa làm. Không có nó thì việc nhận diện phải dựa vào
+   * id do phản hồi HTTP mang về — mà gói socket được phát ngay lúc insert nên
+   * thường tới TRƯỚC phản hồi đó, và cuộc đua ấy sinh ra thông báo trùng.
+   */
+  createdBy?: string;
 }
 
 export function toEventDto(row: EventRow): EventDto {
@@ -49,6 +58,7 @@ export function toEventDto(row: EventRow): EventDto {
     meetLink: row.meet_link ?? undefined,
     seriesId: row.series_id ?? undefined,
     recurrenceRule: row.recurrence_rule ?? undefined,
+    createdBy: row.created_by ?? undefined,
   };
 }
 

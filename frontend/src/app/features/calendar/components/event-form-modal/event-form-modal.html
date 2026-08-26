@@ -38,13 +38,13 @@
     }
 
     @if (createMode() === 'event') {
-    @if (!calendarsLoading() && calendars().length === 0) {
+    @if (!calendarsLoading() && selectableCalendars().length === 0) {
     <p class="hint-text hint-inset">{{ i18n.t('event.autoCreatingCalendar') }}</p>
     }
     @if (form.controls.title.invalid && form.controls.title.touched) {
     <p class="field-error hint-inset">{{ i18n.t('event.titleRequired') }}</p>
     }
-    @if (saveError() && calendars().length > 0) {
+    @if (saveError() && selectableCalendars().length > 0) {
     <p class="field-error hint-inset">{{ saveError() }}</p>
     }
 
@@ -421,14 +421,14 @@
             d="M7 2v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2zm12 8v10H5V10z" />
         </svg>
         <div class="field-content">
-          @if (calendarsLoading() && calendars().length === 0) {
+          @if (calendarsLoading() && selectableCalendars().length === 0) {
           <div class="calendar-swatches" aria-hidden="true">
             <span class="swatch-skeleton"></span>
             <span class="swatch-skeleton"></span>
           </div>
           } @else if (calendarPickerOpen()) {
           <div class="calendar-swatches">
-            @for (cal of calendars(); track cal.id) {
+            @for (cal of selectableCalendars(); track cal.id) {
             <label class="swatch-option">
               <input type="radio" formControlName="calendarId" [value]="cal.id" (change)="calendarPickerOpen.set(false)" />
               <span class="swatch-dot" [style.background]="colorHex[cal.color]"></span>

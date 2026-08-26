@@ -423,3 +423,12 @@
     transform: none;
   }
 }
+
+/* Toast xác nhận thao tác (tạo sự kiện xong...). Chỉ đổi hai biến accent mà
+   card đã dùng sẵn cho viền trái, nền icon và nút — nên nó vẫn là ĐÚNG cái
+   toast đó, chỉ đổi tông sang màu thành công, không phải một kiểu card thứ hai.
+   --color-success đã có sẵn giá trị riêng cho theme sáng và tối. */
+.toast--success {
+  --accent: var(--color-success);
+  --accent-soft: color-mix(in srgb, var(--color-success) 16%, transparent);
+}
