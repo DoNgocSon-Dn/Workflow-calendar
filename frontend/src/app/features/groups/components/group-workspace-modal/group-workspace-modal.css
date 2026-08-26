@@ -1350,3 +1350,79 @@
   line-height: 1;
 }
 
+
+/* ---- Ô soạn tin + popup nhắc tên ---- */
+
+/* Bọc riêng ô nhập để popup mention neo được vào nó. Đặt position: relative ở
+   .chat-input-bar sẽ khiến popup rộng bằng cả thanh (gồm nút đính kèm và nút
+   Gửi) và lệch khỏi chỗ con chữ đang được gõ. */
+.chat-composer {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-composer .text-input {
+  width: 100%;
+}
+
+/* Mở LÊN TRÊN: ô nhập nằm sát đáy khung chat nên popup xổ xuống sẽ tràn ra
+   ngoài modal. */
+.chat-mention-popup {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 60;
+  display: block;
+  width: min(320px, 100%);
+}
+
+/* ---- Mention trong tin nhắn đã gửi ---- */
+
+/* Nền mờ theo màu accent thay vì chữ màu đặc: đủ để mắt bắt được ngay là một
+   mention, nhưng không sáng chói hơn cả nội dung xung quanh khi một tin nhắn
+   nhắc tên nhiều người. */
+.chat-mention {
+  display: inline;
+  padding: 0.05em 0.32em;
+  border-radius: var(--radius-xs, 6px);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-weight: 600;
+  /* Giữ nguyên nhịp chữ của đoạn văn — không được làm vỡ chỗ xuống dòng. */
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* @All là lời gọi cả nhóm, không phải một cái tên — dùng tông cảnh báo để
+   phân biệt ngay với mention một người.
+
+   Màu chữ đặt riêng cho từng theme thay vì dùng thẳng --color-warning: token
+   đó (#d97706) trên nền vàng nhạt chỉ đạt ~3.4:1 ở theme sáng, dưới ngưỡng AA
+   4.5:1 cho chữ thường. */
+.chat-mention--all {
+  background: color-mix(in srgb, var(--color-warning) 14%, transparent);
+  color: #fbbf24;
+}
+
+:root:not(.dark) .chat-mention--all {
+  color: #b45309;
+}
+
+/* Mention trỏ vào chính người đang đọc: thêm viền mảnh và đẩy màu chữ sang
+   tông --color-accent-hover — tông này đậm hơn ở theme sáng và sáng hơn ở
+   theme tối, nên độ tương phản tăng ở CẢ HAI thay vì chỉ một. Giữ nguyên nền
+   thay vì tô đặc hơn: tô đặc làm chữ tụt tương phản đúng ở chỗ cần đọc rõ nhất. */
+.chat-mention--me {
+  color: var(--color-accent-hover);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 50%, transparent);
+}
+
+.chat-mention--all.chat-mention--me {
+  color: #fcd34d;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-warning) 50%, transparent);
+}
+
+:root:not(.dark) .chat-mention--all.chat-mention--me {
+  color: #92400e;
+}

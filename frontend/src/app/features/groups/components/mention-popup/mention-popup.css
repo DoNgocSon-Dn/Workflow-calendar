@@ -1,0 +1,118 @@
+/* Thẻ nổi phía trên ô nhập. Vị trí do khung chat đặt (wrapper position:
+   relative quanh ô nhập) — ở đây chỉ lo hình dáng, không lo toạ độ, để popup
+   không bao giờ trôi ra giữa màn hình. */
+.mention-popup {
+  display: flex;
+  flex-direction: column;
+  max-height: 244px;
+  overflow-y: auto;
+  padding: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md, 12px);
+  box-shadow: var(--shadow-popover);
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+  /* Chỉ animate transform + opacity: cả hai chạy trên compositor nên popup
+     hiện ra không kéo theo một lượt reflow của khung chat phía dưới. */
+  animation: mentionPopupIn 0.13s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: bottom left;
+}
+
+@keyframes mentionPopupIn {
+  from { opacity: 0; transform: translateY(4px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mention-popup { animation: none; }
+}
+
+.mention-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 9px;
+  border: none;
+  border-radius: var(--radius-xs, 6px);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.86rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.mention-option + .mention-option {
+  margin-top: 2px;
+}
+
+.mention-option:hover {
+  background: var(--color-surface-hover-strong);
+}
+
+/* Dòng đang được bàn phím trỏ tới. Nền mờ + một vạch accent bên trái: đủ rõ
+   để mắt bắt ngay khi bấm ArrowDown liên tục, nhưng không chói như tô nền
+   đặc màu accent. */
+.mention-option--active {
+  background: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface-hover-strong));
+  box-shadow: inset 2px 0 0 var(--color-accent);
+}
+
+/* Mục @All đứng đầu, tách khỏi danh sách người bằng một đường kẻ mảnh — nó là
+   một loại lựa chọn khác hẳn, không phải "một thành viên nữa". */
+.mention-option--all {
+  padding-bottom: 9px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: var(--radius-xs, 6px) var(--radius-xs, 6px) 0 0;
+}
+
+.mention-avatar {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+}
+
+.mention-avatar--all {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent);
+  font-size: 0.85rem;
+}
+
+.mention-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+/* --color-text-tertiary chứ không phải --color-text-muted: muted chỉ đạt ~2.6:1
+   trên nền sáng, dưới ngưỡng AA cho chữ thường. */
+.mention-tag {
+  flex: 0 0 auto;
+  color: var(--color-text-tertiary);
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
+.mention-empty {
+  margin: 0;
+  padding: 10px 9px;
+  color: var(--color-text-tertiary);
+  font-size: 0.82rem;
+}

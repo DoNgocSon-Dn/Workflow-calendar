@@ -5,9 +5,11 @@ import {
   GroupMember,
   GroupMessage,
   GroupMessageAttachment,
+  GroupMessageMention,
   GroupTask,
   GroupUpdate,
 } from '../models/group.models';
+import { mentionsUser, normalizeMentions } from '../utils/mention.util';
 import { GroupApiService } from '../services/group-api.service';
 import { AuthStore } from '../../../core/auth/auth-store';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
@@ -192,10 +194,7 @@ export class GroupStore {
 
       const targetGroupId = payload.groupId || payload.message.groupId;
       if (this.isActiveGroup(targetGroupId, payload.message.groupId)) {
-        this.messages.update((list) => {
-          if (list.some((m) => m.id === payload.message.id)) return list;
-          return [...list, payload.message];
-        });
+        this.upsertMessage(payload.message);
         if (isFromOther && (!this.activeWorkspaceModalOpen() || this.activeWorkspaceTab() !== 'chat')) {
           this.unreadChatCount.update((count) => count + 1);
         }
@@ -220,6 +219,7 @@ export class GroupStore {
             groupId: row.group_id,
             senderId: row.sender_id,
             message: row.message ?? undefined,
+            mentions: normalizeMentions(row.mentions),
             createdAt: row.created_at,
             editedAt: row.edited_at ?? undefined,
             deletedAt: row.deleted_at ?? undefined,
@@ -234,10 +234,7 @@ export class GroupStore {
           const isFromOther = currentUser && msg.senderId !== currentUser.id;
 
           if (this.isActiveGroup(msg.groupId)) {
-            this.messages.update((list) => {
-              if (list.some((m) => m.id === msg.id)) return list;
-              return [...list, msg];
-            });
+            this.upsertMessage(msg);
             if (isFromOther && (!this.activeWorkspaceModalOpen() || this.activeWorkspaceTab() !== 'chat')) {
               this.unreadChatCount.update((count) => count + 1);
             }
@@ -425,7 +422,7 @@ export class GroupStore {
     // đúng nhóm đó và đang nhìn thẳng vào khung chat. Chuông là nhật ký hoạt
     // động, không phải thứ chỉ để báo cái mình chưa thấy; điều kiện duy nhất
     // chặn thông báo là tin do chính mình gửi (đã lọc ở đầu hàm).
-    if (this.mentionsCurrentUser(text, currentUser.email)) {
+    if (this.mentionsCurrentUser(message, text, currentUser.id, currentUser.email)) {
       this.notifications.ingest(groupMentionDraft(input));
       return;
     }
@@ -443,8 +440,23 @@ export class GroupStore {
     this.unreadMessageGroupIds.update((ids) => (ids.has(groupId) ? ids : new Set(ids).add(groupId)));
   }
 
-  /** Nhận diện "@tên" hoặc email đầy đủ của người dùng trong nội dung tin nhắn. */
-  private mentionsCurrentUser(text: string, email: string | undefined): boolean {
+  /**
+   * Tin nhắn này có nhắc tới người dùng hiện tại không.
+   *
+   * Metadata `mentions` là nguồn chính xác: nó nói rõ userId nào được nhắc và
+   * có phải @All hay không, nên không phụ thuộc vào việc dò chuỗi.
+   *
+   * Phép dò theo email vẫn giữ làm ĐƯỜNG LÙI cho tin nhắn gửi trước khi có
+   * metadata (và cho các client bản cũ) — bỏ nó đi thì lịch sử chat cũ đột
+   * ngột mất hết thông báo nhắc tên.
+   */
+  private mentionsCurrentUser(
+    message: GroupMessage,
+    text: string,
+    userId: string,
+    email: string | undefined,
+  ): boolean {
+    if (message.mentions?.length) return mentionsUser(message.mentions, userId);
     if (!text || !email) return false;
     const lower = text.toLowerCase();
     const localPart = email.split('@')[0].toLowerCase();
@@ -703,13 +715,135 @@ export class GroupStore {
     }
   }
 
-  async sendMessage(groupId: string, text: string, attachment?: GroupMessageAttachment): Promise<GroupMessage> {
-    const msg = await this.api.sendMessage(groupId, text, attachment);
-    this.messages.update((prev) => {
-      if (prev.some((m) => m.id === msg.id)) return prev;
-      return [...prev, msg];
+  /**
+   * Đưa một tin nhắn THẬT (do API trả về hoặc realtime đẩy tới) vào danh sách.
+   *
+   * Ba đường cùng đổ vào đây — HTTP response, socket của backend, và kênh
+   * Supabase Realtime — nên chống trùng phải nằm ở một chỗ duy nhất, không
+   * rải ra từng listener:
+   *
+   *   1. Trùng `id` → cập nhật tại chỗ (bản đến sau đầy đủ hơn, ví dụ có
+   *      sender_name mà kênh Supabase không kèm).
+   *   2. Khớp với một bản LẠC QUAN đang chờ → thay đúng bản đó, giữ nguyên vị
+   *      trí. Nếu không có bước này, tiếng vọng realtime về trước lúc HTTP trả
+   *      lời sẽ đẻ ra tin nhắn thứ hai y hệt.
+   *   3. Còn lại → thêm mới vào cuối.
+   */
+  private upsertMessage(msg: GroupMessage): void {
+    this.messages.update((list) => {
+      const existing = list.findIndex((m) => m.id === msg.id);
+      if (existing !== -1) {
+        return list.map((m, i) =>
+          i === existing ? { ...msg, clientMessageId: m.clientMessageId } : m,
+        );
+      }
+
+      const optimistic = this.findOptimisticMatch(list, msg);
+      if (optimistic !== -1) {
+        // Giữ lại clientMessageId của bản lạc quan: `track` trong template dựa
+        // vào nó nên nút DOM của tin nhắn không bị huỷ rồi dựng lại (gây nháy)
+        // chỉ vì id tạm được thay bằng id thật.
+        return list.map((m, i) =>
+          i === optimistic ? { ...msg, clientMessageId: m.clientMessageId } : m,
+        );
+      }
+
+      return [...list, msg];
     });
-    return msg;
+  }
+
+  /**
+   * Tìm bản lạc quan ứng với một tin nhắn thật vừa tới.
+   *
+   * Server không biết `clientMessageId` (nó không được lưu xuống CSDL), nên
+   * khi tin nhắn quay về qua đường realtime thì chỉ còn cách đối chiếu: cùng
+   * người gửi, cùng nội dung, cùng tệp đính kèm. Chỉ xét các bản đang `pending`
+   * nên không có nguy cơ nuốt nhầm một tin nhắn cũ giống hệt.
+   */
+  private findOptimisticMatch(list: readonly GroupMessage[], msg: GroupMessage): number {
+    const myId = this.authStore.user()?.id;
+    if (!myId || msg.senderId !== myId) return -1;
+
+    return list.findIndex(
+      (m) =>
+        m.pending === true &&
+        (m.message ?? '') === (msg.message ?? '') &&
+        (m.attachmentUrl ?? '') === (msg.attachmentUrl ?? ''),
+    );
+  }
+
+  /**
+   * Gửi tin nhắn với hiển thị lạc quan.
+   *
+   * Tin nhắn được đẩy vào danh sách NGAY trong nhánh đồng bộ, trước bất kỳ
+   * `await` nào — đây là điểm mấu chốt: người gửi thấy tin của mình ngay lúc
+   * nhấn Enter thay vì phải chờ một vòng HTTP rồi mới thấy. Phần gọi API chạy
+   * tiếp ở phía sau và `upsertMessage`/`clientMessageId` lo việc ghép lại.
+   *
+   * Gửi hỏng thì bản lạc quan bị gỡ đi và lỗi được ném lên cho phía gọi hiển
+   * thị — KHÔNG để lại một tin nhắn ma mà server chưa từng nhận.
+   */
+  async sendMessage(
+    groupId: string,
+    text: string,
+    attachment?: GroupMessageAttachment,
+    mentions?: readonly GroupMessageMention[],
+  ): Promise<GroupMessage> {
+    const clientMessageId = crypto.randomUUID();
+    const user = this.authStore.user();
+
+    const optimistic: GroupMessage = {
+      id: `pending-${clientMessageId}`,
+      clientMessageId,
+      pending: true,
+      groupId,
+      senderId: user?.id ?? '',
+      message: text || null,
+      mentions: mentions?.length ? [...mentions] : undefined,
+      createdAt: new Date().toISOString(),
+      attachmentUrl: attachment?.url,
+      attachmentName: attachment?.name,
+      attachmentType: attachment?.type,
+      attachmentSize: attachment?.size,
+      senderEmail: user?.email,
+      senderName: (user?.user_metadata as Record<string, unknown> | undefined)?.[
+        'full_name'
+      ] as string | undefined,
+    };
+    this.messages.update((prev) => [...prev, optimistic]);
+
+    try {
+      const saved = await this.api.sendMessage(groupId, text, attachment, mentions);
+      this.replaceOptimistic(clientMessageId, saved);
+      return saved;
+    } catch (err) {
+      this.dropOptimistic(clientMessageId);
+      throw err;
+    }
+  }
+
+  /**
+   * Gỡ bản lạc quan rồi đảm bảo bản thật có mặt đúng MỘT lần — tiếng vọng
+   * realtime có thể đã chèn nó vào trước khi HTTP kịp trả lời.
+   *
+   * Điều kiện `m.pending` là bắt buộc, không chỉ là cho chắc: gửi liên tiếp
+   * hai tin nhắn NỘI DUNG GIỐNG HỆT thì `findOptimisticMatch` có thể ghép
+   * tiếng vọng của tin thứ hai vào bản lạc quan của tin thứ nhất, khiến một
+   * tin nhắn thật mang `clientMessageId` của lượt gửi khác. Lọc theo mỗi
+   * clientMessageId sẽ xoá nhầm chính tin nhắn thật đó.
+   */
+  private replaceOptimistic(clientMessageId: string, saved: GroupMessage): void {
+    this.messages.update((prev) => {
+      const rest = prev.filter((m) => !(m.pending && m.clientMessageId === clientMessageId));
+      if (rest.some((m) => m.id === saved.id)) return rest;
+      return [...rest, { ...saved, clientMessageId }];
+    });
+  }
+
+  private dropOptimistic(clientMessageId: string): void {
+    this.messages.update((prev) =>
+      prev.filter((m) => !(m.pending && m.clientMessageId === clientMessageId)),
+    );
   }
 
   async editMessage(groupId: string, messageId: string, text: string): Promise<GroupMessage> {

@@ -66,11 +66,28 @@ export interface GroupTask {
   createdAt: string;
 }
 
+/**
+ * Một lượt nhắc tên trong tin nhắn.
+ *
+ * Lưu kèm tin nhắn dưới dạng metadata (cột `mentions` jsonb) thay vì để giao
+ * diện dò chuỗi "@..." sau khi gửi: dò chuỗi không biết userId nào ứng với
+ * tên nào, chết khi hai người trùng tên, và vỡ hẳn khi người được nhắc đổi
+ * tên hiển thị.
+ */
+export interface GroupMessageMention {
+  type: 'user' | 'all';
+  /** Chỉ có với type='user'. */
+  userId?: string;
+  /** Tên hiển thị tại thời điểm gửi — dùng để tô đúng đoạn chữ trong nội dung. */
+  label: string;
+}
+
 export interface GroupMessage {
   id: string;
   groupId: string;
   senderId: string;
   message: string | null;
+  mentions?: GroupMessageMention[];
   createdAt: string;
   editedAt?: string;
   deletedAt?: string;
@@ -80,6 +97,14 @@ export interface GroupMessage {
   attachmentSize?: number;
   senderEmail?: string;
   senderName?: string;
+  /**
+   * Mã do client sinh ra trước khi gọi API, dùng để ghép tin nhắn lạc quan
+   * (hiện ngay lúc nhấn Enter) với tin nhắn thật do server trả về / socket
+   * đẩy tới. Không được lưu xuống DB — nó chỉ sống trong bộ nhớ của phiên gửi.
+   */
+  clientMessageId?: string;
+  /** Đang chờ server xác nhận. Chỉ đúng với tin nhắn lạc quan. */
+  pending?: boolean;
 }
 
 export interface GroupMessageAttachment {

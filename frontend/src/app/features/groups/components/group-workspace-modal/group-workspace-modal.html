@@ -607,7 +607,7 @@
         @if (activeTab() === 'chat') {
           <div class="chat-section">
             <div class="chat-messages">
-              @for (msg of store.messages(); track msg.id) {
+              @for (msg of store.messages(); track msg.clientMessageId ?? msg.id) {
                 <div class="chat-msg-row" [id]="'chat-msg-' + msg.id" [class.deleted]="msg.deletedAt">
                   <div class="chat-avatar" [style.background-color]="senderColor(msg)">
                     {{ senderAvatarInitial(msg) }}
@@ -649,7 +649,17 @@
                         </div>
                       } @else {
                         @if (msg.message) {
-                          <p class="chat-text">{{ msg.message }}</p>
+                          <!-- Mọi mảnh đều là <span>, kể cả chữ thường: nhánh
+                               @if/@else viết xuống dòng sẽ khiến Angular gộp
+                               phần thụt đầu dòng thành dấu cách thật và chèn
+                               thêm khoảng trắng vào giữa nội dung tin nhắn.
+                               Không được để khoảng trắng nào lọt vào giữa
+                               `{`, `<span>` và `}` ở đây. -->
+                          <p class="chat-text">@for (seg of messageSegments(msg); track $index) {<span
+                              [class.chat-mention]="!!seg.mention"
+                              [class.chat-mention--all]="seg.mention?.type === 'all'"
+                              [class.chat-mention--me]="isMentionForMe(seg)"
+                            >{{ seg.text }}</span>}</p>
                         }
                         @if (msg.attachmentUrl) {
                           <div class="chat-attachment">
@@ -692,14 +702,38 @@
                 <app-icon name="paperclip" />
                 <input type="file" class="file-input-hidden" (change)="onAttachmentSelected($event)" />
               </label>
-              <input
-                type="text"
-                class="text-input"
-                placeholder="Nhập tin nhắn..."
-                [value]="chatMessage()"
-                (input)="chatMessage.set($any($event.target).value)"
-                (keydown.enter)="sendChat()"
-              />
+              <!-- Neo popup mention vào đúng ô nhập: popup dùng position
+                   absolute trong wrapper này nên nó luôn nổi ngay phía trên ô
+                   nhập, không bao giờ trôi ra giữa khung chat. -->
+              <div class="chat-composer">
+                @if (mentionPopupOpen()) {
+                  <app-mention-popup
+                    class="chat-mention-popup"
+                    [options]="mentionOptions()"
+                    [activeIndex]="mentionActiveIndex()"
+                    (selected)="selectMention($event)"
+                    (hovered)="mentionActiveIndex.set($event)"
+                  />
+                }
+                <input
+                  #chatInput
+                  type="text"
+                  class="text-input"
+                  placeholder="Nhập tin nhắn... (gõ @ để nhắc tên)"
+                  autocomplete="off"
+                  role="combobox"
+                  aria-autocomplete="list"
+                  [attr.aria-controls]="mentionPopupOpen() ? 'chat-mention-listbox' : null"
+                  [value]="chatMessage()"
+                  [attr.aria-expanded]="mentionPopupOpen()"
+                  [attr.aria-activedescendant]="activeMentionOptionId()"
+                  (input)="onChatInput($event)"
+                  (keydown)="onChatKeydown($event)"
+                  (keyup)="onChatCaretMove($event)"
+                  (click)="onChatCaretMove($event)"
+                  (blur)="onChatBlur()"
+                />
+              </div>
               <button
                 type="button"
                 class="btn btn-primary"

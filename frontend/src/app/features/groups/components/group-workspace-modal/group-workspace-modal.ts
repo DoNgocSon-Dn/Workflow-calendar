@@ -1,12 +1,14 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   computed,
   effect,
   inject,
   output,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { AuthStore } from '../../../../core/auth/auth-store';
@@ -31,8 +33,19 @@ import {
   GroupMember,
   GroupMessage,
   GroupMessageAttachment,
+  GroupMessageMention,
   GroupTask,
 } from '../../models/group.models';
+import { MentionOption, MentionPopup } from '../mention-popup/mention-popup';
+import {
+  ActiveMentionQuery,
+  MENTION_ALL_LABEL,
+  MessageSegment,
+  findActiveMention,
+  insertMention,
+  normalizeForMentionSearch,
+  splitMessageSegments,
+} from '../../utils/mention.util';
 
 type WorkspaceTab = 'members' | 'calendar' | 'tasks' | 'chat';
 
@@ -41,7 +54,7 @@ type WorkspaceTab = 'members' | 'calendar' | 'tasks' | 'chat';
   templateUrl: './group-workspace-modal.html',
   styleUrl: './group-workspace-modal.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, Icon],
+  imports: [DatePipe, Icon, MentionPopup],
 })
 export class GroupWorkspaceModal {
   protected readonly store = inject(GroupStore);
@@ -171,6 +184,7 @@ export class GroupWorkspaceModal {
   }
 
   // Chat form
+  protected readonly chatInput = viewChild<ElementRef<HTMLInputElement>>('chatInput');
   protected readonly chatMessage = signal('');
   protected readonly sendingChat = signal(false);
   protected readonly uploadingAttachment = signal(false);
@@ -593,20 +607,30 @@ export class GroupWorkspaceModal {
   ];
 
   senderColor(msg: GroupMessage): string {
+    return this.colorForUserId(msg.senderId);
+  }
+
+  /** Tách khỏi `senderColor` để danh sách gợi ý mention (chỉ có userId, chưa
+   *  có tin nhắn nào) tô cùng một màu với avatar trong khung chat. */
+  private colorForUserId(userId: string): string {
     let hash = 0;
-    for (let i = 0; i < msg.senderId.length; i++) {
-      hash = (hash * 31 + msg.senderId.charCodeAt(i)) | 0;
+    for (let i = 0; i < userId.length; i++) {
+      hash = (hash * 31 + userId.charCodeAt(i)) | 0;
     }
     const index = Math.abs(hash) % GroupWorkspaceModal.SENDER_COLOR_PALETTE.length;
     return GroupWorkspaceModal.SENDER_COLOR_PALETTE[index];
   }
 
+  /** Tin nhắn lạc quan chưa có id thật trên server nên không sửa/xoá được —
+   *  gọi API với id tạm chỉ nhận về lỗi "message not found". Nút chỉ hiện lại
+   *  sau khi server xác nhận (thường là trong tích tắc). */
   canEditMessage(msg: GroupMessage): boolean {
+    if (msg.pending) return false;
     return !msg.deletedAt && msg.senderId === this.currentUserId();
   }
 
   canDeleteMessage(msg: GroupMessage): boolean {
-    if (msg.deletedAt) return false;
+    if (msg.pending || msg.deletedAt) return false;
     return msg.senderId === this.currentUserId() || this.canModerateChat();
   }
 
@@ -646,29 +670,301 @@ export class GroupWorkspaceModal {
     }
   }
 
-  async sendChat(): Promise<void> {
+  // ---------------------------------------------------------------------
+  // Nhắc tên (@mention)
+  // ---------------------------------------------------------------------
+
+  /** Mention đang gõ dở tại vị trí con trỏ. null = popup đóng. */
+  protected readonly mentionQuery = signal<ActiveMentionQuery | null>(null);
+  /** Dòng đang được bàn phím trỏ tới trong popup. */
+  protected readonly mentionActiveIndex = signal(0);
+  /** Những mention người dùng đã chọn cho tin nhắn đang soạn. Giữ riêng thay
+   *  vì dò lại chuỗi lúc gửi: chỉ ở đây mới biết "@Quốc Cường" ứng với userId
+   *  nào — hai thành viên trùng tên thì dò chuỗi chịu thua. */
+  private readonly selectedMentions = signal<GroupMessageMention[]>([]);
+
+  protected readonly mentionPopupOpen = computed(() => this.mentionQuery() !== null);
+
+  /** Dòng đang chọn, báo cho trình đọc màn hình qua aria-activedescendant —
+   *  focus vẫn nằm trong ô nhập nên không có cách nào khác để nó biết mũi tên
+   *  lên/xuống vừa đổi lựa chọn. */
+  protected readonly activeMentionOptionId = computed(() => {
+    if (!this.mentionPopupOpen() || this.mentionOptions().length === 0) return null;
+    return `chat-mention-listbox-option-${this.mentionActiveIndex()}`;
+  });
+
+  /**
+   * Danh sách gợi ý: @All luôn đứng đầu, rồi tới thành viên nhóm.
+   *
+   * Bỏ chính mình khỏi danh sách — không ai nhắc tên mình, và backend cũng
+   * lọc bỏ mention tự trỏ nên để lại chỉ tạo ra một lựa chọn không có tác dụng.
+   */
+  protected readonly mentionOptions = computed<MentionOption[]>(() => {
+    const active = this.mentionQuery();
+    if (!active) return [];
+
+    const query = normalizeForMentionSearch(active.query);
+    const myId = this.currentUserId();
+
+    const members: MentionOption[] = this.store
+      .members()
+      .filter((m) => m.userId !== myId)
+      .map((m) => {
+        const label = this.memberDisplayName(m);
+        return {
+          kind: 'user' as const,
+          label,
+          userId: m.userId,
+          initial: (label[0] ?? 'U').toUpperCase(),
+          color: this.colorForUserId(m.userId),
+        };
+      })
+      .filter((o) => !query || normalizeForMentionSearch(o.label).includes(query));
+
+    // @All khớp cả từ khoá tiếng Anh lẫn phần mô tả tiếng Việt, nên gõ "@ca"
+    // hay "@all" đều ra.
+    const allHaystack = normalizeForMentionSearch(MENTION_ALL_LABEL + ' báo cho cả nhóm');
+    const showAll = !query || allHaystack.includes(query);
+    const all: MentionOption[] = showAll
+      ? [{ kind: 'all', label: MENTION_ALL_LABEL, initial: '@', color: '' }]
+      : [];
+
+    return [...all, ...members];
+  });
+
+  /** Đọc lại vị trí con trỏ để biết còn đang gõ trong một mention hay không.
+   *  Gọi sau MỌI thao tác đổi nội dung hoặc đổi vị trí con trỏ — đó cũng chính
+   *  là cách popup tự đóng khi người dùng xoá dấu @ hoặc click sang chỗ khác. */
+  private syncMentionQuery(el: HTMLInputElement): void {
+    const caret = el.selectionStart ?? el.value.length;
+    this.mentionQuery.set(findActiveMention(el.value, caret));
+    this.mentionActiveIndex.set(0);
+  }
+
+  protected onChatInput(event: Event): void {
+    const el = event.target as HTMLInputElement;
+    this.chatMessage.set(el.value);
+    this.syncMentionQuery(el);
+  }
+
+  /** Con trỏ di chuyển bằng chuột hoặc phím mũi tên trái/phải/Home/End —
+   *  rời khỏi vùng mention thì popup phải đóng theo. */
+  protected onChatCaretMove(event: Event): void {
+    if (event instanceof KeyboardEvent && this.mentionPopupOpen()) {
+      // Các phím dành cho popup không phải là di chuyển con trỏ: xử lý xong ở
+      // keydown rồi, đọc lại ở đây sẽ đặt lại dòng đang chọn về đầu danh sách.
+      const handled = ['ArrowUp', 'ArrowDown', 'Enter', 'Escape', 'Tab'];
+      if (handled.includes(event.key)) return;
+    }
+    this.syncMentionQuery(event.target as HTMLInputElement);
+  }
+
+  protected closeMentionPopup(): void {
+    this.mentionQuery.set(null);
+    this.mentionActiveIndex.set(0);
+  }
+
+  private moveMentionSelection(delta: number): void {
+    const count = this.mentionOptions().length;
+    if (count === 0) return;
+    // Vòng lại hai đầu để giữ ArrowDown bấm liên tục không bị "kẹt" ở cuối.
+    this.mentionActiveIndex.update((i) => (i + delta + count) % count);
+  }
+
+  /**
+   * Chèn mention vào đúng vị trí con trỏ.
+   *
+   * Chỉ đoạn @... đang gõ dở bị thay; phần chữ trước và sau giữ nguyên. Sau
+   * đó con trỏ được đặt ngay sau mention để người dùng gõ tiếp mà không phải
+   * click lại vào ô nhập.
+   */
+  protected selectMention(option: MentionOption): void {
+    const active = this.mentionQuery();
+    const el = this.chatInput()?.nativeElement;
+    if (!active || !el) return;
+
+    const result = insertMention(el.value, active, option.label);
+
+    this.chatMessage.set(result.text);
+    // Ghi thẳng vào DOM rồi mới đặt con trỏ: chờ Angular đồng bộ [value] xong
+    // mới setSelectionRange thì con trỏ nhảy về cuối trong một khung hình.
+    el.value = result.text;
+    el.focus();
+    el.setSelectionRange(result.caret, result.caret);
+
+    this.selectedMentions.update((list) => {
+      const mention: GroupMessageMention =
+        option.kind === 'all'
+          ? { type: 'all', label: option.label }
+          : { type: 'user', userId: option.userId, label: option.label };
+
+      const duplicate = list.some(
+        (m) => m.type === mention.type && m.userId === mention.userId,
+      );
+      return duplicate ? list : [...list, mention];
+    });
+
+    this.closeMentionPopup();
+  }
+
+  /**
+   * Điều phối bàn phím trong ô nhập chat.
+   *
+   * Hai luật quan trọng:
+   *   - Popup mention đang mở và có gợi ý thì Enter CHỈ chèn mention, không gửi.
+   *   - Ngoài ra Enter gửi ngay, không qua bất kỳ độ trễ nào.
+   */
+  protected onChatKeydown(event: KeyboardEvent): void {
+    // Bộ gõ tiếng Việt đang ghép chữ: Enter lúc này là "chốt chữ vừa gõ" của
+    // IME, không phải lệnh gửi. Gửi ở đây sẽ cắt mất chữ cuối cùng.
+    if (event.isComposing || event.keyCode === 229) return;
+
+    if (event.key === 'Escape' && this.mentionPopupOpen()) {
+      event.preventDefault();
+      this.closeMentionPopup();
+      return;
+    }
+
+    const options = this.mentionOptions();
+    if (this.mentionPopupOpen() && options.length > 0) {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        this.moveMentionSelection(1);
+        return;
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        this.moveMentionSelection(-1);
+        return;
+      }
+      if (event.key === 'Enter' || event.key === 'Tab') {
+        event.preventDefault();
+        this.selectMention(options[this.mentionActiveIndex()]);
+        return;
+      }
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.closeMentionPopup();
+      this.sendChat();
+    }
+  }
+
+  /** Click ra ngoài ô nhập thì đóng popup. Popup tự chặn mousedown nên click
+   *  vào chính nó KHÔNG kích hoạt blur — chọn bằng chuột vẫn chạy bình thường. */
+  protected onChatBlur(): void {
+    this.closeMentionPopup();
+  }
+
+  /**
+   * Lọc lại mention đã chọn theo nội dung sắp gửi.
+   *
+   * Người dùng có thể chọn "@Quốc Cường" rồi xoá đi bằng backspace — nếu vẫn
+   * gửi metadata đó lên thì người kia nhận thông báo về một tin nhắn không hề
+   * nhắc tới họ.
+   */
+  private resolveMentions(text: string): GroupMessageMention[] {
+    const selected = this.selectedMentions();
+    if (selected.length === 0) return [];
+
+    const present = new Set(
+      splitMessageSegments(text, selected)
+        .filter((s) => s.mention)
+        .map((s) => s.mention!.type + ':' + (s.mention!.userId ?? '')),
+    );
+
+    return selected.filter((m) => present.has(m.type + ':' + (m.userId ?? '')));
+  }
+
+  // ---------------------------------------------------------------------
+  // Gửi tin nhắn
+  // ---------------------------------------------------------------------
+
+  /**
+   * Gửi tin nhắn.
+   *
+   * KHÔNG async: mọi thứ người dùng nhìn thấy — ô nhập trống đi, tin nhắn hiện
+   * lên — xảy ra ngay trong lượt xử lý phím Enter này. Phần gọi mạng chạy nền
+   * ở deliverChat, và GroupStore.sendMessage đã vẽ tin nhắn lạc quan trước
+   * await đầu tiên nên không có khoảnh khắc nào màn hình đứng chờ server.
+   */
+  sendChat(): void {
     const group = this.store.activeGroup();
     const text = this.chatMessage().trim();
     const file = this.attachmentFile();
-    if (!group || (!text && !file) || this.sendingChat()) return;
+    if (!group || (!text && !file)) return;
+    // Chỉ chặn khi đang tải tệp lên — gửi chữ thì bấm Enter liên tục bao nhiêu
+    // lần cũng được, mỗi lần là một tin nhắn riêng.
+    if (file && this.sendingChat()) return;
 
-    this.sendingChat.set(true);
+    const mentions = this.resolveMentions(text);
+
+    this.chatMessage.set('');
+    this.selectedMentions.set([]);
+    this.closeMentionPopup();
     this.attachmentError.set(null);
+    this.attachmentFile.set(null);
+
+    void this.deliverChat(group.id, text, mentions, file);
+  }
+
+  /** Phần chạy nền của sendChat. Hỏng thì trả nội dung về ô nhập để người
+   *  dùng gửi lại — trừ khi họ đã kịp gõ nội dung mới, lúc đó ghi đè lên sẽ
+   *  xoá mất thứ họ đang viết. */
+  private async deliverChat(
+    groupId: string,
+    text: string,
+    mentions: GroupMessageMention[],
+    file: File | null,
+  ): Promise<void> {
     try {
       let attachment: GroupMessageAttachment | undefined;
       if (file) {
         this.uploadingAttachment.set(true);
-        attachment = await this.store.uploadAttachment(group.id, file);
+        this.sendingChat.set(true);
+        attachment = await this.store.uploadAttachment(groupId, file);
       }
-      await this.store.sendMessage(group.id, text, attachment);
-      this.chatMessage.set('');
-      this.attachmentFile.set(null);
+      await this.store.sendMessage(groupId, text, attachment, mentions);
     } catch (err: any) {
-      this.attachmentError.set(err?.error?.message || err?.message || this.i18n.t('group.sendMessageError'));
+      this.attachmentError.set(
+        err?.error?.message || err?.message || this.i18n.t('group.sendMessageError'),
+      );
+      if (!this.chatMessage().trim()) {
+        this.chatMessage.set(text);
+        this.selectedMentions.set(mentions);
+      }
     } finally {
       this.uploadingAttachment.set(false);
       this.sendingChat.set(false);
     }
+  }
+
+  // ---------------------------------------------------------------------
+  // Hiển thị mention trong tin nhắn đã gửi
+  // ---------------------------------------------------------------------
+
+  /** Kết quả cắt đoạn được nhớ theo ĐỐI TƯỢNG tin nhắn. Template gọi hàm này
+   *  mỗi lần dò lỗi thay đổi, còn tin nhắn thì bất biến (mọi cập nhật đều thay
+   *  bằng đối tượng mới), nên WeakMap vừa tránh tính lại vừa tự dọn rác. */
+  private readonly segmentCache = new WeakMap<GroupMessage, MessageSegment[]>();
+
+  messageSegments(msg: GroupMessage): MessageSegment[] {
+    const cached = this.segmentCache.get(msg);
+    if (cached) return cached;
+
+    const segments = splitMessageSegments(msg.message ?? '', msg.mentions);
+    this.segmentCache.set(msg, segments);
+    return segments;
+  }
+
+  /** Mention trỏ vào chính người đang đọc (kể cả qua @All) được tô đậm hơn —
+   *  đó là thứ họ cần thấy ngay khi lướt qua một khung chat dài. */
+  isMentionForMe(segment: MessageSegment): boolean {
+    const mention = segment.mention;
+    if (!mention) return false;
+    if (mention.type === 'all') return true;
+    return mention.userId === this.currentUserId();
   }
 
   close(): void {

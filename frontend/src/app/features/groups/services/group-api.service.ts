@@ -9,6 +9,7 @@ import {
   GroupMember,
   GroupMessage,
   GroupMessageAttachment,
+  GroupMessageMention,
   GroupTask,
   GroupUpdate,
 } from '../models/group.models';
@@ -207,12 +208,17 @@ export class GroupApiService {
     groupId: string,
     message: string,
     attachment?: GroupMessageAttachment,
+    mentions?: readonly GroupMessageMention[],
   ): Promise<GroupMessage> {
     return firstValueFrom(
       this.http.post<GroupMessage>(
         `${environment.apiUrl}/groups/${groupId}/messages`,
         {
           message,
+          // Bỏ hẳn trường khi không có mention: backend bật
+          // forbidNonWhitelisted nên mảng rỗng vẫn hợp lệ, nhưng gửi undefined
+          // giữ payload đúng bằng những gì thực sự có.
+          mentions: mentions?.length ? mentions : undefined,
           attachmentUrl: attachment?.url,
           attachmentName: attachment?.name,
           attachmentType: attachment?.type,

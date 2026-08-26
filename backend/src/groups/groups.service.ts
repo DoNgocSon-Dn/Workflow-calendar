@@ -15,7 +15,10 @@ import { InviteGroupMemberDto } from './dto/invite-group-member.dto';
 import { UpdateGroupMemberRoleDto } from './dto/update-group-member-role.dto';
 import { CreateGroupTaskDto } from './dto/create-group-task.dto';
 import { UpdateGroupTaskDto } from './dto/update-group-task.dto';
-import { SendGroupMessageDto } from './dto/send-group-message.dto';
+import {
+  MessageMentionDto,
+  SendGroupMessageDto,
+} from './dto/send-group-message.dto';
 import { UpdateGroupMessageDto } from './dto/update-group-message.dto';
 import { RespondGroupInviteDto } from './dto/respond-group-invite.dto';
 import {
@@ -99,11 +102,20 @@ export interface GroupTaskDto {
   createdAt: string;
 }
 
+/** Mention đã được backend xác thực: `user` luôn trỏ tới một thành viên có
+ *  thật của nhóm, `all` là @All. */
+export interface MessageMention {
+  type: 'user' | 'all';
+  userId?: string;
+  label: string;
+}
+
 export interface GroupMessageDto {
   id: string;
   groupId: string;
   senderId: string;
   message: string | null;
+  mentions?: MessageMention[];
   createdAt: string;
   editedAt?: string;
   deletedAt?: string;
@@ -282,6 +294,7 @@ export class GroupsService {
       groupId: row.group_id,
       senderId: row.sender_id,
       message: row.message,
+      mentions: this.normalizeMentionRow(row.mentions),
       createdAt: row.created_at,
       editedAt: row.edited_at ?? undefined,
       deletedAt: row.deleted_at ?? undefined,
@@ -292,6 +305,71 @@ export class GroupsService {
       senderEmail: row.sender_email,
       senderName: row.sender_name ?? undefined,
     };
+  }
+
+  /**
+   * Chuẩn hoá cột `mentions` đọc từ DB.
+   *
+   * Cột là jsonb tự do nên phải lọc lại: tin nhắn cũ (trước migration 20) có
+   * giá trị null, và không có gì bảo đảm hàng cũ đúng hình dạng. Trả về
+   * undefined thay vì mảng rỗng để payload realtime khỏi mang theo trường vô
+   * nghĩa.
+   */
+  private normalizeMentionRow(value: unknown): MessageMention[] | undefined {
+    if (!Array.isArray(value)) return undefined;
+
+    const list = value
+      .filter((m): m is Record<string, unknown> => !!m && typeof m === 'object')
+      .filter((m) => m['type'] === 'user' || m['type'] === 'all')
+      .map((m) => ({
+        type: m['type'] as 'user' | 'all',
+        userId: typeof m['userId'] === 'string' ? m['userId'] : undefined,
+        label: typeof m['label'] === 'string' ? m['label'] : '',
+      }))
+      .filter((m) => (m.type === 'all' ? true : !!m.userId));
+
+    return list.length > 0 ? list : undefined;
+  }
+
+  /**
+   * Lọc mention do client gửi lên trước khi lưu.
+   *
+   * Client là nguồn KHÔNG tin được: nó có thể gửi userId của người ngoài nhóm
+   * (hoặc bịa ra) và biến mention thành đường bắn thông báo tới người lạ. Chỉ
+   * giữ lại userId thật sự là thành viên của nhóm này, bỏ trùng, và bỏ luôn
+   * mention trỏ tới chính người gửi (không ai tự nhắc mình).
+   */
+  private async sanitizeMentions(
+    supabase: SupabaseClient,
+    groupId: string,
+    senderId: string,
+    mentions: MessageMentionDto[] | undefined,
+  ): Promise<MessageMention[] | undefined> {
+    if (!mentions?.length) return undefined;
+
+    const memberIds = new Set(await this.listMemberUserIds(supabase, groupId));
+    const seen = new Set<string>();
+    const result: MessageMention[] = [];
+
+    for (const m of mentions) {
+      const label = m.label?.trim();
+      if (!label) continue;
+
+      if (m.type === 'all') {
+        if (seen.has('all')) continue;
+        seen.add('all');
+        result.push({ type: 'all', label });
+        continue;
+      }
+
+      if (!m.userId || m.userId === senderId) continue;
+      if (!memberIds.has(m.userId)) continue;
+      if (seen.has(m.userId)) continue;
+      seen.add(m.userId);
+      result.push({ type: 'user', userId: m.userId, label });
+    }
+
+    return result.length > 0 ? result : undefined;
   }
 
   private mapMessageRpcError(
@@ -1228,12 +1306,20 @@ export class GroupsService {
       (r) => r.user_id,
     );
 
+    const mentions = await this.sanitizeMentions(
+      supabase,
+      groupId,
+      user.id,
+      dto.mentions,
+    );
+
     const { data, error } = await supabase
       .from('group_messages')
       .insert({
         group_id: groupId,
         sender_id: user.id,
         message: text || null,
+        mentions: mentions ?? null,
         attachment_url: dto.attachmentUrl || null,
         attachment_name: dto.attachmentName || null,
         attachment_type: dto.attachmentType || null,
