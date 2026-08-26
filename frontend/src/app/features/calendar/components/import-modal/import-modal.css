@@ -194,6 +194,74 @@
   min-width: 220px;
 }
 
+/* ===================================================================
+   Hover / focus cho hai cột sửa được: Tiêu đề và Địa điểm
+
+   CỐ Ý không gộp vào .table-input: cột ngày giờ và ô chọn lịch dùng chung
+   luật đó nhưng không nằm trong phạm vi yêu cầu.
+   =================================================================== */
+
+.title-input,
+.location-input {
+  /* Chỉ những thuộc tính không gây tính lại layout. Ngắn để ô không có cảm
+     giác ì khi lia chuột nhanh qua nhiều hàng. */
+  transition:
+    border-color 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.16s ease;
+}
+
+/* Kích hoạt từ Ô CHỨA chứ không từ chính input.
+
+   Input nhích lên 1px mà lại là thứ nghe hover thì sinh vòng lặp nhấp nháy:
+   con trỏ nằm sát mép dưới, ô nhích lên khiến con trỏ rơi ra ngoài ->
+   mouseleave -> ô tụt về -> mouseenter -> lặp vô tận. Ô <td> không hề di
+   chuyển nên vòng lặp đó không thể xảy ra, và vùng bắt hover cũng rộng rãi
+   hơn cho người dùng. */
+.preview-table td:hover > .title-input:not(:focus),
+.preview-table td:hover > .location-input:not(:focus) {
+  border-color: color-mix(in srgb, var(--holiday-accent) 55%, var(--color-border-strong));
+  background: color-mix(in srgb, var(--color-surface) 92%, var(--holiday-accent));
+  /* Nổi rất nhẹ — đủ để mắt nhận ra, không thành vệt sáng chói trên nền tối. */
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--holiday-accent) 18%, transparent);
+  transform: translateY(-1px);
+}
+
+/* Focus phải rõ hơn hover: viền ăn hẳn màu accent và có thêm vòng sáng.
+
+   Giữ nguyên translateY của hover để lúc bấm chuột vào ô không bị giật 1px.
+   Vòng sáng vẽ bằng box-shadow thay cho outline mặc định — outline không bo
+   theo border-radius trên mọi trình duyệt, và để cả hai cùng lúc thì thành
+   hai đường viền chồng nhau. Vòng này dày và tương phản đủ để thay thế. */
+.title-input:focus,
+.location-input:focus {
+  outline: none;
+  border-color: var(--holiday-accent);
+  background: var(--color-surface);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--holiday-accent) 32%, transparent),
+    0 2px 6px color-mix(in srgb, var(--holiday-accent) 20%, transparent);
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title-input,
+  .location-input {
+    transition-duration: 0.01s;
+  }
+
+  /* Bỏ luôn phần dịch chuyển — người tắt hiệu ứng vẫn thấy đủ tín hiệu qua
+     màu viền, nền và vòng sáng. */
+  .preview-table td:hover > .title-input:not(:focus),
+  .preview-table td:hover > .location-input:not(:focus),
+  .title-input:focus,
+  .location-input:focus {
+    transform: none;
+  }
+}
+
 .preview-table-container {
   /* Trang riêng có cả chiều cao viewport để dùng — cho bảng giãn theo thay vì
      ràng buộc 280px cố định như hồi còn là modal nhỏ. */
