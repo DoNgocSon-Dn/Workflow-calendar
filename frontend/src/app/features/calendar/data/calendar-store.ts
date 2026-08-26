@@ -1485,7 +1485,16 @@ export type AiChatResult =
   | { intent: 'create_event'; event: EventApiDto }
   | { intent: 'create_todos'; goal: string; todos: readonly AiSuggestedTodo[] }
   | { intent: 'chat'; reply: string }
-  | { intent: 'unclear'; title?: string; message: string };
+  | {
+      intent: 'unclear';
+      title?: string;
+      message: string;
+      /** Còn thiếu gì để tạo được sự kiện — dùng để hỏi đúng câu. */
+      missingFields?: readonly ('date' | 'time' | 'title')[];
+      /** Giờ AI đã hiểu được dù chưa đủ ngày, "HH:mm". */
+      startTime?: string;
+      endTime?: string;
+    };
 
 /**
  * Một sự kiện AI đọc được từ file đính kèm.

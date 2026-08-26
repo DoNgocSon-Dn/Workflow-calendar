@@ -110,7 +110,17 @@ export class AiController {
       return { intent: 'chat' as const, reply: parsed.reply };
     }
 
-    return { intent: 'unclear' as const, title: parsed.title, message: dto.message };
+    // Chuyển tiếp NGUYÊN VẸN phần đã hiểu được: frontend cần biết còn thiếu
+    // gì để hỏi đúng câu, và biết giờ nào đã nắm được để khỏi bắt người dùng
+    // gõ lại từ đầu.
+    return {
+      intent: 'unclear' as const,
+      title: parsed.title,
+      message: dto.message,
+      ...(parsed.missingFields?.length ? { missingFields: parsed.missingFields } : {}),
+      ...(parsed.startTime ? { startTime: parsed.startTime } : {}),
+      ...(parsed.endTime ? { endTime: parsed.endTime } : {}),
+    };
   }
 
   /**

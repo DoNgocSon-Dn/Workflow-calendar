@@ -710,12 +710,28 @@ export class FloatingHub {
       } else if (result.intent === 'chat') {
         this.pushMessage('assistant', result.reply);
       } else {
-        this.pushMessage(
-          'assistant',
-          'Mình chưa chắc chắn về thời gian trong câu này — hãy mở form để nhập tay nhé.',
-          true,
-          result.title,
-        );
+        // Thiếu ngày là tình huống RIÊNG: mọi thứ khác đã hiểu rồi, chỉ cần
+        // người dùng nói một chữ "ngày mai" là xong. Đẩy họ sang form nhập
+        // tay lúc này là bắt gõ lại toàn bộ thứ vừa nói.
+        const missing = result.missingFields ?? [];
+        if (missing.includes('date') && !missing.includes('title')) {
+          const what = result.title ? `"${result.title}"` : 'việc này';
+          const when = result.startTime
+            ? ` (${result.startTime}${result.endTime ? ' – ' + result.endTime : ''})`
+            : '';
+          this.pushMessage(
+            'assistant',
+            `Bạn muốn xếp ${what}${when} vào ngày nào? Nhắn giúp mình ngày cụ thể ` +
+              '(vd "ngày mai", "thứ 2 tuần sau", "30/8") nhé.',
+          );
+        } else {
+          this.pushMessage(
+            'assistant',
+            'Mình chưa chắc chắn về thời gian trong câu này — hãy mở form để nhập tay nhé.',
+            true,
+            result.title,
+          );
+        }
       }
     } catch (err) {
       this.aiError.set(extractErrorMessage(err));

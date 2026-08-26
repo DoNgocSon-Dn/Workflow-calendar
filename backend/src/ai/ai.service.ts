@@ -11,6 +11,10 @@ export interface AiSuggestedTodo {
   due_at?: string;
 }
 
+/** Trường bắt buộc mà câu nói KHÔNG cung cấp. Có phần tử nghĩa là chưa đủ
+ *  dữ kiện để tạo sự kiện — phải hỏi lại người dùng, không được điền hộ. */
+export type AiMissingField = 'date' | 'time' | 'title';
+
 export interface AiParsedIntent {
   intent: 'create_event' | 'create_todos' | 'chat' | 'unclear';
   title?: string;
@@ -27,6 +31,12 @@ export interface AiParsedIntent {
   todos?: AiSuggestedTodo[];
   /** Mục tiêu tóm tắt, dùng làm tiêu đề cho bảng xem trước. */
   goal?: string;
+  /** Chỉ có ở "unclear": còn thiếu gì để tạo được sự kiện. */
+  missingFields?: AiMissingField[];
+  /** Giờ đã hiểu được dù chưa đủ ngày — để hỏi lại mà không bắt người
+   *  dùng gõ lại từ đầu. "HH:mm" theo giờ Việt Nam. */
+  startTime?: string;
+  endTime?: string;
 }
 
 /**
@@ -97,6 +107,18 @@ export class AiService {
           if (geminiResult.intent === 'chat' && geminiResult.reply) return geminiResult;
           if (geminiResult.intent === 'create_todos' && geminiResult.todos?.length) return geminiResult;
           if (geminiResult.intent === 'unclear') return geminiResult;
+
+          // create_event mà KHÔNG có start_at nghĩa là model đã làm đúng: nó
+          // hiểu người dùng muốn tạo lịch nhưng từ chối bịa ngày giờ. Rơi
+          // xuống bộ phân tích cục bộ ở đây là phạt chính hành vi đúng đó —
+          // nó sẽ tự đắp một mốc thời gian vào. Hỏi lại người dùng thay vì vậy.
+          if (geminiResult.intent === 'create_event') {
+            return {
+              intent: 'unclear',
+              title: geminiResult.title,
+              missingFields: ['date'],
+            };
+          }
         }
       } catch (err: any) {
         this.logger.warn(`Gemini AI parsing failed, falling back to local NLP: ${err.message}`);
@@ -329,7 +351,7 @@ Nhiệm vụ: Đọc câu nói MỚI NHẤT của người dùng, xác định �
   "intent": "create_event",
   "title": "tiêu đề sự kiện — CHỈ nội dung hoạt động chính, ngắn gọn tự nhiên. Loại bỏ hoàn toàn các từ/cụm mang tính yêu cầu-mệnh lệnh (vd \"tạo cho tôi\", \"giúp tôi\", \"nhắc tôi\", \"lên lịch\", \"thêm lịch\") và loại bỏ mọi cụm chỉ ngày/giờ đã được tách sang start_at/end_at (vd \"sáng mai\", \"9h\", \"thứ 2 tuần sau\") — không lặp lại chúng trong title.",
   "start_at": "ISO 8601 string có offset múi giờ +07:00 hoặc Z",
-  "end_at": "ISO 8601 string (mặc định nếu không nói rõ thời lượng thì sau start_at 1 giờ)",
+  "end_at": "ISO 8601 string — giờ kết thúc NGƯỜI DÙNG nói ra (vd \"từ 9h-17h\" thì đây là 17:00). Chỉ khi họ không nói giờ kết thúc lẫn thời lượng mới lấy sau start_at 1 giờ",
   "location": "địa điểm nếu có, hoặc rỗng",
   "description": "mô tả chi tiết nếu có, hoặc rỗng",
   "allDay": false,
@@ -364,8 +386,14 @@ QUY TẮC BẮT BUỘC cho "create_todos":
 - Sắp xếp theo trình tự làm trước – làm sau.
 - Từ 3 đến 8 việc. Nhiều hơn sẽ quá tải người đọc.
 
-4) Câu nói có vẻ muốn tạo sự kiện nhưng thiếu thông tin ngày/giờ rõ ràng để suy luận:
-{ "intent": "unclear", "title": "tiêu đề đoán được (nếu có)" }
+4) Câu nói muốn tạo sự kiện nhưng THIẾU ngày hoặc giờ, và KHÔNG suy ra được từ lịch sử hội thoại ở trên:
+{ "intent": "unclear", "title": "tiêu đề đoán được", "missingFields": ["date"], "startTime": "HH:mm nếu đã hiểu được", "endTime": "HH:mm nếu đã hiểu được" }
+
+QUY TẮC BẮT BUỘC cho thời gian (áp dụng cho cả "create_event" và "unclear"):
+- KHOẢNG thời gian phải giữ NGUYÊN cả hai đầu. "từ 9h-17h", "9h đến 17h", "8h tới 10h30", "9 giờ đến 11 giờ", "1h chiều đến 5h chiều" — end_at lấy đúng giờ người dùng nói, KHÔNG cắt còn 1 tiếng.
+- Chỉ dùng mặc định 1 giờ khi người dùng THỰC SỰ không nói giờ kết thúc và cũng không nói thời lượng.
+- Người dùng KHÔNG nói ngày (và lịch sử hội thoại cũng không có) thì TRẢ VỀ "unclear" với missingFields ["date"] — TUYỆT ĐỐI không lấy hôm nay hay ngày bất kỳ. Điền "startTime"/"endTime" để không bắt người dùng gõ lại.
+- Người dùng ĐÃ nói ngày ở tin nhắn trước rồi tin nhắn này chỉ nói "thêm vào lịch" thì LẤY ngày đó từ lịch sử hội thoại, không hỏi lại.
 
 Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự kiện — mọi câu hỏi/trò chuyện khác đều dùng "chat".`;
 
@@ -424,6 +452,41 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự k
    * Bộ phân tích cú pháp tiếng Việt thông minh (Fallback NLP)
    * Giúp ứng dụng hoạt động ngay cả khi chưa cấu hình API key hoặc mất mạng
    */
+  /**
+   * Đọc MỘT mốc giờ tiếng Việt bắt đầu từ vị trí `from` trong câu.
+   *
+   * Gom về một chỗ vì cùng một cách viết phải hiểu như nhau dù nó đứng một
+   * mình ("lúc 9h") hay nằm trong một khoảng ("từ 9h đến 17h").
+   *
+   * Nhận: 9h · 9 giờ · 9:30 · 9h30 · 9 giờ 30 · 9 rưỡi · 9h rưỡi,
+   * kèm buổi tuỳ chọn: sáng · trưa · chiều · tối · am · pm.
+   */
+  private parseClockAt(
+    lower: string,
+    from: number,
+  ): { hour: number; minute: number; index: number; length: number } | null {
+    const re =
+      /(\d{1,2})\s*(?:h|:|gi\u1EDD|(?=\s*r\u01B0\u1EE1i))\s*(?:(\d{1,2})|(r\u01B0\u1EE1i))?\s*(s\u00E1ng|tr\u01B0a|chi\u1EC1u|t\u1ED1i|am|pm)?/gi;
+    re.lastIndex = from;
+    const m = re.exec(lower);
+    if (!m) return null;
+
+    let hour = parseInt(m[1], 10);
+    // "9 rưỡi" = 9 giờ 30. Không có nhánh này thì cụm đó không khớp gì cả và
+    // regex trôi xuống bắt nhầm mốc giờ đứng SAU nó.
+    const minute = m[3] ? 30 : m[2] ? parseInt(m[2], 10) : 0;
+    if (hour > 23 || minute > 59) return null;
+
+    const period = m[4] ? m[4].toLowerCase() : '';
+    if (period === 'chi\u1EC1u' || period === 't\u1ED1i' || period === 'pm') {
+      if (hour < 12) hour += 12;
+    } else if (period === 's\u00E1ng' || period === 'am') {
+      if (hour === 12) hour = 0;
+    }
+
+    return { hour, minute, index: m.index, length: m[0].length };
+  }
+
   private parseLocalVietnameseEvent(text: string): AiParsedIntent {
     const raw = text.trim();
     const lower = raw.toLowerCase();
@@ -491,37 +554,63 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự k
       dateMatched = true;
     }
 
-    // 2. Phân tích giờ (ví dụ: "9h", "9:30", "15 giờ", "8h tối", "3h chiều", "9h sáng")
-    let hour = 9; // mặc định 9h sáng
+    // 2. Phân tích giờ.
+    //
+    // Ưu tiên KHOẢNG trước mốc đơn: "từ 9h-17h" phải ra 9:00→17:00. Bản cũ
+    // chỉ bắt một mốc rồi cộng cứng 1 tiếng, nên mọi câu có khoảng đều bị cắt
+    // còn 60 phút và giờ kết thúc người dùng nói ra bị vứt đi.
+    let hour = 9;
     let minute = 0;
     let timeMatched = false;
+    let endHour: number | null = null;
+    let endMinute = 0;
+    /** Đoạn text của cả khoảng, để bóc khỏi tiêu đề sau này. */
+    let rangeSpan: string | null = null;
+    let singleTimeText: string | null = null;
 
-    const timeMatch = lower.match(/(\d{1,2})(?:h|:| giờ\s*)(\d{1,2})?\s*(sáng|trưa|chiều|tối|am|pm)?/i);
-    if (timeMatch) {
-      hour = parseInt(timeMatch[1], 10);
-      minute = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
-      const period = timeMatch[3]?.toLowerCase();
+    const RANGE_JOIN = /^\s*(?:-|–|—|→|->|đến|tới|cho đến|cho tới)\s*/i;
 
-      if (period === 'chiều' || period === 'tối' || period === 'pm') {
-        if (hour < 12) hour += 12;
-      } else if (period === 'sáng' || period === 'am') {
-        if (hour === 12) hour = 0;
-      } else if (period === 'trưa' && hour === 12) {
-        hour = 12;
+    for (let scan = 0; scan < lower.length; ) {
+      const first = this.parseClockAt(lower, scan);
+      if (!first) break;
+
+      const afterFirst = first.index + first.length;
+      const joiner = RANGE_JOIN.exec(lower.slice(afterFirst));
+      if (joiner) {
+        const second = this.parseClockAt(lower, afterFirst + joiner[0].length);
+        // Mốc thứ hai phải nằm NGAY sau từ nối, không phải một con số nào đó
+        // ở cuối câu.
+        if (second && second.index === afterFirst + joiner[0].length) {
+          hour = first.hour;
+          minute = first.minute;
+          endHour = second.hour;
+          endMinute = second.minute;
+          timeMatched = true;
+          rangeSpan = raw.slice(first.index, second.index + second.length);
+          break;
+        }
       }
+
+      // Không phải khoảng: giữ mốc đầu tiên tìm được làm giờ bắt đầu.
+      hour = first.hour;
+      minute = first.minute;
       timeMatched = true;
-    } else if (lower.includes('buổi tối') || lower.includes('tối')) {
-      hour = 20;
-      timeMatched = true;
-    } else if (lower.includes('buổi chiều') || lower.includes('chiều')) {
-      hour = 14;
-      timeMatched = true;
-    } else if (lower.includes('buổi trưa') || lower.includes('trưa')) {
-      hour = 12;
-      timeMatched = true;
-    } else if (lower.includes('buổi sáng') || lower.includes('sáng')) {
-      hour = 8;
-      timeMatched = true;
+      singleTimeText = raw.slice(first.index, first.index + first.length);
+      break;
+    }
+
+    // Buổi trong ngày, chỉ dùng khi câu không nêu mốc giờ nào.
+    let periodOnly: RegExp | null = null;
+    if (!timeMatched) {
+      if (lower.includes('buổi tối') || lower.includes('tối')) {
+        hour = 20; timeMatched = true; periodOnly = /\bbuổi tối\b|\btối\b/gi;
+      } else if (lower.includes('buổi chiều') || lower.includes('chiều')) {
+        hour = 14; timeMatched = true; periodOnly = /\bbuổi chiều\b|\bchiều\b/gi;
+      } else if (lower.includes('buổi trưa') || lower.includes('trưa')) {
+        hour = 12; timeMatched = true; periodOnly = /\bbuổi trưa\b|\btrưa\b/gi;
+      } else if (lower.includes('buổi sáng') || lower.includes('sáng')) {
+        hour = 8; timeMatched = true; periodOnly = /\bbuổi sáng\b|\bsáng\b/gi;
+      }
     }
 
     targetDate.setUTCHours(hour, minute, 0, 0);
@@ -539,7 +628,26 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự k
       }
     }
 
-    const endDate = new Date(targetDate.getTime() + durationMinutes * 60 * 1000);
+    let endDate: Date;
+    if (endHour !== null) {
+      // Giờ kết thúc do NGƯỜI DÙNG nói — tuyệt đối không đụng tới, kể cả khi
+      // khoảng dài 8 tiếng.
+      endDate = new Date(targetDate);
+      endDate.setUTCHours(endHour, endMinute, 0, 0);
+      if (endDate.getTime() <= targetDate.getTime()) {
+        // "9h đến 5h" — người Việt nói giờ chiều theo lối 12 tiếng mà không
+        // kèm "chiều". Đẩy sang buổi chiều nếu nhờ vậy mới thành khoảng hợp lệ.
+        if (endHour < 12) {
+          endDate.setUTCHours(endHour + 12, endMinute, 0, 0);
+        }
+        // Vẫn không hợp lệ thì đây là khoảng qua đêm.
+        if (endDate.getTime() <= targetDate.getTime()) {
+          endDate = new Date(endDate.getTime() + 24 * 60 * 60 * 1000);
+        }
+      }
+    } else {
+      endDate = new Date(targetDate.getTime() + durationMinutes * 60 * 1000);
+    }
 
     // 3. Trích xuất địa điểm + tiêu đề sự kiện: bóc tách khỏi câu gốc từng
     // mảnh đã được nhận diện ở bước ngày/giờ/thời lượng phía trên (dùng lại
@@ -549,7 +657,11 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự k
     let titleSource = raw;
     let location: string | undefined;
 
-    const locationMatch = titleSource.match(/(?:^|\s)(?:ở|tại)\s+(.+)$/i);
+    // Dung truoc moc gio/ngay: mau ".+" tham lam nen "hop o Phong B201 luc 9h"
+    // từng cho ra địa điểm "Phòng B201 lúc 9h".
+    const locationMatch = titleSource.match(
+      /(?:^|\s)(?:ở|tại)\s+(.+?)(?=\s+(?:lúc|vào|từ|ngày|hôm|sáng|trưa|chiều|tối|thứ|\d{1,2}\s*(?:h|:|giờ))\b|$)/i,
+    );
     if (locationMatch) {
       location = locationMatch[1].trim().replace(/[.,!?]+$/, '');
       location = location.charAt(0).toUpperCase() + location.slice(1);
@@ -566,20 +678,23 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự k
       titleSource = titleSource.replace(new RegExp(escapeRegExp(matched), 'i'), ' ');
     };
 
-    // Bóc giờ TRƯỚC ngày: timeMatch có thể "nuốt" luôn từ buổi đứng sau nó
-    // (vd "9h sáng" bắt trọn cả "sáng"), nếu bóc cụm ngày "sáng mai" trước thì
-    // phần "sáng" trong timeMatch sẽ không còn tồn tại để khớp nữa, để sót "9h".
-    if (timeMatch) {
-      stripMatch(timeMatch[0]);
-    } else if (lower.includes('buổi tối') || lower.includes('tối')) {
-      titleSource = titleSource.replace(/\bbuổi tối\b|\btối\b/gi, ' ');
-    } else if (lower.includes('buổi chiều') || lower.includes('chiều')) {
-      titleSource = titleSource.replace(/\bbuổi chiều\b|\bchiều\b/gi, ' ');
-    } else if (lower.includes('buổi trưa') || lower.includes('trưa')) {
-      titleSource = titleSource.replace(/\bbuổi trưa\b|\btrưa\b/gi, ' ');
-    } else if (lower.includes('buổi sáng') || lower.includes('sáng')) {
-      titleSource = titleSource.replace(/\bbuổi sáng\b|\bsáng\b/gi, ' ');
+    // Bóc giờ TRƯỚC ngày: mốc giờ có thể "nuốt" luôn từ buổi đứng sau nó
+    // (vd "9h sáng" bắt trọn cả "sáng"); bóc cụm ngày "sáng mai" trước thì
+    // phần "sáng" đó không còn để khớp nữa và "9h" bị sót lại trong tiêu đề.
+    if (rangeSpan) {
+      // Cả khoảng, kể cả từ nối ở giữa — nếu chỉ bóc hai đầu thì tiêu đề còn
+      // trơ lại "từ ... đến".
+      stripMatch(rangeSpan);
+      titleSource = titleSource.replace(/\btừ\s*$/i, ' ');
+    } else if (singleTimeText) {
+      stripMatch(singleTimeText);
+    } else if (periodOnly) {
+      titleSource = titleSource.replace(periodOnly, ' ');
     }
+
+    // Từ nối còn trơ lại sau khi đã bóc mốc giờ ("... từ  đến ", "-").
+    const CONNECTOR_LEFTOVER =
+      /(^|\s)(từ|đến|tới|cho đến|cho tới|lúc|vào|khoảng)(?=\s|$)/gi;
 
     const DATE_PHRASE_RE =
       /\b(hôm nay|sáng nay|trưa nay|chiều nay|tối nay|ngày mai|sáng mai|trưa mai|chiều mai|tối mai|ngày mốt|ngày kia|mốt|mai)\b/gi;
@@ -589,12 +704,25 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự k
     if (dateSpecificMatch) stripMatch(dateSpecificMatch[0]);
     if (durationMatch) stripMatch(durationMatch[0]);
 
-    titleSource = titleSource.replace(/\b(lúc|vào)\b/gi, ' ').replace(/\bcó lịch\b|\bcó sự kiện\b/gi, ' ');
+    // Chạy hai lượt: bỏ "từ" xong thì "đến" mới lộ ra ở đầu khoảng trắng.
+    titleSource = titleSource.replace(CONNECTOR_LEFTOVER, ' ').replace(CONNECTOR_LEFTOVER, ' ');
+    titleSource = titleSource.replace(/\bcó lịch\b|\bcó sự kiện\b/gi, ' ');
+    // Gạch nối trơ trọi giữa hai khoảng trắng, còn lại từ "9h - 17h".
+    titleSource = titleSource.replace(/(^|\s)[-–—](?=\s|$)/g, ' ');
 
     // Bóc các cụm mệnh lệnh/yêu cầu ở đầu câu — lặp lại vì chúng thường ghép
     // với nhau (vd "Tạo" + "cho tôi" + "lịch" đứng liền nhau).
     const LEADING_FILLERS = [
       /^hãy\s+/i,
+      // "Lên kế hoạch ..." là mệnh lệnh, không phải tên sự kiện. Thiếu mấy
+      // dòng này thì nó chui thẳng vào tiêu đề.
+      /^lên kế hoạch\s+/i,
+      /^lập kế hoạch\s+/i,
+      /^kế hoạch\s+/i,
+      /^sắp xếp\s+/i,
+      /^xếp lịch\s+/i,
+      /^đặt\s+/i,
+      /^lên\s+/i,
       /^làm ơn\s+/i,
       /^giúp tôi\s+/i,
       /^cho tôi\s+/i,
@@ -635,20 +763,39 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự k
     // hoạt động nào (vd "9h sáng mai" — chỉ có giờ, không nói làm gì) thì
     // không tự lấy nguyên câu làm tiêu đề — coi như thiếu thông tin, để
     // người dùng xác nhận lại qua form nhập tay thay vì tạo tiêu đề tuỳ tiện.
+    const clock = (h: number, m: number) =>
+      String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+    const startTime = timeMatched ? clock(hour, minute) : undefined;
+    const endTime =
+      endHour !== null ? clock(endDate.getUTCHours(), endDate.getUTCMinutes()) : undefined;
+
     if (!title || title.length < 2) {
       return {
         intent: 'unclear',
         title: raw,
+        missingFields: ['title'],
+        ...(startTime ? { startTime } : {}),
+        ...(endTime ? { endTime } : {}),
       };
     }
 
     // Viết hoa chữ cái đầu
     title = title.charAt(0).toUpperCase() + title.slice(1);
 
-    if (!dateMatched && !timeMatched) {
+    // Thiếu NGÀY thì dừng lại và hỏi, tuyệt đối không lấy hôm nay làm mặc
+    // định. "Đi học 9h-17h" không có nghĩa là hôm nay — trước đây câu này
+    // lặng lẽ tạo sự kiện cho hôm nay, và nếu 9h đã trôi qua thì lại rơi vào
+    // nhánh "quá khứ" bên dưới, hai đường đều sai theo kiểu khác nhau.
+    if (!dateMatched || !timeMatched) {
+      const missing: AiMissingField[] = [];
+      if (!dateMatched) missing.push('date');
+      if (!timeMatched) missing.push('time');
       return {
         intent: 'unclear',
         title,
+        missingFields: missing,
+        ...(startTime ? { startTime } : {}),
+        ...(endTime ? { endTime } : {}),
       };
     }
 
@@ -659,6 +806,9 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự k
       return {
         intent: 'unclear',
         title,
+        missingFields: ['date'],
+        ...(startTime ? { startTime } : {}),
+        ...(endTime ? { endTime } : {}),
       };
     }
 
