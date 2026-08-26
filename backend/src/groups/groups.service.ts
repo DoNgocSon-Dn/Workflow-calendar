@@ -362,12 +362,26 @@ export class GroupsService {
       );
     }
 
-    // 3. Insert owner into group_members
-    await supabase.from('group_members').insert({
+    // 3. Insert leader into group_members
+    //
+    // Giá trị phải là 'leader'. Migration 15 đã loại 'owner' khỏi ràng buộc
+    // CHECK của cột này, nên ghi chuỗi cũ sẽ bị CSDL từ chối và nhóm vừa tạo
+    // ra không có hàng trưởng nhóm nào.
+    const { error: memberError } = await supabase.from('group_members').insert({
       group_id: groupId,
       user_id: user.id,
-      role: 'owner',
+      role: toDbGroupRole(GroupRole.LEADER),
     });
+
+    // Bắt buộc phải kiểm lỗi ở đây: trước đây kết quả bị bỏ qua, nên khi insert
+    // thất bại thì API vẫn báo tạo nhóm thành công, để lại một nhóm không ai
+    // quản lý được — không xoá được, không mời được, không đổi quyền được.
+    if (memberError) {
+      await supabase.from('groups').delete().eq('id', groupId);
+      throw new InternalServerErrorException(
+        memberError.message || 'Không thể tạo nhóm mới',
+      );
+    }
 
     return {
       id: groupId,

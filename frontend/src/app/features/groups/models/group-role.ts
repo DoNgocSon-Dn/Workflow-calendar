@@ -5,7 +5,7 @@
  * Giao diện KHÔNG bao giờ hiển thị các khoá này; chúng được dịch qua
  * `groupRole.*` trong từ điển i18n (Trưởng nhóm / Quản trị viên / Thành viên).
  *
- * KHÔNG dùng 'OWNER', và không còn vai trò 'GUEST'.
+ * KHÔNG dùng 'OWNER'. GUEST là cấp thấp nhất — chỉ xem, không nhắn tin.
  */
 export const GroupRole = {
   LEADER: 'LEADER',

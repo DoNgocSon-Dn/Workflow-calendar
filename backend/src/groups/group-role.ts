@@ -5,7 +5,8 @@
  * Tên hiển thị (Trưởng nhóm / Quản trị viên / Thành viên) do frontend dịch từ
  * chính ba khoá này — backend không bao giờ trả chữ tiếng Việt cho role.
  *
- * KHÔNG dùng 'OWNER' cho vai trò này, và KHÔNG còn vai trò 'GUEST'.
+ * KHÔNG dùng 'OWNER' cho vai trò này. GUEST là cấp thấp nhất — chỉ xem,
+ * không nhắn tin (xem migration 18).
  */
 export const GroupRole = {
   LEADER: 'LEADER',
