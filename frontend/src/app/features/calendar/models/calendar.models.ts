@@ -24,6 +24,16 @@ export const CALENDAR_COLOR_HEX: Record<CalendarColor, string> = {
   teal: '#0891b2',
 };
 
+/** Cùng bảng màu ghi chú đang dùng ở `notes.color` (backend `NOTE_COLORS`) —
+ *  dùng cho color-dot trong sidebar, giữ đúng tông với thẻ ghi chú cũ. */
+export const NOTE_COLOR_HEX: Record<string, string> = {
+  yellow: '#fef08a',
+  blue: '#bae6fd',
+  green: '#bbf7d0',
+  pink: '#fbcfe8',
+  purple: '#ddd6fe',
+};
+
 export interface CalendarDef {
   id: string;
   name: string;

@@ -3,7 +3,6 @@ import {
   Component,
   DestroyRef,
   computed,
-  effect,
   inject,
   output,
   signal,
@@ -12,7 +11,6 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { OverflowTooltip } from '../../directives/overflow-tooltip';
 import { CharCounter } from '../char-counter/char-counter';
-import { AuthStore } from '../../../core/auth/auth-store';
 import { NotificationQueue } from '../../../core/realtime/notification-queue';
 import { NotificationSoundService } from '../../../core/services/notification-sound.service';
 import {
@@ -27,7 +25,6 @@ import {
   parseTime24,
   toDateInputValue,
 } from '../../../features/calendar/utils/date-utils';
-import { Note, Todo } from '../../../features/calendar/models/calendar.models';
 import {
   hasMeaningfulText,
   pickSingleFile,
@@ -44,13 +41,6 @@ const CHAT_HISTORY_TURNS = 10;
  * the AI assistant widget — previously two separate FABs — behind a single
  * button with a tab switcher, movable anywhere on screen like a chat head.
  */
-
-const NOTE_COLORS = ['yellow', 'blue', 'green', 'pink', 'purple'] as const;
-type NoteColor = (typeof NOTE_COLORS)[number];
-
-// AI đứng đầu union — phản ánh đúng thứ tự ưu tiên mới: Trợ lý AI là tính
-// năng chính, Ghi chú/Việc cần làm là công cụ phụ.
-type HubTab = 'ai' | 'notes' | 'todos';
 
 /** Một gợi ý nhanh trong màn hình chào của AI — `icon` chỉ để chọn SVG hiển
  *  thị trong template, không ảnh hưởng gì tới nội dung gửi đi. */
@@ -390,7 +380,6 @@ function buildRecurringConfirmation(events: readonly { start: string }[]): strin
 })
 export class FloatingHub {
   private readonly store = inject(CalendarStore);
-  private readonly authStore = inject(AuthStore);
   private readonly notificationQueue = inject(NotificationQueue);
   private readonly notificationSound = inject(NotificationSoundService);
 
@@ -401,9 +390,6 @@ export class FloatingHub {
 
   // --- Bubble open state + drag-anywhere position ------------------------
   protected readonly open = signal(false);
-  // Mặc định là 'ai' NGAY TỪ ĐẦU, và toggle() còn ép lại về 'ai' mỗi lần mở —
-  // AI là điểm vào chính, người dùng không nên phải tự bấm sang tab đó.
-  protected readonly activeTab = signal<HubTab>('ai');
   protected readonly pos = signal<HubPos>(readStoredPos());
   protected readonly dragging = signal(false);
 
@@ -499,29 +485,12 @@ export class FloatingHub {
     this.open.update((v) => !v);
 
     if (willOpen) {
-      // Mỗi lần MỞ đều quay về tab AI, kể cả khi lượt trước người dùng đã
-      // chuyển sang Ghi chú/Việc cần làm — AI là điểm vào mặc định, không
-      // phải "tab được nhớ lần cuối".
-      this.activeTab.set('ai');
       if (this.rippleTimer) clearTimeout(this.rippleTimer);
       this.rippleActive.set(true);
       // Khớp thời lượng animation trong CSS; hết là gỡ luôn.
       this.rippleTimer = setTimeout(() => this.rippleActive.set(false), RIPPLE_MS);
     }
   }
-
-  setTab(tab: HubTab): void {
-    this.activeTab.set(tab);
-  }
-
-  // --- Notes tab (unchanged behavior, moved from NotesWidget) ------------
-  readonly noteColors = NOTE_COLORS;
-  protected readonly notes = signal<Note[]>([]);
-  protected readonly newNoteContent = signal('');
-  protected readonly newNoteColor = signal<NoteColor>('yellow');
-  protected readonly savingNote = signal(false);
-  protected readonly editingId = signal<string | null>(null);
-  protected readonly editingContent = signal('');
 
   constructor() {
     // Huỷ component giữa lúc đang chờ AI thì finally chưa chạy — timer sẽ
@@ -530,116 +499,9 @@ export class FloatingHub {
       this.stopThinking();
       if (this.rippleTimer) clearTimeout(this.rippleTimer);
     });
-
-    effect(() => {
-      if (this.authStore.user()) {
-        void this.loadNotes();
-      } else {
-        this.notes.set([]);
-      }
-    });
   }
 
-  private async loadNotes(): Promise<void> {
-    try {
-      this.notes.set(await this.store.listNotes());
-    } catch {
-      this.notes.set([]);
-    }
-  }
-
-  async addNote(): Promise<void> {
-    const content = this.newNoteContent().trim();
-    if (!content) return;
-    this.savingNote.set(true);
-    try {
-      const note = await this.store.createNote(content, this.newNoteColor());
-      this.notes.update((list) => [note, ...list]);
-      this.newNoteContent.set('');
-    } finally {
-      this.savingNote.set(false);
-    }
-  }
-
-  startEditNote(note: Note): void {
-    this.editingId.set(note.id);
-    this.editingContent.set(note.content);
-  }
-
-  cancelEditNote(): void {
-    this.editingId.set(null);
-    this.editingContent.set('');
-  }
-
-  async saveEditNote(id: string): Promise<void> {
-    const content = this.editingContent().trim();
-    if (!content) return;
-    const updated = await this.store.updateNote(id, { content });
-    this.notes.update((list) => list.map((n) => (n.id === id ? updated : n)));
-    this.cancelEditNote();
-  }
-
-  async removeNote(id: string): Promise<void> {
-    await this.store.deleteNote(id);
-    this.notes.update((list) => list.filter((n) => n.id !== id));
-  }
-
-  // --- Todos tab (checklist, sibling of notes) ----------------------------
-  // Đọc thẳng từ CalendarStore — KHÔNG giữ bản sao riêng — để thêm/sửa/xoá ở
-  // đây phản ánh ngay trên trang "Việc cần làm" (/tasks) và ngược lại.
-  protected readonly todos = this.store.todos;
-  protected readonly newTodoContent = signal('');
-  protected readonly savingTodo = signal(false);
-  protected readonly editingTodoId = signal<string | null>(null);
-  protected readonly editingTodoContent = signal('');
-
-  protected readonly pendingTodos = computed(() => this.todos().filter((t) => !t.done));
-  protected readonly doneTodos = computed(() => this.todos().filter((t) => t.done));
-  /** Chưa xong nổi lên trên, đã xong dồn xuống dưới sau một dòng phân cách —
-   *  gộp thành 1 mảng để dùng chung 1 @for/@empty trong template. */
-  protected readonly sortedTodos = computed(() => [...this.pendingTodos(), ...this.doneTodos()]);
-
-  async addTodo(): Promise<void> {
-    const content = this.newTodoContent().trim();
-    if (!content) return;
-    this.savingTodo.set(true);
-    try {
-      // Thêm nhanh từ bong bóng nổi không cho chọn danh sách — luôn rơi vào
-      // danh sách mặc định, xem/di chuyển danh sách khác thì mở trang Tasks.
-      const defaultList = await this.store.ensureDefaultTodoList();
-      await this.store.createTodo(content, defaultList.id);
-      this.newTodoContent.set('');
-    } finally {
-      this.savingTodo.set(false);
-    }
-  }
-
-  async toggleTodo(todo: Todo): Promise<void> {
-    await this.store.updateTodo(todo.id, { done: !todo.done });
-  }
-
-  startEditTodo(todo: Todo): void {
-    this.editingTodoId.set(todo.id);
-    this.editingTodoContent.set(todo.content);
-  }
-
-  cancelEditTodo(): void {
-    this.editingTodoId.set(null);
-    this.editingTodoContent.set('');
-  }
-
-  async saveEditTodo(id: string): Promise<void> {
-    const content = this.editingTodoContent().trim();
-    if (!content) return;
-    await this.store.updateTodo(id, { content });
-    this.cancelEditTodo();
-  }
-
-  async removeTodo(id: string): Promise<void> {
-    await this.store.deleteTodo(id);
-  }
-
-  // --- AI chat tab (unchanged behavior, moved from AiChatWidget) ---------
+  // --- AI chat (giao diện duy nhất còn lại trong bubble) ------------------
 
   /**
    * Câu trạng thái hiển thị trong lúc chờ AI trả lời.
@@ -676,7 +538,6 @@ export class FloatingHub {
   protected readonly draft = signal('');
   protected readonly sending = signal(false);
   protected readonly aiError = signal<string | null>(null);
-  private readonly lastCreatedEventId = signal<string | null>(null);
 
   /** Icon riêng cho từng gợi ý — template switch sang đúng SVG tương ứng.
    *  `sendSuggestion()` vẫn chỉ nhận text như cũ, hành vi click không đổi. */
@@ -729,17 +590,9 @@ export class FloatingHub {
     this.aiError.set(null);
     this.startThinking(text);
 
-    if (isDeleteIntent(text)) {
-      await this.handleDeleteIntent();
-      this.stopThinking();
-      this.sending.set(false);
-      return;
-    }
-
     try {
       const result = await this.store.sendAiChat(text, calendarId, history);
       if (result.intent === 'create_event') {
-        this.lastCreatedEventId.set(result.event.id);
         const createdCount = result.events?.length ?? 1;
         // events có từ 2 phần tử trở lên = một lịch LẶP LẠI theo nhiều thứ
         // trong tuần (vd "lịch 246") — báo rõ số lượng và các thứ đã tạo,
@@ -779,7 +632,15 @@ export class FloatingHub {
         } else {
           this.pushMessage('assistant', 'Mình chưa tách được việc nào từ yêu cầu này.');
         }
-      } else if (result.intent === 'chat') {
+      } else if (
+        result.intent === 'chat' ||
+        result.intent === 'event_action' ||
+        result.intent === 'todo_action' ||
+        result.intent === 'note_action'
+      ) {
+        // event_action/todo_action/note_action đã được CalendarStore.sendAiChat()
+        // áp thẳng vào signal tương ứng (events/todos/notes) rồi — ở đây chỉ cần
+        // báo lại cho người dùng biết đã làm gì.
         this.pushMessage('assistant', result.reply);
       } else {
         // Thiếu ngày là tình huống RIÊNG: mọi thứ khác đã hiểu rồi, chỉ cần
@@ -883,20 +744,6 @@ export class FloatingHub {
     this.thinkingTimer = null;
   }
 
-  private async handleDeleteIntent(): Promise<void> {
-    const id = this.lastCreatedEventId();
-    if (!id) {
-      this.pushMessage(
-        'assistant',
-        'Mình chưa tạo sự kiện nào trong phiên chat này để xóa cả — bạn có thể xóa trực tiếp trên lịch nhé.',
-      );
-      return;
-    }
-    await this.store.deleteEvent(id);
-    this.lastCreatedEventId.set(null);
-    this.pushMessage('assistant', 'Đã xóa sự kiện vừa tạo.');
-  }
-
   sendSuggestion(suggestion: string): void {
     this.draft.set(suggestion);
     this.send();
@@ -931,7 +778,8 @@ export class FloatingHub {
    *  tên file khi danh sách đến từ file đính kèm. */
   private buildProposal(goal: string, todos: readonly AiSuggestedTodo[]): TodoProposal {
     const existing = new Set(
-      this.todos()
+      this.store
+        .todos()
         .filter((t) => !t.done)
         .map((t) => normalizeTodoContent(t.content)),
     );
@@ -1072,8 +920,7 @@ export class FloatingHub {
    * mọi khi, vì trình duyệt không hề đưa ra đối tượng File nào.
    */
   onComposerPaste(event: ClipboardEvent): void {
-    // Panel dùng chung cho cả Ghi chú và Việc cần làm; chỉ tab AI mới nhận file.
-    if (this.activeTab() !== 'ai' || this.sending()) return;
+    if (this.sending()) return;
 
     const data = event.clipboardData;
     const picked = pickSingleFile(data);
@@ -1131,7 +978,7 @@ export class FloatingHub {
   /** Lần kéo này có thật sự mang file không — dựa vào chính khai báo của
    *  trình duyệt, không đoán từ việc có hay không có text. */
   private isFileDrag(event: DragEvent): boolean {
-    return this.activeTab() === 'ai' && !this.sending() && signalsFiles(event.dataTransfer);
+    return !this.sending() && signalsFiles(event.dataTransfer);
   }
 
   onDragEnter(event: DragEvent): void {

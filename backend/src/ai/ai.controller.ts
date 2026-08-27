@@ -15,7 +15,22 @@ import { CurrentSupabase } from '../auth/current-supabase.decorator';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { EventsService } from '../events/events.service';
-import { AiService } from './ai.service';
+import { EventDto } from '../events/event.mapper';
+import { TodosService } from '../todos/todos.service';
+import { TodoListsService } from '../todos/todo-lists.service';
+import { TodoDto } from '../todos/todo.mapper';
+import { NotesService } from '../notes/notes.service';
+import { NoteDto } from '../notes/note.mapper';
+import { CreateNoteDto } from '../notes/dto/create-note.dto';
+import { GroupsService } from '../groups/groups.service';
+import { GroupRole, canInvite, canManage } from '../groups/group-role';
+import {
+  AiService,
+  AiEventActionIntent,
+  AiTodoActionIntent,
+  AiNoteActionIntent,
+  AiGroupActionIntent,
+} from './ai.service';
 import { AiChatDto } from './dto/ai-chat.dto';
 import { AiFileImportService } from '../import/services/ai-file-import.service';
 import { MulterExceptionFilter } from '../common/multer-exception.filter';
@@ -26,12 +41,59 @@ import {
   hasAllowedExtension,
 } from '../common/limits';
 
+/** Câu trả lời BẮT BUỘC khi thành viên không đủ quyền yêu cầu một thao tác
+ *  quản trị nhóm qua AI — nguyên văn, không được đổi chữ nào. */
+const GROUP_PERMISSION_DENIED_REPLY = 'Bạn tôi ơi, đã bao giờ xem lại vị trí của mình chưa?';
+/** Câu trả lời BẮT BUỘC khi người dùng chưa thuộc nhóm nào mà lại yêu cầu thao
+ *  tác nhóm — nguyên văn, không được đổi chữ nào. */
+const NO_GROUP_REPLY = 'Bạn chưa có nhóm kìa, hãy tạo nhóm đi rồi quay lại đây nhé';
+
+/** Đối chiếu `targetMatch` (đoạn text model nghĩ là khớp) với danh sách thật.
+ *  KHÔNG tin một id do model tự bịa — id thật luôn lấy từ `items`, danh sách đã
+ *  được fetch bằng chính supabase client (RLS) của người gọi.
+ *
+ *  - Rỗng/không có → lấy mục đầu tiên (danh sách luôn sắp mới-nhất-trước) —
+ *    khớp với "vừa tạo/gần nhất".
+ *  - Khớp chính xác (không phân biệt hoa/thường) → dùng luôn.
+ *  - Khớp một phần (chứa nhau) mà chỉ ra đúng MỘT ứng viên → dùng.
+ *  - Còn lại (không khớp, hoặc khớp nhiều hơn một) → null, để tầng gọi hỏi lại
+ *    thay vì đoán bừa. */
+function matchByContent<T>(items: T[], targetMatch: string | undefined, getText: (item: T) => string): T | null {
+  if (items.length === 0) return null;
+  const needle = (targetMatch ?? '').trim().toLowerCase();
+  if (!needle) return items[0];
+
+  const exact = items.find((item) => getText(item).trim().toLowerCase() === needle);
+  if (exact) return exact;
+
+  const partial = items.filter((item) => {
+    const text = getText(item).trim().toLowerCase();
+    return text.includes(needle) || needle.includes(text);
+  });
+  return partial.length === 1 ? partial[0] : null;
+}
+
+/** Tìm nhóm được nhắc tới trong câu gốc bằng cách so tên nhóm (không phân biệt
+ *  hoa/thường) có xuất hiện trong câu hay không. Chỉ nhận khi khớp đúng MỘT
+ *  nhóm — khớp nhiều nhóm cùng lúc thì coi như không xác định được, an toàn
+ *  hơn là đoán bừa. */
+function matchGroupInMessage<T extends { name: string }>(groups: T[], message: string): T | null {
+  const lower = message.toLowerCase();
+  const matches = groups.filter((g) => g.name && lower.includes(g.name.toLowerCase()));
+  if (matches.length === 1) return matches[0];
+  return groups.length === 1 ? groups[0] : null;
+}
+
 @Controller('ai')
 @UseGuards(SupabaseAuthGuard)
 export class AiController {
   constructor(
     private readonly aiService: AiService,
     private readonly eventsService: EventsService,
+    private readonly todosService: TodosService,
+    private readonly todoListsService: TodoListsService,
+    private readonly notesService: NotesService,
+    private readonly groupsService: GroupsService,
     private readonly fileImport: AiFileImportService,
   ) {}
 
@@ -50,22 +112,39 @@ export class AiController {
     const now = Date.now();
     const windowStart = now - 7 * 24 * 60 * 60 * 1000;
     const windowEnd = now + 30 * 24 * 60 * 60 * 1000;
-    const events = allEvents
+    const eventsInWindow = allEvents
       .filter((e) => {
         const start = new Date(e.start).getTime();
         return start >= windowStart && start <= windowEnd;
       })
-      .slice(0, 60)
-      .map((e) => ({
-        title: e.title,
-        start: e.start,
-        end: e.end,
-        allDay: e.allDay,
-        ...(e.location ? { location: e.location } : {}),
-      }));
+      .slice(0, 60);
+    const events = eventsInWindow.map((e) => ({
+      title: e.title,
+      start: e.start,
+      end: e.end,
+      allDay: e.allDay,
+      ...(e.location ? { location: e.location } : {}),
+    }));
+
+    // Ngữ cảnh việc/ghi chú — cùng lý do với ngữ cảnh lịch ở trên: để AI khớp
+    // được câu nói ("xoá ghi chú hôm qua", "đánh dấu việc X xong") với đúng
+    // mục THẬT của người dùng, không đoán bừa.
+    const openTodos = (await this.todosService.findAllForUser(supabase))
+      .filter((t) => !t.done)
+      .slice(0, 30);
+    const todos = openTodos.map((t) => ({
+      content: t.content,
+      done: t.done,
+      ...(t.dueAt ? { dueAt: t.dueAt } : {}),
+    }));
+
+    const recentNotes = (await this.notesService.findAllForUser(supabase)).slice(0, 20);
+    const notes = recentNotes.map((n) => ({ content: n.content }));
 
     const parsed = await this.aiService.chat(dto.message, {
       events,
+      todos,
+      notes,
       history: dto.history ?? [],
     });
 
@@ -78,9 +157,54 @@ export class AiController {
       ],
     });
 
+    // Quy tắc cứng, KHÔNG giao cho model tự quyết: câu không nhắc "nhóm"/"group"
+    // luôn thuộc phạm vi cá nhân. Ghi chú/Việc cần làm không có group_id trong
+    // schema nên tuyệt đối không đụng vào chúng khi câu có nhắc nhóm — model đã
+    // được dặn trong prompt, đây là lớp chặn thứ hai để chắc chắn 100%.
+    const mentionsGroup = /\bnh[oó]m\b|\bgroup\b/i.test(dto.message);
+    if (mentionsGroup && (parsed.intent === 'todo_action' || parsed.intent === 'note_action')) {
+      return {
+        intent: 'chat' as const,
+        reply:
+          parsed.intent === 'todo_action'
+            ? 'Việc cần làm hiện chỉ hỗ trợ quản lý cá nhân, chưa hỗ trợ theo nhóm.'
+            : 'Ghi chú hiện chỉ hỗ trợ quản lý cá nhân, chưa hỗ trợ theo nhóm.',
+      };
+    }
+    if (!mentionsGroup && parsed.intent === 'group_action') {
+      // Model trả group_action mà câu gốc không hề nhắc nhóm — không tin, hỏi
+      // lại thay vì liều thực hiện một thao tác quản trị nhóm.
+      return {
+        intent: 'chat' as const,
+        reply: 'Bạn có thể nói rõ đang muốn thao tác với nhóm nào không?',
+      };
+    }
+
+    if (parsed.intent === 'event_action' && parsed.event_action) {
+      return this.handleEventAction(supabase, user, parsed.event_action, eventsInWindow);
+    }
+    if (parsed.intent === 'todo_action' && parsed.todo_action) {
+      return this.handleTodoAction(supabase, user, parsed.todo_action, openTodos);
+    }
+    if (parsed.intent === 'note_action' && parsed.note_action) {
+      return this.handleNoteAction(supabase, user, parsed.note_action, recentNotes);
+    }
+    if (parsed.intent === 'group_action' && parsed.group_action) {
+      return this.handleGroupAction(supabase, user, parsed.group_action);
+    }
+
     if (parsed.intent === 'create_event' && parsed.title && parsed.start_at && parsed.end_at) {
+      let calendarId = dto.calendarId;
+      if (mentionsGroup) {
+        // "tạo lịch họp cho nhóm X" — trỏ sang đúng lịch của nhóm đó thay vì
+        // lịch cá nhân mặc định. Không tìm được nhóm khớp thì vẫn tạo vào lịch
+        // cá nhân như hành vi cũ — không chặn hẳn chỉ vì không đoán được nhóm.
+        const groups = await this.groupsService.findAllForUser(supabase, user);
+        const matchedGroup = matchGroupInMessage(groups, dto.message);
+        if (matchedGroup) calendarId = matchedGroup.calendarId;
+      }
       const baseDto = {
-        calendarId: dto.calendarId,
+        calendarId,
         title: parsed.title,
         start: parsed.start_at,
         end: parsed.end_at,
@@ -134,6 +258,271 @@ export class AiController {
       ...(parsed.missingFields?.length ? { missingFields: parsed.missingFields } : {}),
       ...(parsed.startTime ? { startTime: parsed.startTime } : {}),
       ...(parsed.endTime ? { endTime: parsed.endTime } : {}),
+    };
+  }
+
+  /** Sửa/xoá một sự kiện đã tồn tại — khớp `target_match` với danh sách sự
+   *  kiện đã nạp làm ngữ cảnh cho model (cùng danh sách, để không lệch với
+   *  điều model đã "nhìn thấy"). */
+  private async handleEventAction(
+    supabase: SupabaseClient,
+    user: User,
+    action: AiEventActionIntent,
+    events: EventDto[],
+  ) {
+    const target = matchByContent(events, action.target_match, (e) => e.title);
+    if (!target) {
+      return {
+        intent: 'chat' as const,
+        reply: 'Mình chưa xác định được chính xác sự kiện nào — bạn nói rõ tên sự kiện giúp mình nhé.',
+      };
+    }
+
+    if (action.action === 'delete') {
+      await this.eventsService.remove(supabase, target.id);
+      return {
+        intent: 'event_action' as const,
+        action: 'delete' as const,
+        eventId: target.id,
+        reply: `Đã xoá sự kiện "${target.title}".`,
+      };
+    }
+
+    const changes = action.changes ?? {};
+    const updated = await this.eventsService.update(
+      supabase,
+      target.id,
+      {
+        ...(changes.title ? { title: changes.title } : {}),
+        ...(changes.start_at ? { start: changes.start_at } : {}),
+        ...(changes.end_at ? { end: changes.end_at } : {}),
+        ...(changes.location !== undefined ? { location: changes.location } : {}),
+        ...(changes.description !== undefined ? { description: changes.description } : {}),
+        ...(changes.allDay !== undefined ? { allDay: changes.allDay } : {}),
+      },
+      user.id,
+    );
+    return {
+      intent: 'event_action' as const,
+      action: 'update' as const,
+      event: updated,
+      reply: `Đã cập nhật sự kiện "${updated.title}".`,
+    };
+  }
+
+  /** Lấy (hoặc tạo) danh sách việc mặc định của người dùng — mirror
+   *  `ensureDefaultTodoList()` phía frontend (`calendar-store.ts`), nhưng chạy
+   *  server-side vì đây là một request AI-to-backend không qua client đó. */
+  private async ensureDefaultTodoList(supabase: SupabaseClient, userId: string): Promise<string> {
+    const lists = await this.todoListsService.findAllForUser(supabase);
+    if (lists.length > 0) return lists[0].id;
+    const created = await this.todoListsService.create(supabase, userId, { name: 'Việc cần làm' });
+    return created.id;
+  }
+
+  /** Tạo/sửa/xoá/hoàn-thành MỘT việc cần làm cụ thể. */
+  private async handleTodoAction(
+    supabase: SupabaseClient,
+    user: User,
+    action: AiTodoActionIntent,
+    todos: TodoDto[],
+  ) {
+    if (action.action === 'create') {
+      if (!action.content) {
+        return { intent: 'chat' as const, reply: 'Bạn muốn tạo việc gì? Nói rõ nội dung giúp mình nhé.' };
+      }
+      const listId = await this.ensureDefaultTodoList(supabase, user.id);
+      const created = await this.todosService.create(supabase, user.id, {
+        content: action.content,
+        listId,
+        ...(action.description ? { description: action.description } : {}),
+        ...(action.due_at ? { dueAt: action.due_at } : {}),
+      });
+      return {
+        intent: 'todo_action' as const,
+        action: 'create' as const,
+        todo: created,
+        reply: `Đã thêm việc "${created.content}" vào việc cần làm.`,
+      };
+    }
+
+    const target = matchByContent(todos, action.target_match, (t) => t.content);
+    if (!target) {
+      return {
+        intent: 'chat' as const,
+        reply: 'Mình chưa xác định được chính xác việc nào — bạn nói rõ tên việc giúp mình nhé.',
+      };
+    }
+
+    if (action.action === 'delete') {
+      await this.todosService.remove(supabase, target.id);
+      return {
+        intent: 'todo_action' as const,
+        action: 'delete' as const,
+        todoId: target.id,
+        reply: `Đã xoá việc "${target.content}".`,
+      };
+    }
+    if (action.action === 'complete') {
+      const updated = await this.todosService.update(supabase, target.id, { done: true });
+      return {
+        intent: 'todo_action' as const,
+        action: 'complete' as const,
+        todo: updated,
+        reply: `Đã đánh dấu "${target.content}" là hoàn thành.`,
+      };
+    }
+    const updated = await this.todosService.update(supabase, target.id, {
+      ...(action.content ? { content: action.content } : {}),
+      ...(action.description !== undefined ? { description: action.description } : {}),
+      ...(action.due_at ? { dueAt: action.due_at } : {}),
+    });
+    return {
+      intent: 'todo_action' as const,
+      action: 'update' as const,
+      todo: updated,
+      reply: `Đã cập nhật việc "${updated.content}".`,
+    };
+  }
+
+  /** Tạo/sửa/xoá MỘT ghi chú. */
+  private async handleNoteAction(
+    supabase: SupabaseClient,
+    user: User,
+    action: AiNoteActionIntent,
+    notes: NoteDto[],
+  ) {
+    if (action.action === 'create') {
+      if (!action.content) {
+        return { intent: 'chat' as const, reply: 'Bạn muốn ghi chú nội dung gì? Nói rõ giúp mình nhé.' };
+      }
+      const created = await this.notesService.create(supabase, user.id, {
+        content: action.content,
+        color: (action.color as CreateNoteDto['color']) ?? 'yellow',
+      });
+      return {
+        intent: 'note_action' as const,
+        action: 'create' as const,
+        note: created,
+        reply: 'Đã lưu ghi chú mới.',
+      };
+    }
+
+    const target = matchByContent(notes, action.target_match, (n) => n.content);
+    if (!target) {
+      return {
+        intent: 'chat' as const,
+        reply: 'Mình chưa xác định được chính xác ghi chú nào — bạn mô tả rõ hơn giúp mình nhé.',
+      };
+    }
+
+    if (action.action === 'delete') {
+      await this.notesService.remove(supabase, target.id);
+      return {
+        intent: 'note_action' as const,
+        action: 'delete' as const,
+        noteId: target.id,
+        reply: 'Đã xoá ghi chú.',
+      };
+    }
+    const updated = await this.notesService.update(supabase, target.id, {
+      ...(action.content ? { content: action.content } : {}),
+      ...(action.color ? { color: action.color as CreateNoteDto['color'] } : {}),
+    });
+    return {
+      intent: 'note_action' as const,
+      action: 'update' as const,
+      note: updated,
+      reply: 'Đã cập nhật ghi chú.',
+    };
+  }
+
+  /** Thao tác quản trị nhóm — kiểm tra thuộc nhóm nào, vai trò gì, có quyền
+   *  hay không, rồi mới gọi vào GroupsService thật (tự kiểm tra lại quyền lần
+   *  nữa — phòng thủ 2 lớp, không bao giờ bỏ qua service thật). */
+  private async handleGroupAction(
+    supabase: SupabaseClient,
+    user: User,
+    action: AiGroupActionIntent,
+  ) {
+    const groups = await this.groupsService.findAllForUser(supabase, user);
+    if (groups.length === 0) {
+      return { intent: 'chat' as const, reply: NO_GROUP_REPLY };
+    }
+
+    const group =
+      (action.group_name
+        ? groups.find((g) => g.name.toLowerCase().includes(action.group_name!.trim().toLowerCase()))
+        : undefined) ?? (groups.length === 1 ? groups[0] : undefined);
+
+    if (!group) {
+      return {
+        intent: 'chat' as const,
+        reply: `Bạn đang ở các nhóm: ${groups.map((g) => g.name).join(', ')}. Bạn muốn thao tác ở nhóm nào?`,
+      };
+    }
+
+    const actorRole = await this.groupsService.getViewerRole(supabase, group.id, user.id);
+    if (!actorRole) {
+      return { intent: 'chat' as const, reply: NO_GROUP_REPLY };
+    }
+
+    if (action.action === 'delete_group') {
+      if (actorRole !== GroupRole.LEADER) {
+        return { intent: 'chat' as const, reply: GROUP_PERMISSION_DENIED_REPLY };
+      }
+      await this.groupsService.deleteGroup(supabase, user, group.id);
+      return { intent: 'chat' as const, reply: `Đã xoá nhóm "${group.name}".` };
+    }
+
+    if (action.action === 'add_member') {
+      if (!canInvite(actorRole)) {
+        return { intent: 'chat' as const, reply: GROUP_PERMISSION_DENIED_REPLY };
+      }
+      if (!action.member_email) {
+        return {
+          intent: 'chat' as const,
+          reply: `Bạn muốn thêm ai vào nhóm "${group.name}"? Cho mình email của người đó nhé.`,
+        };
+      }
+      await this.groupsService.inviteMember(supabase, user, group.id, {
+        email: action.member_email,
+        ...(action.member_role ? { role: action.member_role } : {}),
+      });
+      return {
+        intent: 'chat' as const,
+        reply: `Đã gửi lời mời tới ${action.member_email} vào nhóm "${group.name}".`,
+      };
+    }
+
+    // remove_member
+    if (!action.member_name_or_email) {
+      return {
+        intent: 'chat' as const,
+        reply: `Bạn muốn xoá ai khỏi nhóm "${group.name}"? Cho mình biết tên hoặc email nhé.`,
+      };
+    }
+    const members = await this.groupsService.getMembers(supabase, group.id);
+    const needle = action.member_name_or_email.trim().toLowerCase();
+    const targetMember =
+      members.find((m) => m.email?.toLowerCase() === needle) ??
+      matchByContent(members, action.member_name_or_email, (m) => m.name ?? m.email ?? '');
+    if (!targetMember) {
+      return {
+        intent: 'chat' as const,
+        reply: `Mình chưa xác định được ai trong nhóm "${group.name}" khớp với "${action.member_name_or_email}".`,
+      };
+    }
+    if (targetMember.userId !== user.id) {
+      const targetRole = await this.groupsService.getViewerRole(supabase, group.id, targetMember.userId);
+      if (!targetRole || !canManage(actorRole, targetRole)) {
+        return { intent: 'chat' as const, reply: GROUP_PERMISSION_DENIED_REPLY };
+      }
+    }
+    await this.groupsService.removeMember(supabase, user, group.id, targetMember.userId);
+    return {
+      intent: 'chat' as const,
+      reply: `Đã xoá ${targetMember.name ?? targetMember.email ?? 'thành viên'} khỏi nhóm "${group.name}".`,
     };
   }
 

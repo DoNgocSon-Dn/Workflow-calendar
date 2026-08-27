@@ -282,6 +282,17 @@ export class GroupsService {
     return member ? normalizeGroupRole(member.role) : null;
   }
 
+  /** Wrapper public của `getEffectiveRole` — để các module khác (vd AiController)
+   *  tái dùng đúng nguồn-thật-duy-nhất xác định vai trò, không viết lại một bản
+   *  riêng có thể lệch nhau theo thời gian. */
+  async getViewerRole(
+    supabase: SupabaseClient,
+    groupId: string,
+    userId: string,
+  ): Promise<GroupRole | null> {
+    return this.getEffectiveRole(supabase, groupId, userId);
+  }
+
   /** Vai trò của người đang gọi API, ném lỗi nếu họ không thuộc nhóm. */
   private async requireRole(
     supabase: SupabaseClient,

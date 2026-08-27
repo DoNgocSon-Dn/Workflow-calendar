@@ -31,12 +31,29 @@
   transition: none;
 }
 
+/* Chiều cao theo NỘI DUNG THẬT, không còn cố định 520px — từ khi chỉ còn một
+   khu vực Trợ lý AI (đã bỏ 2 tab Ghi chú/Việc cần làm), ép cứng chiều cao cũ
+   để lại một khoảng trống chết phía dưới màn chào + suggestion cards, và đôi
+   khi còn ép .messages tràn ra một scrollbar không cần thiết dù nội dung
+   thừa chỗ. `height: auto` để panel co theo con (panel-tabs + messages +
+   composer-area) như bất kỳ flex column bình thường nào; `max-height` vẫn là
+   TRẦN — chỉ khi nội dung chat thật sự dài hơn trần đó thì .messages (flex:1,
+   min-height:0, overflow-y:auto) mới phải scroll, còn panel-tabs/composer-area
+   (flex-shrink:0) không bao giờ bị cuốn theo.
+
+   Trần nâng từ 520px lên 600px: đo thật bằng Playwright, màn chào (aura + tiêu
+   đề + phụ đề + 4 suggestion card) + header + composer cần ~579px khi KHÔNG bị
+   cắt — 520px cũ cắt mất đúng thẻ gợi ý cuối cùng ngay từ lần mở đầu tiên, bắt
+   cuộn dù chưa hề có tin nhắn nào. 600px đủ dư cho màn chào hiện trọn, vẫn chỉ
+   bằng ~55-65% chiều cao màn hình thường gặp — không "kéo dài gần hết màn
+   hình". 78dvh (thay 70dvh) khớp đúng giá trị đã dùng ở breakpoint tablet bên
+   dưới, không phải một con số tự chế thêm. */
 .panel {
   position: fixed;
   z-index: 150;
   width: min(350px, calc(100vw - 2.5rem));
-  height: min(520px, calc(100dvh - 4rem));
-  max-height: 70dvh;
+  height: auto;
+  max-height: min(600px, calc(100dvh - 4rem), 78dvh);
   background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-xl);
@@ -130,6 +147,14 @@
 
 .tab-btn--ai.active {
   color: var(--holiday-accent);
+}
+
+/* Chỉ còn một mục duy nhất — dùng đúng kiểu dáng "đang chọn" của segmented
+   control cũ để làm tiêu đề panel, nhưng bỏ con trỏ pointer vì đây không còn
+   là nút bấm được nữa. */
+.tab-btn--static {
+  flex: none;
+  cursor: default;
 }
 
 .icon-btn {

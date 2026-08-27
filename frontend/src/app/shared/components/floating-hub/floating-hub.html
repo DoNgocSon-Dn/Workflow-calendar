@@ -3,7 +3,7 @@
     class="panel"
     [style.--ripple-origin]="rippleOrigin()"
     role="dialog"
-    [attr.aria-label]="activeTab() === 'notes' ? 'Ghi chú cá nhân' : activeTab() === 'todos' ? 'Việc cần làm' : 'Trợ lý AI'"
+    aria-label="Trợ lý AI"
     [style.left.px]="panelLeft()"
     [style.right.px]="panelRight()"
     [style.top.px]="panelTop()"
@@ -38,23 +38,11 @@
       ></span>
     }
 
-    <!-- Segmented control, KHÔNG phải ba nút rời. Panel chỉ rộng 350px nên
-         icon + nhãn cho ba tab sẽ tràn; nhãn chữ trên nền chìm đọc rõ hơn và
-         luôn vừa. Emoji cũ (📝 ✅ ✨) bỏ hẳn: chúng không đổi màu theo giao
-         diện, không co theo cỡ chữ, và trình đọc màn hình đọc luôn tên emoji. -->
+    <!-- Chỉ còn một khu vực duy nhất trong bubble — Trợ lý AI — nên đây là một
+         tiêu đề tĩnh, không phải segmented control nữa. -->
     <div class="panel-tabs">
-      <div class="tab-group" role="tablist" aria-label="Khu vực làm việc">
-        <!-- AI đứng đầu và mang icon riêng — segmented control vẫn công bằng
-             về diện tích cho ba tab, nhưng icon lấp lánh là tín hiệu thị giác
-             đầu tiên nói "đây là tính năng chính", kể cả lúc tab chưa active. -->
-        <button
-          type="button"
-          class="tab-btn tab-btn--ai"
-          role="tab"
-          [class.active]="activeTab() === 'ai'"
-          [attr.aria-selected]="activeTab() === 'ai'"
-          (click)="setTab('ai')"
-        >
+      <div class="tab-group">
+        <span class="tab-btn tab-btn--ai tab-btn--static active">
           <svg class="tab-btn__spark" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true">
             <path
               fill="currentColor"
@@ -62,27 +50,7 @@
             />
           </svg>
           Trợ lý AI
-        </button>
-        <button
-          type="button"
-          class="tab-btn"
-          role="tab"
-          [class.active]="activeTab() === 'notes'"
-          [attr.aria-selected]="activeTab() === 'notes'"
-          (click)="setTab('notes')"
-        >
-          Ghi chú
-        </button>
-        <button
-          type="button"
-          class="tab-btn"
-          role="tab"
-          [class.active]="activeTab() === 'todos'"
-          [attr.aria-selected]="activeTab() === 'todos'"
-          (click)="setTab('todos')"
-        >
-          Việc cần làm
-        </button>
+        </span>
       </div>
       <button type="button" class="icon-btn" aria-label="Đóng" (click)="toggle()">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
@@ -91,137 +59,6 @@
       </button>
     </div>
 
-    @switch (activeTab()) {
-      @case ('notes') {
-      <div class="add-row">
-        <textarea
-          class="note-input"
-          rows="2"
-          maxlength="2000"
-          [ngModel]="newNoteContent()"
-          (ngModelChange)="newNoteContent.set($event)"
-          placeholder="Viết ghi chú mới…"
-        ></textarea>
-        <app-char-counter class="field-counter" [current]="newNoteContent().length" [max]="2000" />
-        <div class="color-row">
-          @for (c of noteColors; track c) {
-            <button
-              type="button"
-              class="color-dot"
-              [class]="'color-' + c"
-              [class.selected]="newNoteColor() === c"
-              [attr.aria-label]="c"
-              (click)="newNoteColor.set(c)"
-            ></button>
-          }
-          <span class="spacer"></span>
-          <button type="button" class="primary-btn" [disabled]="savingNote()" (click)="addNote()">
-            Thêm
-          </button>
-        </div>
-      </div>
-
-      <ul class="note-list">
-        @for (note of notes(); track note.id) {
-          <li class="note-card" [class]="'color-' + note.color">
-            @if (editingId() === note.id) {
-              <div class="field-with-counter">
-                <textarea
-                  class="note-input"
-                  rows="2"
-                  maxlength="2000"
-                  [ngModel]="editingContent()"
-                  (ngModelChange)="editingContent.set($event)"
-                ></textarea>
-                <app-char-counter class="field-counter" [current]="editingContent().length" [max]="2000" />
-              </div>
-              <div class="note-actions">
-                <button type="button" class="text-btn" (click)="saveEditNote(note.id)">Lưu</button>
-                <button type="button" class="text-btn" (click)="cancelEditNote()">Huỷ</button>
-              </div>
-            } @else {
-              <p class="note-content">{{ note.content }}</p>
-              <div class="note-actions">
-                <button type="button" class="text-btn" (click)="startEditNote(note)">Sửa</button>
-                <button type="button" class="text-btn danger" (click)="removeNote(note.id)">
-                  Xoá
-                </button>
-              </div>
-            }
-          </li>
-        } @empty {
-          <p class="empty-hint">Chưa có ghi chú nào.</p>
-        }
-      </ul>
-      }
-
-      @case ('todos') {
-      <div class="add-row">
-        <div class="todo-input-row">
-          <div class="field-with-counter">
-            <input
-              class="text-input"
-              type="text"
-              maxlength="300"
-              [ngModel]="newTodoContent()"
-              (ngModelChange)="newTodoContent.set($event)"
-              placeholder="Thêm việc cần làm…"
-              [disabled]="savingTodo()"
-              (keydown.enter)="$event.preventDefault(); addTodo()"
-            />
-            <app-char-counter class="field-counter" [current]="newTodoContent().length" [max]="300" />
-          </div>
-          <button type="button" class="primary-btn" [disabled]="savingTodo()" (click)="addTodo()">
-            Thêm
-          </button>
-        </div>
-      </div>
-
-      <ul class="note-list todo-list">
-        @for (todo of sortedTodos(); track todo.id; let i = $index) {
-          @if (i === pendingTodos().length && doneTodos().length > 0) {
-            <li class="todo-divider">Đã xong ({{ doneTodos().length }})</li>
-          }
-          <li class="todo-item" [class.todo-item-done]="todo.done">
-            <label class="todo-checkbox">
-              <input type="checkbox" [checked]="todo.done" (change)="toggleTodo(todo)" />
-              <span aria-hidden="true"></span>
-            </label>
-            @if (editingTodoId() === todo.id) {
-              <div class="field-with-counter todo-edit-field">
-                <input
-                  class="text-input todo-edit-input"
-                  type="text"
-                  maxlength="300"
-                  [ngModel]="editingTodoContent()"
-                  (ngModelChange)="editingTodoContent.set($event)"
-                  (keydown.enter)="$event.preventDefault(); saveEditTodo(todo.id)"
-                />
-                <app-char-counter class="field-counter" [current]="editingTodoContent().length" [max]="300" />
-              </div>
-              <div class="note-actions">
-                <button type="button" class="text-btn" (click)="saveEditTodo(todo.id)">Lưu</button>
-                <button type="button" class="text-btn" (click)="cancelEditTodo()">Huỷ</button>
-              </div>
-            } @else {
-              <span class="todo-content">{{ todo.content }}</span>
-              <div class="note-actions">
-                @if (!todo.done) {
-                  <button type="button" class="text-btn" (click)="startEditTodo(todo)">Sửa</button>
-                }
-                <button type="button" class="text-btn danger" (click)="removeTodo(todo.id)">
-                  Xoá
-                </button>
-              </div>
-            }
-          </li>
-        } @empty {
-          <p class="empty-hint">Chưa có việc cần làm nào.</p>
-        }
-      </ul>
-      }
-
-      @default {
       <div class="ai-chat-container">
         <div class="messages">
         @if (messages().length === 0) {
@@ -692,8 +529,6 @@
           </div>
         </div>
       </div>
-      }
-    }
   </div>
 }
 
@@ -701,7 +536,7 @@
   type="button"
   class="fab"
   [class.dragging]="dragging()"
-  aria-label="Ghi chú, Việc cần làm & Trợ lý AI"
+  aria-label="Trợ lý AI"
   [style.left.px]="pos().x"
   [style.top.px]="pos().y"
   (pointerdown)="onFabPointerDown($event)"

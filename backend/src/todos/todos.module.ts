@@ -9,5 +9,6 @@ import { TodosService } from './todos.service';
   imports: [AuthModule],
   controllers: [TodosController, TodoListsController],
   providers: [TodosService, TodoListsService],
+  exports: [TodosService, TodoListsService],
 })
 export class TodosModule {}

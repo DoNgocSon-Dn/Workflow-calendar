@@ -53,6 +53,12 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'sidebar.deleteCalendarAria': 'Xóa lịch {name}',
     'sidebar.deleteCalendarTitleShort': 'Xóa lịch',
     'sidebar.groupVisibilityError': 'Không thể cập nhật trạng thái hiển thị của nhóm.',
+    'sidebar.notes': 'Ghi chú',
+    'sidebar.notesEmptyHint': 'Nói với Trợ lý AI để tạo ghi chú đầu tiên.',
+    'sidebar.deleteNoteAria': 'Xóa ghi chú',
+    'sidebar.deleteNoteTitle': 'Xóa ghi chú này?',
+    'sidebar.deleteNoteConfirm': 'Đồng ý xóa',
+    'sidebar.deleteNoteError': 'Không thể xóa ghi chú này.',
 
     // --- header ---------------------------------------------------------
     'header.toggleSidebar': 'Ẩn/hiện thanh bên',
@@ -959,6 +965,12 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'sidebar.deleteCalendarAria': 'Delete calendar {name}',
     'sidebar.deleteCalendarTitleShort': 'Delete calendar',
     'sidebar.groupVisibilityError': "Couldn't update the group's visibility.",
+    'sidebar.notes': 'Notes',
+    'sidebar.notesEmptyHint': 'Ask the AI Assistant to create your first note.',
+    'sidebar.deleteNoteAria': 'Delete note',
+    'sidebar.deleteNoteTitle': 'Delete this note?',
+    'sidebar.deleteNoteConfirm': 'Delete',
+    'sidebar.deleteNoteError': "Couldn't delete this note.",
 
     // --- header ---------------------------------------------------------
     'header.toggleSidebar': 'Toggle sidebar',

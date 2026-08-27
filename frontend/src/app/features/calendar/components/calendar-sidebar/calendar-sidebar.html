@@ -185,6 +185,31 @@
           }
         </div>
       </div>
+
+      <!-- NOTES SECTION — do Trợ lý AI tạo/sửa/xoá; sidebar chỉ hiển thị + xoá. -->
+      <div class="calendar-list">
+        <h2 class="calendar-list-title">{{ i18n.t('sidebar.notes') }}</h2>
+        <div class="calendar-items-wrapper">
+          @for (note of store.notes(); track note.id) {
+            <div class="calendar-item" [title]="note.content">
+              <span class="color-dot" [style.background]="noteColorHex[note.color]"></span>
+              <span class="calendar-name">{{ note.content }}</span>
+              <button
+                type="button"
+                class="delete-calendar-btn"
+                [attr.aria-label]="i18n.t('sidebar.deleteNoteAria')"
+                [title]="i18n.t('sidebar.deleteNoteAria')"
+                [disabled]="deletingNoteId() === note.id"
+                (click)="onDeleteNoteClicked($event, note.id)"
+              >
+                <app-icon name="trash" />
+              </button>
+            </div>
+          } @empty {
+            <div class="empty-groups-hint">{{ i18n.t('sidebar.notesEmptyHint') }}</div>
+          }
+        </div>
+      </div>
     } @else {
       <!-- COLLAPSED RAIL — icon-only, native title tooltips on hover -->
       <div class="rail-list">

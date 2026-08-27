@@ -39,8 +39,65 @@ export interface AiWeeklyRecurrence {
   readonly until?: string;
 }
 
+/** Sửa/xoá một sự kiện ĐÃ TỒN TẠI. `target_match` là đoạn text model nghĩ là
+ *  khớp với tiêu đề sự kiện cần thao tác — backend tự đối chiếu với danh sách
+ *  sự kiện thật, KHÔNG tin một id do model tự bịa. Rỗng khi người dùng chỉ nói
+ *  "sự kiện vừa tạo/gần nhất" — backend tự lấy mục gần nhất trong ngữ cảnh. */
+export interface AiEventActionIntent {
+  action: 'update' | 'delete';
+  target_match: string;
+  changes?: {
+    title?: string;
+    start_at?: string;
+    end_at?: string;
+    location?: string;
+    description?: string;
+    allDay?: boolean;
+  };
+}
+
+/** Tạo/sửa/xoá/hoàn-thành MỘT việc cần làm cụ thể người dùng nói rõ — khác với
+ *  `create_todos` (một MỤC TIÊU cần AI tự tách thành nhiều bước, còn phải qua
+ *  bảng xem trước). `target_match` bắt buộc khi action khác 'create'. */
+export interface AiTodoActionIntent {
+  action: 'create' | 'update' | 'delete' | 'complete';
+  target_match?: string;
+  content?: string;
+  description?: string;
+  due_at?: string;
+}
+
+/** Tạo/sửa/xoá MỘT ghi chú. `target_match` bắt buộc khi action khác 'create'. */
+export interface AiNoteActionIntent {
+  action: 'create' | 'update' | 'delete';
+  target_match?: string;
+  content?: string;
+  color?: string;
+}
+
+/** Thao tác quản trị nhóm — CHỈ được model trả khi câu nói có nhắc "nhóm"/"group".
+ *  Backend tự đối chiếu `group_name` với danh sách nhóm thật của người dùng và tự
+ *  kiểm tra quyền — model không quyết định được ai có quyền làm gì. */
+export interface AiGroupActionIntent {
+  action: 'delete_group' | 'add_member' | 'remove_member';
+  group_name?: string;
+  /** Dùng cho add_member. */
+  member_email?: string;
+  /** Dùng cho remove_member — tên hoặc email thành viên cần xoá. */
+  member_name_or_email?: string;
+  member_role?: string;
+}
+
 export interface AiParsedIntent {
-  intent: 'create_event' | 'create_todos' | 'chat' | 'unclear';
+  intent:
+    | 'create_event'
+    | 'create_todos'
+    | 'chat'
+    | 'unclear'
+    | 'event_action'
+    | 'todo_action'
+    | 'note_action'
+    | 'group_action';
   title?: string;
   start_at?: string;
   end_at?: string;
@@ -64,6 +121,11 @@ export interface AiParsedIntent {
    *  dùng gõ lại từ đầu. "HH:mm" theo giờ Việt Nam. */
   startTime?: string;
   endTime?: string;
+  /** Có giá trị khi intent tương ứng là 'event_action'/'todo_action'/'note_action'/'group_action'. */
+  event_action?: AiEventActionIntent;
+  todo_action?: AiTodoActionIntent;
+  note_action?: AiNoteActionIntent;
+  group_action?: AiGroupActionIntent;
 }
 
 /**
@@ -106,9 +168,28 @@ export interface AiEventSummary {
   allDay?: boolean;
 }
 
+/** Việc cần làm CHƯA XONG, để model khớp được câu người dùng nói (vd "đánh dấu
+ *  việc báo cáo là xong") với đúng nội dung thật — không có id: id thật do
+ *  AiController tự đối chiếu lại sau, model chỉ cần thấy nội dung. */
+export interface AiTodoSummary {
+  content: string;
+  done: boolean;
+  dueAt?: string;
+}
+
+/** Ghi chú gần đây, cùng lý do không có id như AiTodoSummary ở trên. */
+export interface AiNoteSummary {
+  content: string;
+}
+
 export interface AiChatContext {
   history: AiChatHistoryEntry[];
   events: AiEventSummary[];
+  /** Tuỳ chọn để không phá test/caller cũ chưa nạp ngữ cảnh việc/ghi chú —
+   *  vắng mặt thì coi như rỗng, model chỉ không khớp được lệnh sửa/xoá việc/ghi
+   *  chú (vẫn tạo sự kiện/chat bình thường). */
+  todos?: AiTodoSummary[];
+  notes?: AiNoteSummary[];
 }
 
 interface GeminiResponse {
@@ -134,6 +215,45 @@ export class AiService {
           if (geminiResult.intent === 'chat' && geminiResult.reply) return geminiResult;
           if (geminiResult.intent === 'create_todos' && geminiResult.todos?.length) return geminiResult;
           if (geminiResult.intent === 'unclear') return geminiResult;
+          // Bốn intent hành động mới — chỉ tin khi có đủ hình dạng tối thiểu
+          // (action hợp lệ, target_match có mặt khi bắt buộc). Sai hình dạng
+          // thì coi như model trả lỗi, rơi xuống bộ phân tích cục bộ giống các
+          // trường hợp khác — an toàn hơn là tin một object thiếu trường rồi để
+          // tầng dispatch tự vỡ.
+          if (
+            geminiResult.intent === 'event_action' &&
+            geminiResult.event_action &&
+            ['update', 'delete'].includes(geminiResult.event_action.action)
+          ) {
+            return geminiResult;
+          }
+          if (
+            geminiResult.intent === 'todo_action' &&
+            geminiResult.todo_action &&
+            ['create', 'update', 'delete', 'complete'].includes(geminiResult.todo_action.action) &&
+            (geminiResult.todo_action.action === 'create'
+              ? !!geminiResult.todo_action.content
+              : true)
+          ) {
+            return geminiResult;
+          }
+          if (
+            geminiResult.intent === 'note_action' &&
+            geminiResult.note_action &&
+            ['create', 'update', 'delete'].includes(geminiResult.note_action.action) &&
+            (geminiResult.note_action.action === 'create'
+              ? !!geminiResult.note_action.content
+              : true)
+          ) {
+            return geminiResult;
+          }
+          if (
+            geminiResult.intent === 'group_action' &&
+            geminiResult.group_action &&
+            ['delete_group', 'add_member', 'remove_member'].includes(geminiResult.group_action.action)
+          ) {
+            return geminiResult;
+          }
 
           // create_event mà KHÔNG có start_at nghĩa là model đã làm đúng: nó
           // hiểu người dùng muốn tạo lịch nhưng từ chối bịa ngày giờ. Rơi
@@ -403,16 +523,35 @@ QUY TẮC BẮT BUỘC:
         ? context.history.map((h) => `${h.role === 'user' ? 'Người dùng' : 'Trợ lý'}: ${h.content}`).join('\n')
         : '(chưa có tin nhắn trước đó)';
 
+    const todos = context.todos ?? [];
+    const notes = context.notes ?? [];
+
+    const todosBlock =
+      todos.length > 0
+        ? todos
+            .map((t) => `- "${t.content}"${t.dueAt ? ` (hạn: ${new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(t.dueAt))})` : ''}`)
+            .join('\n')
+        : '(không có việc cần làm nào chưa xong)';
+
+    const notesBlock =
+      notes.length > 0 ? notes.map((n) => `- "${n.content}"`).join('\n') : '(không có ghi chú nào)';
+
     const systemPrompt = `Bạn là trợ lý AI lịch làm việc, có thể vừa TẠO SỰ KIỆN vừa TRÒ CHUYỆN tự nhiên (trả lời câu hỏi về lịch của người dùng hoặc trò chuyện chung) bằng tiếng Việt hoặc tiếng Anh — trả lời theo đúng ngôn ngữ người dùng đang dùng.
 Thời điểm hiện tại: ${vnTimeStr} (ISO: ${now.toISOString()}). Múi giờ mặc định: Asia/Ho_Chi_Minh (+07:00).
 
 Lịch của người dùng (các sự kiện gần đây, đã sắp theo thời gian):
 ${eventsBlock}
 
+Việc cần làm CHƯA XONG của người dùng (đã sắp theo thời gian tạo, mới nhất trước):
+${todosBlock}
+
+Ghi chú gần đây của người dùng (đã sắp theo thời gian tạo, mới nhất trước):
+${notesBlock}
+
 Lịch sử hội thoại gần nhất trong phiên chat này:
 ${historyBlock}
 
-Nhiệm vụ: Đọc câu nói MỚI NHẤT của người dùng, xác định đúng MỘT trong bốn ý định sau, và trả về DUY NHẤT một JSON object (không thêm markdown hoặc text nào khác ngoài JSON):
+Nhiệm vụ: Đọc câu nói MỚI NHẤT của người dùng, xác định đúng MỘT trong các ý định sau, và trả về DUY NHẤT một JSON object (không thêm markdown hoặc text nào khác ngoài JSON):
 
 1) Người dùng muốn TẠO một sự kiện/lịch hẹn mới (nói rõ hoặc ngầm hiểu được ngày/giờ):
 {
@@ -473,6 +612,55 @@ QUY TẮC BẮT BUỘC cho "create_todos":
 { "intent": "unclear", "title": "tiêu đề đoán được", "missingFields": ["date"] hoặc ["time"] hoặc ["date","time"] — CHỈ liệt kê đúng những gì THỰC SỰ còn thiếu, "startTime": "HH:mm nếu đã hiểu được", "endTime": "HH:mm nếu đã hiểu được" }
 - Ví dụ: đã có nhóm/thứ trong tuần + khoảng ngày bắt đầu/kết thúc nhưng chưa có giờ → missingFields CHỈ là ["time"], KHÔNG có "date".
 
+5) Người dùng muốn SỬA hoặc XOÁ một sự kiện ĐÃ CÓ trong "Lịch của người dùng" ở trên (vd "đổi giờ họp nhóm dự án sang 3h chiều", "xoá lịch đi khám răng", "huỷ cuộc họp thứ 5"):
+{
+  "intent": "event_action",
+  "event_action": {
+    "action": "update" | "delete",
+    "target_match": "đoạn text NGẮN trùng khớp với đúng MỘT tiêu đề sự kiện trong danh sách trên — để trống CHỈ khi người dùng nói rõ \"sự kiện vừa tạo/gần nhất/vừa rồi\"",
+    "changes": { "title": "...", "start_at": "ISO 8601 nếu đổi giờ", "end_at": "...", "location": "...", "description": "..." }
+  }
+}
+- "changes" CHỈ xuất hiện khi action là "update", và CHỈ chứa những trường THỰC SỰ thay đổi.
+- KHÔNG được tự bịa "target_match" nếu không chắc câu nói đang nhắc tới sự kiện nào trong danh sách — lúc đó dùng ý định "chat" để hỏi lại rõ tên sự kiện, tuyệt đối không đoán bừa.
+
+6) Người dùng muốn TẠO MỘT việc cần làm cụ thể (khác với việc NÊU MỘT MỤC TIÊU cần tách nhiều bước ở ý định 3 phía trên), hoặc muốn SỬA/XOÁ/ĐÁNH DẤU HOÀN THÀNH một việc ĐÃ CÓ trong "Việc cần làm CHƯA XONG" ở trên (vd "tạo việc cần làm hoàn thành báo cáo thứ Sáu", "đánh dấu việc nộp bài đã xong", "xoá việc đi chợ", "đổi hạn việc ôn thi sang chủ nhật"):
+{
+  "intent": "todo_action",
+  "todo_action": {
+    "action": "create" | "update" | "delete" | "complete",
+    "target_match": "đoạn text khớp với đúng MỘT việc trong danh sách — BẮT BUỘC khi action khác \"create\", để trống CHỈ khi người dùng nói \"việc vừa tạo/gần nhất\"",
+    "content": "nội dung việc — dùng khi tạo mới hoặc đổi nội dung",
+    "description": "mô tả nếu có",
+    "due_at": "ISO 8601 +07:00 — CHỈ điền khi người dùng cho đủ dữ kiện thời gian, không tự bịa"
+  }
+}
+- "complete" dùng khi người dùng nói đã xong/hoàn thành/done một việc.
+
+7) Người dùng muốn TẠO một ghi chú, hoặc SỬA/XOÁ một ghi chú ĐÃ CÓ trong "Ghi chú gần đây" ở trên (vd "tạo ghi chú về kế hoạch dự án", "xoá ghi chú hôm qua", "sửa ghi chú họp nhóm thành ..."):
+{
+  "intent": "note_action",
+  "note_action": {
+    "action": "create" | "update" | "delete",
+    "target_match": "đoạn text khớp với đúng MỘT ghi chú trong danh sách — BẮT BUỘC khi action khác \"create\", để trống CHỈ khi người dùng nói \"ghi chú vừa tạo/gần nhất\"",
+    "content": "nội dung ghi chú — dùng khi tạo mới hoặc đổi nội dung",
+    "color": "yellow | blue | green | pink | purple — chỉ điền khi người dùng nói rõ màu, mặc định bỏ trống"
+  }
+}
+
+8) Câu nói có nhắc tới "nhóm" hoặc "group" VÀ là một thao tác QUẢN TRỊ nhóm (xoá nhóm, thêm thành viên, xoá thành viên) — CHỈ dùng ý định này khi câu THỰC SỰ nói tới nhóm, không dùng cho việc cá nhân:
+{
+  "intent": "group_action",
+  "group_action": {
+    "action": "delete_group" | "add_member" | "remove_member",
+    "group_name": "tên nhóm người dùng nhắc tới — để trống nếu họ không nói tên nhóm nào (backend tự xử lý khi người dùng chỉ thuộc đúng 1 nhóm)",
+    "member_email": "email — dùng cho add_member, chỉ điền khi người dùng có nói email",
+    "member_name_or_email": "tên hoặc email thành viên cần xoá — dùng cho remove_member",
+    "member_role": "admin | member | guest — dùng cho add_member nếu người dùng nói rõ vai trò, mặc định bỏ trống"
+  }
+}
+- Ghi chú và Việc cần làm KHÔNG hỗ trợ phạm vi nhóm — câu vừa nhắc "nhóm" vừa nói về ghi chú/việc cần làm thì dùng ý định "chat" trả lời rằng tính năng đó hiện chỉ hỗ trợ cá nhân, KHÔNG dùng "note_action"/"todo_action" lẫn "group_action" cho trường hợp này.
+
 QUY TẮC BẮT BUỘC cho thời gian (áp dụng cho cả "create_event" và "unclear"):
 - KHOẢNG thời gian phải giữ NGUYÊN cả hai đầu. "từ 9h-17h", "9h đến 17h", "8h tới 10h30", "9 giờ đến 11 giờ", "1h chiều đến 5h chiều" — end_at lấy đúng giờ người dùng nói, KHÔNG cắt còn 1 tiếng.
 - Chỉ dùng mặc định 1 giờ khi người dùng THỰC SỰ không nói giờ kết thúc và cũng không nói thời lượng.
@@ -480,7 +668,7 @@ QUY TẮC BẮT BUỘC cho thời gian (áp dụng cho cả "create_event" và "
 - Người dùng KHÔNG nói ngày NÀO CẢ (không thứ, không khoảng ngày, không "hôm nay/mai"...) và lịch sử hội thoại cũng không có thì TRẢ VỀ "unclear" với missingFields ["date"] — TUYỆT ĐỐI không lấy hôm nay hay ngày bất kỳ. Điền "startTime"/"endTime" để không bắt người dùng gõ lại.
 - Người dùng ĐÃ nói ngày (một ngày đơn, HOẶC một nhóm thứ + khoảng ngày — xem QUY TẮC LỊCH LẶP THEO THỨ ở trên) ở tin nhắn trước, tin nhắn này chỉ nói "thêm vào lịch" hoặc chỉ trả lời giờ, thì LẤY thông tin ngày/nhóm thứ/khoảng ngày đó từ lịch sử hội thoại, không hỏi lại.
 
-Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự kiện — mọi câu hỏi/trò chuyện khác đều dùng "chat".`;
+Chỉ trả về "unclear" khi thật sự không đủ dữ kiện TẠO MỚI một sự kiện. Không chắc câu nói đang muốn sửa/xoá đúng mục nào trong các danh sách ở trên (sự kiện/việc/ghi chú) thì dùng "chat" để hỏi lại cho rõ, KHÔNG đoán bừa "target_match". Mọi câu hỏi/trò chuyện khác cũng dùng "chat".`;
 
     // gemini-2.0-flash/1.5-flash/2.5-flash đã bị Google khai tử (404 NOT_FOUND) —
     // dùng alias "-latest" làm chính (luôn trỏ tới bản flash mới nhất) với một

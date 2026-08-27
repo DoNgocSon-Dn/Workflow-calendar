@@ -448,6 +448,12 @@ export class CalendarStore {
   readonly todoLists = signal<TodoList[]>([]);
   readonly todosLoaded = signal(false);
 
+  /** Nguồn dữ liệu ghi chú DUY NHẤT — sidebar trái đọc thẳng `notes()`, AI (qua
+   *  sendAiChat) và các hàm bên dưới đều cập nhật signal này, để tạo/sửa/xoá ở
+   *  bất kỳ đâu cũng phản ánh ngay ở sidebar, giống hệt cách todos đang làm. */
+  readonly notes = signal<Note[]>([]);
+  readonly notesLoaded = signal(false);
+
   // Lịch tham khảo chỉ đọc, không lưu ở backend — hiển thị trong mục "Lịch khác".
   // Tên lịch dịch theo ngôn ngữ hiện tại (VN_HOLIDAY_CALENDAR_DEF giữ tên gốc).
   readonly otherCalendars = computed<CalendarDef[]>(() => [
@@ -647,6 +653,7 @@ export class CalendarStore {
     void this.refreshEventInvites();
     void this.groupStore.loadGroups();
     void this.loadTodosState();
+    void this.loadNotesState();
 
     this.realtime.connect();
     this.joinAllCalendarRooms();
@@ -1898,27 +1905,64 @@ export class CalendarStore {
     await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/comments/${commentId}`));
   }
 
-  async listNotes(): Promise<Note[]> {
-    const result = await firstValueFrom(this.http.get<NoteApiDto[]>(`${this.apiUrl}/notes`));
-    return result.map(toNote);
+  private async loadNotesState(): Promise<void> {
+    try {
+      const result = await firstValueFrom(this.http.get<NoteApiDto[]>(`${this.apiUrl}/notes`));
+      this.notes.set(result.map(toNote));
+    } catch (err) {
+      console.error('Lỗi khi tải ghi chú:', err);
+    } finally {
+      this.notesLoaded.set(true);
+    }
   }
 
+  /** Chèn ngay với id tạm, giống `createTodo` — sidebar phản hồi tức thì, chỉ
+   *  "giật lùi" nếu request thật sự lỗi. */
   async createNote(content: string, color: string): Promise<Note> {
-    const result = await firstValueFrom(
-      this.http.post<NoteApiDto>(`${this.apiUrl}/notes`, { content, color }),
-    );
-    return toNote(result);
+    const tempId = `temp-${crypto.randomUUID()}`;
+    const now = new Date();
+    const optimistic: Note = { id: tempId, content, color, createdAt: now, updatedAt: now };
+    this.notes.update((list) => [optimistic, ...list]);
+    try {
+      const result = await firstValueFrom(
+        this.http.post<NoteApiDto>(`${this.apiUrl}/notes`, { content, color }),
+      );
+      const note = toNote(result);
+      this.notes.update((list) => list.map((n) => (n.id === tempId ? note : n)));
+      return note;
+    } catch (err) {
+      this.notes.update((list) => list.filter((n) => n.id !== tempId));
+      throw err;
+    }
   }
 
   async updateNote(id: string, changes: { content?: string; color?: string }): Promise<Note> {
-    const result = await firstValueFrom(
-      this.http.patch<NoteApiDto>(`${this.apiUrl}/notes/${id}`, changes),
-    );
-    return toNote(result);
+    const previous = this.notes().find((n) => n.id === id);
+    if (previous) {
+      this.notes.update((list) => list.map((n) => (n.id === id ? { ...n, ...changes } : n)));
+    }
+    try {
+      const result = await firstValueFrom(
+        this.http.patch<NoteApiDto>(`${this.apiUrl}/notes/${id}`, changes),
+      );
+      const note = toNote(result);
+      this.notes.update((list) => list.map((n) => (n.id === id ? note : n)));
+      return note;
+    } catch (err) {
+      if (previous) this.notes.update((list) => list.map((n) => (n.id === id ? previous : n)));
+      throw err;
+    }
   }
 
   async deleteNote(id: string): Promise<void> {
-    await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/notes/${id}`));
+    const removed = this.notes().find((n) => n.id === id);
+    this.notes.update((list) => list.filter((n) => n.id !== id));
+    try {
+      await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/notes/${id}`));
+    } catch (err) {
+      if (removed) this.notes.update((list) => [removed, ...list]);
+      throw err;
+    }
   }
 
   /** Nguồn dữ liệu todo/todo-list DUY NHẤT của toàn app — FloatingHub, TasksPage
@@ -2135,6 +2179,40 @@ export class CalendarStore {
         this.markSelfOrigin(dto.id);
         this.upsertEvent(toCalendarEvent(dto));
       }
+    } else if (result.intent === 'event_action') {
+      if (result.action === 'update') {
+        this.markSelfOrigin(result.event.id);
+        this.upsertEvent(toCalendarEvent(result.event));
+      } else {
+        this.markSelfOrigin(result.eventId);
+        this.events.update((list) => list.filter((e) => e.id !== result.eventId));
+      }
+    } else if (result.intent === 'todo_action') {
+      if (result.action === 'delete') {
+        this.todos.update((list) => list.filter((t) => t.id !== result.todoId));
+      } else {
+        const todo = toTodo(result.todo);
+        this.todos.update((list) => {
+          const idx = list.findIndex((t) => t.id === todo.id);
+          if (idx === -1) return [todo, ...list];
+          const next = [...list];
+          next[idx] = todo;
+          return next;
+        });
+      }
+    } else if (result.intent === 'note_action') {
+      if (result.action === 'delete') {
+        this.notes.update((list) => list.filter((n) => n.id !== result.noteId));
+      } else {
+        const note = toNote(result.note);
+        this.notes.update((list) => {
+          const idx = list.findIndex((n) => n.id === note.id);
+          if (idx === -1) return [note, ...list];
+          const next = [...list];
+          next[idx] = note;
+          return next;
+        });
+      }
     }
     return result;
   }
@@ -2171,7 +2249,13 @@ export type AiChatResult =
       /** Giờ AI đã hiểu được dù chưa đủ ngày, "HH:mm". */
       startTime?: string;
       endTime?: string;
-    };
+    }
+  | { intent: 'event_action'; action: 'update'; event: EventApiDto; reply: string }
+  | { intent: 'event_action'; action: 'delete'; eventId: string; reply: string }
+  | { intent: 'todo_action'; action: 'create' | 'update' | 'complete'; todo: TodoApiDto; reply: string }
+  | { intent: 'todo_action'; action: 'delete'; todoId: string; reply: string }
+  | { intent: 'note_action'; action: 'create' | 'update'; note: NoteApiDto; reply: string }
+  | { intent: 'note_action'; action: 'delete'; noteId: string; reply: string };
 
 /**
  * Một sự kiện AI đọc được từ file đính kèm.

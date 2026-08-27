@@ -12,7 +12,7 @@ import { TranslationService } from '../../../../core/i18n/translation.service';
 import { DialogService } from '../../../../core/services/dialog.service';
 import { GroupStore } from '../../../groups/data/group-store';
 import { Group } from '../../../groups/models/group.models';
-import { CALENDAR_COLOR_HEX } from '../../models/calendar.models';
+import { CALENDAR_COLOR_HEX, NOTE_COLOR_HEX } from '../../models/calendar.models';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { MiniCalendar } from '../mini-calendar/mini-calendar';
 
@@ -42,6 +42,7 @@ export class CalendarSidebar implements OnInit {
   protected readonly i18n = inject(TranslationService);
   private readonly dialog = inject(DialogService);
   protected readonly colorHex = CALENDAR_COLOR_HEX;
+  protected readonly noteColorHex = NOTE_COLOR_HEX;
 
   readonly createClicked = output<void>();
   readonly createCalendarClicked = output<void>();
@@ -141,6 +142,29 @@ export class CalendarSidebar implements OnInit {
       await this.groupStore.setGroupHidden(group.id, !group.hidden);
     } catch {
       await this.dialog.alert(this.i18n.t('sidebar.groupVisibilityError'));
+    }
+  }
+
+  protected readonly deletingNoteId = signal<string | null>(null);
+
+  async onDeleteNoteClicked(event: Event, noteId: string): Promise<void> {
+    event.preventDefault();
+    event.stopPropagation();
+    if (this.deletingNoteId()) return;
+
+    const ok = await this.dialog.confirm(this.i18n.t('sidebar.deleteNoteTitle'), {
+      confirmLabel: this.i18n.t('sidebar.deleteNoteConfirm'),
+      danger: true,
+    });
+    if (!ok) return;
+
+    this.deletingNoteId.set(noteId);
+    try {
+      await this.store.deleteNote(noteId);
+    } catch {
+      await this.dialog.alert(this.i18n.t('sidebar.deleteNoteError'));
+    } finally {
+      this.deletingNoteId.set(null);
     }
   }
 }
