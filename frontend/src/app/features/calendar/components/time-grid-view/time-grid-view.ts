@@ -54,6 +54,7 @@ interface DragCreateState {
 interface DragDeltaState {
   eventId: string;
   deltaMin: number;
+  deltaDays?: number;
 }
 
 function snap(min: number): number {
@@ -311,19 +312,43 @@ export class TimeGridView {
     const rect = columnEl.getBoundingClientRect();
     const startMin = snap(((mouseEvent.clientY - rect.top) / HOUR_HEIGHT) * 60);
     const dayKey = this.dayKey(day);
+    const container = this.scrollContainer()?.nativeElement;
+
     this.dragCreate.set({ dayKey, startMin, endMin: startMin + 30 });
 
     let moved = false;
-    const onMove = (e: MouseEvent) => {
-      const currentMin = snap(((e.clientY - rect.top) / HOUR_HEIGHT) * 60);
+    let animFrameId: number | null = null;
+    let lastClientY = mouseEvent.clientY;
+
+    const updateCreate = () => {
+      animFrameId = null;
+      if (container) {
+        const cRect = container.getBoundingClientRect();
+        if (lastClientY < cRect.top + 40) {
+          container.scrollTop -= 12;
+        } else if (lastClientY > cRect.bottom - 40) {
+          container.scrollTop += 12;
+        }
+      }
+
+      const currentMin = snap(((lastClientY - rect.top) / HOUR_HEIGHT) * 60);
       moved = true;
       const lo = Math.min(startMin, currentMin);
       const hi = Math.max(startMin, currentMin);
       this.dragCreate.set({ dayKey, startMin: lo, endMin: Math.max(hi, lo + SNAP_MINUTES) });
     };
+
+    const onMove = (e: MouseEvent) => {
+      lastClientY = e.clientY;
+      if (!animFrameId) {
+        animFrameId = requestAnimationFrame(updateCreate);
+      }
+    };
+
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
+      if (animFrameId) cancelAnimationFrame(animFrameId);
       const state = this.dragCreate();
       this.dragCreate.set(null);
       if (!state) return;
@@ -331,6 +356,7 @@ export class TimeGridView {
       const end = moved ? minutesToDate(day, state.endMin) : minutesToDate(day, startMin + 60);
       this.createRequested.emit({ start, end, allDay: false });
     };
+
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
   }
@@ -339,30 +365,90 @@ export class TimeGridView {
     if (mouseEvent.button !== 0) return;
     mouseEvent.preventDefault();
     mouseEvent.stopPropagation();
+
     const startClientY = mouseEvent.clientY;
+    const startClientX = mouseEvent.clientX;
+    const container = this.scrollContainer()?.nativeElement;
+
     let moved = false;
-    this.dragMove.set({ eventId: pe.event.id, deltaMin: 0 });
+    let animFrameId: number | null = null;
+    let lastClientY = startClientY;
+    let lastClientX = startClientX;
+
+    this.dragMove.set({ eventId: pe.event.id, deltaMin: 0, deltaDays: 0 });
+
+    const updateMove = () => {
+      animFrameId = null;
+      const deltaY = lastClientY - startClientY;
+      const deltaX = lastClientX - startClientX;
+      if (Math.abs(deltaY) > 3 || Math.abs(deltaX) > 10) moved = true;
+
+      if (container) {
+        const cRect = container.getBoundingClientRect();
+        if (lastClientY < cRect.top + 40) {
+          container.scrollTop -= 12;
+        } else if (lastClientY > cRect.bottom - 40) {
+          container.scrollTop += 12;
+        }
+      }
+
+      const deltaMin = snapSigned((deltaY / HOUR_HEIGHT) * 60);
+
+      // Determine day column under mouse cursor for horizontal dragging
+      let deltaDays = 0;
+      if (container) {
+        const columns = container.querySelectorAll('.day-col');
+        let targetDayIndex = -1;
+        columns.forEach((col, idx) => {
+          const r = col.getBoundingClientRect();
+          if (lastClientX >= r.left && lastClientX <= r.right) {
+            targetDayIndex = idx;
+          }
+        });
+        if (targetDayIndex !== -1) {
+          const startDayIndex = this.days().findIndex((d) => isSameDay(d, pe.event.start));
+          if (startDayIndex !== -1) {
+            deltaDays = targetDayIndex - startDayIndex;
+          }
+        }
+      }
+
+      this.dragMove.set({ eventId: pe.event.id, deltaMin, deltaDays });
+    };
 
     const onMove = (e: MouseEvent) => {
-      const deltaY = e.clientY - startClientY;
-      if (Math.abs(deltaY) > 3) moved = true;
-      const deltaMin = snapSigned((deltaY / HOUR_HEIGHT) * 60);
-      this.dragMove.set({ eventId: pe.event.id, deltaMin });
+      lastClientY = e.clientY;
+      lastClientX = e.clientX;
+      if (!animFrameId) {
+        animFrameId = requestAnimationFrame(updateMove);
+      }
     };
+
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
+      if (animFrameId) cancelAnimationFrame(animFrameId);
       const state = this.dragMove();
       this.dragMove.set(null);
+
       if (!moved || !state) {
         this.editRequested.emit(pe.event);
         return;
       }
+
+      let newStart = addMinutes(pe.event.start, state.deltaMin);
+      let newEnd = addMinutes(pe.event.end, state.deltaMin);
+      if (state.deltaDays) {
+        newStart = addDays(newStart, state.deltaDays);
+        newEnd = addDays(newEnd, state.deltaDays);
+      }
+
       this.store.updateEvent(pe.event.id, {
-        start: addMinutes(pe.event.start, state.deltaMin),
-        end: addMinutes(pe.event.end, state.deltaMin),
+        start: newStart,
+        end: newEnd,
       });
     };
+
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
   }
@@ -371,24 +457,50 @@ export class TimeGridView {
     if (mouseEvent.button !== 0) return;
     mouseEvent.preventDefault();
     mouseEvent.stopPropagation();
+
     const startClientY = mouseEvent.clientY;
     const originalDuration = diffMinutes(pe.event.start, pe.event.end);
+    const container = this.scrollContainer()?.nativeElement;
+
+    let animFrameId: number | null = null;
+    let lastClientY = startClientY;
+
     this.dragResize.set({ eventId: pe.event.id, deltaMin: 0 });
 
-    const onMove = (e: MouseEvent) => {
-      const deltaY = e.clientY - startClientY;
+    const updateResize = () => {
+      animFrameId = null;
+      if (container) {
+        const cRect = container.getBoundingClientRect();
+        if (lastClientY < cRect.top + 40) {
+          container.scrollTop -= 12;
+        } else if (lastClientY > cRect.bottom - 40) {
+          container.scrollTop += 12;
+        }
+      }
+
+      const deltaY = lastClientY - startClientY;
       let deltaMin = snapSigned((deltaY / HOUR_HEIGHT) * 60);
       if (originalDuration + deltaMin < SNAP_MINUTES) deltaMin = SNAP_MINUTES - originalDuration;
       this.dragResize.set({ eventId: pe.event.id, deltaMin });
     };
+
+    const onMove = (e: MouseEvent) => {
+      lastClientY = e.clientY;
+      if (!animFrameId) {
+        animFrameId = requestAnimationFrame(updateResize);
+      }
+    };
+
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
+      if (animFrameId) cancelAnimationFrame(animFrameId);
       const state = this.dragResize();
       this.dragResize.set(null);
       if (!state || state.deltaMin === 0) return;
       this.store.updateEvent(pe.event.id, { end: addMinutes(pe.event.end, state.deltaMin) });
     };
+
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
   }

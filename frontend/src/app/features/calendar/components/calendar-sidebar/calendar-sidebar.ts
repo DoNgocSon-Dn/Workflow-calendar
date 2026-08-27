@@ -12,7 +12,7 @@ import { TranslationService } from '../../../../core/i18n/translation.service';
 import { DialogService } from '../../../../core/services/dialog.service';
 import { GroupStore } from '../../../groups/data/group-store';
 import { Group } from '../../../groups/models/group.models';
-import { CALENDAR_COLOR_HEX } from '../../models/calendar.models';
+import { CALENDAR_COLOR_HEX, CalendarColor } from '../../models/calendar.models';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { MiniCalendar } from '../mini-calendar/mini-calendar';
 
