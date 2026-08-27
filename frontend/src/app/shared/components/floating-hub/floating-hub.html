@@ -651,16 +651,19 @@
                 />
               </svg>
             </label>
-            <input
-              class="text-input"
-              type="text"
-              maxlength="2000"
-              [ngModel]="draft()"
-              (ngModelChange)="draft.set($event)"
-              [placeholder]="pendingFile() ? 'Muốn lấy gì từ file này? (không bắt buộc)' : 'Nhập yêu cầu…'"
-              [disabled]="sending()"
-              (keydown.enter)="$event.preventDefault(); send()"
-            />
+            <div class="field-with-counter ai-draft-field">
+              <input
+                class="text-input"
+                type="text"
+                maxlength="2000"
+                [ngModel]="draft()"
+                (ngModelChange)="draft.set($event)"
+                [placeholder]="pendingFile() ? 'Muốn lấy gì từ file này? (không bắt buộc)' : 'Nhập yêu cầu…'"
+                [disabled]="sending()"
+                (keydown.enter)="$event.preventDefault(); send()"
+              />
+              <app-char-counter class="field-counter" [current]="draft().length" [max]="2000" />
+            </div>
             <!-- Nút tròn có icon thay cho nút chữ "Gửi". Panel hẹp nên nhãn
                  chữ ăn mất chiều ngang của ô nhập, mà mũi tên lên là quy ước
                  ai cũng đọc được ở ô chat. Nhãn cho trình đọc màn hình giữ

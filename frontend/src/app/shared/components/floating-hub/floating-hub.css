@@ -153,6 +153,26 @@
 }
 
 /* Notes tab */
+/* Bọc input/textarea + số đếm kí tự thành một cột — chữ đếm tự canh phải
+   ngay dưới ô nhập. Trong hàng flex (todo-input-row, input-row) thêm flex:1
+   để ô vẫn giãn hết chỗ còn lại như input gốc. */
+.field-with-counter {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.field-counter {
+  align-self: flex-end;
+  margin-top: -2px;
+}
+
+.todo-edit-field,
+.ai-draft-field {
+  flex: 1;
+  min-width: 0;
+}
+
 .add-row {
   flex-shrink: 0;
   display: flex;
@@ -331,6 +351,11 @@
 
 .todo-input-row .text-input {
   flex: 1;
+}
+
+.todo-input-row .field-with-counter {
+  flex: 1;
+  min-width: 0;
 }
 
 .todo-list {
