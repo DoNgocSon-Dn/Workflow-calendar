@@ -18,6 +18,7 @@ import { CreateRequest } from '../month-view/month-view';
 import { CalendarStore } from '../../data/calendar-store';
 import { CALENDAR_COLOR_HEX, CalendarEvent } from '../../models/calendar.models';
 import {
+  addDays,
   addMinutes,
   clampToDay,
   diffMinutes,
@@ -174,13 +175,16 @@ export class TimeGridView {
   protected readonly timedEventsByDay = computed(() => {
     const map = new Map<string, PositionedEvent[]>();
     for (const day of this.days()) {
+      const dayStart = startOfDay(day);
+      const dayEnd = addDays(dayStart, 1);
       const dayEvents = this.store
         .visibleEvents()
         .filter(
           (e) =>
             e.calendarId !== VN_HOLIDAY_CALENDAR_ID &&
             !e.allDay &&
-            isSameDay(e.start, day),
+            e.start.getTime() < dayEnd.getTime() &&
+            e.end.getTime() > dayStart.getTime(),
         );
       map.set(toDateInputValue(day), layoutDayEvents(dayEvents, HOUR_HEIGHT, day));
     }
