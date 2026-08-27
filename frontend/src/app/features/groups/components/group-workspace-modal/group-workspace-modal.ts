@@ -35,6 +35,8 @@ import {
   canChat,
   canInvite,
   canManage,
+  canSeeGroupCalendar,
+  canSeeGroupChat,
   canTransferLeadership,
   groupRoleLabelKey,
 } from '../../models/group-role';
@@ -149,6 +151,8 @@ export class GroupWorkspaceModal {
   protected readonly canInviteMembers = computed(() => canInvite(this.currentRole()));
   protected readonly canTransfer = computed(() => canTransferLeadership(this.currentRole()));
   protected readonly canUserChat = computed(() => canChat(this.currentRole()));
+  protected readonly canUserSeeGroupCalendar = computed(() => canSeeGroupCalendar(this.currentRole()));
+  protected readonly canUserSeeChat = computed(() => canSeeGroupChat(this.currentRole()));
 
   /** Có hiện cột thao tác trong danh sách thành viên không. Thành viên thường
    *  không quản lý được ai nên cả cột bị ẩn. */

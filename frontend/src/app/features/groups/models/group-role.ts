@@ -87,3 +87,13 @@ export function canTransferLeadership(actor: GroupRole | null): boolean {
 export function canChat(actor: GroupRole | null): boolean {
   return !!actor && actor !== GroupRole.GUEST;
 }
+
+/** Chỉ Trưởng nhóm (LEADER) và Phó nhóm (ADMIN) mới được xem/quản lý Lịch Nhóm. */
+export function canSeeGroupCalendar(actor: GroupRole | null): boolean {
+  return !!actor && (actor === GroupRole.LEADER || actor === GroupRole.ADMIN);
+}
+
+/** Khách (GUEST) không được xem cuộc trò chuyện nhóm. */
+export function canSeeGroupChat(actor: GroupRole | null): boolean {
+  return !!actor && actor !== GroupRole.GUEST;
+}

@@ -478,11 +478,13 @@ export class CalendarStore {
         .filter((id): id is string => !!id),
     );
 
-    // Known active calendar IDs listed in sidebar
+    // Known active calendar IDs listed in sidebar plus calendar IDs of all loaded events (including invited guest events)
+    const eventCalIds = new Set(this.events().map((e) => e.calendarId));
     const knownCalendarIds = new Set([
       ...this.calendars().map((c) => c.id),
       ...this.otherCalendars().map((c) => c.id),
       ...activeGroupCalIds,
+      ...eventCalIds,
     ]);
 
     return [...this.events(), ...this.holidayEvents()].filter((e) => {
@@ -658,12 +660,13 @@ export class CalendarStore {
 
       this.calendars.set(calendarDefs);
       const savedVisible = this.loadSavedVisibleCalendarIds();
-      if (savedVisible) {
-        this.visibleCalendarIds.set(savedVisible);
-      } else {
-        const visibleIds = new Set(calendarDefs.map((c) => c.id));
-        visibleIds.add(VN_HOLIDAY_CALENDAR_ID);
-        this.visibleCalendarIds.set(visibleIds);
+      const visibleIds = savedVisible ?? new Set(calendarDefs.map((c) => c.id));
+      for (const e of events) {
+        visibleIds.add(e.calendarId);
+      }
+      visibleIds.add(VN_HOLIDAY_CALENDAR_ID);
+      this.visibleCalendarIds.set(visibleIds);
+      if (!savedVisible) {
         this.saveVisibleCalendarIds(visibleIds);
       }
       this.events.set(events.map(toCalendarEvent));
@@ -1472,6 +1475,13 @@ export class CalendarStore {
     const events = await firstValueFrom(
       this.http.get<EventApiDto[]>(`${this.apiUrl}/events`),
     );
+    this.visibleCalendarIds.update((set) => {
+      const next = new Set(set);
+      for (const e of events) {
+        next.add(e.calendarId);
+      }
+      return next;
+    });
     this.events.set(events.map(toCalendarEvent));
   }
 
