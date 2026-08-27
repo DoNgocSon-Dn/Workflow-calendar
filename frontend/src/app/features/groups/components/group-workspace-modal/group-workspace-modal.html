@@ -93,24 +93,28 @@
 
       <!-- Workspace Navigation Tabs -->
       <nav class="workspace-tabs">
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeTab() === 'tasks'"
-          (click)="setTab('tasks')"
-        >
-          <app-icon class="tab-icon" name="check-square" /> {{ i18n.t('group.tabTasks') }}
-          <span class="tab-badge">{{ store.tasks().length }}</span>
-        </button>
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeTab() === 'members'"
-          (click)="setTab('members')"
-        >
-          <app-icon class="tab-icon" name="users" /> {{ i18n.t('group.tabMembers') }}
-          <span class="tab-badge">{{ store.members().length }}</span>
-        </button>
+        @if (canUserSeeTasks()) {
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab() === 'tasks'"
+            (click)="setTab('tasks')"
+          >
+            <app-icon class="tab-icon" name="check-square" /> {{ i18n.t('group.tabTasks') }}
+            <span class="tab-badge">{{ store.tasks().length }}</span>
+          </button>
+        }
+        @if (canUserSeeMembers()) {
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab() === 'members'"
+            (click)="setTab('members')"
+          >
+            <app-icon class="tab-icon" name="users" /> {{ i18n.t('group.tabMembers') }}
+            <span class="tab-badge">{{ store.members().length }}</span>
+          </button>
+        }
         @if (canUserSeeChat()) {
           <button
             type="button"

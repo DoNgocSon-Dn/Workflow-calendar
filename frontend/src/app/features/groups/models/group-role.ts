@@ -93,7 +93,17 @@ export function canSeeGroupCalendar(actor: GroupRole | null): boolean {
   return !!actor && (actor === GroupRole.LEADER || actor === GroupRole.ADMIN);
 }
 
-/** Khách (GUEST) không được xem cuộc trò chuyện nhóm. */
+/** Chỉ Trưởng nhóm (LEADER) và Phó nhóm (ADMIN) mới được xem/quản lý Task nhóm. */
+export function canSeeGroupTasks(actor: GroupRole | null): boolean {
+  return !!actor && (actor === GroupRole.LEADER || actor === GroupRole.ADMIN);
+}
+
+/** Chỉ Trưởng nhóm (LEADER) và Phó nhóm (ADMIN) mới được xem/quản lý danh sách Thành viên. */
+export function canSeeGroupMembers(actor: GroupRole | null): boolean {
+  return !!actor && (actor === GroupRole.LEADER || actor === GroupRole.ADMIN);
+}
+
+/** Khách (GUEST) không được xem cuộc trò chuyện nhóm. Thành viên (MEMBER), Phó nhóm (ADMIN), Trưởng nhóm (LEADER) được chat. */
 export function canSeeGroupChat(actor: GroupRole | null): boolean {
   return !!actor && actor !== GroupRole.GUEST;
 }

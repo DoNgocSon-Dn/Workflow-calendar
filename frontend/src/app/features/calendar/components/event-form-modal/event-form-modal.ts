@@ -18,6 +18,8 @@ import { TranslationService } from '../../../../core/i18n/translation.service';
 import { TimeFormatService } from '../../../../core/time-format/time-format-service';
 import { DialogService } from '../../../../core/services/dialog.service';
 import { NotificationSoundService } from '../../../../core/services/notification-sound.service';
+import { GroupStore } from '../../../groups/data/group-store';
+import { GroupRole } from '../../../groups/models/group-role';
 import { CalendarStore, localizedCalendarName } from '../../data/calendar-store';
 import {
   Attendee,
@@ -99,12 +101,14 @@ const DURATION_PRESETS: DurationPreset[] = [
 
 import { formatExternalUrl } from '../../../groups/utils/mention.util';
 
+import { Icon } from '../../../../shared/components/icon/icon';
+
 @Component({
   selector: 'app-event-form-modal',
   templateUrl: './event-form-modal.html',
   styleUrl: './event-form-modal.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, TimePicker, DatePicker, CommentsSection, CharCounter],
+  imports: [ReactiveFormsModule, TimePicker, DatePicker, CommentsSection, CharCounter, Icon],
 })
 export class EventFormModal {
   private readonly fb = inject(FormBuilder);
@@ -116,6 +120,7 @@ export class EventFormModal {
   private readonly dialog = inject(DialogService);
   private readonly notificationQueue = inject(NotificationQueue);
   private readonly notificationSound = inject(NotificationSoundService);
+  private readonly groupStore = inject(GroupStore);
 
   readonly event = input<CalendarEvent | null>(null);
   readonly defaultStart = input<Date | null>(null);
@@ -126,6 +131,52 @@ export class EventFormModal {
   readonly closed = output<void>();
 
   readonly durationPresets = DURATION_PRESETS;
+
+  /**
+   * Các lịch được phép chọn làm NƠI LƯU cho sự kiện.
+   *
+   * Lịch của sự kiện ĐANG SỬA luôn được giữ lại kể cả khi không ghi được, nếu
+   * không ô chọn lịch sẽ trống trơn lúc mở một sự kiện thuộc lịch chỉ-xem.
+   */
+  readonly selectableCalendars = computed<CalendarDef[]>(() => {
+    const currentId = this.event()?.calendarId;
+    const userId = this.authStore.user()?.id;
+    return this.store.calendars().filter((c) => {
+      if (c.id === currentId) return true;
+      if (!c.canEdit) return false;
+      const group = this.groupStore.groups().find((g) => g.calendarId === c.id);
+      if (group) {
+        if (group.ownerId === userId) return true;
+        if (this.groupStore.activeGroup()?.id === group.id) {
+          const role = this.groupStore.members().find((m) => m.userId === userId)?.role;
+          return role === GroupRole.LEADER || role === GroupRole.ADMIN;
+        }
+        return false;
+      }
+      return true;
+    });
+  });
+
+  protected readonly canEditCurrentEvent = computed(() => {
+    const evt = this.event();
+    const calId = evt?.calendarId || this.form.controls.calendarId.value;
+    if (!calId) return true;
+
+    const cal = this.store.calendars().find((c) => c.id === calId);
+    if (cal && cal.canEdit === false) return false;
+
+    const group = this.groupStore.groups().find((g) => g.calendarId === calId);
+    if (group) {
+      const userId = this.authStore.user()?.id;
+      if (group.ownerId === userId) return true;
+      if (this.groupStore.activeGroup()?.id === group.id) {
+        const role = this.groupStore.members().find((m) => m.userId === userId)?.role;
+        return role === GroupRole.LEADER || role === GroupRole.ADMIN;
+      }
+      return false;
+    }
+    return true;
+  });
 
   /** Chỉ hiển thị — app chưa hỗ trợ đa múi giờ, đây luôn là múi giờ trình duyệt. */
   protected readonly timezoneLabel = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -168,25 +219,6 @@ export class EventFormModal {
       month: String(lunar.month),
       year: String(lunar.year),
     });
-  });
-  /**
-   * Lịch được phép chọn làm nơi lưu sự kiện.
-   *
-   * Chỉ những lịch GHI ĐƯỢC. `canEdit` do backend tính từ vai trò trong
-   * calendar_members, không phải client tự đoán.
-   *
-   * Trước đây ô chọn lịch liệt kê thẳng store.calendars(), gồm cả lịch nhóm mà
-   * người dùng chỉ có vai trò `viewer`. Mà API trả lịch theo created_at, nên
-   * một lịch nhóm rất dễ đứng ĐẦU danh sách và trở thành lựa chọn mặc định —
-   * bấm Lưu là RLS chặn ngay ở tầng CSDL ("new row violates row-level security
-   * policy for table events"), trong khi người dùng không hề cố ý chọn nó.
-   *
-   * Lịch của sự kiện ĐANG SỬA luôn được giữ lại kể cả khi không ghi được, nếu
-   * không ô chọn lịch sẽ trống trơn lúc mở một sự kiện thuộc lịch chỉ-xem.
-   */
-  readonly selectableCalendars = computed<CalendarDef[]>(() => {
-    const currentId = this.event()?.calendarId;
-    return this.store.calendars().filter((c) => c.canEdit || c.id === currentId);
   });
 
   readonly calendarsLoading = this.store.calendarsLoading;
@@ -705,6 +737,10 @@ export class EventFormModal {
 
   async save(): Promise<void> {
     this.saveError.set(null);
+    if (!this.canEditCurrentEvent()) {
+      this.saveError.set(this.i18n.t('event.groupCalendarViewOnly'));
+      return;
+    }
 
     const currentCalId = this.form.controls.calendarId.value;
     if (!currentCalId || this.selectableCalendars().length === 0) {
@@ -925,6 +961,7 @@ export class EventFormModal {
   }
 
   async remove(): Promise<void> {
+    if (!this.canEditCurrentEvent()) return;
     const current = this.event();
     if (!current) {
       this.closed.emit();

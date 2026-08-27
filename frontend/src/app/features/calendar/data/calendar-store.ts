@@ -476,20 +476,17 @@ export class CalendarStore {
         .filter((id): id is string => !!id),
     );
 
-    // Map visible group calendar IDs
-    const activeGroupCalIds = new Set(
-      this.groupStore
-        .visibleGroups()
-        .map((g) => g.calendarId)
-        .filter((id): id is string => !!id),
-    );
+    // Map all own calendar IDs listed in user's sidebar
+    const ownCalendarIds = new Set([
+      ...this.calendars().map((c) => c.id),
+      ...this.otherCalendars().map((c) => c.id),
+      ...this.groupStore.groups().map((g) => g.calendarId).filter((id): id is string => !!id),
+    ]);
 
     // Known active calendar IDs listed in sidebar plus calendar IDs of all loaded events (including invited guest events)
     const eventCalIds = new Set(this.events().map((e) => e.calendarId));
     const knownCalendarIds = new Set([
-      ...this.calendars().map((c) => c.id),
-      ...this.otherCalendars().map((c) => c.id),
-      ...activeGroupCalIds,
+      ...ownCalendarIds,
       ...eventCalIds,
     ]);
 
@@ -497,11 +494,11 @@ export class CalendarStore {
       // 1. If calendar belongs to a hidden group workspace, hide event
       if (hiddenGroupCalIds.has(e.calendarId)) return false;
 
-      // 2. If calendar is unchecked in visibleCalendarIds, hide event
-      if (!visible.has(e.calendarId)) return false;
+      // 2. If calendar is one of the user's own sidebar calendars, check if checked in visibleCalendarIds
+      if (ownCalendarIds.has(e.calendarId) && !visible.has(e.calendarId)) return false;
 
-      // 3. If calendar is not listed in any active sidebar section, hide event
-      if (!knownCalendarIds.has(e.calendarId)) return false;
+      // 3. If calendar is not listed in any active sidebar section and not loaded as an event, hide event
+      if (ownCalendarIds.has(e.calendarId) && !knownCalendarIds.has(e.calendarId)) return false;
 
       if (!query) return true;
       return matchScore(e, query) !== null;

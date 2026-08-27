@@ -37,8 +37,11 @@ import {
   canManage,
   canSeeGroupCalendar,
   canSeeGroupChat,
+  canSeeGroupMembers,
+  canSeeGroupTasks,
   canTransferLeadership,
   groupRoleLabelKey,
+  normalizeGroupRole,
 } from '../../models/group-role';
 import {
   GROUP_COLOR_HEX,
@@ -144,7 +147,9 @@ export class GroupWorkspaceModal {
     const userId = this.currentUserId();
     if (!userId) return null;
     if (this.store.activeGroup()?.ownerId === userId) return GroupRole.LEADER;
-    return this.store.members().find((m) => m.userId === userId)?.role ?? null;
+    const rawRole = this.store.members().find((m) => m.userId === userId)?.role;
+    if (!rawRole) return null;
+    return normalizeGroupRole(rawRole);
   });
 
   protected readonly isLeader = computed(() => this.currentRole() === GroupRole.LEADER);
@@ -152,6 +157,8 @@ export class GroupWorkspaceModal {
   protected readonly canTransfer = computed(() => canTransferLeadership(this.currentRole()));
   protected readonly canUserChat = computed(() => canChat(this.currentRole()));
   protected readonly canUserSeeGroupCalendar = computed(() => canSeeGroupCalendar(this.currentRole()));
+  protected readonly canUserSeeTasks = computed(() => canSeeGroupTasks(this.currentRole()));
+  protected readonly canUserSeeMembers = computed(() => canSeeGroupMembers(this.currentRole()));
   protected readonly canUserSeeChat = computed(() => canSeeGroupChat(this.currentRole()));
 
   /** Có hiện cột thao tác trong danh sách thành viên không. Thành viên thường
@@ -318,13 +325,6 @@ export class GroupWorkspaceModal {
     // trong constructor: modal có thể mở sẵn hàng giờ, mồi sớm thì giờ gợi ý
     // đã thành quá khứ khi người dùng bấm sang tab này.
     effect(() => {
-      if (this.activeTab() !== 'calendar') return;
-      untracked(() => {
-        if (!this.meetDate()) this.seedMeetSchedule();
-      });
-    });
-
-    effect(() => {
       const tab = this.activeTab();
       if (tab === 'calendar' && !this.canUserSeeGroupCalendar()) {
         this.store.activeWorkspaceTab.set('tasks');
@@ -335,7 +335,11 @@ export class GroupWorkspaceModal {
   }
 
   setTab(tab: WorkspaceTab): void {
+    const role = this.currentRole();
+    if (role === GroupRole.MEMBER && tab !== 'chat') return;
     if (tab === 'calendar' && !this.canUserSeeGroupCalendar()) return;
+    if (tab === 'tasks' && !this.canUserSeeTasks()) return;
+    if (tab === 'members' && !this.canUserSeeMembers()) return;
     if (tab === 'chat' && !this.canUserSeeChat()) return;
     this.store.activeWorkspaceTab.set(tab);
     if (tab === 'chat') {

@@ -5,7 +5,7 @@
       <input id="event-modal-title" class="title-input" type="text" formControlName="title" [placeholder]="i18n.t('event.addTitle')"
         maxlength="200" autofocus />
       <app-char-counter [current]="form.controls.title.value.length" [max]="200" />
-      @if (event()) {
+      @if (event() && canEditCurrentEvent()) {
         <button type="button" class="icon-btn danger" [attr.aria-label]="i18n.t('common.delete')" [title]="i18n.t('common.delete')" (click)="remove()">
           <svg viewBox="0 0 24 24" width="20" height="20">
             <path fill="currentColor"
@@ -538,11 +538,18 @@
     </div>
     }
 
+    @if (!canEditCurrentEvent()) {
+      <div class="view-only-banner">
+        <app-icon name="eye-off" />
+        <span>{{ i18n.t('event.groupCalendarViewOnly') }}</span>
+      </div>
+    }
+
     <footer class="modal-footer">
       <span class="spacer"></span>
       <button type="button" class="text-btn" (click)="cancel()">{{ i18n.t('common.cancel') }}</button>
       @if (createMode() === 'event') {
-      <button type="submit" class="primary-btn" [disabled]="saving() || calendarsLoading()">
+      <button type="submit" class="primary-btn" [disabled]="saving() || calendarsLoading() || !canEditCurrentEvent()">
         {{ saving() ? i18n.t('common.saving') : i18n.t('common.save') }}
       </button>
       } @else {
