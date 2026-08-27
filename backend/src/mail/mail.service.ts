@@ -37,7 +37,7 @@ export class MailService {
     const { gmailUser } = this.configService.get('mail', { infer: true });
     const transporter = this.getTransporter();
     await transporter.sendMail({
-      from: `Calendar App <${gmailUser}>`,
+      from: `Workflow <${gmailUser}>`,
       to: input.to,
       subject: input.subject,
       html: input.html,
@@ -47,28 +47,33 @@ export class MailService {
   async sendInviteEmail(params: {
     to: string;
     eventTitle: string;
+    description?: string;
     startAt: string;
     endAt: string;
     location?: string;
+    meetLink?: string;
     acceptUrl: string;
     declineUrl: string;
   }): Promise<void> {
     const html = `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+        <p style="color:#5f6368; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; margin:0 0 8px;">Lời mời từ Workflow</p>
         <h2 style="margin-bottom: 4px;">${escapeHtml(params.eventTitle)}</h2>
-        <p>Bạn được mời tham gia sự kiện này.</p>
+        <p>Bạn được mời tham gia sự kiện này trên Workflow.</p>
         <p><strong>Thời gian:</strong> ${formatRange(params.startAt, params.endAt)}</p>
         ${params.location ? `<p><strong>Địa điểm:</strong> ${escapeHtml(params.location)}</p>` : ''}
+        ${params.meetLink ? `<p><strong>Link cuộc họp:</strong> <a href="${escapeHtml(params.meetLink)}">${escapeHtml(params.meetLink)}</a></p>` : ''}
+        ${params.description ? `<p><strong>Mô tả:</strong> ${escapeHtml(params.description)}</p>` : ''}
         <div style="margin-top: 24px;">
           <a href="${params.acceptUrl}" style="background:#1a73e8;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none;margin-right:12px;display:inline-block;">Đồng ý</a>
           <a href="${params.declineUrl}" style="background:#d93025;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none;display:inline-block;">Từ chối</a>
         </div>
-        <p style="color:#888; font-size:12px; margin-top:24px;">Link xác nhận có hiệu lực trong 7 ngày, chỉ dùng được 1 lần.</p>
+        <p style="color:#888; font-size:12px; margin-top:24px;">Link xác nhận có hiệu lực trong 7 ngày, chỉ dùng được 1 lần. Email này được gửi tự động từ ứng dụng Workflow.</p>
       </div>
     `;
     await this.sendMail({
       to: params.to,
-      subject: `[${params.eventTitle}] mời bạn tham gia`,
+      subject: `[Workflow] Lời mời tham gia: ${params.eventTitle}`,
       html,
     });
   }

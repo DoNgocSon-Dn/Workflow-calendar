@@ -660,10 +660,15 @@ export class EventFormModal {
       this.pendingGuestEmailControl.markAsTouched();
       return;
     }
-    if (!this.pendingGuestEmails().includes(email)) {
-      this.pendingGuestEmails.update((list) => [...list, email]);
-    }
     this.pendingGuestEmailControl.reset('');
+    const normalized = email.toLowerCase();
+    // So khớp không phân biệt hoa/thường: "A@x.com" và "a@x.com" là cùng một
+    // người, kể cả với chính người đang tạo sự kiện — mời họ chỉ tạo ra một
+    // dòng attendee vô nghĩa và một email thừa.
+    const myEmail = this.authStore.user()?.email?.toLowerCase();
+    if (myEmail && normalized === myEmail) return;
+    if (this.pendingGuestEmails().some((e) => e.toLowerCase() === normalized)) return;
+    this.pendingGuestEmails.update((list) => [...list, email]);
   }
 
   removePendingGuest(email: string): void {
@@ -954,6 +959,11 @@ export class EventFormModal {
     const email = this.inviteEmailControl.value.trim();
     if (!evt || !email || this.inviteEmailControl.invalid) {
       this.inviteEmailControl.markAsTouched();
+      return;
+    }
+    const myEmail = this.authStore.user()?.email?.toLowerCase();
+    if (myEmail && email.toLowerCase() === myEmail) {
+      this.inviteError.set(this.i18n.t('event.cannotInviteSelf'));
       return;
     }
     this.inviting.set(true);

@@ -35,7 +35,9 @@ export type SeriesEditScope = 'following' | 'all';
 
 interface InviteEventContext {
   title: string;
+  description: string | null;
   location: string | null;
+  meet_link: string | null;
   start_at: string;
   end_at: string;
 }
@@ -524,11 +526,23 @@ export class EventsService {
   ): Promise<AttendeeDto> {
     const { data: eventRow, error: eventError } = await supabase
       .from('events')
-      .select('id, calendar_id, title, location, start_at, end_at')
+      .select('id, calendar_id, title, description, location, meet_link, start_at, end_at, created_by')
       .eq('id', eventId)
-      .maybeSingle<{ id: string; calendar_id: string } & InviteEventContext>();
+      .maybeSingle<
+        { id: string; calendar_id: string; created_by: string | null } & InviteEventContext
+      >();
     if (eventError) throw new InternalServerErrorException(eventError.message);
     if (!eventRow) throw new NotFoundException('Event not found');
+
+    // Không mời chính người đã tạo sự kiện — họ mặc nhiên đã có mặt, mời thêm
+    // chỉ tạo ra một dòng attendee vô nghĩa và một email thừa gửi cho chính họ.
+    if (eventRow.created_by) {
+      const admin = this.supabaseService.getServiceRoleClient();
+      const { data: creator } = await admin.auth.admin.getUserById(eventRow.created_by);
+      if (creator?.user?.email?.toLowerCase() === dto.email.toLowerCase()) {
+        throw new ConflictException('Không thể mời chính người tổ chức sự kiện');
+      }
+    }
 
     const { data: userId, error: lookupError } = await supabase.rpc(
       'find_user_id_by_email',
@@ -595,9 +609,11 @@ export class EventsService {
       await this.mailService.sendInviteEmail({
         to: toEmail,
         eventTitle: eventRow.title,
+        description: eventRow.description ?? undefined,
         startAt: eventRow.start_at,
         endAt: eventRow.end_at,
         location: eventRow.location ?? undefined,
+        meetLink: eventRow.meet_link ?? undefined,
         acceptUrl: `${baseUrl}/events/${eventId}/respond-via-email?token=${token}&action=accept`,
         declineUrl: `${baseUrl}/events/${eventId}/respond-via-email?token=${token}&action=decline`,
       });
