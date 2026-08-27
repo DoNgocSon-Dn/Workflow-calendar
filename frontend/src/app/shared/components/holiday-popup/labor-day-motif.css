@@ -19,33 +19,90 @@
   pointer-events: none;
 }
 
+.ldm-layer--bg {
+  z-index: 1;
+  transform: translate(calc(var(--holiday-px, 0) * 1.5px), calc(var(--holiday-py, 0) * 1.5px));
+}
+
 .ldm-layer--mid {
   z-index: 2;
-  transform: translate(calc(var(--holiday-px, 0) * 3px), calc(var(--holiday-py, 0) * 3px));
+  transform: translate(calc(var(--holiday-px, 0) * 3.5px), calc(var(--holiday-py, 0) * 3.5px));
 }
 
-.ldm-poster-img {
-  opacity: 0.88;
-  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.35));
-  animation: ldmPosterFloat 7s ease-in-out infinite alternate;
+.ldm-layer--fg {
+  z-index: 3;
+  transform: translate(calc(var(--holiday-px, 0) * 6px), calc(var(--holiday-py, 0) * 6px));
 }
 
-@keyframes ldmPosterFloat {
+/* Vòng hào quang tỏa sáng nhịp thở đằng sau nón */
+.ldm-halo-glow {
+  animation: ldmGlowPulse 4s ease-in-out infinite alternate;
+}
+
+/* Các tia hào quang xoay tròn liên tục đằng sau nón */
+.ldm-halo-spin {
+  animation: ldmHaloRotate 28s linear infinite;
+  transform-origin: 120px 85px;
+}
+
+/* Nón bảo hộ công nhân nảy nhẹ bồng bềnh */
+.ldm-helmet-group {
+  animation: ldmHelmetFloat 6s ease-in-out infinite alternate;
+  transform-origin: 120px 85px;
+}
+
+/* Hạt sáng lấp lánh */
+.ldm-sparkle {
+  animation: ldmSparkleFade 3s ease-in-out infinite alternate;
+}
+
+/* ================= Keyframes ================= */
+
+@keyframes ldmHaloRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ldmGlowPulse {
   0% {
-    transform: translateY(0);
+    opacity: 0.6;
+    transform: scale(0.95);
   }
   100% {
-    transform: translateY(-4px);
+    opacity: 1;
+    transform: scale(1.08);
   }
 }
 
-:host-context(.dark) .ldm-poster-img {
-  opacity: 0.82;
-  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.5));
+@keyframes ldmHelmetFloat {
+  0% {
+    transform: translate(120px, 85px) translateY(0);
+  }
+  100% {
+    transform: translate(120px, 85px) translateY(-5px);
+  }
+}
+
+@keyframes ldmSparkleFade {
+  0% {
+    opacity: 0.2;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 0.8;
+    transform: scale(1.2);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ldm-poster-img {
+  .ldm-halo-glow,
+  .ldm-halo-spin,
+  .ldm-helmet-group,
+  .ldm-sparkle {
     animation: none !important;
   }
 }

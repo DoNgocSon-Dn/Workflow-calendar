@@ -37,32 +37,32 @@
   }
 }
 
-/* Tranh Cổ Động 1/5 & 30/4 — đặt CHÍNH GIỮA màn hình, mask mờ hòa vào nền */
+/* Nón công nhân + Hào quang xoay 1/5 & 30/4 — đặt CHÍNH GIỮA màn hình mờ dịu sang trọng */
 .holiday-backdrop--labor-day .holiday-backdrop__motif {
   top: 50%;
   left: 50%;
   right: auto;
   transform: translate(-50%, -50%);
-  width: min(52vw, 560px);
-  height: min(65%, 500px);
-  opacity: 0.65;
-  mask-image: radial-gradient(65% 65% at 50% 50%, #000 58%, transparent 100%);
-  -webkit-mask-image: radial-gradient(65% 65% at 50% 50%, #000 58%, transparent 100%);
+  width: min(48vw, 520px);
+  height: min(60%, 450px);
+  opacity: 0.55;
+  mask-image: radial-gradient(65% 65% at 50% 50%, #000 55%, transparent 100%);
+  -webkit-mask-image: radial-gradient(65% 65% at 50% 50%, #000 55%, transparent 100%);
 }
 
 @media (max-width: 1200px) {
   .holiday-backdrop--labor-day .holiday-backdrop__motif {
-    width: min(58vw, 440px);
-    height: min(50%, 380px);
-    opacity: 0.55;
+    width: min(54vw, 400px);
+    height: min(46%, 340px);
+    opacity: 0.45;
   }
 }
 
 @media (max-width: 900px) {
   .holiday-backdrop--labor-day .holiday-backdrop__motif {
-    width: min(72vw, 320px);
-    height: min(38%, 240px);
-    opacity: 0.45;
+    width: min(68vw, 290px);
+    height: min(34%, 220px);
+    opacity: 0.38;
   }
 }
 
