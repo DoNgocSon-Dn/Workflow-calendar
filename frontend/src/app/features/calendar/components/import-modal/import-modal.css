@@ -185,6 +185,23 @@
   text-overflow: ellipsis;
 }
 
+/* Bọc input + số đếm kí tự thành một cột — dùng cho tiêu đề (nằm trong hàng
+   flex cùng số thứ tự và nút xoá) lẫn địa điểm (đã tự là cột nhờ .preview-field). */
+.field-with-counter {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.field-counter {
+  align-self: flex-end;
+  margin-top: -2px;
+}
+
+.title-field {
+  flex: 1 1 auto;
+}
+
 .title-input {
   /* 150px trước đây chỉ vừa vài chữ — tiêu đề sự kiện thật (VD "Sprint
      Planning Q4 - Estimation") dài hơn thế nhiều, luôn bị cắt cụt. */

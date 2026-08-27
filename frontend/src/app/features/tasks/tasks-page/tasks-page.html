@@ -130,12 +130,12 @@
                 <button type="button" class="todo-star active" [attr.aria-label]="i18n.t('tasks.unstar')" (click)="toggleStar(todo)">
                   <app-icon name="star" [filled]="true" />
                 </button>
-                <button type="button" class="todo-delete" aria-label="Xoá" (click)="removeTodo(todo.id)">
+                <button type="button" class="todo-delete" [attr.aria-label]="i18n.t('common.delete')" (click)="removeTodo(todo.id)">
                   <app-icon name="trash" />
                 </button>
               </li>
             } @empty {
-              <li class="todo-empty">Chưa gắn dấu sao cho việc nào.</li>
+              <li class="todo-empty">{{ i18n.t('tasks.noStarred') }}</li>
             }
 
             @if (starredDone().length > 0) {
@@ -147,7 +147,7 @@
                   <button type="button" class="todo-star active" [attr.aria-label]="i18n.t('tasks.unstar')" (click)="toggleStar(todo)">
                     <app-icon name="star" [filled]="true" />
                   </button>
-                  <button type="button" class="todo-delete" aria-label="Xoá" (click)="removeTodo(todo.id)">
+                  <button type="button" class="todo-delete" [attr.aria-label]="i18n.t('common.delete')" (click)="removeTodo(todo.id)">
                     <app-icon name="trash" />
                   </button>
                 </li>
@@ -227,10 +227,10 @@
                       }
                     </div>
                   }
-                  <button type="button" class="todo-star" [class.active]="todo.starred" [attr.aria-label]="todo.starred ? 'Bỏ dấu sao' : 'Gắn dấu sao'" (click)="toggleStar(todo)">
+                  <button type="button" class="todo-star" [class.active]="todo.starred" [attr.aria-label]="todo.starred ? i18n.t('tasks.unstar') : i18n.t('tasks.star')" (click)="toggleStar(todo)">
                     <app-icon name="star" [filled]="todo.starred" />
                   </button>
-                  <button type="button" class="todo-delete" aria-label="Xoá" (click)="removeTodo(todo.id)">
+                  <button type="button" class="todo-delete" [attr.aria-label]="i18n.t('common.delete')" (click)="removeTodo(todo.id)">
                     <app-icon name="trash" />
                   </button>
                 </li>
@@ -244,10 +244,10 @@
                   <li class="todo-item todo-item-done">
                     <input type="checkbox" [checked]="todo.done" (change)="toggleTodo(todo)" />
                     <span class="todo-content">{{ todo.content }}</span>
-                    <button type="button" class="todo-star" [class.active]="todo.starred" [attr.aria-label]="todo.starred ? 'Bỏ dấu sao' : 'Gắn dấu sao'" (click)="toggleStar(todo)">
+                    <button type="button" class="todo-star" [class.active]="todo.starred" [attr.aria-label]="todo.starred ? i18n.t('tasks.unstar') : i18n.t('tasks.star')" (click)="toggleStar(todo)">
                       <app-icon name="star" [filled]="todo.starred" />
                     </button>
-                    <button type="button" class="todo-delete" aria-label="Xoá" (click)="removeTodo(todo.id)">
+                    <button type="button" class="todo-delete" [attr.aria-label]="i18n.t('common.delete')" (click)="removeTodo(todo.id)">
                       <app-icon name="trash" />
                     </button>
                   </li>

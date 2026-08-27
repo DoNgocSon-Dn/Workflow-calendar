@@ -135,7 +135,7 @@
                         [placeholder]="i18n.t('import.fieldLocationPlaceholder')"
                         appOverflowTooltip
                       />
-                      <app-char-counter class="field-counter" [current]="item.location.length" [max]="200" />
+                      <app-char-counter class="field-counter" [current]="item.location?.length ?? 0" [max]="200" />
                     </div>
                   </div>
                 </div>
