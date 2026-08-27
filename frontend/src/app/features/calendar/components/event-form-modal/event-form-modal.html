@@ -221,46 +221,45 @@
         @if (attendeesOpen()) {
         <div class="field-content">
           @if (event()) {
-          <div class="row">
-            <input class="text-input" type="email" maxlength="254" [formControl]="inviteEmailControl" [placeholder]="i18n.t('event.inviteViaEmail')"
-              (keydown.enter)="$event.preventDefault(); invite()" />
-            <button type="button" class="text-btn compact" [disabled]="inviting()" (click)="invite()">
-              {{ i18n.t('event.invite') }}
-            </button>
-          </div>
-          @if (inviteEmailControl.invalid && inviteEmailControl.touched) {
-          <p class="field-error">{{ i18n.t('event.invalidEmail') }}</p>
-          }
-          @if (inviteError()) {
-          <p class="field-error">{{ inviteError() }}</p>
-          }
-
-          @if (attendees().length > 0) {
-          <ul class="attendee-list">
-            @for (a of attendees(); track a.id) {
-            <li class="attendee-item">
-              <span>{{ a.email }}</span>
-              <span class="attendee-status" [class]="'status-' + a.status">
-                {{ statusLabel(a.status) }}
-              </span>
-            </li>
+            @if (myAttendee(); as mine) {
+              @if (mine.status === 'pending') {
+              <div class="row invite-banner">
+                <span class="presets-label">{{ i18n.t('event.invitedYou') }}</span>
+                <button type="button" class="primary-btn" (click)="respond('accepted')">
+                  {{ i18n.t('common.accept') }}
+                </button>
+                <button type="button" class="text-btn" (click)="respond('declined')">
+                  {{ i18n.t('common.decline') }}
+                </button>
+              </div>
+              }
             }
-          </ul>
-          }
+            <div class="row">
+              <input class="text-input" type="email" maxlength="254" [formControl]="inviteEmailControl" [placeholder]="i18n.t('event.inviteViaEmail')"
+                (keydown.enter)="$event.preventDefault(); invite()" />
+              <button type="button" class="text-btn compact" [disabled]="inviting()" (click)="invite()">
+                {{ i18n.t('event.invite') }}
+              </button>
+            </div>
+            @if (inviteEmailControl.invalid && inviteEmailControl.touched) {
+            <p class="field-error">{{ i18n.t('event.invalidEmail') }}</p>
+            }
+            @if (inviteError()) {
+            <p class="field-error">{{ inviteError() }}</p>
+            }
 
-          @if (myAttendee(); as mine) {
-          @if (mine.status === 'pending') {
-          <div class="row">
-            <span class="presets-label">{{ i18n.t('event.invitedYou') }}</span>
-            <button type="button" class="primary-btn" (click)="respond('accepted')">
-              {{ i18n.t('common.accept') }}
-            </button>
-            <button type="button" class="text-btn" (click)="respond('declined')">
-              {{ i18n.t('common.decline') }}
-            </button>
-          </div>
-          }
-          }
+            @if (attendees().length > 0) {
+            <ul class="attendee-list">
+              @for (a of attendees(); track a.id) {
+              <li class="attendee-item">
+                <span>{{ a.email }}</span>
+                <span class="attendee-status" [class]="'status-' + a.status">
+                  {{ statusLabel(a.status) }}
+                </span>
+              </li>
+              }
+            </ul>
+            }
           } @else {
           <div class="row">
             <input class="text-input" type="email" maxlength="254" [formControl]="pendingGuestEmailControl" [placeholder]="i18n.t('event.inviteViaEmail')"

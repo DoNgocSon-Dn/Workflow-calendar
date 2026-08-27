@@ -327,16 +327,18 @@ export class GroupWorkspaceModal {
     effect(() => {
       const tab = this.activeTab();
       if (tab === 'calendar' && !this.canUserSeeGroupCalendar()) {
-        this.store.activeWorkspaceTab.set('tasks');
+        this.store.activeWorkspaceTab.set(this.canUserSeeTasks() ? 'tasks' : 'chat');
+      } else if (tab === 'tasks' && !this.canUserSeeTasks()) {
+        this.store.activeWorkspaceTab.set('chat');
+      } else if (tab === 'members' && !this.canUserSeeMembers()) {
+        this.store.activeWorkspaceTab.set('chat');
       } else if (tab === 'chat' && !this.canUserSeeChat()) {
-        this.store.activeWorkspaceTab.set('tasks');
+        this.store.activeWorkspaceTab.set(this.canUserSeeTasks() ? 'tasks' : 'calendar');
       }
     });
   }
 
   setTab(tab: WorkspaceTab): void {
-    const role = this.currentRole();
-    if (role === GroupRole.MEMBER && tab !== 'chat') return;
     if (tab === 'calendar' && !this.canUserSeeGroupCalendar()) return;
     if (tab === 'tasks' && !this.canUserSeeTasks()) return;
     if (tab === 'members' && !this.canUserSeeMembers()) return;
@@ -1198,9 +1200,10 @@ export class GroupWorkspaceModal {
   });
 
   /**
-   * Thành viên thường được gắn vai 'viewer' trên `calendar_members` của lịch
-   * nhóm nên RLS chặn họ ghi sự kiện. Ẩn hẳn ô "tạo sự kiện" thay vì để họ tích
-   * vào rồi nhận lỗi sau khi bấm lưu.
+   * Dựa vào `canEdit` thật của lịch nhóm (backend suy từ `calendar_members`)
+   * thay vì đoán theo vai trò nhóm — mọi thành viên nhóm hiện là 'editor' trên
+   * lịch nhóm, chỉ có lịch chưa đồng bộ mới trả về false. Ẩn hẳn ô "tạo sự
+   * kiện" thay vì để người dùng tích vào rồi nhận lỗi sau khi bấm lưu.
    */
   protected readonly canAddGroupEvent = computed(() => {
     const calendarId = this.store.activeGroup()?.calendarId;

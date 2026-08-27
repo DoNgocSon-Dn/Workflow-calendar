@@ -375,6 +375,14 @@
   gap: 0.5rem;
 }
 
+.invite-banner {
+  background: var(--color-surface-input);
+  border: 1px solid var(--color-border-subtle);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+}
+
 .custom-interval-input {
   width: 3.5rem;
 }

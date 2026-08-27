@@ -1446,6 +1446,13 @@ export class GroupsService {
     }
 
     if (dto.status === 'approved') {
+      // approve_group_join_request (migration 24) chèn calendar_members với
+      // 'viewer' cho vai trò khác 'admin' — nâng lên 'editor' như luồng mời.
+      await this.upsertCalendarMember(
+        await this.groupCalendarId(groupId),
+        request.userId,
+      );
+
       const member = await this.getMembers(supabase, groupId).then((members) =>
         members.find((m) => m.userId === request.userId),
       );
@@ -1700,11 +1707,11 @@ export class GroupsService {
       const calId = group.calendar_id;
 
       // Người nhận -> chủ lịch TRƯỚC (tránh khoảnh khắc lịch không có chủ nào).
-      const { error: e1 } = await admin
-        .from('calendar_members')
-        .update({ role: 'owner' })
-        .eq('calendar_id', calId)
-        .eq('user_id', targetUserId);
+      // upsert phòng khi họ chưa có hàng calendar_members nào.
+      const { error: e1 } = await admin.from('calendar_members').upsert(
+        { calendar_id: calId, user_id: targetUserId, role: 'owner' },
+        { onConflict: 'calendar_id,user_id' },
+      );
       // Người giao -> editor (vẫn ở trong nhóm, chỉ mất ghế chủ).
       const { error: e2 } = await admin
         .from('calendar_members')
