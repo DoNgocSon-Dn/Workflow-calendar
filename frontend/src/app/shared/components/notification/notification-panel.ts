@@ -252,9 +252,12 @@ export class NotificationPanel {
       return;
     }
 
-    if (notification.type === 'group_invitation' && notification.relatedId) {
-      // Lời mời còn "pending" đã có nút Chấp nhận/Từ chối riêng — click vào
-      // thân thông báo lúc đó chỉ nên đánh dấu đã đọc, không điều hướng.
+    if (
+      (notification.type === 'group_invitation' || notification.type === 'group_join_request') &&
+      notification.relatedId
+    ) {
+      // Còn "pending" đã có nút Chấp nhận/Từ chối riêng — click vào thân
+      // thông báo lúc đó chỉ nên đánh dấu đã đọc, không điều hướng.
       if (notification.actionStatus === 'pending') return;
       this.openGroup.emit({ groupId: notification.relatedId });
       this.close.emit();
@@ -277,6 +280,18 @@ export class NotificationPanel {
           await this.groupStore.respondToInvite(inviteId, payload.status);
           if (payload.status === 'accepted') {
             await this.calendarStore.loadAll();
+          }
+        } else {
+          this.service.respond(payload.id, payload.status);
+        }
+      } else if (notification?.type === 'group_join_request') {
+        const requestId = notification.metadata?.['requestId'];
+        const groupId = notification.metadata?.['groupId'];
+        if (requestId && groupId) {
+          if (payload.status === 'accepted') {
+            await this.groupStore.approveJoinRequest(groupId, requestId);
+          } else {
+            await this.groupStore.declineJoinRequest(groupId, requestId);
           }
         } else {
           this.service.respond(payload.id, payload.status);

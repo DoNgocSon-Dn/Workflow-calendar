@@ -42,12 +42,18 @@ export class AuthStore {
    * Cách đăng nhập duy nhất của ứng dụng. Không còn luồng email/mật khẩu nên
    * cũng không còn đăng ký hay đặt lại mật khẩu — tài khoản mới được Supabase
    * tạo ngay trong lần đăng nhập Google đầu tiên.
+   *
+   * `returnUrl` cho phép quay lại đúng trang đã kéo người dùng vào /login
+   * (vd. authGuard giữ lại `?returnUrl=` khi chặn một route cần đăng nhập) —
+   * mặc định vẫn là /calendar như trước. Đây là redirect toàn trang qua
+   * Supabase/Google chứ không phải Angular router, nên phải truyền thẳng vào
+   * đây thay vì trông chờ router điều hướng lại sau khi quay về.
    */
-  async signInWithGoogle(): Promise<AuthError | null> {
+  async signInWithGoogle(returnUrl?: string): Promise<AuthError | null> {
     const { error } = await this.supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/calendar`,
+        redirectTo: `${window.location.origin}${returnUrl || '/calendar'}`,
       },
     });
     return error;

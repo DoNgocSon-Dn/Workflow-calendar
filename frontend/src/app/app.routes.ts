@@ -65,5 +65,13 @@ export const routes: Routes = [
         (m) => m.ImportModalComponent,
       ),
   },
+  {
+    path: 'groups/join/:token',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/groups/pages/group-join-page/group-join-page').then(
+        (m) => m.GroupJoinPage,
+      ),
+  },
   { path: '**', redirectTo: 'calendar' },
 ];

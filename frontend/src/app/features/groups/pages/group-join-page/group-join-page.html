@@ -1,0 +1,56 @@
+<div class="join-page">
+  <div class="join-card">
+    @switch (state()) {
+      @case ('loading') {
+        <div class="join-spinner" aria-hidden="true"></div>
+        <p class="join-status">{{ i18n.t('group.joinPageLoading') }}</p>
+      }
+
+      @case ('invalid') {
+        <div class="join-group-badge join-group-badge--warn" aria-hidden="true">!</div>
+        <p class="join-status">{{ i18n.t('group.joinPageInvalidLink') }}</p>
+        <a class="join-btn join-btn--ghost" routerLink="/calendar">
+          {{ i18n.t('group.joinPageBackHome') }}
+        </a>
+      }
+
+      @default {
+        @if (preview(); as p) {
+          <div class="join-group-badge" [style.background]="groupColorHex(p.groupColor)">
+            {{ p.groupName.charAt(0).toUpperCase() }}
+          </div>
+          <h1 class="join-group-name">{{ p.groupName }}</h1>
+          @if (p.groupDescription) {
+            <p class="join-group-desc">{{ p.groupDescription }}</p>
+          }
+
+          @if (state() === 'submitted') {
+            <p class="join-status join-status--success">{{ i18n.t('group.joinPageSubmitted') }}</p>
+            <button type="button" class="join-btn" (click)="goToGroup()">
+              {{ i18n.t('group.joinPageGoToGroup') }}
+            </button>
+          } @else if (p.isMember) {
+            <p class="join-status">{{ i18n.t('group.joinPageAlreadyMember') }}</p>
+            <button type="button" class="join-btn" (click)="goToGroup()">
+              {{ i18n.t('group.joinPageGoToGroup') }}
+            </button>
+          } @else if (p.myPendingRequestId) {
+            <p class="join-status">{{ i18n.t('group.joinPagePendingRequest') }}</p>
+          } @else {
+            <button
+              type="button"
+              class="join-btn"
+              [disabled]="state() === 'submitting'"
+              (click)="requestToJoin()"
+            >
+              {{ i18n.t('group.joinPageSubmitButton') }}
+            </button>
+            @if (errorMessage(); as err) {
+              <p class="join-error">{{ err }}</p>
+            }
+          }
+        }
+      }
+    }
+  </div>
+</div>

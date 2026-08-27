@@ -30,6 +30,7 @@ import {
   GROUP_COLOR_HEX,
   GROUP_COLORS,
   GroupColor,
+  GroupJoinRequest,
   GroupMember,
   GroupMessage,
   GroupMessageAttachment,
@@ -143,6 +144,7 @@ export class GroupWorkspaceModal {
 
   // Member invite form
   private static readonly EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  protected readonly copyFeedback = signal<string | null>(null);
   protected readonly inviteEmail = signal('');
   protected readonly inviteRole = signal<GroupRole>(DEFAULT_GROUP_ROLE);
   protected readonly inviting = signal(false);
@@ -362,6 +364,34 @@ export class GroupWorkspaceModal {
     } finally {
       this.inviting.set(false);
     }
+  }
+
+  protected inviteLinkUrl(token: string): string {
+    return `${window.location.origin}/groups/join/${token}`;
+  }
+
+  protected async copyInviteLink(token: string): Promise<void> {
+    await navigator.clipboard.writeText(this.inviteLinkUrl(token));
+    this.copyFeedback.set(this.i18n.t('group.inviteLinkCopied'));
+    setTimeout(() => this.copyFeedback.set(null), 2000);
+  }
+
+  protected async regenerateInviteLink(): Promise<void> {
+    const group = this.store.activeGroup();
+    if (!group) return;
+    await this.store.regenerateInviteLink(group.id);
+  }
+
+  protected async approveJoinRequest(r: GroupJoinRequest): Promise<void> {
+    const group = this.store.activeGroup();
+    if (!group) return;
+    await this.store.approveJoinRequest(group.id, r.id);
+  }
+
+  protected async declineJoinRequest(r: GroupJoinRequest): Promise<void> {
+    const group = this.store.activeGroup();
+    if (!group) return;
+    await this.store.declineJoinRequest(group.id, r.id);
   }
 
   toggleRoleMenu(userId: string): void {

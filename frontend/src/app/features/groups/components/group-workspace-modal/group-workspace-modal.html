@@ -499,6 +499,65 @@
                   <p class="success-msg">{{ ok }}</p>
                 }
               </div>
+
+              <div class="invite-card invite-link-card">
+                <h3>{{ i18n.t('group.inviteLinkTitle') }}</h3>
+                @if (store.inviteLink(); as link) {
+                  <div class="invite-link-row">
+                    <input
+                      type="text"
+                      class="text-input"
+                      readonly
+                      [value]="inviteLinkUrl(link.token)"
+                    />
+                    <button type="button" class="btn btn-ghost" (click)="copyInviteLink(link.token)">
+                      {{ i18n.t('group.inviteLinkCopy') }}
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-ghost"
+                      [disabled]="store.loadingInviteLink()"
+                      (click)="regenerateInviteLink()"
+                    >
+                      {{ i18n.t('group.inviteLinkRegenerate') }}
+                    </button>
+                  </div>
+                } @else {
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    [disabled]="store.loadingInviteLink()"
+                    (click)="regenerateInviteLink()"
+                  >
+                    {{ i18n.t('group.inviteLinkGenerate') }}
+                  </button>
+                }
+                @if (copyFeedback(); as msg) {
+                  <p class="success-msg">{{ msg }}</p>
+                }
+              </div>
+
+              <div class="invite-card join-requests-card">
+                <h3>{{ i18n.t('group.joinRequestsTitle') }} ({{ store.pendingJoinRequests().length }})</h3>
+                @for (r of store.pendingJoinRequests(); track r.id) {
+                  <div class="member-row">
+                    <div class="member-info">
+                      <span class="user-avatar"><app-icon name="user" /></span>
+                      <strong class="member-email">{{ r.requesterName || r.requesterEmail || r.userId }}</strong>
+                    </div>
+                    <div class="member-right">
+                      <button type="button" class="btn-mini" (click)="approveJoinRequest(r)">
+                        {{ i18n.t('group.joinRequestApprove') }}
+                      </button>
+                      <button type="button" class="btn-mini btn-mini-ghost" (click)="declineJoinRequest(r)">
+                        {{ i18n.t('group.joinRequestDecline') }}
+                      </button>
+                    </div>
+                  </div>
+                } @empty {
+                  <p class="empty-text">{{ i18n.t('group.joinRequestsEmpty') }}</p>
+                }
+              </div>
             }
 
             <h3 class="section-subtitle">Danh sách thành viên ({{ store.members().length }})</h3>

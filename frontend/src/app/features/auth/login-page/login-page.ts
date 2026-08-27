@@ -76,6 +76,14 @@ export class LoginPage implements OnInit, AfterViewInit {
   readonly revealed = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(this.route.snapshot.queryParamMap.get('message'));
+  /** Trang cần quay lại sau khi đăng nhập xong (authGuard gắn vào khi chặn
+   *  một route cần đăng nhập, vd. trang "xin vào nhóm" từ link mời). Chỉ nhận
+   *  đường dẫn nội bộ dạng "/xxx" — loại "//evil.com" (protocol-relative) để
+   *  không biến query param này thành cửa mở-redirect ra ngoài app. */
+  private readonly returnUrl = (() => {
+    const raw = this.route.snapshot.queryParamMap.get('returnUrl');
+    return raw && /^\/(?!\/)/.test(raw) ? raw : undefined;
+  })();
 
   ngOnInit(): void {
     // Chủ đề dùng chung với trang landing nên hai trang không nhấp nháy khi
@@ -165,7 +173,7 @@ export class LoginPage implements OnInit, AfterViewInit {
     await this.playDeparture();
 
     try {
-      const error = await this.authStore.signInWithGoogle();
+      const error = await this.authStore.signInWithGoogle(this.returnUrl);
       if (error) {
         this.errorMessage.set(
           error.message.includes('provider') || error.message.includes('disabled')

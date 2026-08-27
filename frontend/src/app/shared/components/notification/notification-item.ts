@@ -53,6 +53,12 @@ const VISUAL_BY_TYPE: Readonly<Record<NotificationType, NotificationVisual>> = {
     path: 'M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z',
     accent: 'group',
   },
+  // Cùng biểu tượng nhóm với group_invitation — khác hướng (người ngoài xin
+  // vào thay vì được mời) nhưng cùng "chất" nên dùng chung glyph.
+  group_join_request: {
+    path: 'M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z',
+    accent: 'group',
+  },
   system: {
     path: 'M11 7h2v2h-2zm0 4h2v6h-2zm1-9a10 10 0 1 0 0 20 10 10 0 0 0 0-20z',
     accent: 'system',
@@ -136,11 +142,13 @@ export class NotificationItem {
     return this.i18n.t('notif.inDays', { n: Math.floor(hours / 24) });
   });
 
-  protected readonly isActionable = computed(
-    () =>
-      (this.notification().type === 'group_invitation' || this.notification().type === 'event_invitation') &&
-      this.notification().actionStatus === 'pending',
-  );
+  protected readonly isActionable = computed(() => {
+    const type = this.notification().type;
+    return (
+      (type === 'group_invitation' || type === 'event_invitation' || type === 'group_join_request') &&
+      this.notification().actionStatus === 'pending'
+    );
+  });
 
   protected readonly actionStatusLabel = computed<string | null>(() => {
     const status = this.notification().actionStatus;

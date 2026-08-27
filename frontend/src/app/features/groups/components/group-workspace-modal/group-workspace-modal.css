@@ -411,6 +411,22 @@
   gap: 10px;
 }
 
+.invite-link-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.invite-link-row .text-input {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text-secondary);
+}
+
+.join-requests-card .member-row:last-child {
+  border-bottom: none;
+}
+
 .section-subtitle {
   font-size: 1rem;
   margin: 0 0 10px 0;

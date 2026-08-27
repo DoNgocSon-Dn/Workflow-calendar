@@ -342,6 +342,26 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'group.changeRoleError': 'Không thể đổi quyền thành viên.',
     'group.removeMemberConfirm': 'Bạn có chắc chắn muốn xóa {member} khỏi nhóm?',
 
+    // --- link mời + yêu cầu tham gia ----------------------------------------
+    'group.inviteLinkTitle': 'Link mời tham gia nhóm',
+    'group.inviteLinkGenerate': 'Tạo link mời',
+    'group.inviteLinkCopy': 'Sao chép',
+    'group.inviteLinkCopied': 'Đã sao chép link mời',
+    'group.inviteLinkRegenerate': 'Tạo lại link (link cũ sẽ hết hiệu lực)',
+    'group.joinRequestsTitle': 'Yêu cầu tham gia đang chờ duyệt',
+    'group.joinRequestsEmpty': 'Không có yêu cầu nào đang chờ',
+    'group.joinRequestApprove': 'Chấp nhận',
+    'group.joinRequestDecline': 'Từ chối',
+    'group.joinPageLoading': 'Đang tải thông tin nhóm...',
+    'group.joinPageInvalidLink': 'Link mời không hợp lệ hoặc đã bị thu hồi',
+    'group.joinPageAlreadyMember': 'Bạn đã là thành viên của nhóm này',
+    'group.joinPagePendingRequest': 'Yêu cầu tham gia của bạn đang chờ được duyệt',
+    'group.joinPageSubmitButton': 'Gửi yêu cầu tham gia',
+    'group.joinPageSubmitError': 'Không thể gửi yêu cầu tham gia. Vui lòng thử lại.',
+    'group.joinPageSubmitted': 'Đã gửi yêu cầu tham gia. Vui lòng chờ quản trị viên duyệt.',
+    'group.joinPageGoToGroup': 'Vào nhóm',
+    'group.joinPageBackHome': 'Về trang lịch',
+
     // --- vai trò trong nhóm -------------------------------------------------
     // Bốn cấp: Trưởng nhóm > Quản trị viên > Thành viên > Khách (chỉ xem).
     'groupRole.leader': 'Trưởng nhóm',
@@ -724,6 +744,26 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'group.inviteError': 'Could not invite this member. Check the email address.',
     'group.changeRoleError': "Could not change the member's role.",
     'group.removeMemberConfirm': 'Remove {member} from the group?',
+
+    // --- invite link + join requests ----------------------------------------
+    'group.inviteLinkTitle': 'Group invite link',
+    'group.inviteLinkGenerate': 'Create invite link',
+    'group.inviteLinkCopy': 'Copy',
+    'group.inviteLinkCopied': 'Invite link copied',
+    'group.inviteLinkRegenerate': 'Regenerate (old link will stop working)',
+    'group.joinRequestsTitle': 'Join requests awaiting approval',
+    'group.joinRequestsEmpty': 'No pending requests',
+    'group.joinRequestApprove': 'Approve',
+    'group.joinRequestDecline': 'Decline',
+    'group.joinPageLoading': 'Loading group info...',
+    'group.joinPageInvalidLink': 'This invite link is invalid or has been revoked',
+    'group.joinPageAlreadyMember': 'You are already a member of this group',
+    'group.joinPagePendingRequest': 'Your join request is awaiting approval',
+    'group.joinPageSubmitButton': 'Request to join',
+    'group.joinPageSubmitError': 'Could not send the join request. Please try again.',
+    'group.joinPageSubmitted': 'Join request sent. Please wait for an admin to approve it.',
+    'group.joinPageGoToGroup': 'Go to group',
+    'group.joinPageBackHome': 'Back to calendar',
 
     // --- group roles --------------------------------------------------------
     'groupRole.leader': 'Leader',
