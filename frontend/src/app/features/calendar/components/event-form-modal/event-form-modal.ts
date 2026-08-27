@@ -878,12 +878,22 @@ export class EventFormModal {
       title: this.i18n.t('event.createdToast'),
       body: this.i18n.t('event.createdToastBody', { title }),
     });
-    // notifySaved() chỉ chạy ĐÚNG MỘT LẦN, ngay trong save() lúc backend vừa
-    // xác nhận tạo xong — không phải một effect() chạy lại theo state, nên
-    // reload trang hay Angular render lại UI không thể khiến tiếng kêu lần
-    // hai. notifyKind() tự lo phần còn lại (bật/tắt, đã mở khoá autoplay hay
-    // chưa, cooldown chống dồn tiếng) — ở đây không cần thêm điều kiện nào.
-    this.notificationSound.notifyKind('default');
+    const titleLower = title.toLowerCase();
+    if (titleLower.includes('sinh nhật') || titleLower.includes('birthday') || titleLower.includes('sinh nhat')) {
+      this.notificationSound.notifyKind('birthday');
+    } else if (
+      titleLower.includes('quan trọng') ||
+      titleLower.includes('gấp') ||
+      titleLower.includes('khẩn cấp') ||
+      titleLower.includes('họp') ||
+      titleLower.includes('deadline') ||
+      titleLower.includes('ngày lễ') ||
+      titleLower.includes('sự kiện')
+    ) {
+      this.notificationSound.notifyKind('important');
+    } else {
+      this.notificationSound.notifyKind('default');
+    }
   }
 
   setCreateMode(mode: 'event' | 'todo'): void {

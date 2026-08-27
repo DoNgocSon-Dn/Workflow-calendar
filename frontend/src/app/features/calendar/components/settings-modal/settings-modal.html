@@ -351,6 +351,21 @@
                 <p class="setting-hint setting-hint--error" role="alert">{{ soundError }}</p>
               }
 
+              <div class="setting-row" style="margin-top: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                <span class="setting-title" style="width: 100%;">Nghe thử âm báo đặc biệt:</span>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; width: 100%;">
+                  <button type="button" class="btn-dob-save" (click)="previewSound('birthday')" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">
+                    🎂 Nhạc Sinh Nhật
+                  </button>
+                  <button type="button" class="btn-dob-save" (click)="previewSound('important')" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">
+                    🌟 Sự Kiện Quan Trọng
+                  </button>
+                  <button type="button" class="btn-dob-save" (click)="previewSound('default')" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">
+                    🔔 Mặc Định
+                  </button>
+                </div>
+              </div>
+
               <div class="setting-row">
                 <span class="setting-title" id="holiday-notif-label">{{ i18n.t('settings.holidayNotif') }}</span>
                 <label class="toggle-switch">

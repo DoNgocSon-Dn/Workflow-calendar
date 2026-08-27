@@ -172,7 +172,7 @@ export class BirthdayPopupService {
       isPreview,
     });
     this.visible.set(true);
-    this.sound.notifyKind('default');
+    this.sound.notifyKind('birthday');
 
     if (!isPreview && !this.clock.devOverride()) {
       const now = todayInVietnam(this.clock.now());

@@ -4,7 +4,7 @@ import { AuthStore } from '../../../../core/auth/auth-store';
 import { Locale, TranslationService } from '../../../../core/i18n/translation.service';
 import { HolidayPopupService } from '../../../../core/services/holiday-popup.service';
 import { BirthdayPopupService } from '../../../../core/services/birthday-popup.service';
-import { NotificationSoundService } from '../../../../core/services/notification-sound.service';
+import { NotificationSoundService, SoundKind } from '../../../../core/services/notification-sound.service';
 import { TimeFormatService } from '../../../../core/time-format/time-format-service';
 import { TimeFormat, dateInputValue } from '../../utils/date-utils';
 import { BrandTheme, BrandThemeService } from '../../../../core/theme/brand-theme-service';
@@ -204,6 +204,10 @@ export class SettingsModal {
 
   toggleNotificationSound(): void {
     this.soundService.toggle();
+  }
+
+  previewSound(kind: SoundKind = 'default'): void {
+    void this.soundService.preview(kind);
   }
 
   /** Giới hạn tên hiển thị — đọc từ AuthStore để CHỈ CÓ MỘT nguồn sự thật:

@@ -89,7 +89,7 @@ export class HolidayPopupService {
     let wasVisible = false;
     effect(() => {
       const isVisible = this.visible();
-      if (isVisible && !wasVisible) this.sound.notifyKind('default');
+      if (isVisible && !wasVisible) this.sound.notifyKind('important');
       wasVisible = isVisible;
     });
 
