@@ -76,6 +76,10 @@
 }
 
 .panel-tabs {
+  /* position:relative để .tab-group (tiêu đề "Trợ lý AI") canh giữa TUYỆT ĐỐI
+     theo cả thanh header — không phải giữa phần còn lại sau khi trừ nút Đóng,
+     nếu không tiêu đề sẽ lệch trái một chút so với tâm thật. */
+  position: relative;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -90,7 +94,14 @@
    thương hiệu cho một thứ chỉ mang nghĩa "bạn đang ở đây" — accent nên để
    dành cho hành động chính. */
 .tab-group {
-  flex: 1;
+  /* Neo đúng tâm .panel-tabs bằng position:absolute, thoát khỏi luồng flex —
+     nhờ vậy tiêu đề "Trợ lý AI" ra giữa thật sự, không bị kéo lệch trái vì
+     phải chia chỗ với nút Đóng bên phải. */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  flex: none;
   min-width: 0;
   display: flex;
   gap: 2px;
@@ -158,6 +169,10 @@
 }
 
 .icon-btn {
+  /* .tab-group giờ position:absolute (thoát luồng flex) để canh giữa tiêu đề
+     — panel-tabs chỉ còn mỗi icon-btn trong luồng, nên phải tự đẩy sang phải
+     bằng margin-left thay vì trông chờ tab-group nhường chỗ như trước. */
+  margin-left: auto;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
