@@ -139,7 +139,7 @@
             }
 
             @if (starredDone().length > 0) {
-              <li class="todo-divider">Đã xong ({{ starredDone().length }})</li>
+              <li class="todo-divider">{{ i18n.t('tasks.doneCount', { count: starredDone().length }) }}</li>
               @for (todo of starredDone(); track todo.id) {
                 <li class="todo-item todo-item-done">
                   <input type="checkbox" [checked]="todo.done" (change)="toggleTodo(todo)" />
