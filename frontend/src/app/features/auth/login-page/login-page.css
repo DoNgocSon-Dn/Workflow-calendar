@@ -190,8 +190,14 @@
   font-weight: 800;
   letter-spacing: 0.32em;
   text-transform: uppercase;
-  color: #ffffff;
-  text-shadow: 0 0 16px rgba(255, 255, 255, 0.5), 0 0 32px rgba(37, 99, 235, 0.4);
+  /* PHẢI đi qua --ink, không ghi cứng #ffffff. Nền của .preloader là var(--bg)
+     — nó tự đảo theo giao diện sáng/tối, nên chữ cũng phải đảo theo. Ghi trắng
+     cứng thì ở giao diện sáng là chữ trắng trên nền #eef1f7, gần như vô hình. */
+  color: var(--ink);
+  /* Quầng sáng cũng vậy: quầng TRẮNG chỉ có nghĩa trên nền tối. Trên nền sáng
+     nó biến thành một vệt mờ loang quanh chữ, làm chữ càng khó đọc. Đổi sang
+     quầng lấy từ chính màu nhấn, nhạt, dùng được ở cả hai giao diện. */
+  text-shadow: 0 0 24px color-mix(in srgb, var(--accent) 35%, transparent);
   opacity: 0;
   animation: preloaderCaptionIn 0.6s ease 0.3s forwards;
 }

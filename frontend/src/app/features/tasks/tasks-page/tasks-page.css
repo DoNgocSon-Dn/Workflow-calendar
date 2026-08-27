@@ -38,6 +38,22 @@
   color: var(--color-text);
   white-space: nowrap;
   letter-spacing: -0.02em;
+  /* Nay là thẻ <a>: gỡ gạch chân mặc định và ép màu chữ về token của app,
+     nếu không nó rơi về màu link xanh tím của trình duyệt. */
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.brand:hover {
+  opacity: 0.8;
+}
+
+/* Viền focus phải thấy được cho người dùng bàn phím. */
+.brand:focus-visible {
+  outline: 2px solid var(--holiday-accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
 }
 
 .icon-btn {
