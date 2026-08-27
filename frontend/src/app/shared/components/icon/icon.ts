@@ -6,6 +6,7 @@ export type IconName =
   | 'check-square'
   | 'message'
   | 'calendar'
+  | 'video'
   | 'eye'
   | 'eye-off'
   | 'pencil'
@@ -77,6 +78,10 @@ export type IconName =
         @case ('calendar') {
           <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
           <path d="M3.5 10h17M8.5 3v4M15.5 3v4" />
+        }
+        @case ('video') {
+          <rect x="2.5" y="6" width="13" height="12" rx="2.5" />
+          <path d="M15.5 10.5 21.5 7v10l-6-3.5z" />
         }
         @case ('eye') {
           <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />

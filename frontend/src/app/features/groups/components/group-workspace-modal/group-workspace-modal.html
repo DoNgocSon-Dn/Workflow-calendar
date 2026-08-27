@@ -839,6 +839,158 @@
               <p>Mỗi nhóm làm việc tự động tích hợp 1 <strong>Lịch Nhóm</strong> tương ứng. Tất cả thành viên trong nhóm đều có quyền theo dõi và tạo sự kiện chung.</p>
               <p class="cal-id">ID Lịch: <code>{{ group.calendarId }}</code></p>
             </div>
+
+            <div class="info-card meet-card">
+              <h3><app-icon name="video" /> Phòng họp Google Meet</h3>
+              <p>
+                Bấm <strong>Tạo phòng họp mới</strong> để Google mở một phòng Meet, rồi dán link
+                phòng đó vào ô bên dưới. Link sẽ được gắn vào lịch nhóm và báo cho cả nhóm.
+              </p>
+
+              <button type="button" class="btn btn-ghost meet-new-btn" (click)="openNewMeetRoom()">
+                Tạo phòng họp mới
+                <app-icon name="arrow-right" />
+              </button>
+
+              <label class="meet-label" for="meet-link-input">Dán link Meet vừa tạo</label>
+              <input
+                id="meet-link-input"
+                type="text"
+                class="text-input"
+                [class.meet-input-invalid]="meetLinkInvalid()"
+                placeholder="https://meet.google.com/abc-defg-hij"
+                maxlength="500"
+                autocomplete="off"
+                spellcheck="false"
+                [value]="meetLinkInput()"
+                (input)="meetLinkInput.set($any($event.target).value)"
+              />
+              @if (meetLinkInvalid()) {
+                <p class="meet-hint meet-hint-error">
+                  Đây không phải link phòng Google Meet. Dán dạng
+                  <code>meet.google.com/abc-defg-hij</code> hoặc mã <code>abc-defg-hij</code>.
+                </p>
+              } @else if (normalizedMeetLink(); as normalized) {
+                <p class="meet-hint meet-hint-ok">
+                  <app-icon name="check" /> {{ normalized }}
+                </p>
+              }
+
+              <label class="meet-label" for="meet-title-input">Tiêu đề buổi họp</label>
+              <input
+                id="meet-title-input"
+                type="text"
+                class="text-input"
+                placeholder="Để trống sẽ tự đặt theo tên nhóm"
+                maxlength="200"
+                [value]="meetTitle()"
+                (input)="meetTitle.set($any($event.target).value)"
+              />
+
+              <label class="meet-label">Thời gian bắt đầu</label>
+              <div class="meet-schedule">
+                <input
+                  type="date"
+                  lang="vi"
+                  class="text-input"
+                  aria-label="Ngày họp"
+                  [value]="meetDate()"
+                  (input)="meetDate.set($any($event.target).value)"
+                />
+                <input
+                  type="time"
+                  lang="vi"
+                  class="text-input"
+                  aria-label="Giờ bắt đầu"
+                  [value]="meetTime()"
+                  (input)="meetTime.set($any($event.target).value)"
+                />
+              </div>
+
+              <div class="meet-durations" role="group" aria-label="Thời lượng buổi họp">
+                @for (minutes of meetDurations; track minutes) {
+                  <button
+                    type="button"
+                    class="duration-chip"
+                    [class.active]="meetDuration() === minutes"
+                    [attr.aria-pressed]="meetDuration() === minutes"
+                    (click)="selectMeetDuration(minutes)"
+                  >
+                    {{ minutes }} phút
+                  </button>
+                }
+              </div>
+
+              <label class="meet-check">
+                <input
+                  type="checkbox"
+                  [checked]="meetAnnounceInChat()"
+                  (change)="meetAnnounceInChat.set($any($event.target).checked)"
+                />
+                Đăng link vào chat nhóm
+              </label>
+
+              @if (canAddGroupEvent()) {
+                <label class="meet-check">
+                  <input
+                    type="checkbox"
+                    [checked]="meetAddToCalendar()"
+                    (change)="meetAddToCalendar.set($any($event.target).checked)"
+                  />
+                  Tạo sự kiện trên lịch nhóm
+                </label>
+              } @else {
+                <p class="meet-hint">
+                  Chỉ Trưởng nhóm và Quản trị viên mới thêm được sự kiện vào lịch nhóm.
+                </p>
+              }
+
+              @if (meetError()) {
+                <p class="meet-hint meet-hint-error">{{ meetError() }}</p>
+              }
+
+              <button
+                type="button"
+                class="btn btn-primary meet-save-btn"
+                [disabled]="!canSaveMeet()"
+                (click)="saveMeetRoom()"
+              >
+                @if (meetSaving()) {
+                  Đang lưu...
+                } @else {
+                  Lưu phòng họp
+                }
+              </button>
+
+              @if (savedMeetLink(); as link) {
+                <div class="saved-meet">
+                  <div class="saved-meet-head">
+                    <span class="saved-meet-title">
+                      <app-icon name="video" /> Phòng họp đã sẵn sàng
+                    </span>
+                    <button type="button" class="btn-mini-ghost" (click)="dismissSavedMeet()">
+                      Ẩn
+                    </button>
+                  </div>
+                  <a class="saved-meet-link" [href]="link" target="_blank" rel="noopener noreferrer">
+                    {{ link }}
+                  </a>
+                  <div class="saved-meet-actions">
+                    <a
+                      class="btn btn-primary"
+                      [href]="link"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Tham gia
+                    </a>
+                    <button type="button" class="btn btn-ghost" (click)="copyMeetLink()">
+                      {{ meetCopied() ? 'Đã sao chép' : 'Sao chép link' }}
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
           </div>
         }
       </div>

@@ -206,6 +206,21 @@ export class SettingsModal {
     this.soundService.toggle();
   }
 
+  previewNotificationSound(): void {
+    void this.soundService.preview();
+  }
+
+  previewChatSound(): void {
+    void this.soundService.preview('chat');
+  }
+
+  /** Giới hạn tên hiển thị — đọc từ AuthStore để CHỈ CÓ MỘT nguồn sự thật:
+   *  ô nhập, dòng đếm và chốt chặn lúc lưu không thể lệch nhau. */
+  protected readonly nameMax = AuthStore.DISPLAY_NAME_MAX;
+
+  protected readonly nameLength = computed(() => this.nameDraft().length);
+
+  protected readonly nameAtLimit = computed(() => this.nameLength() >= this.nameMax);
   onNameInput(value: string): void {
     this.nameDraft.set(value);
     this.nameSaved.set(false);

@@ -249,6 +249,13 @@
   right: 0;
   z-index: 100;
   min-width: 15rem;
+  /* max-width là thứ THIẾU khiến menu vỡ. Chỉ có min-width thì một tên dài
+     không dấu cách kéo cả khối phình ngang ra khỏi màn hình — overflow-wrap
+     bên dưới cũng vô dụng, vì nó chỉ ngắt dòng khi hộp CÓ giới hạn để mà tràn.
+     Tên mới đã bị chặn 16 ký tự, nhưng tên dài lưu từ trước vẫn còn trong dữ
+     liệu nên vẫn phải chống ở tầng hiển thị.
+     min() để trên màn hẹp menu không rộng quá khung nhìn. */
+  max-width: min(20rem, calc(100vw - 2rem));
   background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
@@ -276,7 +283,9 @@
   font-size: 0.875rem;
   font-weight: 700;
   color: var(--color-text);
-  overflow-wrap: break-word;
+  /* anywhere (không phải break-word): break-word từ chối ngắt nếu từ đó là
+     phần tử duy nhất trên dòng, đúng trường hợp một chuỗi dán liền. */
+  overflow-wrap: anywhere;
 }
 
 .user-dropdown-email {

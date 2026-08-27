@@ -59,8 +59,6 @@ export class LandingPage implements OnInit, AfterViewInit {
     { nav: 'features', sections: ['features', 'scrolly'] },
     { nav: 'showcase', sections: ['showcase'] },
     { nav: 'process', sections: ['process'] },
-    { nav: 'trust', sections: ['trust'] },
-    { nav: 'faq', sections: ['faq'] },
   ];
 
   /** Bảo đảm finishIntro() chỉ chạy một lần dù bị gọi từ mấy nguồn. */

@@ -59,8 +59,22 @@ export class AuthStore {
     return error;
   }
 
+  /**
+   * Giới hạn tên hiển thị.
+   *
+   * Tên này hiện ở nhiều chỗ chật: menu người dùng trên header, danh sách thành
+   * viên nhóm, tên người gửi trong khung chat. Không chặn thì một chuỗi dài
+   * không dấu cách sẽ kéo phình cả khối chứa nó.
+   *
+   * Cắt Ở ĐÂY chứ không chỉ dựa vào maxlength của ô nhập: maxlength chỉ chặn
+   * lúc GÕ, người dùng vẫn dán được chuỗi dài hoặc gọi thẳng hàm này từ chỗ
+   * khác. Đây là chốt duy nhất mọi đường lưu tên đều đi qua.
+   */
+  static readonly DISPLAY_NAME_MAX = 16;
+
   async updateDisplayName(fullName: string): Promise<AuthError | null> {
-    const { error } = await this.supabase.auth.updateUser({ data: { full_name: fullName } });
+    const trimmed = fullName.trim().slice(0, AuthStore.DISPLAY_NAME_MAX);
+    const { error } = await this.supabase.auth.updateUser({ data: { full_name: trimmed } });
     return error;
   }
 
