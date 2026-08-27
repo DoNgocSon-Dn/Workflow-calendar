@@ -245,8 +245,44 @@ export class EventsService {
       'event:updated',
       eventDto,
     );
+    void this.notifyAttendeesSafely(supabase, eventDto.id, 'event:updated', eventDto);
     void this.notifyConflictsSafely(supabase, userId, eventDto);
     return eventDto;
+  }
+
+  /**
+   * Người chỉ là ATTENDEE của một sự kiện (được mời qua invite(), không phải
+   * thành viên lịch) không tự join được phòng "calendar:<id>" — policy RLS
+   * `calendars_select_member` chặn họ ngay ở bước joinCalendar vì họ không có
+   * trong calendar_members. emitToCalendar() một mình không bao giờ tới được
+   * họ, nên bắn thêm vào room riêng của từng attendee.
+   *
+   * Chỉ áp dụng cho MỘT sự kiện tại một thời điểm (không dùng cho
+   * events:bulk-updated/-deleted của cả chuỗi lặp): payload cho các event đó
+   * chứa TOÀN BỘ các lần lặp trong lô, trong khi một attendee có thể chỉ được
+   * mời đúng MỘT lần lặp — gửi cả lô sẽ lộ những lần lặp khác họ không có
+   * quyền xem.
+   */
+  private async notifyAttendeesSafely(
+    supabase: SupabaseClient,
+    eventId: string,
+    event: string,
+    payload: unknown,
+  ): Promise<void> {
+    try {
+      const { data, error } = await supabase
+        .from('event_attendees')
+        .select('user_id')
+        .eq('event_id', eventId);
+      if (error) throw error;
+      for (const row of (data ?? []) as { user_id: string }[]) {
+        this.realtimeGateway.emitToUser(row.user_id, event, payload);
+      }
+    } catch (err) {
+      this.logger.warn(
+        `Failed to notify attendees for event ${eventId}: ${(err as Error).message}`,
+      );
+    }
   }
 
   /**
@@ -366,6 +402,9 @@ export class EventsService {
       );
     }
     this.realtimeGateway.emitToCalendar(data[0].calendar_id, 'event:deleted', {
+      id: data[0].id,
+    });
+    void this.notifyAttendeesSafely(supabase, data[0].id, 'event:deleted', {
       id: data[0].id,
     });
   }

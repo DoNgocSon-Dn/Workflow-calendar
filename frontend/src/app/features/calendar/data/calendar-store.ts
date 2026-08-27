@@ -1499,6 +1499,11 @@ export class CalendarStore {
     if (this.sidebarAutoCollapseBound) return;
     this.sidebarAutoCollapseBound = true;
 
+    // Cùng lý do với isSidebarDrawerViewport(): jsdom (test) và render phía
+    // server không có matchMedia — không có nó thì không tự-ẩn được, giữ
+    // nguyên hành vi cũ (sidebarOpen như lúc khởi tạo) thay vì ném lỗi.
+    if (typeof matchMedia !== 'function') return;
+
     const mq = window.matchMedia(`(max-width: ${SIDEBAR_AUTO_HIDE_PX}px)`);
 
     const apply = (narrow: boolean): void => {
