@@ -102,14 +102,14 @@
 }
 
 .lunar-hint-badge {
-  margin: 0.35rem 0 0;
+  margin: 0;
+  align-self: flex-start;
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--holiday-accent);
   background: var(--holiday-accent-soft);
   padding: 0.25rem 0.6rem;
   border-radius: var(--radius-sm);
-  display: inline-block;
 }
 
 .hint-inset {
@@ -135,11 +135,14 @@
   padding-left: 1.1rem;
 }
 
+/* Grid, không flex-math: icon ở cột cố định, nội dung ở cột 1fr — mọi hàng căn
+   trên cùng một trục, không còn magic-number margin lệch nhau. */
 .field-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.9rem;
-  padding: 0.65rem 0;
+  display: grid;
+  grid-template-columns: 1.4rem 1fr;
+  column-gap: 0.85rem;
+  align-items: start;
+  padding: 0.5rem 0;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -149,32 +152,34 @@
 }
 
 .field-icon {
-  flex-shrink: 0;
-  margin-top: 0.5rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  /* Canh với dòng chữ đầu tiên của cột nội dung (không canh giữa cả hàng —
+     hàng có thể cao vài dòng). */
+  margin-top: 0.35rem;
   color: var(--color-text-tertiary);
 }
 
 .field-content {
-  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  padding-top: 0.35rem;
+  padding-top: 0.25rem;
 }
 
+/* Nút "Thêm ..." (trạng thái thu gọn) — canh CHỮ thẳng lề trái với nội dung
+   các hàng khác; nền hover tràn nhẹ vào máng giữa icon và nội dung. */
 .field-toggle {
-  flex: 1;
-  min-width: 0;
-  min-height: 2.35rem;
-  display: flex;
-  align-items: center;
+  width: 100%;
+  display: block;
   text-align: left;
   border: none;
   background: none;
   border-radius: var(--radius-md);
   padding: 0.4rem 0.5rem;
-  margin-top: 0.05rem;
+  margin-left: -0.5rem;
+  line-height: 1.5;
   font-size: 0.875rem;
   font-family: inherit;
   color: var(--color-text-tertiary);
@@ -221,10 +226,11 @@
   display: block;
   font-size: 0.8rem;
   color: var(--color-text-tertiary);
-  margin-bottom: 0.35rem;
+  margin: 0;
 }
 
 .caltype-seg {
+  align-self: flex-start;
   display: inline-flex;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-full);
@@ -557,6 +563,8 @@
 }
 
 .calendar-picker-toggle {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
 }

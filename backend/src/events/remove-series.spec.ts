@@ -114,6 +114,7 @@ describe('EventsService.removeSeries — 3 phạm vi xoá chuỗi lặp lại', 
       realtime as never,
       {} as never,
       { get: jest.fn() } as never,
+      { getServiceRoleClient: () => ({}) } as never,
     );
   });
 

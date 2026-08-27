@@ -43,6 +43,7 @@ import {
 } from '../models/calendar.models';
 import { RecurrenceRule } from '../utils/recurrence';
 import { TimeFormatService } from '../../../core/time-format/time-format-service';
+import { TranslationService } from '../../../core/i18n/translation.service';
 import { TimeFormat, addDays, clampToDay, formatTimeLabel, startOfDay } from '../utils/date-utils';
 import { matchScore } from '../utils/search-match';
 import { VN_HOLIDAY_CALENDAR_DEF, VN_HOLIDAY_CALENDAR_ID, buildVietnamHolidayEvents } from './vietnam-holidays';
@@ -245,12 +246,21 @@ function toCalendarDef(dto: CalendarApiDto): CalendarDef {
 // từ API để mọi nơi đọc calendars() đều thấy cùng một danh sách: sidebar, bảng
 // chọn lịch trong form sự kiện và màn hình import — thay vì mỗi chỗ tự gộp một
 // kiểu. Giữ bản ghi cũ nhất (API trả theo created_at) vì đó là lịch chứa sự kiện.
+//
+// CHỈ gộp lịch "Cá nhân" mặc định — trước đây gộp theo mọi tên+màu trùng nhau,
+// nhưng lịch nhóm luôn mặc định màu xanh dương (color = dto.color ?? 'blue')
+// và tên nhóm rất dễ trùng nhau giữa các nhóm khác nhau, nên lịch nhóm mới tạo
+// bị âm thầm loại khỏi danh sách nếu trùng tên+màu với một lịch có sẵn — sự
+// kiện của nhóm vẫn tồn tại trên server nhưng biến mất khỏi calendars() phía
+// client, kéo theo mất cả trong visibleCalendarIds.
+const DEFAULT_PERSONAL_CALENDAR_NAME = 'cá nhân';
+
 function dedupeCalendars(list: CalendarDef[]): CalendarDef[] {
-  const seen = new Set<string>();
+  let seenDefault = false;
   return list.filter((c) => {
-    const key = `${c.name.trim().toLowerCase()}|${c.color}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
+    if (c.name.trim().toLowerCase() !== DEFAULT_PERSONAL_CALENDAR_NAME) return true;
+    if (seenDefault) return false;
+    seenDefault = true;
     return true;
   });
 }
@@ -327,6 +337,10 @@ export class CalendarStore {
   private readonly notifications = inject(NotificationService);
   private readonly groupStore = inject(GroupStore);
   private readonly timeFormatService = inject(TimeFormatService);
+  private readonly i18n = inject(TranslationService);
+  /** Hàm dịch truyền cho các notification-draft (xem notification-drafts.ts). */
+  private readonly nt = (key: string, vars?: Readonly<Record<string, string | number>>) =>
+    this.i18n.t(key, vars);
 
   private readonly apiUrl = environment.apiUrl;
   private readonly selfOriginIds = new Set<string>();
@@ -551,6 +565,7 @@ export class CalendarStore {
     }
 
     void this.refreshPendingInvites();
+    void this.refreshEventInvites();
     void this.groupStore.loadGroups();
     void this.loadTodosState();
 
@@ -576,6 +591,7 @@ export class CalendarStore {
     this.realtime.onReconnect(() => {
       void this.refreshEvents();
       void this.refreshPendingInvites();
+      void this.refreshEventInvites();
       void this.checkMissedReminders();
     });
     this.realtime.on<EventApiDto>('event:created', (dto) => this.handleRemoteCreated(dto));
@@ -746,6 +762,17 @@ export class CalendarStore {
       next[idx] = event;
       return next;
     });
+
+    // visibleEvents() lọc theo visibleCalendarIds — set này chỉ được dựng một
+    // lần lúc loadAll() từ những calendarId ĐÃ THẤY khi đó. Sự kiện đầu tiên
+    // của một lịch trước giờ chưa có sự kiện nào (ví dụ lịch nhóm vừa tạo) thì
+    // calendarId của nó chưa từng lọt vào set, nên dù upsert vào events() rồi
+    // vẫn bị lọc mất khỏi lưới — người dùng phải F5 để loadAll() chạy lại và
+    // thấy được calendarId này qua GET /events. Thêm thẳng vào đây thay vì chờ
+    // reload.
+    if (!this.visibleCalendarIds().has(event.calendarId)) {
+      this.visibleCalendarIds.update((set) => new Set(set).add(event.calendarId));
+    }
   }
 
   /** Trả về `false` khi sự kiện là tiếng vọng của thao tác do chính người dùng
@@ -803,7 +830,7 @@ export class CalendarStore {
       return;
     }
     this.notifications.ingest(
-      eventCreatedDraft({
+      eventCreatedDraft(this.nt, {
         eventId: event.id,
         title: event.title,
         timeLabel,
@@ -852,7 +879,7 @@ export class CalendarStore {
     }
 
     this.notifications.ingest(
-      eventsImportedDraft({
+      eventsImportedDraft(this.nt, {
         // Thiếu batchId (client cũ) thì dựng khoá từ chính nội dung lô, để
         // socket phát lại không đẻ ra thông báo thứ hai.
         batchId: payload.batchId ?? `${payload.calendarId}-${events.map((e) => e.id).join('.')}`,
@@ -870,7 +897,7 @@ export class CalendarStore {
       return;
     }
     this.notifications.ingest(
-      eventUpdatedDraft({
+      eventUpdatedDraft(this.nt, {
         eventId: event.id,
         title: event.title,
         timeLabel,
@@ -884,7 +911,7 @@ export class CalendarStore {
     const title = this.events().find((e) => e.id === id)?.title ?? null;
     this.events.update((list) => list.filter((e) => e.id !== id));
     if (!this.notifyIfNotSelfOrigin(id, 'deleted', 'Sự kiện đã bị xoá', '')) return;
-    this.notifications.ingest(eventDeletedDraft(id, title));
+    this.notifications.ingest(eventDeletedDraft(this.nt, id, title));
   }
 
   /**
@@ -959,7 +986,7 @@ export class CalendarStore {
     await this.refreshEvents();
     for (const eventId of eventIds) {
       const title = this.events().find((e) => e.id === eventId)?.title ?? null;
-      this.notifications.ingest(eventInvitationDraft(eventId, title));
+      this.notifications.ingest(eventInvitationDraft(this.nt, eventId, title));
     }
   }
 
@@ -973,7 +1000,7 @@ export class CalendarStore {
     });
     const eventTitle = this.events().find((e) => e.id === payload.eventId)?.title ?? null;
     this.notifications.ingest(
-      attendeeStatusDraft({
+      attendeeStatusDraft(this.nt, {
         eventId: payload.eventId,
         attendeeId: payload.attendee.id,
         attendeeEmail: payload.attendee.email,
@@ -994,7 +1021,7 @@ export class CalendarStore {
       kind: 'invite',
     });
     this.notifications.ingest(
-      calendarInvitationDraft({
+      calendarInvitationDraft(this.nt, {
         inviteId: invite.id,
         calendarId: invite.calendarId,
         calendarName: invite.calendarName,
@@ -1017,7 +1044,7 @@ export class CalendarStore {
       kind: 'invite',
     });
     this.notifications.ingest(
-      calendarMemberJoinedDraft(payload.calendarId, calendar.name, payload.member.userId),
+      calendarMemberJoinedDraft(this.nt, payload.calendarId, calendar.name, payload.member.userId),
     );
   }
 
@@ -1035,7 +1062,7 @@ export class CalendarStore {
       kind: 'conflict',
     });
     this.notifications.ingest(
-      eventConflictDraft({
+      eventConflictDraft(this.nt, {
         eventId: payload.event.id,
         eventTitle: payload.event.title,
         conflicts: payload.conflicts,
@@ -1056,7 +1083,7 @@ export class CalendarStore {
       body: payload.startAt ? formatTimeLabel(new Date(payload.startAt), 'vi', this.timeFormatService.format()) : '',
       kind: 'reminder',
     });
-    this.notifications.ingest(reminderDraft(payload));
+    this.notifications.ingest(reminderDraft(this.nt, payload));
   }
 
   /**
@@ -1184,7 +1211,7 @@ export class CalendarStore {
   notifyEventsImported(calendarId: string, count: number, batchId = crypto.randomUUID()): void {
     if (count <= 0) return;
     const calendarName = this.calendars().find((c) => c.id === calendarId)?.name ?? null;
-    this.notifications.ingest(eventsImportedDraft({ batchId, count, calendarName }));
+    this.notifications.ingest(eventsImportedDraft(this.nt, { batchId, count, calendarName }));
   }
 
   /**
@@ -1378,7 +1405,14 @@ export class CalendarStore {
       this.http.post<AttendeeApiDto>(`${this.apiUrl}/events/${eventId}/respond`, { status }),
     );
     this.notifications.respond(`event-invite-${eventId}`, status);
-    await this.refreshEvents();
+    // Backend đã ghi nhận phản hồi — nếu làm mới danh sách sự kiện lỗi (mạng,
+    // RLS grid chưa apply migration 23...) thì KHÔNG được coi là mời hụt: lịch
+    // sẽ tự đồng bộ ở lần tải lại / gói realtime kế tiếp.
+    try {
+      await this.refreshEvents();
+    } catch (err) {
+      console.warn('respondToInvite: refreshEvents lỗi (bỏ qua):', err);
+    }
     return toAttendee(result);
   }
 
@@ -1393,7 +1427,7 @@ export class CalendarStore {
 
     for (const invite of pendingList) {
       this.notifications.ingest(
-        calendarInvitationDraft({
+        calendarInvitationDraft(this.nt, {
           inviteId: invite.id,
           calendarId: invite.calendarId,
           calendarName: invite.calendarName,
@@ -1401,6 +1435,30 @@ export class CalendarStore {
           createdAt: invite.createdAt.toISOString(),
         }),
       );
+    }
+  }
+
+  /**
+   * Kéo lời mời tham gia SỰ KIỆN còn đang chờ của mình lúc mở app.
+   *
+   * Trước đây lời mời sự kiện chỉ tới qua gói realtime `attendee:invited` —
+   * ai đang offline lúc bị mời thì mất hẳn, không có gì bù lại (khác lời mời
+   * LỊCH vốn được kéo lại ở refreshPendingInvites). Nay đổ chúng vào chuông
+   * thông báo (kèm nút Đồng ý/Từ chối) mỗi lần load — id `event-invite-<id>`
+   * ổn định nên gọi lại nhiều lần không nhân bản.
+   */
+  async refreshEventInvites(): Promise<void> {
+    try {
+      const result = await firstValueFrom(
+        this.http.get<
+          { attendeeId: string; eventId: string; title: string; start: string; end: string; calendarId: string }[]
+        >(`${this.apiUrl}/events/invites/mine`),
+      );
+      for (const invite of result) {
+        this.notifications.ingest(eventInvitationDraft(this.nt, invite.eventId, invite.title ?? null));
+      }
+    } catch (err) {
+      console.error('Không kéo được lời mời sự kiện:', err);
     }
   }
 

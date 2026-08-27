@@ -1,5 +1,19 @@
-import { eventsImportedDraft } from './notification-drafts';
+import { eventsImportedDraft, EventsImportedDraftInput, NotificationT } from './notification-drafts';
 import { NotificationDraft } from './notification.model';
+
+/** Dịch giả lập — trả về chuỗi tiếng Việt để test đọc được nội dung. */
+const t: NotificationT = (key, vars) => {
+  const templates: Record<string, string> = {
+    'nd.eventsImported.title': 'Import lịch hoàn tất',
+    'nd.eventsImported.body': 'Đã nhập {count} sự kiện vào lịch.',
+    'nd.eventsImported.bodyToCalendar': 'Đã nhập {count} sự kiện vào lịch "{name}".',
+  };
+  let text = templates[key] ?? key;
+  for (const [k, v] of Object.entries(vars ?? {})) text = text.replace(`{${k}}`, String(v));
+  return text;
+};
+
+const draft = (input: EventsImportedDraftInput) => eventsImportedDraft(t, input);
 
 /**
  * Thông báo chuông cho một lần import file.

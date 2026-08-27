@@ -17,6 +17,7 @@ import { AuthStore } from '../../../core/auth/auth-store';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { SUPABASE_CLIENT } from '../../../core/supabase-client';
 import { NotificationService } from '../../../core/services/notification.service';
+import { TranslationService } from '../../../core/i18n/translation.service';
 import {
   DeadlinePhase,
   GroupMessageDraftInput,
@@ -50,6 +51,10 @@ export class GroupStore {
   private readonly realtime = inject(RealtimeService);
   private readonly supabase = inject(SUPABASE_CLIENT);
   private readonly notifications = inject(NotificationService);
+  private readonly i18n = inject(TranslationService);
+  /** Hàm dịch truyền cho các notification-draft (xem notification-drafts.ts). */
+  private readonly nt = (key: string, vars?: Readonly<Record<string, string | number>>) =>
+    this.i18n.t(key, vars);
 
   readonly groups = signal<Group[]>([]);
   readonly activeGroup = signal<Group | null>(null);
@@ -115,7 +120,7 @@ export class GroupStore {
       if (due - now > DEADLINE_SOON_MS) continue;
 
       this.notifications.ingest(
-        taskDeadlineDraft({
+        taskDeadlineDraft(this.nt, {
           taskId: task.id,
           groupId: task.groupId,
           groupName: this.groups().find((g) => g.id === task.groupId)?.name ?? null,
@@ -137,7 +142,7 @@ export class GroupStore {
 
       for (const inv of pendingList) {
         this.notifications.ingest(
-          groupInvitationDraft({
+          groupInvitationDraft(this.nt, {
             inviteId: inv.id,
             groupId: inv.groupId,
             groupName: inv.groupName,
@@ -372,7 +377,7 @@ export class GroupStore {
         ...list.filter((i) => i.id !== payload.invite.id),
       ]);
       this.notifications.ingest(
-        groupInvitationDraft({
+        groupInvitationDraft(this.nt, {
           inviteId: payload.invite.id,
           groupId: payload.invite.groupId,
           groupName: payload.invite.groupName,
@@ -398,7 +403,7 @@ export class GroupStore {
         const groupName =
           this.groups().find((g) => g.id === payload.groupId)?.name ?? null;
         this.notifications.ingest(
-          groupJoinRequestDraft({
+          groupJoinRequestDraft(this.nt, {
             requestId: payload.request.id,
             groupId: payload.groupId,
             groupName,
@@ -435,7 +440,7 @@ export class GroupStore {
       const groupName =
         this.groups().find((g) => g.id === payload.groupId)?.name ?? null;
       this.notifications.ingest(
-        groupJoinRequestResolvedDraft({
+        groupJoinRequestResolvedDraft(this.nt, {
           requestId: payload.requestId,
           groupId: payload.groupId,
           groupName,
@@ -458,7 +463,7 @@ export class GroupStore {
       phase: DeadlinePhase;
     }>('task:deadline', (payload) => {
       if (!payload?.taskId) return;
-      this.notifications.ingest(taskDeadlineDraft(payload));
+      this.notifications.ingest(taskDeadlineDraft(this.nt, payload));
     });
 
     // Thông báo hệ thống: broadcast hoặc gửi riêng cho một user.
@@ -546,11 +551,11 @@ export class GroupStore {
     // động, không phải thứ chỉ để báo cái mình chưa thấy; điều kiện duy nhất
     // chặn thông báo là tin do chính mình gửi (đã lọc ở đầu hàm).
     if (this.mentionsCurrentUser(message, text, currentUser.id, currentUser.email)) {
-      this.notifications.ingest(groupMentionDraft(input));
+      this.notifications.ingest(groupMentionDraft(this.nt, input));
       return;
     }
 
-    this.notifications.ingest(groupMessageDraft(input));
+    this.notifications.ingest(groupMessageDraft(this.nt, input));
   }
 
   /** Không đánh dấu unread nếu người dùng đang nhìn thẳng vào đúng tab Chat
@@ -609,7 +614,7 @@ export class GroupStore {
     };
 
     this.notifications.ingest(
-      kind === 'created' ? groupTaskAssignedDraft(input) : groupTaskUpdatedDraft(input),
+      kind === 'created' ? groupTaskAssignedDraft(this.nt, input) : groupTaskUpdatedDraft(this.nt, input),
     );
   }
 

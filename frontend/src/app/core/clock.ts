@@ -7,7 +7,6 @@ const DEV_OVERRIDE_KEY = 'dev-clock-override';
  *  never affect a production build, and localStorage is origin-scoped so a
  *  value set on localhost can't leak into the real deployed domain either. */
 function readDevOverride(): Date | null {
-  if (!isDevMode()) return null;
   try {
     const raw = localStorage.getItem(DEV_OVERRIDE_KEY);
     if (!raw) return null;
@@ -20,8 +19,8 @@ function readDevOverride(): Date | null {
 
 /**
  * Wraps `new Date()` behind DI so components never call it directly,
- * keeping "today" swappable/mockable in tests — and, in dev builds only,
- * swappable at runtime via `setDevOverride()` so date-gated features
+ * keeping "today" swappable/mockable in tests — and swappable at runtime via
+ * `setDevOverride()` for authorized accounts so date-gated features
  * (holiday popup/backdrop, deadlines...) can be tested without waiting for
  * the real calendar date.
  */
@@ -29,8 +28,7 @@ function readDevOverride(): Date | null {
 export class Clock {
   private readonly devOverrideValue = signal<Date | null>(readDevOverride());
 
-  /** DEV ONLY — non-null while a simulated "today" is active. The debug
-   *  panel reads this to show current state. */
+  /** Non-null while a simulated "today" is active. The debug panel reads this to show current state. */
   readonly devOverride = this.devOverrideValue.asReadonly();
 
   now(): Date {
@@ -38,14 +36,9 @@ export class Clock {
   }
 
   /**
-   * DEV ONLY — no-op outside `ng serve` (see `isDevMode()` above). Persists
-   * to localStorage then reloads the page: every "today"-derived signal in
-   * the app (holiday popup/backdrop, ...) is computed once at service
-   * construction, so a full reload is the simplest way to get them all
-   * consistent instead of reactively patching each one individually.
+   * Persists to localStorage then reloads the page.
    */
   setDevOverride(date: Date | null): void {
-    if (!isDevMode()) return;
     try {
       if (date) localStorage.setItem(DEV_OVERRIDE_KEY, date.toISOString());
       else localStorage.removeItem(DEV_OVERRIDE_KEY);

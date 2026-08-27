@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto';
 import { AppConfig } from '../config/configuration';
 import { MailService } from '../mail/mail.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { SupabaseService } from '../supabase/supabase.service';
 import { AttendeeDto, AttendeeRow, toAttendeeDto } from './attendee.mapper';
 import { CheckConflictsDto } from './dto/check-conflicts.dto';
 import { CreateEventDto } from './dto/create-event.dto';
@@ -47,6 +48,7 @@ export class EventsService {
     private readonly realtimeGateway: RealtimeGateway,
     private readonly mailService: MailService,
     private readonly configService: ConfigService<AppConfig, true>,
+    private readonly supabaseService: SupabaseService,
   ) {}
 
   async findAll(
@@ -604,13 +606,23 @@ export class EventsService {
     }
   }
 
+  /**
+   * Người được mời chấp nhận / từ chối tham gia sự kiện.
+   *
+   * Dùng service-role + tự chốt `event_id` (từ URL) và `user_id` (từ JWT đã
+   * xác thực) — người dùng chỉ có thể đổi ĐÚNG hàng attendee của chính mình
+   * cho sự kiện đó. Không đi qua RLS client vì `event_attendees` khi cập nhật
+   * phải soi policy `event_attendees_write_editor` (subquery `events`), và với
+   * người CHƯA là thành viên lịch thì chuỗi policy này đệ quy nếu DB chưa apply
+   * migration 23 → lỗi 500 "Không thể xử lý lời mời".
+   */
   async respond(
-    supabase: SupabaseClient,
     eventId: string,
     userId: string,
     dto: RespondInviteDto,
   ): Promise<AttendeeDto> {
-    const { data, error } = await supabase
+    const admin = this.supabaseService.getServiceRoleClient();
+    const { data, error } = await admin
       .from('event_attendees')
       .update({ status: dto.status })
       .eq('event_id', eventId)
@@ -623,7 +635,7 @@ export class EventsService {
       throw new NotFoundException('Lời mời không tồn tại');
     }
 
-    const { data: eventRow } = await supabase
+    const { data: eventRow } = await admin
       .from('events')
       .select('calendar_id')
       .eq('id', eventId)
@@ -638,6 +650,60 @@ export class EventsService {
       );
     }
     return attendeeDto;
+  }
+
+  /**
+   * Sự kiện mà người gọi đang được mời và CHƯA phản hồi (status = 'pending').
+   *
+   * Dùng service-role client + tự lọc `user_id = userId` (userId lấy từ JWT đã
+   * xác thực ở guard, KHÔNG phải id do client gửi). Lý do không dùng RLS
+   * client: người được mời thường CHƯA là thành viên lịch, nên policy
+   * `events_select_invited` phải chạy — nếu DB chưa apply migration 23 thì
+   * policy đó đệ quy với `event_attendees` và toàn bộ luồng mời/nhận lời mời
+   * văng lỗi 500. Đi vòng qua RLS ở đây khiến tính năng chạy độc lập với
+   * trạng thái migration.
+   *
+   * Client gọi lúc mở app + mỗi lần socket kết nối lại để không bỏ lỡ lời mời
+   * tới trong lúc offline.
+   */
+  async listMyInvites(userId: string): Promise<
+    {
+      attendeeId: string;
+      eventId: string;
+      title: string;
+      start: string;
+      end: string;
+      calendarId: string;
+    }[]
+  > {
+    const admin = this.supabaseService.getServiceRoleClient();
+    const { data, error } = await admin
+      .from('event_attendees')
+      .select('id, status, event:events!inner(id, title, start_at, end_at, calendar_id)')
+      .eq('user_id', userId)
+      .eq('status', 'pending');
+    if (error) throw new InternalServerErrorException(error.message);
+
+    type Row = {
+      id: string;
+      event: {
+        id: string;
+        title: string;
+        start_at: string;
+        end_at: string;
+        calendar_id: string;
+      } | null;
+    };
+    return ((data ?? []) as unknown as Row[])
+      .filter((r): r is Row & { event: NonNullable<Row['event']> } => !!r.event)
+      .map((r) => ({
+        attendeeId: r.id,
+        eventId: r.event.id,
+        title: r.event.title,
+        start: r.event.start_at,
+        end: r.event.end_at,
+        calendarId: r.event.calendar_id,
+      }));
   }
 
   async listAttendees(

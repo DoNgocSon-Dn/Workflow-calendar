@@ -41,6 +41,14 @@ export class EventsController {
     return this.eventsService.listTrash(supabase, calendarId);
   }
 
+  /** Lời mời tham gia SỰ KIỆN còn đang chờ của chính người gọi — để client
+   *  kéo lúc mở app, đảm bảo người được mời vẫn thấy lời mời dù lúc mời họ
+   *  đang offline (giống /calendars/invites/mine cho lời mời LỊCH). */
+  @Get('invites/mine')
+  listMyInvites(@CurrentUser() user: User) {
+    return this.eventsService.listMyInvites(user.id);
+  }
+
   @Post()
   create(
     @CurrentSupabase() supabase: SupabaseClient,
@@ -81,12 +89,11 @@ export class EventsController {
 
   @Post(':id/respond')
   respond(
-    @CurrentSupabase() supabase: SupabaseClient,
     @CurrentUser() user: User,
     @Param('id') id: string,
     @Body() dto: RespondInviteDto,
   ) {
-    return this.eventsService.respond(supabase, id, user.id, dto);
+    return this.eventsService.respond(id, user.id, dto);
   }
 
   @Get(':id/attendees')

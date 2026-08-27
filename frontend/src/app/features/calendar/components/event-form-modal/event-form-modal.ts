@@ -766,12 +766,23 @@ export class EventFormModal {
       } else {
         const created = await this.store.createEvent(draft, this.recurrenceRule());
         eventId = created.id;
+        // Sự kiện đã lưu là quan trọng nhất — KHÔNG để lỗi mời làm hỏng việc
+        // tạo. Nhưng cũng KHÔNG nuốt im lặng như trước: gom các email mời hụt
+        // rồi báo cho người tạo biết (thường là "email này chưa có tài khoản").
+        const failedGuests: string[] = [];
         for (const email of this.pendingGuestEmails()) {
           try {
             await this.store.inviteAttendee(eventId, email);
           } catch {
-            // Sự kiện đã lưu là quan trọng nhất — bỏ qua lỗi mời từng khách lẻ.
+            failedGuests.push(email);
           }
+        }
+        if (failedGuests.length > 0) {
+          this.notificationQueue.push({
+            kind: 'conflict',
+            title: this.i18n.t('event.guestsInviteFailedTitle'),
+            body: this.i18n.t('event.guestsInviteFailedBody', { emails: failedGuests.join(', ') }),
+          });
         }
       }
       await this.saveReminders(eventId);

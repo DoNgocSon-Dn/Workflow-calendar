@@ -1,4 +1,4 @@
-@if (isDev) {
+@if (canUse()) {
   <div class="dev-date-panel" [class.dev-date-panel--flagged]="activeOverrideLabel()">
     @if (open()) {
       <div class="dev-date-panel__card" role="group" aria-label="Giả lập ngày (chỉ dev)">

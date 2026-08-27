@@ -1,5 +1,18 @@
 import { ChangeDetectionStrategy, Component, computed, inject, isDevMode, signal } from '@angular/core';
 import { Clock } from '../../../core/clock';
+import { AuthStore } from '../../../core/auth/auth-store';
+
+/** Đang chạy bản dev (ng serve / build development) — đọc một lần, không đổi
+ *  trong suốt phiên. */
+const IS_DEV_BUILD = isDevMode();
+
+/** Ngoài bản dev, công cụ giả lập ngày chỉ mở cho các tài khoản này (dùng để
+ *  test hiệu ứng lễ / sinh nhật / deadline ngay trên bản đã deploy). */
+const DEV_DATE_TOOL_EMAILS = new Set([
+  'sondokiri2006@gmail.com',
+  'tpken2496@gmail.com',
+  'myheroacademiatsh1242@gmail.com',
+]);
 
 function toDateInputValue(date: Date): string {
   const y = date.getFullYear();
@@ -9,11 +22,13 @@ function toDateInputValue(date: Date): string {
 }
 
 /**
- * Nút nổi DEV-ONLY để giả lập "hôm nay" — test hiệu ứng lễ/sinh nhật/deadline
- * mà không phải chờ tới đúng ngày thật, cũng không cần sửa code mỗi lần.
- * Tự ẩn hoàn toàn ở bản production (`isDevMode()`), không phải chỉ ẩn bằng
- * CSS — component không render gì cả nên không lộ ra ngoài devtools của
- * người dùng thật.
+ * Nút nổi để giả lập "hôm nay" — test hiệu ứng lễ/sinh nhật/deadline mà không
+ * phải chờ tới đúng ngày thật, cũng không cần sửa code mỗi lần.
+ *
+ * Hiện với: bản dev (`isDevMode()`), HOẶC tài khoản trong
+ * `DEV_DATE_TOOL_EMAILS` (để dùng được ngay trên bản đã deploy). Ngoài ra
+ * component KHÔNG render gì cả (`@if (canUse())`), không phải chỉ ẩn bằng CSS
+ * — nên người dùng thường không thấy kể cả khi mở devtools.
  */
 @Component({
   selector: 'app-dev-date-panel',
@@ -23,8 +38,15 @@ function toDateInputValue(date: Date): string {
 })
 export class DevDatePanel {
   private readonly clock = inject(Clock);
+  private readonly authStore = inject(AuthStore);
 
-  protected readonly isDev = isDevMode();
+  /** Panel chỉ hiện khi tài khoản đăng nhập nằm trong danh sách
+   *  được cấp quyền (`DEV_DATE_TOOL_EMAILS`). Ngoài trường hợp đó thì
+   *  component không render gì. */
+  protected readonly canUse = computed(() => {
+    const email = this.authStore.user()?.email?.toLowerCase();
+    return !!email && DEV_DATE_TOOL_EMAILS.has(email);
+  });
   protected readonly open = signal(false);
   protected readonly draftDate = signal(toDateInputValue(this.clock.now()));
 
