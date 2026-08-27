@@ -54,10 +54,6 @@
           }
 
           <div class="birthday-actions">
-            <button type="button" class="btn-next-meme" (click)="nextRandomGifAndWish()">
-              🔀 Đổi GIF & Lời Chúc Khác ({{ currentGifIndex() + 1 }}/{{ gifs.length }})
-            </button>
-
             @if (!wishMade()) {
               <button type="button" class="btn-blow-candle" (click)="makeWish()">
                 🕯️ Ước một điều & Quẩy thôi!
