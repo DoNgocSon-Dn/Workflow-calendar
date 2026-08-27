@@ -648,7 +648,22 @@ export class FloatingHub {
               ? this.i18n.t('hub.toastEventsAdded', { count: createdCount })
               : this.i18n.t('hub.toastEventSaved', { title: result.event.title }),
         });
-        this.notificationSound.notifyKind('default');
+        const titleLower = (result.event.title || '').toLowerCase();
+        if (titleLower.includes('sinh nhật') || titleLower.includes('birthday') || titleLower.includes('sinh nhat')) {
+          this.notificationSound.notifyKind('birthday');
+        } else if (
+          titleLower.includes('quan trọng') ||
+          titleLower.includes('gấp') ||
+          titleLower.includes('khẩn cấp') ||
+          titleLower.includes('họp') ||
+          titleLower.includes('deadline') ||
+          titleLower.includes('ngày lễ') ||
+          titleLower.includes('sự kiện')
+        ) {
+          this.notificationSound.notifyKind('important');
+        } else {
+          this.notificationSound.notifyKind('default');
+        }
       } else if (result.intent === 'create_todos') {
         const proposal = this.buildProposal(result.goal, result.todos);
         if (proposal.rows.length) {
