@@ -52,8 +52,7 @@
     }
     @if (form.controls.title.invalid && form.controls.title.touched) {
     <p class="field-error hint-inset">{{ i18n.t('event.titleRequired') }}</p>
-    }
-    @if (saveError() && selectableCalendars().length > 0) {
+    } @else if (saveError() && selectableCalendars().length > 0) {
     <p class="field-error hint-inset">{{ saveError() }}</p>
     }
 
@@ -468,8 +467,7 @@
     <div class="modal-body">
       @if (form.controls.title.invalid && form.controls.title.touched) {
       <p class="field-error hint-inset">{{ i18n.t('event.todoTitleRequired') }}</p>
-      }
-      @if (todoError(); as err) {
+      } @else if (todoError(); as err) {
       <p class="field-error hint-inset">{{ err }}</p>
       }
 

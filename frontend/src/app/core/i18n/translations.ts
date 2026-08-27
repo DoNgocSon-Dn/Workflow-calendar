@@ -1972,6 +1972,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'group.descPlaceholder': 'Group description (optional)',
     'group.colorAriaLabel': 'Group color',
     'group.colorLabel': 'Color {color}',
+    'group.colorChangedAnnouncement': 'Group leader changed the group accent color.',
     'group.saveChanges': 'Save changes',
     'group.tabTasks': 'Tasks',
     'group.tabMembers': 'Members',

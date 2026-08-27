@@ -348,11 +348,15 @@ export class GroupWorkspaceModal {
   async saveGroup(): Promise<void> {
     const group = this.store.activeGroup();
     const name = this.editName().trim();
-    if (!group || this.savingGroup()) return;
+    if (!group || this.savingGroup() || !this.isLeader()) return;
     if (!name) {
       this.groupError.set(this.i18n.t('group.nameRequired'));
       return;
     }
+
+    const oldColor = group.color;
+    const newColor = this.editColor();
+    const colorChanged = oldColor !== newColor;
 
     this.savingGroup.set(true);
     this.groupError.set(null);
@@ -360,9 +364,20 @@ export class GroupWorkspaceModal {
       await this.store.updateGroup(group.id, {
         name,
         description: this.editDescription().trim(),
-        color: this.editColor(),
+        color: newColor,
       });
       this.editingGroup.set(false);
+
+      if (colorChanged) {
+        try {
+          await this.store.sendMessage(
+            group.id,
+            this.i18n.t('group.colorChangedAnnouncement'),
+          );
+        } catch {
+          // Announcement failure shouldn't block group save
+        }
+      }
     } catch (err: any) {
       this.groupError.set(err?.error?.message || this.i18n.t('group.updateGroupError'));
     } finally {
