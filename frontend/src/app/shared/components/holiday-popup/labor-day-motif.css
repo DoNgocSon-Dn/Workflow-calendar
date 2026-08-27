@@ -58,48 +58,49 @@
   opacity: 0.1;
 }
 
-/* ---- hero: 5 người lao động (ảnh thật đã tách nền) ---- */
-.ldm-workers {
-  opacity: 0.92;
-  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.2));
+/* ---- hero: Bánh răng vector tối giản ---- */
+.ldm-gear-float {
+  color: var(--holiday-accent, #f59e0b);
 }
 
-.ldm-workers-float {
-  animation: ldmWorkersFloat 7s ease-in-out infinite;
-  transform-origin: center bottom;
+.ldm-gear-spin {
+  animation: ldmGearSpin 32s linear infinite;
+  transform-origin: 0 0;
 }
 
-/* ---- particle "bụi xưởng" (vuông/gạch, không hoa/tuyết/confetti) ---- */
+/* ---- particle hạt bụi vàng ấm nhạt ---- */
 .ldm-particle {
   fill: currentColor;
   stroke: currentColor;
-  stroke-width: 1.2;
+  stroke-width: 0.8;
   animation-name: ldmParticleDrift;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
 }
 
 .ldm-particle--bg {
-  color: #a8a29e;
+  color: #78716c;
+  opacity: 0.2;
 }
 
 .ldm-particle--mid {
-  color: #d97706;
+  color: #f59e0b;
+  opacity: 0.3;
 }
 
 .ldm-particle--fg {
-  color: #ea580c;
+  color: #fbbf24;
+  opacity: 0.25;
 }
 
 /* ================= keyframes ================= */
 
-@keyframes ldmWorkersFloat {
-  0%,
-  100% {
-    transform: translateY(-2px);
+@keyframes ldmGearSpin {
+  from {
+    transform: rotate(0deg);
   }
-  50% {
-    transform: translateY(2px);
+  to {
+    transform: rotate(360deg);
   }
 }
 
@@ -108,25 +109,21 @@
     transform: translate(0, 0);
     opacity: 0;
   }
-  15% {
-    opacity: 1;
+  20% {
+    opacity: 0.4;
   }
-  85% {
-    opacity: 1;
+  80% {
+    opacity: 0.4;
   }
   100% {
-    transform: translate(10px, -14px);
+    transform: translate(8px, -12px);
     opacity: 0;
   }
 }
 
-/* ---- dark mode: hạ nền, giữ hero rõ ---- */
+/* ---- dark mode ---- */
 :host-context(.dark) .ldm-factory {
-  opacity: 0.14;
-}
-
-:host-context(.dark) .ldm-workers {
-  opacity: 0.82;
+  opacity: 0.1;
 }
 
 @media (prefers-reduced-motion: reduce) {

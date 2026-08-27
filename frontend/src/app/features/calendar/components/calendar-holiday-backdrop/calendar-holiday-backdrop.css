@@ -18,171 +18,154 @@
 
 /* Neo ở góc trên-phải, đủ lớn để "cảm" được nhưng không lấn hết vùng lịch —
    cành rủ xuống từ đây, phần còn lại của lưới lịch vẫn đọc rõ như thường. */
+/* Neo ở góc trên-phải, mờ nhẹ tạo chiều sâu không khí mà không lấn vùng lịch */
 .holiday-backdrop__motif {
   position: absolute;
   top: 0;
   right: 0;
-  width: min(56vw, 620px);
-  height: min(74%, 560px);
-  opacity: 0.85;
-  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.08));
+  width: min(44vw, 500px);
+  height: min(60%, 440px);
+  opacity: 0.32;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.05));
 }
 
 @media (max-width: 900px) {
   .holiday-backdrop__motif {
-    width: min(78vw, 420px);
-    height: min(52%, 340px);
-    opacity: 0.7;
+    width: min(65vw, 360px);
+    height: min(45%, 280px);
+    opacity: 0.25;
   }
 }
 
-/* Bánh răng + dụng cụ lao động — mức đầu tư "4/5", neo góc trên-phải như
-   Tết nhưng chiếm diện tích khiêm tốn hơn 2/9 (scene mạnh nhất). */
+/* Bánh răng vector kỹ nghệ 1/5 & 30/4 — mờ nhẹ tinh tế */
 .holiday-backdrop--labor-day .holiday-backdrop__motif {
-  width: min(46vw, 500px);
-  height: min(62%, 460px);
-  opacity: 0.82;
+  width: min(38vw, 420px);
+  height: min(52%, 380px);
+  opacity: 0.28;
 }
 
 @media (max-width: 1200px) {
   .holiday-backdrop--labor-day .holiday-backdrop__motif {
-    width: min(52vw, 400px);
-    height: min(46%, 320px);
-    opacity: 0.68;
+    width: min(44vw, 340px);
+    height: min(40%, 280px);
+    opacity: 0.22;
   }
 }
 
 @media (max-width: 900px) {
   .holiday-backdrop--labor-day .holiday-backdrop__motif {
-    width: min(66vw, 300px);
-    height: min(34%, 220px);
-    opacity: 0.55;
+    width: min(55vw, 260px);
+    height: min(30%, 190px);
+    opacity: 0.18;
   }
 }
 
-/* Cờ + skyline Quốc khánh — theo yêu cầu người dùng, đặt CHÍNH GIỮA màn hình
-   thay vì neo góc trên-phải (cùng cách xử lý với .holiday-backdrop--flag ở
-   30/4: top/left 50% + translate(-50%,-50%) thay vì top/right:0). Mask mờ
-   dần đối xứng từ tâm ra bốn phía để cạnh vuông của khung ảnh tan vào nền
-   thay vì cắt cứng — cần thiết vì đặt giữa nên mọi cạnh khung đều lộ ra giữa
-   vùng lịch (khác kiểu neo góc, chỉ 2 cạnh lộ và đã bị góc màn hình che bớt). */
+/* Cờ + skyline Quốc khánh — đặt CHÍNH GIỮA màn hình, mask mờ mềm mỏng */
 .holiday-backdrop--national-day .holiday-backdrop__motif {
   top: 50%;
   left: 50%;
   right: auto;
   transform: translate(-50%, -50%);
-  width: min(50vw, 560px);
-  height: min(64%, 480px);
-  opacity: 0.68;
-  mask-image: radial-gradient(65% 65% at 50% 50%, #000 55%, transparent 100%);
-  -webkit-mask-image: radial-gradient(65% 65% at 50% 50%, #000 55%, transparent 100%);
+  width: min(44vw, 480px);
+  height: min(55%, 400px);
+  opacity: 0.24;
+  mask-image: radial-gradient(60% 60% at 50% 50%, #000 45%, transparent 100%);
+  -webkit-mask-image: radial-gradient(60% 60% at 50% 50%, #000 45%, transparent 100%);
 }
 
 @media (max-width: 1200px) {
   .holiday-backdrop--national-day .holiday-backdrop__motif {
-    width: min(56vw, 420px);
-    height: min(48%, 340px);
-    opacity: 0.58;
+    width: min(50vw, 380px);
+    height: min(42%, 300px);
+    opacity: 0.2;
   }
 }
 
 @media (max-width: 900px) {
   .holiday-backdrop--national-day .holiday-backdrop__motif {
-    width: min(72vw, 300px);
-    height: min(36%, 220px);
-    opacity: 0.48;
+    width: min(65vw, 270px);
+    height: min(32%, 190px);
+    opacity: 0.16;
   }
 }
 
-/* Cờ 30/4 + Dinh Độc Lập + chim bồ câu — theo yêu cầu người dùng, đặt CHÍNH
-   GIỮA màn hình thay vì neo góc trên-phải như 3 scene còn lại (chim bồ câu
-   bay trong hộp nhỏ ở góc bị chê "nhỏ quá", khó thấy). Dùng top/left 50% +
-   translate(-50%,-50%) thay vì top/right:0. Kích thước nhỉnh hơn bản neo góc
-   trước đó để chim bay rõ hơn, nhưng vẫn thấp hơn national-day (scene mạnh
-   nhất) vì lá cờ tô đặc, dễ trùm kín cột ngày nếu quá to. */
+/* Cờ 30/4 + Dinh Độc Lập — đặt CHÍNH GIỮA, mờ dịu */
 .holiday-backdrop--flag .holiday-backdrop__motif {
   top: 50%;
   left: 50%;
   right: auto;
   transform: translate(-50%, -50%);
-  width: min(52vw, 580px);
-  height: min(66%, 500px);
-  opacity: 0.65;
-  /* Lá cờ tô đặc gần kín khung (không thưa như cành mai/bánh răng), nên cạnh
-     vuông của khung ảnh lộ rõ thành một khối chữ nhật cứng, như dán đè lên
-     lịch. Mask mờ dần đối xứng từ tâm ra bốn phía (khớp với việc đặt chính
-     giữa, khác với mask lệch góc dùng cho kiểu neo góc) để rìa tan vào nền
-     thay vì cắt cứng. */
-  mask-image: radial-gradient(65% 65% at 50% 50%, #000 55%, transparent 100%);
-  -webkit-mask-image: radial-gradient(65% 65% at 50% 50%, #000 55%, transparent 100%);
+  width: min(46vw, 500px);
+  height: min(56%, 420px);
+  opacity: 0.24;
+  mask-image: radial-gradient(60% 60% at 50% 50%, #000 45%, transparent 100%);
+  -webkit-mask-image: radial-gradient(60% 60% at 50% 50%, #000 45%, transparent 100%);
 }
 
 @media (max-width: 1200px) {
   .holiday-backdrop--flag .holiday-backdrop__motif {
-    width: min(58vw, 460px);
-    height: min(50%, 360px);
-    opacity: 0.55;
+    width: min(52vw, 400px);
+    height: min(44%, 320px);
+    opacity: 0.2;
   }
 }
 
 @media (max-width: 900px) {
   .holiday-backdrop--flag .holiday-backdrop__motif {
-    width: min(72vw, 340px);
-    height: min(38%, 250px);
-    opacity: 0.46;
+    width: min(65vw, 290px);
+    height: min(34%, 210px);
+    opacity: 0.16;
   }
 }
 
-/* Trống đồng Đông Sơn (Giỗ Tổ Hùng Vương) — theo yêu cầu người dùng:
-   đặt CHÍNH GIỮA màn hình, chỉ lấy họa tiết trống đồng hình tròn (bỏ thân trống 3D). */
+/* Trống đồng Đông Sơn — mờ nhẹ nhã nhặn giữa màn hình */
 .holiday-backdrop--dong-son .holiday-backdrop__motif {
   top: 50%;
   left: 50%;
   right: auto;
   transform: translate(-50%, -50%);
-  width: min(52vw, 560px);
-  height: min(66%, 500px);
-  opacity: 0.7;
-  mask-image: radial-gradient(65% 65% at 50% 50%, #000 60%, transparent 100%);
-  -webkit-mask-image: radial-gradient(65% 65% at 50% 50%, #000 60%, transparent 100%);
+  width: min(46vw, 480px);
+  height: min(56%, 420px);
+  opacity: 0.25;
+  mask-image: radial-gradient(60% 60% at 50% 50%, #000 50%, transparent 100%);
+  -webkit-mask-image: radial-gradient(60% 60% at 50% 50%, #000 50%, transparent 100%);
 }
 
 @media (max-width: 1200px) {
   .holiday-backdrop--dong-son .holiday-backdrop__motif {
-    width: min(58vw, 440px);
-    height: min(50%, 360px);
-    opacity: 0.6;
+    width: min(52vw, 380px);
+    height: min(44%, 310px);
+    opacity: 0.2;
   }
 }
 
 @media (max-width: 900px) {
   .holiday-backdrop--dong-son .holiday-backdrop__motif {
-    width: min(74vw, 320px);
-    height: min(38%, 240px);
-    opacity: 0.5;
+    width: min(68vw, 280px);
+    height: min(34%, 200px);
+    opacity: 0.16;
   }
 }
 
-/* Đồng hồ giao thừa + pháo hoa (Tết Dương Lịch 1/1) — neo góc trên-phải,
-   mức đầu tư khiêm tốn như 1/5 (không phải "lễ lớn nhất" của bộ 6). */
+/* Đồng hồ giao thừa + pháo hoa — mờ nhẹ ở góc */
 .holiday-backdrop--new-year .holiday-backdrop__motif {
-  width: min(44vw, 480px);
-  height: min(60%, 440px);
-  opacity: 0.78;
+  width: min(38vw, 420px);
+  height: min(52%, 380px);
+  opacity: 0.28;
 }
 
 @media (max-width: 1200px) {
   .holiday-backdrop--new-year .holiday-backdrop__motif {
-    width: min(50vw, 380px);
-    height: min(44%, 300px);
-    opacity: 0.65;
+    width: min(44vw, 340px);
+    height: min(40%, 270px);
+    opacity: 0.22;
   }
 }
 
 @media (max-width: 900px) {
   .holiday-backdrop--new-year .holiday-backdrop__motif {
-    width: min(64vw, 280px);
-    height: min(32%, 200px);
-    opacity: 0.55;
+    width: min(55vw, 250px);
+    height: min(28%, 180px);
+    opacity: 0.18;
   }
 }
