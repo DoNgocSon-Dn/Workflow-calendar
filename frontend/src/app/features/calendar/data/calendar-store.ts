@@ -924,13 +924,18 @@ export class CalendarStore {
       // chứng nhóm đã nhận được.
       if (mine && !this.isGroupCalendar(event.calendarId)) continue;
 
-      const timeLabel = eventTimeLabel(event, this.timeFormatService.format());
+      const timeLabel = eventTimeLabel(
+        event,
+        this.timeFormatService.format(),
+        this.i18n.locale(),
+        this.nt('calendar.allDay'),
+      );
 
       // Người khác tạo thì bật cả popup; của mình thì chỉ ghi vào chuông.
       if (!mine) {
         this.notificationQueue.push({
           eventId: event.id,
-          title: `Sự kiện mới: ${event.title}`,
+          title: this.nt('nq.remoteCreated', { title: event.title }),
           body: timeLabel,
           kind: 'created',
         });

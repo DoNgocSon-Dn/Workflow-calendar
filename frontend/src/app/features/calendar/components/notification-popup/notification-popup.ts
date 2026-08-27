@@ -22,12 +22,12 @@ const FEEDBACK_MS = 160;
   },
 })
 export class NotificationPopup {
-  protected readonly notificationQueue = inject(NotificationQueue);
-  protected readonly i18n = inject(TranslationService);
+  readonly notificationQueue = inject(NotificationQueue);
+  readonly i18n = inject(TranslationService);
 
   readonly viewDetail = output<string>();
 
-  protected readonly snoozeOptions = computed(() =>
+  readonly snoozeOptions = computed(() =>
     SNOOZE_MINUTES.map((minutes) => ({
       minutes,
       label:
@@ -39,20 +39,20 @@ export class NotificationPopup {
 
   /** Id toast đang mở menu hoãn. Mở menu cũng phải GIỮ đồng hồ lại, không thì
    *  card tự tắt ngay lúc người dùng đang chọn thời lượng. */
-  protected readonly snoozeMenuFor = signal<string | null>(null);
+  readonly snoozeMenuFor = signal<string | null>(null);
 
   /** Toast đang chạy animation rời đi — đã quyết định tắt nhưng chưa gỡ khỏi
    *  hàng đợi. */
-  protected readonly leavingIds = signal<ReadonlySet<string>>(new Set());
+  readonly leavingIds = signal<ReadonlySet<string>>(new Set());
 
   /** Toast vừa được bấm hành động — dùng cho micro-feedback trước khi rời đi. */
-  protected readonly confirmingIds = signal<ReadonlySet<string>>(new Set());
+  readonly confirmingIds = signal<ReadonlySet<string>>(new Set());
 
-  protected isLeaving(id: string): boolean {
+  isLeaving(id: string): boolean {
     return this.leavingIds().has(id);
   }
 
-  protected isConfirming(id: string): boolean {
+  isConfirming(id: string): boolean {
     return this.confirmingIds().has(id);
   }
 

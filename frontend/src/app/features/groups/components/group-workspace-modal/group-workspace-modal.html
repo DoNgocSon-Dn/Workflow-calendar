@@ -847,7 +847,7 @@
             </div>
 
             <div class="info-card meet-card">
-              <h3><app-icon name="video" /> Phòng họp trực tuyến</h3>
+              <h3><app-icon [name]="'video'" /> Phòng họp trực tuyến</h3>
               <p>
                 Bấm <strong>Tạo phòng họp</strong> là có link ngay — không phải đi lấy rồi dán
                 về. Link hiện ở dưới để sao chép, và tới giờ họp thì cả nhóm cùng thấy một
@@ -955,7 +955,7 @@
                 <div class="saved-meet">
                   <div class="saved-meet-head">
                     <span class="saved-meet-title">
-                      <app-icon name="video" /> Phòng họp đã sẵn sàng
+                      <app-icon [name]="'video'" /> Phòng họp đã sẵn sàng
                     </span>
                     <button type="button" class="btn-mini-ghost" (click)="dismissSavedMeet()">
                       Ẩn
