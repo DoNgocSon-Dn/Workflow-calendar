@@ -1,97 +1,108 @@
 <div class="ldm-scene">
-  <!-- Lớp 1: dải cờ đỏ phấp phới mềm mại phía sau -->
-  <svg class="ldm-layer ldm-layer--bg" viewBox="0 0 200 160" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+  <!-- Lớp 1: Nền Tia nắng Mặt trời mọc (Sunburst) + Cần cẩu tháp + Silhouette thành phố -->
+  <svg class="ldm-layer ldm-layer--bg" viewBox="0 0 240 180" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
     <defs>
-      <linearGradient id="ldmFlagGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#ef4444" />
-        <stop offset="60%" stop-color="#dc2626" />
-        <stop offset="100%" stop-color="#991b1b" />
+      <linearGradient id="ldmSunGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#ef4444" stop-opacity="0.35" />
+        <stop offset="100%" stop-color="#b91c1c" stop-opacity="0.15" />
       </linearGradient>
-      <linearGradient id="ldmGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#fef08a" />
-        <stop offset="50%" stop-color="#f59e0b" />
+      <linearGradient id="ldmCraneGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#f59e0b" />
         <stop offset="100%" stop-color="#d97706" />
+      </linearGradient>
+      <linearGradient id="ldmMetalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#f5f5f4" />
+        <stop offset="50%" stop-color="#a8a29e" />
+        <stop offset="100%" stop-color="#57534e" />
+      </linearGradient>
+      <linearGradient id="ldmWoodGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#d97706" />
+        <stop offset="100%" stop-color="#92400e" />
       </linearGradient>
     </defs>
 
-    <!-- Dải ruy băng cờ đỏ phấp phới -->
-    <path class="ldm-flag-wave" d="M 15,95 Q 60,60 100,88 T 185,70" fill="none" stroke="url(#ldmFlagGrad)" stroke-width="22" stroke-linecap="round" opacity="0.32" />
-  </svg>
+    <!-- Sunburst / Tia nắng mặt trời tỏa rộng từ tâm -->
+    <g class="ldm-sunburst" opacity="0.28">
+      <polygon points="120,110 -20,-20 -20,10" fill="#dc2626" />
+      <polygon points="120,110 30,-20 70,-20" fill="#dc2626" />
+      <polygon points="120,110 120,-20 160,-20" fill="#dc2626" />
+      <polygon points="120,110 210,-20 250,-20" fill="#dc2626" />
+      <polygon points="120,110 260,20 260,60" fill="#dc2626" />
+      <polygon points="120,110 260,100 260,140" fill="#dc2626" />
+      <polygon points="120,110 260,180 220,200" fill="#dc2626" />
+      <polygon points="120,110 150,200 110,200" fill="#dc2626" />
+      <polygon points="120,110 60,200 20,200" fill="#dc2626" />
+      <polygon points="120,110 -20,170 -20,130" fill="#dc2626" />
+      <polygon points="120,110 -20,80 -20,40" fill="#dc2626" />
+    </g>
 
-  <!-- Lớp 2: Biểu tượng chính 1/5 & 30/4 — Bánh răng Công nhân + Bông lúa Nông dân + Sao vàng Tổ Quốc -->
-  <svg class="ldm-layer ldm-layer--mid" viewBox="0 0 200 160" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-    <g class="ldm-main-symbol" transform="translate(100, 80)">
+    <!-- Cần cẩu xây dựng (Tower Crane) bên phải -->
+    <g class="ldm-crane" transform="translate(145, 15)" stroke="url(#ldmCraneGrad)" fill="none" stroke-width="1.2" opacity="0.55">
+      <line x1="40" y1="20" x2="40" y2="150" stroke-width="2" />
+      <line x1="52" y1="20" x2="52" y2="150" stroke-width="2" />
+      <path d="M 40,20 L 52,35 L 40,50 L 52,65 L 40,80 L 52,95 L 40,110 L 52,125 L 40,140" />
+      <line x1="-35" y1="35" x2="75" y2="35" stroke-width="2" />
+      <line x1="-35" y1="25" x2="75" y2="35" stroke-width="1" />
+      <line x1="15" y1="35" x2="15" y2="75" stroke="#a8a29e" stroke-width="1" />
+      <path d="M 12,75 L 18,75 L 15,82 Z" fill="#f59e0b" />
+    </g>
 
-      <!-- Bánh răng Công nghiệp (Kỹ nghệ lao động) xoay chậm -->
-      <g class="ldm-gear-spin">
-        <circle cx="0" cy="0" r="30" fill="none" stroke="url(#ldmGoldGrad)" stroke-width="2" opacity="0.65" />
-        <circle cx="0" cy="0" r="22" fill="none" stroke="url(#ldmGoldGrad)" stroke-width="1" stroke-dasharray="3 3" opacity="0.5" />
-        
-        <!-- Các răng của bánh răng công nghiệp (Rõ nét 100%) -->
-        <g fill="url(#ldmGoldGrad)" opacity="0.8">
-          <rect x="-3" y="-35" width="6" height="8" rx="1" />
-          <rect x="-3" y="27" width="6" height="8" rx="1" />
-          <rect x="-35" y="-3" width="8" height="6" rx="1" />
-          <rect x="27" y="-3" width="8" height="6" rx="1" />
-          <g transform="rotate(45)">
-            <rect x="-3" y="-35" width="6" height="8" rx="1" />
-            <rect x="-3" y="27" width="6" height="8" rx="1" />
-            <rect x="-35" y="-3" width="8" height="6" rx="1" />
-            <rect x="27" y="-3" width="8" height="6" rx="1" />
-          </g>
-        </g>
-      </g>
-
-      <!-- Vòng Bông Lúa Vàng 2 bên (Công - Nông liên minh) -->
-      <g stroke="url(#ldmGoldGrad)" fill="url(#ldmGoldGrad)" stroke-width="1.2" stroke-linecap="round" opacity="0.75">
-        <!-- Vòng lúa bên trái -->
-        <path d="M -10,22 C -28,16 -36,-4 -30,-24" fill="none" />
-        <circle cx="-22" cy="12" r="2.2" />
-        <circle cx="-29" cy="2" r="2.2" />
-        <circle cx="-31" cy="-10" r="2.2" />
-        <circle cx="-27" cy="-21" r="2" />
-
-        <!-- Vòng lúa bên phải -->
-        <path d="M 10,22 C 28,16 36,-4 30,-24" fill="none" />
-        <circle cx="22" cy="12" r="2.2" />
-        <circle cx="29" cy="2" r="2.2" />
-        <circle cx="31" cy="-10" r="2.2" />
-        <circle cx="27" cy="-21" r="2" />
-      </g>
-
-      <!-- Ngôi Sao Vàng 5 Cánh chính giữa (Rõ nét, nổi bật) -->
-      <polygon
-        class="ldm-star-gold"
-        points="0,-18 5.3,-5.5 17.1,-5.5 7.6,2.2 11.2,14.5 0,6.8 -11.2,14.5 -7.6,2.2 -17.1,-5.5 -5.3,-5.5"
-        fill="url(#ldmGoldGrad)"
-        opacity="0.95"
-        filter="drop-shadow(0 2px 8px rgba(217, 119, 6, 0.4))"
-      />
+    <!-- Silhouette Thành phố / Công trình xây dựng -->
+    <g class="ldm-city" fill="#0891b2" opacity="0.22">
+      <rect x="10" y="125" width="22" height="55" />
+      <rect x="35" y="110" width="28" height="70" />
+      <rect x="66" y="135" width="18" height="45" />
+      <rect x="170" y="120" width="30" height="60" />
+      <rect x="203" y="130" width="25" height="50" />
     </g>
   </svg>
 
-  <!-- Lớp 3: Chim bồ câu hòa bình bay chao nghiêng + Hạt sao lấp lánh -->
-  <svg class="ldm-layer ldm-layer--fg" viewBox="0 0 200 160" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-    <!-- Chim bồ câu hòa bình bay bên trái -->
-    <g class="ldm-dove-fly" transform="translate(42, 38) scale(0.42)">
-      <path d="M 0,0 C 8,-12 24,-16 36,-8 C 30,-2 22,2 14,4 C 24,10 32,20 28,28 C 18,24 10,16 4,8 C -2,12 -8,14 -16,12 C -8,6 -4,2 0,0 Z" fill="#ffffff" opacity="0.85" />
-    </g>
-    <!-- Chim bồ câu hòa bình bay bên phải -->
-    <g class="ldm-dove-fly ldm-dove-fly--slow" transform="translate(148, 34) scale(0.35)">
-      <path d="M 0,0 C 8,-12 24,-16 36,-8 C 30,-2 22,2 14,4 C 24,10 32,20 28,28 C 18,24 10,16 4,8 C -2,12 -8,14 -16,12 C -8,6 -4,2 0,0 Z" fill="#ffffff" opacity="0.75" />
-    </g>
+  <!-- Lớp 2: Nắm đấm Công nhân giơ cao Cờ lê + Búa (Giống 100% hình mẫu người dùng gửi) -->
+  <svg class="ldm-layer ldm-layer--mid" viewBox="0 0 240 180" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <g class="ldm-hero-fists" transform="translate(62, 38)">
 
-    <!-- Ngôi sao nhỏ lấp lánh nhẹ nhàng -->
-    @for (p of midParticles; track $index) {
-      <polygon
-        class="ldm-sparkle"
-        points="0,-4 1.2,-1.2 4,0 1.2,1.2 0,4 -1.2,1.2 -4,0 -1.2,-1.2"
-        fill="#fbbf24"
-        [attr.transform]="'translate(' + (p.left * 1.8 + 10) + ',' + p.top + ') scale(' + (p.size / 6) + ')'"
-        [style.opacity]="p.opacity * 0.7"
-        [style.animation-duration.s]="p.duration"
-        [style.animation-delay.s]="p.delay"
-      />
-    }
+      <!-- CỜ LÊ (Wrench) cầm ở tay trái giơ cao -->
+      <g class="ldm-wrench" transform="rotate(-30, 45, 30)">
+        <path d="M -18,25 L 108,25 L 108,37 L -18,37 Z" fill="url(#ldmMetalGrad)" stroke="#292524" stroke-width="1.4" />
+        <!-- Đầu cờ lê mở -->
+        <circle cx="-18" cy="31" r="15" fill="url(#ldmMetalGrad)" stroke="#292524" stroke-width="1.4" />
+        <polygon points="-28,23 -12,31 -28,39" fill="#1c1917" />
+        <!-- Đầu cờ lê vòng -->
+        <circle cx="108" cy="31" r="14" fill="url(#ldmMetalGrad)" stroke="#292524" stroke-width="1.4" />
+        <circle cx="108" cy="31" r="7.5" fill="#1c1917" />
+      </g>
+
+      <!-- BÚA (Hammer) cầm ở tay phải -->
+      <g class="ldm-hammer" transform="translate(58, 36) rotate(34)">
+        <!-- Cán búa gỗ -->
+        <rect x="-12" y="25" width="98" height="13" rx="2" fill="url(#ldmWoodGrad)" stroke="#292524" stroke-width="1.4" />
+        <!-- Đầu búa sắt -->
+        <path d="M 76,10 L 105,10 L 105,52 L 76,52 Z" fill="url(#ldmMetalGrad)" stroke="#292524" stroke-width="1.4" />
+        <!-- Đuôi búa nhổ đinh -->
+        <path d="M 76,14 Q 58,18 52,32 Q 60,33 76,34 Z" fill="url(#ldmMetalGrad)" stroke="#292524" stroke-width="1.4" />
+      </g>
+
+      <!-- NẮM ĐẤM TAY TRÁI (Giơ Cờ lê) -->
+      <g class="ldm-fist-left" fill="#f5d0a9" stroke="#1c1917" stroke-width="1.6" stroke-linejoin="round">
+        <path d="M 28,68 L 28,145 L 68,145 L 68,68 Z" fill="#e7b98a" />
+        <path d="M 22,50 C 20,40 34,36 42,44 C 48,36 60,38 64,46 C 70,40 80,44 80,54 C 80,64 72,70 64,70 L 26,70 C 20,70 20,58 22,50 Z" />
+        <path d="M 32,54 Q 52,50 62,60 C 58,68 44,68 32,54 Z" fill="#fbd8b3" />
+        <line x1="42" y1="44" x2="42" y2="66" stroke-width="1.2" />
+        <line x1="60" y1="46" x2="60" y2="66" stroke-width="1.2" />
+      </g>
+
+      <!-- NẮM ĐẤM TAY PHẢI (Giơ Búa) -->
+      <g class="ldm-fist-right" transform="translate(58, 22)" fill="#ebd0b5" stroke="#1c1917" stroke-width="1.6" stroke-linejoin="round">
+        <path d="M 26,70 L 26,125 L 62,125 L 62,70 Z" fill="#dfad7c" />
+        <path d="M 20,52 C 18,42 32,38 40,46 C 46,38 58,40 62,48 C 68,42 76,46 76,56 C 76,64 68,68 60,68 L 24,68 C 18,68 18,58 20,52 Z" />
+        <path d="M 30,56 Q 50,52 58,62 C 54,68 40,68 30,56 Z" fill="#fbd8b3" />
+      </g>
+    </g>
+  </svg>
+
+  <!-- Lớp 3: Đám mây Vintage lơ lửng -->
+  <svg class="ldm-layer ldm-layer--fg" viewBox="0 0 240 180" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <path class="ldm-cloud" d="M 15,38 Q 28,22 46,28 Q 58,18 74,28 Q 88,22 96,38 Z" fill="#fef3c7" opacity="0.4" />
+    <path class="ldm-cloud ldm-cloud--slow" d="M 148,26 Q 160,14 176,20 Q 188,10 204,20 Q 216,16 224,30 Z" fill="#fef3c7" opacity="0.35" />
   </svg>
 </div>
