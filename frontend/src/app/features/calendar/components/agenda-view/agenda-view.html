@@ -6,6 +6,19 @@
     </div>
 
     <div class="header-controls">
+      <!-- Khoảng thời gian chung (Lịch Dương / Lịch Âm / Sự kiện của tôi) -->
+      <div class="filter-pills" role="radiogroup">
+        <button type="button" class="filter-pill" [class.active]="filterMode() === 'month'" (click)="setFilterMode('month')">
+          {{ i18n.t('agenda.filterMonth') }}
+        </button>
+        <button type="button" class="filter-pill" [class.active]="filterMode() === 'next30'" (click)="setFilterMode('next30')">
+          {{ i18n.t('agenda.filterNext30') }}
+        </button>
+        <button type="button" class="filter-pill" [class.active]="filterMode() === 'all'" (click)="setFilterMode('all')">
+          {{ i18n.t('agenda.filterAll') }}
+        </button>
+      </div>
+
       <!-- Phạm vi: Lịch Dương / Lịch Âm / Sự kiện của tôi -->
       <div class="calendar-type-toggle" role="radiogroup" [attr.aria-label]="i18n.t('agenda.scopeLabel')">
         <button
@@ -33,26 +46,11 @@
           {{ i18n.t('agenda.myEvents') }}
         </button>
       </div>
-
-      @if (scope() !== 'mine') {
-        <!-- Khoảng thời gian cho Lịch Dương / Lịch Âm -->
-        <div class="filter-pills" role="radiogroup">
-          <button type="button" class="filter-pill" [class.active]="filterMode() === 'month'" (click)="setFilterMode('month')">
-            {{ i18n.t('agenda.filterMonth') }}
-          </button>
-          <button type="button" class="filter-pill" [class.active]="filterMode() === 'next30'" (click)="setFilterMode('next30')">
-            {{ i18n.t('agenda.filterNext30') }}
-          </button>
-          <button type="button" class="filter-pill" [class.active]="filterMode() === 'all'" (click)="setFilterMode('all')">
-            {{ i18n.t('agenda.filterAll') }}
-          </button>
-        </div>
-      }
     </div>
   </div>
 
   @if (scope() === 'mine') {
-    <!-- Bộ lọc riêng cho "Sự kiện của tôi" -->
+    <!-- Bộ lọc bổ sung cho "Sự kiện của tôi": Loại lịch & Trạng thái -->
     <div class="mine-filters">
       <div class="mine-filter-row">
         <span class="mine-filter-label">{{ i18n.t('agenda.mineTypeLabel') }}</span>
@@ -60,16 +58,6 @@
           <button type="button" class="filter-pill" [class.active]="mineType() === 'all'" (click)="setMineType('all')">{{ i18n.t('agenda.mineTypeAll') }}</button>
           <button type="button" class="filter-pill" [class.active]="mineType() === 'solar'" (click)="setMineType('solar')">{{ i18n.t('agenda.calendarTypeSolar') }}</button>
           <button type="button" class="filter-pill" [class.active]="mineType() === 'lunar'" (click)="setMineType('lunar')">{{ i18n.t('agenda.calendarTypeLunar') }}</button>
-        </div>
-      </div>
-      <div class="mine-filter-row">
-        <span class="mine-filter-label">{{ i18n.t('agenda.mineTimeLabel') }}</span>
-        <div class="filter-pills" role="radiogroup">
-          <button type="button" class="filter-pill" [class.active]="mineTime() === 'today'" (click)="setMineTime('today')">{{ i18n.t('agenda.mineTimeToday') }}</button>
-          <button type="button" class="filter-pill" [class.active]="mineTime() === '7d'" (click)="setMineTime('7d')">{{ i18n.t('agenda.mineTime7d') }}</button>
-          <button type="button" class="filter-pill" [class.active]="mineTime() === '30d'" (click)="setMineTime('30d')">{{ i18n.t('agenda.mineTime30d') }}</button>
-          <button type="button" class="filter-pill" [class.active]="mineTime() === 'month'" (click)="setMineTime('month')">{{ i18n.t('agenda.filterMonth') }}</button>
-          <button type="button" class="filter-pill" [class.active]="mineTime() === 'all'" (click)="setMineTime('all')">{{ i18n.t('agenda.filterAll') }}</button>
         </div>
       </div>
       <div class="mine-filter-row">

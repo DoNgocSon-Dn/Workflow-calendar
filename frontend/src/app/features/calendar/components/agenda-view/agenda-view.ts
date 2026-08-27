@@ -152,15 +152,16 @@ export class AgendaView {
     const today = this.store.today();
     const intlLocale = this.i18n.locale() === 'en' ? 'en-US' : 'vi-VN';
 
-    // 1. Lọc theo phạm vi (Dương / Âm / Của tôi) — hoàn toàn dựa `calendarType`
-    //    và nguồn sự kiện, KHÔNG đoán theo tên.
+    // 1. Lọc theo phạm vi (Dương / Âm / Của tôi)
     let list = this.store.visibleEvents().filter((e) => matchesAgendaScope(e, scope));
 
-    // 2. Lọc thời gian
-    list =
-      scope === 'mine'
-        ? this.applyMineFilters(list, today, focused)
-        : this.applyRangeFilter(list, this.filterMode(), focused, today);
+    // 2. Lọc thời gian (Áp dụng bộ lọc thời gian ở thanh công cụ cho cả 3 chế độ)
+    list = this.applyRangeFilter(list, this.filterMode(), focused, today);
+
+    // 3. Nếu là 'mine', lọc bổ sung theo Loại lịch & Trạng thái
+    if (scope === 'mine') {
+      list = this.applyMineSubFilters(list, today);
+    }
 
     // 3. Gom theo ngày Dương của MỐC BẮT ĐẦU — event nhiều ngày chỉ một dòng.
     const map = new Map<string, { date: Date; events: AgendaEvent[] }>();
@@ -231,34 +232,15 @@ export class AgendaView {
     });
   }
 
-  private applyMineFilters(list: CalendarEvent[], today: Date, focused: Date): CalendarEvent[] {
+  private applyMineSubFilters(list: CalendarEvent[], today: Date): CalendarEvent[] {
     const mineType = this.mineType();
-    const mineTime = this.mineTime();
     const mineStatus = this.mineStatus();
     const todayMs = startOfDay(today).getTime();
     const myId = this.authStore.user()?.id;
+
     return list.filter((e) => {
-      // "Của tôi" theo nghĩa hẹp: do chính mình tạo. Backend cũ không gửi
-      // `createdBy` ⇒ lùi về "mọi sự kiện người dùng" (đã lọc ở matchesAgendaScope).
       if (myId && e.createdBy && e.createdBy !== myId) return false;
       if (mineType !== 'all' && (e.calendarType ?? 'solar') !== mineType) return false;
-
-      const startMs = e.start.getTime();
-      if (mineTime === 'today') {
-        if (!isSameDay(e.start, today)) return false;
-      } else if (mineTime === '7d') {
-        if (startMs < todayMs || startMs > todayMs + 7 * DAY_MS) return false;
-      } else if (mineTime === '30d') {
-        if (startMs < todayMs || startMs > todayMs + 30 * DAY_MS) return false;
-      } else if (mineTime === 'month') {
-        if (
-          e.start.getFullYear() !== focused.getFullYear() ||
-          e.start.getMonth() !== focused.getMonth()
-        ) {
-          return false;
-        }
-      }
-
       if (mineStatus === 'upcoming' && e.end.getTime() < todayMs) return false;
       if (mineStatus === 'past' && e.end.getTime() >= todayMs) return false;
       return true;
