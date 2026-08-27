@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } 
 import { Router } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth-store';
 import { DensityService } from '../../../core/density/density-service';
+import { TranslationService } from '../../../core/i18n/translation.service';
 import { NotificationQueue } from '../../../core/realtime/notification-queue';
 import { CalendarHeader } from '../components/calendar-header/calendar-header';
 import { CalendarHolidayBackdrop } from '../components/calendar-holiday-backdrop/calendar-holiday-backdrop';
@@ -75,6 +76,7 @@ export class CalendarPage {
   protected readonly groupStore = inject(GroupStore);
   protected readonly authStore = inject(AuthStore);
   protected readonly holidayThemeService = inject(HolidayThemeService);
+  protected readonly i18n = inject(TranslationService);
   private readonly notificationQueue = inject(NotificationQueue);
   private readonly densityService = inject(DensityService);
   private readonly router = inject(Router);

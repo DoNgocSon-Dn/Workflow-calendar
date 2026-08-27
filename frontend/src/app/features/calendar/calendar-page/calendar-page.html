@@ -127,16 +127,14 @@
         </svg>
       </div>
 
-      <h2 class="name-prompt-title">Chào mừng bạn đến với Workflow!</h2>
-      <p class="name-prompt-desc">
-        Vui lòng hoàn tất hồ sơ trước khi vào app: <strong>Tên hiển thị</strong> xuất hiện trên lịch và khi tham gia nhóm làm việc, còn <strong>Ngày sinh</strong> để Workflow gửi lời chúc mừng sinh nhật đúng ngày.
-      </p>
+      <h2 class="name-prompt-title">{{ i18n.t('onboarding.title') }}</h2>
+      <p class="name-prompt-desc">{{ i18n.t('onboarding.desc') }}</p>
 
       <div class="name-prompt-field">
         <input
           type="text"
           class="name-prompt-input"
-          placeholder="Nhập tên của bạn (VD: Hoàng Cường)"
+          [placeholder]="i18n.t('onboarding.namePlaceholder')"
           maxlength="16"
           [value]="nameDraft()"
           (input)="nameDraft.set($any($event.target).value)"
@@ -162,7 +160,7 @@
           [disabled]="savingName() || !onboardingCanSubmit()"
           (click)="completeOnboarding()"
         >
-          {{ savingName() ? 'Đang lưu…' : 'Bắt đầu sử dụng' }}
+          {{ savingName() ? i18n.t('common.saving') : i18n.t('onboarding.submit') }}
         </button>
       </div>
     </div>
