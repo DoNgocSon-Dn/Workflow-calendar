@@ -473,14 +473,6 @@
     margin: 0 0.35rem;
     font-size: 1rem;
   }
-
-  /* "Việc cần làm" đã có lối vào riêng qua thanh điều hướng dưới cùng trên
-     màn hẹp (xem app-switch trong tasks-page) — bớt một cụm nút ở đây cho
-     hàng .right đỡ chật, view-dropdown/thông báo/avatar mới là thứ cần bấm
-     ngay từ màn lịch. */
-  .app-switch {
-    display: none;
-  }
 }
 
 /* Điện thoại rất hẹp (~360px): view-dropdown ghi chữ dài ("Lịch biểu") cộng
