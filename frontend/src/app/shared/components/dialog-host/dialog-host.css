@@ -19,16 +19,21 @@
   border-radius: 16px;
   width: 92%;
   max-width: 420px;
+  box-sizing: border-box;
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-modal);
   padding: 20px;
   animation: dhPopIn 0.18s ease-out;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .dh-title {
   margin: 0 0 8px 0;
   font-size: 1.05rem;
   font-weight: 700;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .dh-message {
@@ -37,6 +42,8 @@
   color: var(--color-text-secondary);
   line-height: 1.5;
   white-space: pre-line;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .dh-input {
@@ -72,6 +79,13 @@
   font-size: 0.9rem;
   color: var(--color-text);
   cursor: pointer;
+  min-width: 0;
+}
+
+.dh-radio-row span {
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .dh-radio-row input[type='radio'] {

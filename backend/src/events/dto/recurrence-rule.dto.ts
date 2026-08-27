@@ -12,6 +12,7 @@ import {
 export type RecurrenceFreq =
   | 'daily'
   | 'weekly'
+  | 'monthly'
   | 'monthly_nth_weekday'
   | 'monthly_last_weekday'
   | 'yearly'
@@ -25,6 +26,7 @@ export class RecurrenceRuleDto {
   @IsIn([
     'daily',
     'weekly',
+    'monthly',
     'monthly_nth_weekday',
     'monthly_last_weekday',
     'yearly',

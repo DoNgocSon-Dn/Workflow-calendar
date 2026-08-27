@@ -49,6 +49,9 @@ function* candidateDates(start: Date, rule: RecurrenceRuleDto): Generator<Date> 
     case 'weekly':
       yield* periodicCandidates(start, 'week', 1);
       return;
+    case 'monthly':
+      yield* periodicCandidates(start, 'month', 1);
+      return;
     case 'yearly':
       yield* periodicCandidates(start, 'year', 1);
       return;

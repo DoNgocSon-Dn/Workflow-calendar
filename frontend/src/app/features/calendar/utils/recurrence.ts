@@ -12,6 +12,7 @@ import { Locale } from '../../../core/i18n/translation.service';
 export type RecurrenceFreq =
   | 'daily'
   | 'weekly'
+  | 'monthly'
   | 'monthly_nth_weekday'
   | 'monthly_last_weekday'
   | 'yearly'
@@ -64,6 +65,7 @@ function monthDayLabel(date: Date, locale: Locale): string {
 /** Danh sách tuỳ chọn cho dropdown "Lặp lại", tính động theo ngày bắt đầu — khớp Google Calendar. */
 export function buildPresetOptions(startDate: Date, locale: Locale): RecurrenceOption[] {
   const weekday = weekdayName(startDate, locale);
+  const dayOfMonth = startDate.getDate();
   const options: RecurrenceOption[] = [
     { rule: null, label: locale === 'en' ? 'Does not repeat' : 'Không lặp lại' },
     { rule: { freq: 'daily' }, label: locale === 'en' ? 'Daily' : 'Hàng ngày' },
@@ -71,6 +73,13 @@ export function buildPresetOptions(startDate: Date, locale: Locale): RecurrenceO
       rule: { freq: 'weekly' },
       label:
         locale === 'en' ? `Weekly on ${weekday}` : `Hàng tuần vào ${weekday.toLowerCase()}`,
+    },
+    {
+      rule: { freq: 'monthly' },
+      label:
+        locale === 'en'
+          ? `Monthly on day ${dayOfMonth}`
+          : `Hàng tháng vào ngày ${dayOfMonth}`,
     },
   ];
 
@@ -119,11 +128,16 @@ export function buildPresetOptions(startDate: Date, locale: Locale): RecurrenceO
 /** Tóm tắt một dòng cho quy tắc đã có — dùng khi sửa sự kiện thuộc một chuỗi lặp (chỉ hiển thị, không sửa được). */
 export function describeRecurrence(rule: RecurrenceRule, startDate: Date, locale: Locale): string {
   const weekday = weekdayName(startDate, locale);
+  const dayOfMonth = startDate.getDate();
   switch (rule.freq) {
     case 'daily':
       return locale === 'en' ? 'Daily' : 'Hàng ngày';
     case 'weekly':
       return locale === 'en' ? `Weekly on ${weekday}` : `Hàng tuần vào ${weekday.toLowerCase()}`;
+    case 'monthly':
+      return locale === 'en'
+        ? `Monthly on day ${dayOfMonth}`
+        : `Hàng tháng vào ngày ${dayOfMonth}`;
     case 'monthly_nth_weekday': {
       const nth = weekOfMonth(startDate);
       const nthLabel = locale === 'en' ? NTH_LABEL_EN[nth] ?? '' : NTH_LABEL_VI[nth] ?? '';
