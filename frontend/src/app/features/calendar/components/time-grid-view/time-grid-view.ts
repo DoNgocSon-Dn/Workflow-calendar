@@ -16,7 +16,7 @@ import { TranslationService } from '../../../../core/i18n/translation.service';
 import { TimeFormatService } from '../../../../core/time-format/time-format-service';
 import { CreateRequest } from '../month-view/month-view';
 import { CalendarStore } from '../../data/calendar-store';
-import { CALENDAR_COLOR_HEX, CalendarEvent } from '../../models/calendar.models';
+import { CALENDAR_COLOR_HEX, CalendarEvent, NOTE_COLOR_HEX, Note } from '../../models/calendar.models';
 import {
   addDays,
   addMinutes,
@@ -134,6 +134,7 @@ export class TimeGridView {
   }
 
   protected readonly colorHex = CALENDAR_COLOR_HEX;
+  protected readonly noteColorHex = NOTE_COLOR_HEX;
 
   readonly days = input.required<Date[]>();
   readonly createRequested = output<CreateRequest>();
@@ -277,6 +278,66 @@ export class TimeGridView {
 
   allDayEventsFor(day: Date): CalendarEvent[] {
     return this.allDayEventsByDay().get(this.dayKey(day)) ?? [];
+  }
+
+  /** Ghi chú do người dùng kéo-thả "dán" lên đúng ngày này — cùng cơ chế với
+   *  month-view (xem `CalendarStore.pinNoteToDay()`). Đặt ở hàng "Cả ngày" vì
+   *  ghi chú không có giờ, giống hệt lý do sự kiện cả ngày cũng nằm ở đó. */
+  private readonly notesByDay = computed(() => {
+    const map = new Map<string, Note[]>();
+    for (const note of this.store.notes()) {
+      if (!note.pinnedDate) continue;
+      const key = this.dayKey(note.pinnedDate);
+      const list = map.get(key) ?? [];
+      list.push(note);
+      map.set(key, list);
+    }
+    return map;
+  });
+
+  notesFor(day: Date): Note[] {
+    return this.notesByDay().get(this.dayKey(day)) ?? [];
+  }
+
+  /** Áp dụng cho CẢ hàng "Cả ngày" LẪN toàn bộ cột giờ bên dưới — ghi chú
+   *  không có khái niệm giờ nên thả vào bất kỳ đâu trong cột của một ngày
+   *  đều "dán" lên đúng ngày đó, không cần nhắm chính xác vào dải mỏng phía
+   *  trên (dễ bị bỏ lỡ, đặc biệt lần đầu dùng). */
+  private isNoteDrag(event: DragEvent): boolean {
+    return !!event.dataTransfer?.types.includes('application/x-note-id');
+  }
+
+  protected readonly dragOverDayKey = signal<string | null>(null);
+
+  onNoteDropZoneDragEnter(event: DragEvent, day: Date): void {
+    if (!this.isNoteDrag(event)) return;
+    this.dragOverDayKey.set(this.dayKey(day));
+  }
+
+  onNoteDropZoneDragLeave(_event: DragEvent, day: Date): void {
+    if (this.dragOverDayKey() === this.dayKey(day)) this.dragOverDayKey.set(null);
+  }
+
+  isDragOver(day: Date): boolean {
+    return this.dragOverDayKey() === this.dayKey(day);
+  }
+
+  onNoteDropZoneDragOver(event: DragEvent): void {
+    event.preventDefault();
+  }
+
+  onNoteDropZoneDrop(event: DragEvent, day: Date): void {
+    event.preventDefault();
+    this.dragOverDayKey.set(null);
+    const noteId = event.dataTransfer?.getData('application/x-note-id');
+    if (noteId) void this.store.pinNoteToDay(noteId, day);
+  }
+
+  /** Bấm vào một ghi chú đã dán trên lịch để gỡ nó ra — nội dung vẫn còn
+   *  nguyên trong sidebar, chỉ mất liên kết ngày. */
+  unpinNote(event: MouseEvent, noteId: string): void {
+    event.stopPropagation();
+    void this.store.unpinNote(noteId);
   }
 
   blockTop(pe: PositionedEvent): number {

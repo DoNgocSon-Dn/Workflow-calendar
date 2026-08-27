@@ -47,7 +47,15 @@ import {
 import { RecurrenceRule } from '../utils/recurrence';
 import { TimeFormatService } from '../../../core/time-format/time-format-service';
 import { TranslationService } from '../../../core/i18n/translation.service';
-import { TimeFormat, addDays, clampToDay, formatTimeLabel, startOfDay } from '../utils/date-utils';
+import {
+  TimeFormat,
+  addDays,
+  clampToDay,
+  formatTimeLabel,
+  fromDateInputValue,
+  startOfDay,
+  toDateInputValue,
+} from '../utils/date-utils';
 import { matchScore } from '../utils/search-match';
 import { VN_HOLIDAY_CALENDAR_DEF, VN_HOLIDAY_CALENDAR_ID, buildVietnamHolidayEvents } from './vietnam-holidays';
 
@@ -176,6 +184,7 @@ interface NoteApiDto {
   id: string;
   content: string;
   color: string;
+  pinnedDate?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -219,6 +228,11 @@ function toNote(dto: NoteApiDto): Note {
     id: dto.id,
     content: dto.content,
     color: dto.color,
+    // fromDateInputValue dựng Date theo giờ ĐỊA PHƯƠNG từ "YYYY-MM-DD" — dùng
+    // new Date(string) trực tiếp sẽ đọc chuỗi này theo UTC và lùi mất một
+    // ngày ở các múi giờ trước UTC (đúng bẫy đã gặp với ngày sinh nhật/allDay
+    // ở nơi khác trong app).
+    pinnedDate: dto.pinnedDate ? fromDateInputValue(dto.pinnedDate) : undefined,
     createdAt: new Date(dto.createdAt),
     updatedAt: new Date(dto.updatedAt),
   };
@@ -2014,6 +2028,48 @@ export class CalendarStore {
     try {
       const result = await firstValueFrom(
         this.http.patch<NoteApiDto>(`${this.apiUrl}/notes/${id}`, changes),
+      );
+      const note = toNote(result);
+      this.notes.update((list) => list.map((n) => (n.id === id ? note : n)));
+      return note;
+    } catch (err) {
+      if (previous) this.notes.update((list) => list.map((n) => (n.id === id ? previous : n)));
+      throw err;
+    }
+  }
+
+  /** Kéo-thả ghi chú từ sidebar vào một ô ngày trên lịch — "dán" nó lên đúng
+   *  ngày đó. Ghi chú vẫn còn nguyên trong sidebar, chỉ thêm liên kết ngày. */
+  async pinNoteToDay(id: string, day: Date): Promise<Note> {
+    const previous = this.notes().find((n) => n.id === id);
+    const pinnedDate = startOfDay(day);
+    if (previous) {
+      this.notes.update((list) => list.map((n) => (n.id === id ? { ...n, pinnedDate } : n)));
+    }
+    try {
+      const result = await firstValueFrom(
+        this.http.patch<NoteApiDto>(`${this.apiUrl}/notes/${id}`, {
+          pinnedDate: toDateInputValue(pinnedDate),
+        }),
+      );
+      const note = toNote(result);
+      this.notes.update((list) => list.map((n) => (n.id === id ? note : n)));
+      return note;
+    } catch (err) {
+      if (previous) this.notes.update((list) => list.map((n) => (n.id === id ? previous : n)));
+      throw err;
+    }
+  }
+
+  /** Gỡ ghi chú khỏi lịch — nội dung vẫn giữ nguyên, chỉ bỏ liên kết ngày. */
+  async unpinNote(id: string): Promise<Note> {
+    const previous = this.notes().find((n) => n.id === id);
+    if (previous) {
+      this.notes.update((list) => list.map((n) => (n.id === id ? { ...n, pinnedDate: undefined } : n)));
+    }
+    try {
+      const result = await firstValueFrom(
+        this.http.patch<NoteApiDto>(`${this.apiUrl}/notes/${id}`, { clearPinnedDate: true }),
       );
       const note = toNote(result);
       this.notes.update((list) => list.map((n) => (n.id === id ? note : n)));

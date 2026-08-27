@@ -210,12 +210,32 @@
         </div>
       </div>
 
-      <!-- NOTES SECTION — do Trợ lý AI tạo/sửa/xoá; sidebar chỉ hiển thị + xoá. -->
+      <!-- NOTES SECTION — Trợ lý AI tạo/sửa/xoá được, sidebar cho tạo nhanh +
+           luôn hiển thị/xoá. -->
       <div class="calendar-list">
-        <h2 class="calendar-list-title">{{ i18n.t('sidebar.notes') }}</h2>
+        <div class="calendar-list-header">
+          <h2 class="calendar-list-title">{{ i18n.t('sidebar.notes') }}</h2>
+          <button
+            type="button"
+            class="add-calendar-btn"
+            [attr.aria-label]="i18n.t('sidebar.createNote')"
+            [title]="i18n.t('sidebar.createNote')"
+            (click)="onCreateNoteClicked()"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z" />
+            </svg>
+          </button>
+        </div>
         <div class="calendar-items-wrapper">
           @for (note of store.notes(); track note.id) {
-            <div class="calendar-item" [title]="note.content">
+            <div
+              class="calendar-item note-item"
+              [class.is-pinned]="!!note.pinnedDate"
+              [title]="note.pinnedDate ? i18n.t('sidebar.noteAlreadyPinned') : i18n.t('sidebar.dragNoteHint')"
+              draggable="true"
+              (dragstart)="onNoteDragStart($event, note.id)"
+            >
               <span class="color-dot" [style.background]="noteColorHex[note.color]"></span>
               <span class="calendar-name">{{ note.content }}</span>
               <button

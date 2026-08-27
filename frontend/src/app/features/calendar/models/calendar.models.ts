@@ -111,6 +111,8 @@ export interface Note {
   id: string;
   content: string;
   color: string;
+  /** Có giá trị khi ghi chú đã được kéo-thả "dán" lên một ngày trên lịch. */
+  pinnedDate?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

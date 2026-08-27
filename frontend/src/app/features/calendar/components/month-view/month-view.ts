@@ -3,7 +3,7 @@ import { DensityService } from '../../../../core/density/density-service';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { TimeFormatService } from '../../../../core/time-format/time-format-service';
 import { CalendarStore } from '../../data/calendar-store';
-import { CALENDAR_COLOR_HEX, CalendarEvent } from '../../models/calendar.models';
+import { CALENDAR_COLOR_HEX, CalendarEvent, NOTE_COLOR_HEX, Note } from '../../models/calendar.models';
 import {
   addMinutes,
   buildMonthGrid,
@@ -47,6 +47,7 @@ export class MonthView {
   protected readonly i18n = inject(TranslationService);
   private readonly timeFormatService = inject(TimeFormatService);
   protected readonly colorHex = CALENDAR_COLOR_HEX;
+  protected readonly noteColorHex = NOTE_COLOR_HEX;
 
   protected readonly weekdayHeaders = computed(() => [
     this.i18n.t('weekday.mon'),
@@ -161,6 +162,24 @@ export class MonthView {
     return this.eventsByDay().get(toDateInputValue(day)) ?? [];
   }
 
+  /** Ghi chú do người dùng kéo-thả "dán" lên đúng ngày này — xem
+   *  `CalendarStore.pinNoteToDay()`. Không phải sự kiện thật. */
+  private readonly notesByDay = computed(() => {
+    const map = new Map<string, Note[]>();
+    for (const note of this.store.notes()) {
+      if (!note.pinnedDate) continue;
+      const key = toDateInputValue(note.pinnedDate);
+      const list = map.get(key) ?? [];
+      list.push(note);
+      map.set(key, list);
+    }
+    return map;
+  });
+
+  notesFor(day: Date): Note[] {
+    return this.notesByDay().get(toDateInputValue(day)) ?? [];
+  }
+
   visibleEventsFor(day: Date): CalendarEvent[] {
     return this.eventsFor(day).slice(0, this.maxVisiblePerDay());
   }
@@ -263,10 +282,52 @@ export class MonthView {
     event.preventDefault();
   }
 
+  /** Ô ngày nào đang được kéo MỘT GHI CHÚ (không phải sự kiện) rê ngang qua —
+   *  dùng để tô viền, cho người dùng THẤY rõ ràng chỗ nào nhận được, thay vì
+   *  phải đoán. `dataTransfer.types` đọc được ngay từ dragenter (chỉ riêng
+   *  `getData()` mới bị khoá tới lúc drop), nên không cần chờ thả mới biết
+   *  đây có phải một ghi chú hay không. */
+  protected readonly dragOverDayKey = signal<string | null>(null);
+
+  private isNoteDrag(event: DragEvent): boolean {
+    return !!event.dataTransfer?.types.includes('application/x-note-id');
+  }
+
+  onDayCellDragEnter(event: DragEvent, day: Date): void {
+    if (!this.isNoteDrag(event)) return;
+    this.dragOverDayKey.set(toDateInputValue(day));
+  }
+
+  onDayCellDragLeave(event: DragEvent, day: Date): void {
+    if (this.dragOverDayKey() === toDateInputValue(day)) this.dragOverDayKey.set(null);
+  }
+
+  isDragOver(day: Date): boolean {
+    return this.dragOverDayKey() === toDateInputValue(day);
+  }
+
   onDrop(event: DragEvent, day: Date): void {
     event.preventDefault();
+    this.dragOverDayKey.set(null);
+
+    // Ghi chú kéo từ sidebar mang một kiểu dữ liệu RIÊNG (application/x-note-id)
+    // — phải kiểm tra trước "text/plain" của sự kiện, nếu không sẽ không bao
+    // giờ tới được nhánh này (event luôn có text/plain).
+    const noteId = event.dataTransfer?.getData('application/x-note-id');
+    if (noteId) {
+      void this.store.pinNoteToDay(noteId, day);
+      return;
+    }
+
     const id = this.draggingEventId ?? event.dataTransfer?.getData('text/plain');
     if (id) this.store.moveEventToDay(id, day);
     this.draggingEventId = null;
+  }
+
+  /** Bấm vào một ghi chú đã dán trên lịch để gỡ nó ra — nội dung vẫn còn
+   *  nguyên trong sidebar, chỉ mất liên kết ngày. */
+  unpinNote(event: MouseEvent, noteId: string): void {
+    event.stopPropagation();
+    void this.store.unpinNote(noteId);
   }
 }

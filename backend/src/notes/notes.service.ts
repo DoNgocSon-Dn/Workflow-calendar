@@ -41,9 +41,17 @@ export class NotesService {
     id: string,
     dto: UpdateNoteDto,
   ): Promise<NoteDto> {
+    // Cột DB dùng snake_case (pinned_date) trong khi DTO dùng camelCase
+    // (pinnedDate) — không thể spread thẳng dto vào .update() như trước nữa.
+    const row: Record<string, unknown> = {};
+    if (dto.content !== undefined) row['content'] = dto.content;
+    if (dto.color !== undefined) row['color'] = dto.color;
+    if (dto.clearPinnedDate) row['pinned_date'] = null;
+    else if (dto.pinnedDate !== undefined) row['pinned_date'] = dto.pinnedDate;
+
     const { data, error } = await supabase
       .from('notes')
-      .update(dto)
+      .update(row)
       .eq('id', id)
       .select('*')
       .returns<NoteRow[]>();

@@ -18,9 +18,12 @@
         [class.outside]="!isCurrentMonth(day)"
         [class.drag-selecting]="isInDragRange(day)"
         [class.holiday]="!!holiday"
+        [class.note-drag-over]="isDragOver(day)"
         (mousedown)="onCellMouseDown(day, $event)"
         (mouseenter)="onCellMouseEnter(day)"
         (dragover)="onDragOver($event)"
+        (dragenter)="onDayCellDragEnter($event, day)"
+        (dragleave)="onDayCellDragLeave($event, day)"
         (drop)="onDrop($event, day)"
       >
         @if (holiday?.theme?.backgroundImage; as bgImage) {
@@ -93,6 +96,26 @@
             >
               {{ i18n.t('calendar.moreEvents', { count: hiddenCountFor(day) }) }}
             </button>
+          }
+
+          <!-- Ghi chú đã kéo-thả "dán" lên ngày này — KHÔNG phải sự kiện thật,
+               chỉ là một chip nhỏ trỏ về đúng ghi chú trong sidebar. -->
+          @for (note of notesFor(day); track note.id) {
+            <span
+              class="note-pin-chip"
+              [style.--chip-color]="noteColorHex[note.color]"
+              [title]="note.content"
+            >
+              <span class="note-pin-chip__text">{{ note.content }}</span>
+              <button
+                type="button"
+                class="note-pin-chip__remove"
+                [attr.aria-label]="i18n.t('calendar.unpinNoteAria')"
+                [title]="i18n.t('calendar.unpinNote')"
+                (mousedown)="$event.stopPropagation()"
+                (click)="unpinNote($event, note.id)"
+              >×</button>
+            </span>
           }
         </div>
 

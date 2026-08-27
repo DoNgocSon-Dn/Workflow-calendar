@@ -180,6 +180,25 @@ export class CalendarSidebar implements OnInit {
   }
 
   protected readonly deletingNoteId = signal<string | null>(null);
+  protected readonly creatingNote = signal(false);
+
+  /** Tạo nhanh một ghi chú thủ công — không cần đi qua Trợ lý AI. Chỉ hỏi
+   *  nội dung (màu mặc định 'yellow', đổi màu vẫn làm được qua AI như cũ). */
+  async onCreateNoteClicked(): Promise<void> {
+    if (this.creatingNote()) return;
+    const content = await this.dialog.prompt(this.i18n.t('sidebar.createNotePrompt'));
+    const trimmed = content?.trim();
+    if (!trimmed) return;
+
+    this.creatingNote.set(true);
+    try {
+      await this.store.createNote(trimmed, 'yellow');
+    } catch {
+      await this.dialog.alert(this.i18n.t('sidebar.createNoteError'));
+    } finally {
+      this.creatingNote.set(false);
+    }
+  }
 
   async onDeleteNoteClicked(event: Event, noteId: string): Promise<void> {
     event.preventDefault();
@@ -200,5 +219,14 @@ export class CalendarSidebar implements OnInit {
     } finally {
       this.deletingNoteId.set(null);
     }
+  }
+
+  /** Bắt đầu kéo một ghi chú ra khỏi sidebar — month-view đọc id này ở
+   *  onDrop() để "dán" ghi chú lên đúng ô ngày người dùng thả vào. Kiểu dữ
+   *  liệu RIÊNG (application/x-note-id) để month-view phân biệt được đây là
+   *  một ghi chú, không phải một sự kiện đang được kéo di chuyển. */
+  onNoteDragStart(event: DragEvent, noteId: string): void {
+    event.dataTransfer?.setData('application/x-note-id', noteId);
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'copy';
   }
 }

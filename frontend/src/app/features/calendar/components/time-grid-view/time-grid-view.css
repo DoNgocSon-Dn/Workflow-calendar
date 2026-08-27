@@ -219,6 +219,16 @@
   cursor: crosshair;
 }
 
+/* Đang kéo một GHI CHÚ rê ngang qua — cả .all-day-cell lẫn .day-col đều nhận
+   được (ghi chú không có giờ nên thả bất kỳ đâu trong cột của một ngày cũng
+   như nhau), viền vàng để người dùng THẤY rõ đây là chỗ nhận được. */
+.all-day-cell.note-drag-over,
+.day-col.note-drag-over {
+  background: color-mix(in srgb, #eab308 15%, var(--color-surface));
+  outline: 2px dashed #eab308;
+  outline-offset: -2px;
+}
+
 .hour-line {
   position: absolute;
   left: 0;
@@ -377,6 +387,47 @@
 .event-chip:hover {
   transform: translateY(-1px);
   filter: brightness(1.08);
+}
+
+/* Ghi chú đã "dán" lên ngày (kéo-thả từ sidebar vào hàng "Cả ngày") — nền
+   pastel đặc đúng màu ghi chú thật, khác hẳn .event-chip (nền đặc theo màu
+   lịch) để không nhầm với sự kiện thật. Luôn có nút gỡ (×) vì đây là thứ vừa
+   được "dán" tạm lên, không phải dữ liệu lịch cố định. */
+.note-pin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+  background: var(--chip-color, #fef08a);
+  color: color-mix(in srgb, var(--chip-color, #fef08a) 35%, black);
+  border-radius: var(--radius-xs);
+  padding: 0.1rem 0.25rem 0.1rem 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.note-pin-chip__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note-pin-chip__remove {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  opacity: 0.6;
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.note-pin-chip__remove:hover {
+  opacity: 1;
 }
 
 /* Màn hẹp: 7 cột `flex: 1` (mỗi cột chỉ còn vài chục pixel) khiến các khối

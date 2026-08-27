@@ -194,6 +194,22 @@
   transform: translateX(2px);
 }
 
+/* Ghi chú kéo được sang lịch — grab thay vì pointer để gợi ý đúng thao tác,
+   khác với các dòng lịch/nhóm chỉ bấm để chọn. */
+.note-item {
+  cursor: grab;
+}
+
+.note-item:active {
+  cursor: grabbing;
+}
+
+/* Đã dán lên một ngày rồi — mờ nhẹ để phân biệt với ghi chú còn "rảnh", vẫn
+   kéo lại được để đổi ngày khác (xem sidebar.noteAlreadyPinned). */
+.note-item.is-pinned {
+  opacity: 0.7;
+}
+
 .color-dot {
   width: 0.75rem;
   height: 0.75rem;

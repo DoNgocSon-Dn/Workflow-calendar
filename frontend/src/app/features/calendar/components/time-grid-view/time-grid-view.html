@@ -35,7 +35,15 @@
   <div class="all-day-row" #allDayRow [style.padding-right.px]="scrollbarWidth()">
     <div class="gutter-spacer">{{ i18n.t('calendar.allDay') }}</div>
     @for (day of days(); track day.getTime()) {
-      <div class="all-day-cell" (click)="onAllDayCellClick(day)">
+      <div
+        class="all-day-cell"
+        [class.note-drag-over]="isDragOver(day)"
+        (click)="onAllDayCellClick(day)"
+        (dragover)="onNoteDropZoneDragOver($event)"
+        (dragenter)="onNoteDropZoneDragEnter($event, day)"
+        (dragleave)="onNoteDropZoneDragLeave($event, day)"
+        (drop)="onNoteDropZoneDrop($event, day)"
+      >
         @for (evt of allDayEventsFor(day); track evt.id) {
           <button
             type="button"
@@ -45,6 +53,25 @@
           >
             {{ evt.title }}
           </button>
+        }
+
+        <!-- Ghi chú đã kéo-thả "dán" lên ngày này — KHÔNG phải sự kiện thật. -->
+        @for (note of notesFor(day); track note.id) {
+          <span
+            class="note-pin-chip"
+            [style.--chip-color]="noteColorHex[note.color]"
+            [title]="note.content"
+            (click)="$event.stopPropagation()"
+          >
+            <span class="note-pin-chip__text">{{ note.content }}</span>
+            <button
+              type="button"
+              class="note-pin-chip__remove"
+              [attr.aria-label]="i18n.t('calendar.unpinNoteAria')"
+              [title]="i18n.t('calendar.unpinNote')"
+              (click)="unpinNote($event, note.id)"
+            >×</button>
+          </span>
         }
       </div>
     }
@@ -60,7 +87,15 @@
 
       <div class="columns">
         @for (day of days(); track day.getTime()) {
-          <div class="day-col" (mousedown)="onGridMouseDown($event, day)">
+          <div
+            class="day-col"
+            [class.note-drag-over]="isDragOver(day)"
+            (mousedown)="onGridMouseDown($event, day)"
+            (dragover)="onNoteDropZoneDragOver($event)"
+            (dragenter)="onNoteDropZoneDragEnter($event, day)"
+            (dragleave)="onNoteDropZoneDragLeave($event, day)"
+            (drop)="onNoteDropZoneDrop($event, day)"
+          >
             @for (h of hours; track h) {
               <div class="hour-line" [style.top.px]="h * HOUR_HEIGHT"></div>
             }
