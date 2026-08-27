@@ -13,7 +13,7 @@ export const VN_HOLIDAY_CALENDAR_DEF: CalendarDef = {
   // Display label is localised at each surface via `calendar.vnHolidaysName`
   // (calendar-store rewrites this before exposing `otherCalendars`).
   name: 'Ngày lễ ở Việt Nam',
-  color: 'green',
+  color: 'red',
   // Lịch dựng sẵn, không nằm trên server — không ai thêm sự kiện vào đây được,
   // và cũng không được phép trở thành lịch mặc định khi tự chọn hộ người dùng.
   canEdit: false,

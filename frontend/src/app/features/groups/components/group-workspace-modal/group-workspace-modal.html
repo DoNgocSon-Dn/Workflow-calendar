@@ -5,23 +5,23 @@
         <div class="header-title-box">
           <div class="header-title-text">
             <h2>{{ group.name }}</h2>
-            <p class="group-desc">{{ group.description || 'Không gian làm việc nhóm' }}</p>
+            <p class="group-desc">{{ group.description || i18n.t('group.defaultDescription') }}</p>
           </div>
         </div>
         <div class="header-actions">
           <button
             type="button"
             class="btn-header"
-            [title]="isHidden() ? 'Hiện lại nhóm trong sidebar' : 'Ẩn nhóm khỏi sidebar của riêng bạn'"
+            [title]="isHidden() ? i18n.t('group.showInSidebarTooltip') : i18n.t('group.hideFromSidebarTooltip')"
             (click)="toggleHidden()"
           >
             <app-icon [name]="isHidden() ? 'eye' : 'eye-off'" />
-            {{ isHidden() ? 'Bỏ ẩn' : 'Ẩn nhóm' }}
+            {{ isHidden() ? i18n.t('group.unhide') : i18n.t('group.hide') }}
           </button>
           @if (isLeader()) {
             <button type="button" class="btn-header" (click)="startEditGroup()">
               <app-icon name="pencil" />
-              Sửa
+              {{ i18n.t('common.edit') }}
             </button>
             <button
               type="button"
@@ -30,10 +30,10 @@
               (click)="deleteGroup()"
             >
               <app-icon name="trash" />
-              {{ deletingGroup() ? 'Đang xóa…' : 'Xóa nhóm' }}
+              {{ deletingGroup() ? i18n.t('group.deleting') : i18n.t('group.deleteGroup') }}
             </button>
           }
-          <button type="button" class="btn-close" (click)="close()" aria-label="Đóng">
+          <button type="button" class="btn-close" (click)="close()" [attr.aria-label]="i18n.t('common.close')">
             <app-icon name="close" />
           </button>
         </div>
@@ -41,11 +41,11 @@
 
       @if (editingGroup()) {
         <div class="group-edit-panel">
-          <h3>Sửa thông tin nhóm</h3>
+          <h3>{{ i18n.t('group.editGroupTitle') }}</h3>
           <input
             type="text"
             class="text-input"
-            placeholder="Tên nhóm"
+            [placeholder]="i18n.t('group.namePlaceholder')"
             maxlength="100"
             [value]="editName()"
             (input)="editName.set($any($event.target).value)"
@@ -54,13 +54,13 @@
           <input
             type="text"
             class="text-input"
-            placeholder="Mô tả nhóm (tuỳ chọn)"
+            [placeholder]="i18n.t('group.descPlaceholder')"
             maxlength="500"
             [value]="editDescription()"
             (input)="editDescription.set($any($event.target).value)"
           />
           <app-char-counter class="field-counter" [current]="editDescription().length" [max]="500" />
-          <div class="color-picker" role="radiogroup" aria-label="Màu nhóm">
+          <div class="color-picker" role="radiogroup" [attr.aria-label]="i18n.t('group.colorAriaLabel')">
             @for (c of groupColors; track c) {
               <button
                 type="button"
@@ -68,7 +68,7 @@
                 role="radio"
                 [class.selected]="editColor() === c"
                 [attr.aria-checked]="editColor() === c"
-                [attr.aria-label]="'Màu ' + c"
+                [attr.aria-label]="i18n.t('group.colorLabel', { color: c })"
                 [style.background]="groupColorHex[c]"
                 (click)="editColor.set(c)"
               ></button>
@@ -78,14 +78,14 @@
             <p class="error-msg">{{ err }}</p>
           }
           <div class="group-edit-actions">
-            <button type="button" class="btn btn-ghost" (click)="cancelEditGroup()">Hủy</button>
+            <button type="button" class="btn btn-ghost" (click)="cancelEditGroup()">{{ i18n.t('common.cancel') }}</button>
             <button
               type="button"
               class="btn btn-primary"
               [disabled]="savingGroup()"
               (click)="saveGroup()"
             >
-              {{ savingGroup() ? 'Đang lưu…' : 'Lưu thay đổi' }}
+              {{ savingGroup() ? i18n.t('common.saving') : i18n.t('group.saveChanges') }}
             </button>
           </div>
         </div>
@@ -99,7 +99,7 @@
           [class.active]="activeTab() === 'tasks'"
           (click)="setTab('tasks')"
         >
-          <app-icon class="tab-icon" name="check-square" /> Quản lý Task
+          <app-icon class="tab-icon" name="check-square" /> {{ i18n.t('group.tabTasks') }}
           <span class="tab-badge">{{ store.tasks().length }}</span>
         </button>
         <button
@@ -108,7 +108,7 @@
           [class.active]="activeTab() === 'members'"
           (click)="setTab('members')"
         >
-          <app-icon class="tab-icon" name="users" /> Thành viên
+          <app-icon class="tab-icon" name="users" /> {{ i18n.t('group.tabMembers') }}
           <span class="tab-badge">{{ store.members().length }}</span>
         </button>
         <button
@@ -117,7 +117,7 @@
           [class.active]="activeTab() === 'chat'"
           (click)="setTab('chat')"
         >
-          <app-icon class="tab-icon" name="message" /> Trò chuyện
+          <app-icon class="tab-icon" name="message" /> {{ i18n.t('group.tabChat') }}
           @if (store.unreadChatCount() > 0) {
             <span class="tab-badge">{{ store.unreadChatCount() }}</span>
           }
@@ -128,7 +128,7 @@
           [class.active]="activeTab() === 'calendar'"
           (click)="setTab('calendar')"
         >
-          <app-icon class="tab-icon" name="calendar" /> Lịch Nhóm
+          <app-icon class="tab-icon" name="calendar" /> {{ i18n.t('group.tabCalendar') }}
         </button>
       </nav>
 
@@ -137,12 +137,12 @@
         @if (activeTab() === 'tasks') {
           <div class="tasks-section">
             <div class="create-task-card">
-              <h3>Tạo Task mới cho nhóm</h3>
+              <h3>{{ i18n.t('group.createTaskTitle') }}</h3>
               <div class="task-form-grid">
                 <input
                   type="text"
                   class="text-input"
-                  placeholder="Tiêu đề task (VD: Viết tài liệu API)..."
+                  [placeholder]="i18n.t('group.taskTitlePlaceholder')"
                   maxlength="200"
                   [value]="taskTitle()"
                   (input)="taskTitle.set($any($event.target).value)"
@@ -151,7 +151,7 @@
                 <input
                   type="text"
                   class="text-input"
-                  placeholder="Mô tả công việc..."
+                  [placeholder]="i18n.t('group.taskDescPlaceholder')"
                   maxlength="2000"
                   [value]="taskDescription()"
                   (input)="taskDescription.set($any($event.target).value)"
@@ -176,7 +176,7 @@
                           [attr.aria-selected]="!taskAssignedTo()"
                           (click)="selectAssignee('')"
                         >
-                          -- Chọn thành viên phụ trách --
+                          {{ i18n.t('group.selectAssignee') }}
                         </button>
                         @for (m of store.members(); track m.id) {
                           <button
@@ -207,7 +207,7 @@
                   [disabled]="!canCreateTask()"
                   (click)="createTask()"
                 >
-                  + Thêm Task
+                  {{ i18n.t('group.addTask') }}
                 </button>
               </div>
             </div>
@@ -215,7 +215,7 @@
             <div class="kanban-board">
               <!-- Todo Column -->
               <div class="kanban-col">
-                <h4 class="col-title todo">Cần làm (Todo) <span class="col-count">{{ todoTasks().length }}</span></h4>
+                <h4 class="col-title todo">{{ i18n.t('group.colTodo') }} <span class="col-count">{{ todoTasks().length }}</span></h4>
                 <div
                   class="kanban-col-body"
                   [class.drag-over]="dragOverStatus() === 'todo'"
@@ -249,7 +249,7 @@
                              trên TỪNG option thay vì [value] trên select: Angular re-check giá trị này
                              mỗi khi @for render lại (tức là mỗi khi danh sách thành viên đổi). -->
                         <option value="" [selected]="!t.assignedTo || !store.members().some(m2 => m2.userId === t.assignedTo)">
-                          -- Chưa gán --
+                          {{ i18n.t('group.unassignedOption') }}
                         </option>
                         @for (m of store.members(); track m.id) {
                           <option [value]="m.userId" [selected]="m.userId === t.assignedTo">{{ memberDisplayName(m, m.userId) }}</option>
@@ -261,14 +261,14 @@
                           class="action-badge in-progress"
                           (click)="setTaskStatus(t, 'in_progress')"
                         >
-                          <app-icon name="arrow-right" /> Đang làm
+                          <app-icon name="arrow-right" /> {{ i18n.t('group.actionInProgress') }}
                         </button>
                         <button
                           type="button"
                           class="action-badge done"
                           (click)="setTaskStatus(t, 'done')"
                         >
-                          <app-icon name="check" /> Xong
+                          <app-icon name="check" /> {{ i18n.t('group.actionDone') }}
                         </button>
                         @if (canDeleteTask(t)) {
                           <button
@@ -284,14 +284,14 @@
                       </div>
                     </div>
                   } @empty {
-                    <p class="col-empty">Chưa có task nào</p>
+                    <p class="col-empty">{{ i18n.t('group.noTasks') }}</p>
                   }
                 </div>
               </div>
 
               <!-- In Progress Column -->
               <div class="kanban-col">
-                <h4 class="col-title in-progress">Đang thực hiện <span class="col-count">{{ inProgressTasks().length }}</span></h4>
+                <h4 class="col-title in-progress">{{ i18n.t('group.colInProgress') }} <span class="col-count">{{ inProgressTasks().length }}</span></h4>
                 <div
                   class="kanban-col-body"
                   [class.drag-over]="dragOverStatus() === 'in_progress'"
@@ -325,7 +325,7 @@
                              trên TỪNG option thay vì [value] trên select: Angular re-check giá trị này
                              mỗi khi @for render lại (tức là mỗi khi danh sách thành viên đổi). -->
                         <option value="" [selected]="!t.assignedTo || !store.members().some(m2 => m2.userId === t.assignedTo)">
-                          -- Chưa gán --
+                          {{ i18n.t('group.unassignedOption') }}
                         </option>
                         @for (m of store.members(); track m.id) {
                           <option [value]="m.userId" [selected]="m.userId === t.assignedTo">{{ memberDisplayName(m, m.userId) }}</option>
@@ -337,14 +337,14 @@
                           class="action-badge todo"
                           (click)="setTaskStatus(t, 'todo')"
                         >
-                          <app-icon name="arrow-left" /> Cần làm
+                          <app-icon name="arrow-left" /> {{ i18n.t('group.actionTodo') }}
                         </button>
                         <button
                           type="button"
                           class="action-badge done"
                           (click)="setTaskStatus(t, 'done')"
                         >
-                          <app-icon name="check" /> Xong
+                          <app-icon name="check" /> {{ i18n.t('group.actionDone') }}
                         </button>
                         @if (canDeleteTask(t)) {
                           <button
@@ -360,14 +360,14 @@
                       </div>
                     </div>
                   } @empty {
-                    <p class="col-empty">Chưa có task nào</p>
+                    <p class="col-empty">{{ i18n.t('group.noTasks') }}</p>
                   }
                 </div>
               </div>
 
               <!-- Done Column -->
               <div class="kanban-col">
-                <h4 class="col-title done">Đã hoàn thành <span class="col-count">{{ doneTasks().length }}</span></h4>
+                <h4 class="col-title done">{{ i18n.t('group.colDone') }} <span class="col-count">{{ doneTasks().length }}</span></h4>
                 <div
                   class="kanban-col-body"
                   [class.drag-over]="dragOverStatus() === 'done'"
@@ -395,7 +395,7 @@
                           class="action-badge todo"
                           (click)="setTaskStatus(t, 'todo')"
                         >
-                          Mở lại
+                          {{ i18n.t('group.reopen') }}
                         </button>
                         @if (canDeleteTask(t)) {
                           <button
@@ -411,7 +411,7 @@
                       </div>
                     </div>
                   } @empty {
-                    <p class="col-empty">Chưa có task nào</p>
+                    <p class="col-empty">{{ i18n.t('group.noTasks') }}</p>
                   }
                 </div>
               </div>
@@ -424,13 +424,13 @@
           <div class="members-section">
             @if (canInviteMembers()) {
               <div class="invite-card">
-                <h3>Mời thành viên mới vào nhóm</h3>
+                <h3>{{ i18n.t('group.inviteMemberTitle') }}</h3>
                 <div class="invite-form-row">
                   <input
                     type="email"
                     class="text-input"
                     maxlength="254"
-                    placeholder="Email người muốn mời..."
+                    [placeholder]="i18n.t('group.invitePlaceholder')"
                     [value]="inviteEmail()"
                     (input)="onInviteEmailInput($any($event.target).value)"
                   />
@@ -494,7 +494,7 @@
                     [disabled]="!inviteEmailValid() || inviting()"
                     (click)="invite()"
                   >
-                    Mời vào nhóm
+                    {{ i18n.t('group.inviteSubmit') }}
                   </button>
                 </div>
 
@@ -565,7 +565,7 @@
               </div>
             }
 
-            <h3 class="section-subtitle">Danh sách thành viên ({{ store.members().length }})</h3>
+            <h3 class="section-subtitle">{{ i18n.t('group.memberListTitle', { count: store.members().length }) }}</h3>
             <div class="members-list">
               @for (m of store.members(); track m.id) {
                 <div class="member-row">
@@ -703,12 +703,12 @@
                       @if (!msg.deletedAt && editingMessageId() !== msg.id && (canEditMessage(msg) || canDeleteMessage(msg))) {
                         <div class="chat-msg-actions">
                           @if (canEditMessage(msg)) {
-                            <button type="button" class="btn-icon" (click)="startEditMessage(msg)" aria-label="Sửa tin nhắn">
+                            <button type="button" class="btn-icon" (click)="startEditMessage(msg)" [attr.aria-label]="i18n.t('group.editMessageAria')">
                               <app-icon name="pencil" />
                             </button>
                           }
                           @if (canDeleteMessage(msg)) {
-                            <button type="button" class="btn-icon" (click)="deleteMessage(msg)" aria-label="Xóa tin nhắn">
+                            <button type="button" class="btn-icon" (click)="deleteMessage(msg)" [attr.aria-label]="i18n.t('group.deleteMessageAria')">
                               <app-icon name="trash" />
                             </button>
                           }
@@ -717,7 +717,7 @@
                     </div>
                     <div class="chat-msg-content">
                       @if (msg.deletedAt) {
-                        <p class="chat-text chat-text-deleted">Tin nhắn đã bị xóa</p>
+                        <p class="chat-text chat-text-deleted">{{ i18n.t('group.messageDeleted') }}</p>
                       } @else if (editingMessageId() === msg.id) {
                         <div class="chat-edit-box">
                           <textarea
@@ -729,8 +729,8 @@
                             (keydown)="onEditKeydown($event, msg)"
                           ></textarea>
                           <app-char-counter [current]="editingText().length" [max]="2000" />
-                          <button type="button" class="btn-mini" (click)="saveEditMessage(msg)">Lưu</button>
-                          <button type="button" class="btn-mini btn-mini-ghost" (click)="cancelEditMessage()">Hủy</button>
+                          <button type="button" class="btn-mini" (click)="saveEditMessage(msg)">{{ i18n.t('common.save') }}</button>
+                          <button type="button" class="btn-mini btn-mini-ghost" (click)="cancelEditMessage()">{{ i18n.t('common.cancel') }}</button>
                         </div>
                       } @else {
                         @if (msg.message) {
@@ -740,21 +740,27 @@
                                thêm khoảng trắng vào giữa nội dung tin nhắn.
                                Không được để khoảng trắng nào lọt vào giữa
                                `{`, `<span>` và `}` ở đây. -->
-                          <p class="chat-text">@for (seg of messageSegments(msg); track $index) {<span
-                              [class.chat-mention]="!!seg.mention"
-                              [class.chat-mention--all]="seg.mention?.type === 'all'"
+                          <p class="chat-text">@for (seg of messageSegments(msg); track $index) {@if (seg.mention) {<span
+                              class="chat-mention"
+                              [class.chat-mention--all]="seg.mention.type === 'all'"
                               [class.chat-mention--me]="isMentionForMe(seg)"
-                            >{{ seg.text }}</span>}</p>
+                            >{{ seg.text }}</span>} @else {@for (token of parseTextUrls(seg.text); track $index) {@if (token.isUrl) {<a
+                              class="chat-link"
+                              [href]="token.href"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              (click)="$event.stopPropagation()"
+                            >{{ token.text }}</a>} @else {<span>{{ token.text }}</span>}}}}</p>
                         }
                         @if (msg.attachmentUrl) {
                           <div class="chat-attachment">
                             @if (isImageAttachment(msg)) {
                               <a [href]="msg.attachmentUrl" target="_blank" rel="noopener">
-                                <img [src]="msg.attachmentUrl" [alt]="msg.attachmentName || 'Đính kèm'" class="chat-attachment-img" />
+                                <img [src]="msg.attachmentUrl" [alt]="msg.attachmentName || i18n.t('group.attachmentAlt')" class="chat-attachment-img" />
                               </a>
                             } @else {
                               <a [href]="msg.attachmentUrl" target="_blank" rel="noopener" class="chat-attachment-file">
-                                <app-icon name="paperclip" /> {{ msg.attachmentName || 'Tệp đính kèm' }}
+                                <app-icon name="paperclip" /> {{ msg.attachmentName || i18n.t('group.attachmentFile') }}
                                 @if (msg.attachmentSize) {
                                   <span class="attachment-size">({{ formatFileSize(msg.attachmentSize) }})</span>
                                 }
@@ -763,77 +769,84 @@
                           </div>
                         }
                         @if (msg.editedAt) {
-                          <span class="chat-edited-tag">(đã chỉnh sửa)</span>
+                          <span class="chat-edited-tag">{{ i18n.t('group.editedTag') }}</span>
                         }
                       }
                     </div>
                   </div>
                 </div>
               } @empty {
-                <p class="empty-text">Chưa có tin nhắn nào trong nhóm. Hãy gửi tin nhắn đầu tiên!</p>
+                <p class="empty-text">{{ i18n.t('group.noMessages') }}</p>
               }
             </div>
             @if (attachmentFile(); as f) {
               <div class="attachment-preview">
                 <app-icon name="paperclip" /> {{ f.name }} ({{ formatFileSize(f.size) }})
-                <button type="button" class="btn-mini btn-mini-ghost" (click)="clearAttachment()">Bỏ</button>
+                <button type="button" class="btn-mini btn-mini-ghost" (click)="clearAttachment()">{{ i18n.t('group.removeAttachment') }}</button>
               </div>
             }
             @if (attachmentError(); as err) {
               <p class="error-msg">{{ err }}</p>
             }
-            <div class="chat-input-bar">
-              <label class="btn-attach" title="Đính kèm file">
-                <app-icon name="paperclip" />
-                <input type="file" class="file-input-hidden" (change)="onAttachmentSelected($event)" />
-              </label>
-              <!-- Neo popup mention vào đúng ô nhập: popup dùng position
-                   absolute trong wrapper này nên nó luôn nổi ngay phía trên ô
-                   nhập, không bao giờ trôi ra giữa khung chat. -->
-              <div class="chat-composer">
-                @if (mentionPopupOpen()) {
-                  <app-mention-popup
-                    class="chat-mention-popup"
-                    [options]="mentionOptions()"
-                    [activeIndex]="mentionActiveIndex()"
-                    (selected)="selectMention($event)"
-                    (hovered)="mentionActiveIndex.set($event)"
-                  />
-                }
-                <textarea
-                  #chatInput
-                  class="text-input chat-textarea"
-                  placeholder="Nhập tin nhắn... (gõ @ để nhắc tên, Shift+Enter để xuống dòng)"
-                  maxlength="2000"
-                  rows="1"
-                  autocomplete="off"
-                  role="combobox"
-                  aria-autocomplete="list"
-                  [attr.aria-controls]="mentionPopupOpen() ? 'chat-mention-listbox' : null"
-                  [value]="chatMessage()"
-                  [attr.aria-expanded]="mentionPopupOpen()"
-                  [attr.aria-activedescendant]="activeMentionOptionId()"
-                  (input)="onChatInput($event)"
-                  (keydown)="onChatKeydown($event)"
-                  (keyup)="onChatCaretMove($event)"
-                  (click)="onChatCaretMove($event)"
-                  (blur)="onChatBlur()"
-                ></textarea>
+            @if (canUserChat()) {
+              <div class="chat-input-bar">
+                <label class="btn-attach" [title]="i18n.t('group.attachFileTooltip')">
+                  <app-icon name="paperclip" />
+                  <input type="file" class="file-input-hidden" (change)="onAttachmentSelected($event)" />
+                </label>
+                <!-- Neo popup mention vào đúng ô nhập: popup dùng position
+                     absolute trong wrapper này nên nó luôn nổi ngay phía trên ô
+                     nhập, không bao giờ trôi ra giữa khung chat. -->
+                <div class="chat-composer">
+                  @if (mentionPopupOpen()) {
+                    <app-mention-popup
+                      class="chat-mention-popup"
+                      [options]="mentionOptions()"
+                      [activeIndex]="mentionActiveIndex()"
+                      (selected)="selectMention($event)"
+                      (hovered)="mentionActiveIndex.set($event)"
+                    />
+                  }
+                  <textarea
+                    #chatInput
+                    class="text-input chat-textarea"
+                    [placeholder]="i18n.t('group.messagePlaceholderFull')"
+                    maxlength="2000"
+                    rows="1"
+                    autocomplete="off"
+                    role="combobox"
+                    aria-autocomplete="list"
+                    [attr.aria-controls]="mentionPopupOpen() ? 'chat-mention-listbox' : null"
+                    [value]="chatMessage()"
+                    [attr.aria-expanded]="mentionPopupOpen()"
+                    [attr.aria-activedescendant]="activeMentionOptionId()"
+                    (input)="onChatInput($event)"
+                    (keydown)="onChatKeydown($event)"
+                    (keyup)="onChatCaretMove($event)"
+                    (click)="onChatCaretMove($event)"
+                    (blur)="onChatBlur()"
+                  ></textarea>
+                </div>
+                <app-char-counter [current]="chatMessage().length" [max]="2000" />
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  [disabled]="(!chatMessage().trim() && !attachmentFile()) || sendingChat()"
+                  (click)="sendChat()"
+                >
+                  @if (uploadingAttachment()) {
+                    {{ i18n.t('group.uploading') }}
+                  } @else {
+                    {{ i18n.t('common.send') }}
+                  }
+                </button>
               </div>
-              <app-char-counter [current]="chatMessage().length" [max]="2000" />
-              <button
-                type="button"
-                class="btn btn-primary"
-                [disabled]="(!chatMessage().trim() && !attachmentFile()) || sendingChat()"
-                (click)="sendChat()"
-              >
-                @if (uploadingAttachment()) {
-                  Đang tải...
-                } @else {
-                  Gửi
-                }
-              </button>
-            </div>
+            } @else {
+              <div class="chat-disabled-banner">
+                <app-icon name="eye-off" />
+                <span>{{ i18n.t('groupRole.guestChatDisabled') }}</span>
+              </div>
+            }
           </div>
         }
 
@@ -841,38 +854,36 @@
         @if (activeTab() === 'calendar') {
           <div class="calendar-section">
             <div class="info-card">
-              <h3><app-icon name="calendar" /> Lịch riêng của Nhóm</h3>
-              <p>Mỗi nhóm làm việc tự động tích hợp 1 <strong>Lịch Nhóm</strong> tương ứng. Tất cả thành viên trong nhóm đều có quyền theo dõi và tạo sự kiện chung.</p>
-              <p class="cal-id">ID Lịch: <code>{{ group.calendarId }}</code></p>
+              <h3><app-icon name="calendar" /> {{ i18n.t('group.calendarTabTitle') }}</h3>
+              <p>{{ i18n.t('group.calendarInfoPre') }}<strong>{{ i18n.t('group.calendarInfoStrong') }}</strong>{{ i18n.t('group.calendarInfoPost') }}</p>
+              <p class="cal-id">{{ i18n.t('group.calendarIdLabel') }} <code>{{ group.calendarId }}</code></p>
             </div>
 
             <div class="info-card meet-card">
-              <h3><app-icon [name]="'video'" /> Phòng họp trực tuyến</h3>
+              <h3><app-icon [name]="'video'" /> {{ i18n.t('meet.title') }}</h3>
               <p>
-                Bấm <strong>Tạo phòng họp</strong> là có link ngay — không phải đi lấy rồi dán
-                về. Link hiện ở dưới để sao chép, và tới giờ họp thì cả nhóm cùng thấy một
-                popup kèm nút Tham gia.
+                {{ i18n.t('meet.intro') }}
               </p>
 
-              <label class="meet-label" for="meet-title-input">Tiêu đề buổi họp</label>
+              <label class="meet-label" for="meet-title-input">{{ i18n.t('meet.titleLabel') }}</label>
               <input
                 id="meet-title-input"
                 type="text"
                 class="text-input"
-                placeholder="Để trống sẽ tự đặt theo tên nhóm"
+                [placeholder]="i18n.t('meet.titlePlaceholder')"
                 maxlength="200"
                 [value]="meetTitle()"
                 (input)="meetTitle.set($any($event.target).value)"
               />
               <app-char-counter class="field-counter" [current]="meetTitle().length" [max]="200" />
 
-              <label class="meet-label">Thời gian bắt đầu</label>
+              <label class="meet-label">{{ i18n.t('meet.startLabel') }}</label>
               <div class="meet-schedule">
                 <input
                   type="date"
                   lang="vi"
                   class="text-input"
-                  aria-label="Ngày họp"
+                  [attr.aria-label]="i18n.t('meet.dateAria')"
                   [value]="meetDate()"
                   (input)="meetDate.set($any($event.target).value)"
                 />
@@ -880,13 +891,13 @@
                   type="time"
                   lang="vi"
                   class="text-input"
-                  aria-label="Giờ bắt đầu"
+                  [attr.aria-label]="i18n.t('meet.timeAria')"
                   [value]="meetTime()"
                   (input)="meetTime.set($any($event.target).value)"
                 />
               </div>
 
-              <div class="meet-durations" role="group" aria-label="Thời lượng buổi họp">
+              <div class="meet-durations" role="group" [attr.aria-label]="i18n.t('meet.durationAria')">
                 @for (minutes of meetDurations; track minutes) {
                   <button
                     type="button"
@@ -895,7 +906,7 @@
                     [attr.aria-pressed]="meetDuration() === minutes"
                     (click)="selectMeetDuration(minutes)"
                   >
-                    {{ minutes }} phút
+                    {{ i18n.t('meet.minutes', { n: minutes }) }}
                   </button>
                 }
               </div>
@@ -907,7 +918,7 @@
                     [checked]="meetAddToCalendar()"
                     (change)="meetAddToCalendar.set($any($event.target).checked)"
                   />
-                  Tạo sự kiện trên lịch nhóm
+                  {{ i18n.t('meet.addToCalendar') }}
                 </label>
 
                 <label class="meet-check" [class.meet-check-disabled]="!canRemindEveryone()">
@@ -917,11 +928,11 @@
                     [disabled]="!canRemindEveryone()"
                     (change)="meetRemindEveryone.set($any($event.target).checked)"
                   />
-                  Tới giờ họp thì hiện popup cho cả nhóm
+                  {{ i18n.t('meet.remindEveryone') }}
                 </label>
               } @else {
                 <p class="meet-hint">
-                  Chỉ Trưởng nhóm và Quản trị viên mới thêm được sự kiện vào lịch nhóm.
+                  {{ i18n.t('meet.noPermission') }}
                 </p>
               }
 
@@ -931,7 +942,7 @@
                   [checked]="meetAnnounceInChat()"
                   (change)="meetAnnounceInChat.set($any($event.target).checked)"
                 />
-                Đăng thêm link vào chat nhóm
+                {{ i18n.t('meet.announceInChat') }}
               </label>
 
               @if (meetError()) {
@@ -945,9 +956,9 @@
                 (click)="createMeetRoom()"
               >
                 @if (meetSaving()) {
-                  Đang tạo...
+                  {{ i18n.t('meet.creating') }}
                 } @else {
-                  Tạo phòng họp
+                  {{ i18n.t('meet.create') }}
                 }
               </button>
 
@@ -955,26 +966,26 @@
                 <div class="saved-meet">
                   <div class="saved-meet-head">
                     <span class="saved-meet-title">
-                      <app-icon [name]="'video'" /> Phòng họp đã sẵn sàng
+                      <app-icon [name]="'video'" /> {{ i18n.t('meet.ready') }}
                     </span>
                     <button type="button" class="btn-mini-ghost" (click)="dismissSavedMeet()">
-                      Ẩn
+                      {{ i18n.t('group.hide') }}
                     </button>
                   </div>
-                  <a class="saved-meet-link" [href]="link" target="_blank" rel="noopener noreferrer">
+                  <a class="saved-meet-link" [href]="formatExternalUrl(link)" target="_blank" rel="noopener noreferrer">
                     {{ link }}
                   </a>
                   <div class="saved-meet-actions">
                     <a
                       class="btn btn-primary"
-                      [href]="link"
+                      [href]="formatExternalUrl(link)"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      Tham gia
+                      {{ i18n.t('meet.join') }}
                     </a>
                     <button type="button" class="btn btn-ghost" (click)="copyMeetLink()">
-                      {{ meetCopied() ? 'Đã sao chép' : 'Sao chép link' }}
+                      {{ meetCopied() ? i18n.t('meet.copied') : i18n.t('meet.copyLink') }}
                     </button>
                   </div>
                 </div>

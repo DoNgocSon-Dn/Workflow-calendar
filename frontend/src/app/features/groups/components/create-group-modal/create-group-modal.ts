@@ -1,21 +1,22 @@
 import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { GroupStore } from '../../data/group-store';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 import { GROUP_COLOR_HEX, GROUP_COLORS, GroupColor } from '../../models/group.models';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { CharCounter } from '../../../../shared/components/char-counter/char-counter';
 
-function extractErrorMessage(err: unknown): string {
+function extractErrorMessage(err: unknown, i18n: TranslationService): string {
   if (err instanceof HttpErrorResponse) {
     if (err.status === 0) {
-      return 'Không kết nối được tới server, vui lòng kiểm tra lại và thử lại.';
+      return i18n.t('createGroup.networkError');
     }
     const inner = err.error as { message?: string | string[] } | undefined;
     const msg = inner?.message;
     if (Array.isArray(msg)) return msg.join(', ');
     if (typeof msg === 'string') return msg;
   }
-  return 'Không thể tạo nhóm mới. Vui lòng thử lại.';
+  return i18n.t('createGroup.error');
 }
 
 @Component({
@@ -27,6 +28,7 @@ function extractErrorMessage(err: unknown): string {
 })
 export class CreateGroupModal {
   private readonly groupStore = inject(GroupStore);
+  protected readonly i18n = inject(TranslationService);
 
   protected readonly colorHex = GROUP_COLOR_HEX;
   protected readonly colors = GROUP_COLORS;
@@ -55,7 +57,7 @@ export class CreateGroupModal {
       this.created.emit({ groupId: group.id, groupName: group.name });
       this.closed.emit();
     } catch (err) {
-      this.error.set(extractErrorMessage(err));
+      this.error.set(extractErrorMessage(err, this.i18n));
     } finally {
       this.creating.set(false);
     }

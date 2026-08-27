@@ -62,7 +62,7 @@
 }
 
 .dsd-face-spin {
-  transform-origin: 148px 58px;
+  transform-origin: 100px 100px;
   animation: dsdFaceSpin 70s linear infinite;
 }
 

@@ -132,11 +132,6 @@ export class CalendarHeader {
     this.userMenuOpen.set(false);
   }
 
-  openProfileFromMenu(): void {
-    this.closeUserMenu();
-    this.openSettings.emit();
-  }
-
   async logout(): Promise<void> {
     this.closeUserMenu();
     await this.authStore.signOut();

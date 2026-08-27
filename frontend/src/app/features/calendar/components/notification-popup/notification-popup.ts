@@ -12,6 +12,8 @@ const EXIT_MS = 420;
  *  trước khi bắt đầu exit. */
 const FEEDBACK_MS = 160;
 
+import { formatExternalUrl } from '../../../groups/utils/mention.util';
+
 @Component({
   selector: 'app-notification-popup',
   templateUrl: './notification-popup.html',
@@ -24,6 +26,7 @@ const FEEDBACK_MS = 160;
 export class NotificationPopup {
   readonly notificationQueue = inject(NotificationQueue);
   readonly i18n = inject(TranslationService);
+  protected readonly formatExternalUrl = formatExternalUrl;
 
   readonly viewDetail = output<string>();
 

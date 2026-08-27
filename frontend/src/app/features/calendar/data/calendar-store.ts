@@ -65,7 +65,7 @@ const SIDEBAR_COLLAPSED_STORAGE_KEY = 'sidebar-collapsed';
  * gì. Thà trả toàn bộ bề ngang cho lưới lịch, người dùng cần thì bấm nút ba
  * gạch trên header là nó hiện lại.
  */
-const SIDEBAR_AUTO_HIDE_PX = 1100;
+const SIDEBAR_AUTO_HIDE_PX = 768;
 
 /**
  * Sidebar có đang ở dạng drawer (đè lên nội dung) hay không.
@@ -467,8 +467,40 @@ export class CalendarStore {
   readonly visibleEvents = computed(() => {
     const visible = this.visibleCalendarIds();
     const query = this.searchQuery().trim().toLowerCase();
+
+    // Map hidden group calendar IDs
+    const hiddenGroupCalIds = new Set(
+      this.groupStore
+        .hiddenGroups()
+        .map((g) => g.calendarId)
+        .filter((id): id is string => !!id),
+    );
+
+    // Map visible group calendar IDs
+    const activeGroupCalIds = new Set(
+      this.groupStore
+        .visibleGroups()
+        .map((g) => g.calendarId)
+        .filter((id): id is string => !!id),
+    );
+
+    // Known active calendar IDs listed in sidebar
+    const knownCalendarIds = new Set([
+      ...this.calendars().map((c) => c.id),
+      ...this.otherCalendars().map((c) => c.id),
+      ...activeGroupCalIds,
+    ]);
+
     return [...this.events(), ...this.holidayEvents()].filter((e) => {
+      // 1. If calendar belongs to a hidden group workspace, hide event
+      if (hiddenGroupCalIds.has(e.calendarId)) return false;
+
+      // 2. If calendar is unchecked in visibleCalendarIds, hide event
       if (!visible.has(e.calendarId)) return false;
+
+      // 3. If calendar is not listed in any active sidebar section, hide event
+      if (!knownCalendarIds.has(e.calendarId)) return false;
+
       if (!query) return true;
       return matchScore(e, query) !== null;
     });
@@ -631,12 +663,15 @@ export class CalendarStore {
       }
 
       this.calendars.set(calendarDefs);
-      const visibleIds = new Set(calendarDefs.map((c) => c.id));
-      // Sự kiện được mời có thể thuộc lịch của người khác (chưa phải member) —
-      // vẫn cho hiển thị trên lưới lịch dù không có trong danh sách lịch bên trái.
-      for (const e of events) visibleIds.add(e.calendarId);
-      visibleIds.add(VN_HOLIDAY_CALENDAR_ID);
-      this.visibleCalendarIds.set(visibleIds);
+      const savedVisible = this.loadSavedVisibleCalendarIds();
+      if (savedVisible) {
+        this.visibleCalendarIds.set(savedVisible);
+      } else {
+        const visibleIds = new Set(calendarDefs.map((c) => c.id));
+        visibleIds.add(VN_HOLIDAY_CALENDAR_ID);
+        this.visibleCalendarIds.set(visibleIds);
+        this.saveVisibleCalendarIds(visibleIds);
+      }
       this.events.set(events.map(toCalendarEvent));
     } catch (err) {
       // Cố tình KHÔNG tạo lịch mặc định ở đây. GET /calendars hỏng (mất mạng,
@@ -860,6 +895,17 @@ export class CalendarStore {
       next.delete(calendarId);
       return next;
     });
+  }
+
+  /** Cập nhật màu sắc cho một lịch cá nhân. */
+  async updateCalendarColor(calendarId: string, color: CalendarColor): Promise<void> {
+    const updated = await firstValueFrom(
+      this.http.patch<CalendarApiDto>(`${this.apiUrl}/calendars/${calendarId}`, { color }),
+    );
+    const calendar = toCalendarDef(updated);
+    this.calendars.update((list) =>
+      list.map((c) => (c.id === calendarId ? { ...c, color: calendar.color } : c)),
+    );
   }
 
   /**
@@ -1433,10 +1479,26 @@ export class CalendarStore {
     const events = await firstValueFrom(
       this.http.get<EventApiDto[]>(`${this.apiUrl}/events`),
     );
-    const visibleIds = new Set(this.visibleCalendarIds());
-    for (const e of events) visibleIds.add(e.calendarId);
-    this.visibleCalendarIds.set(visibleIds);
     this.events.set(events.map(toCalendarEvent));
+  }
+
+  private saveVisibleCalendarIds(set: Set<string>): void {
+    try {
+      const userId = this.authStore.user()?.id || 'guest';
+      localStorage.setItem(`calendar_visible_ids_${userId}`, JSON.stringify([...set]));
+    } catch {}
+  }
+
+  private loadSavedVisibleCalendarIds(): Set<string> | null {
+    try {
+      const userId = this.authStore.user()?.id || 'guest';
+      const raw = localStorage.getItem(`calendar_visible_ids_${userId}`);
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) return new Set(arr);
+      }
+    } catch {}
+    return null;
   }
 
   setViewMode(mode: CalendarViewMode): void {
@@ -1483,6 +1545,7 @@ export class CalendarStore {
       const next = new Set(set);
       if (next.has(calendarId)) next.delete(calendarId);
       else next.add(calendarId);
+      this.saveVisibleCalendarIds(next);
       return next;
     });
   }

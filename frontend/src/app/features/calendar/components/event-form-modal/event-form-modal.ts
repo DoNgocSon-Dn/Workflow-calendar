@@ -97,6 +97,8 @@ const DURATION_PRESETS: DurationPreset[] = [
   { labelKey: 'event.duration2h', minutes: 120 },
 ];
 
+import { formatExternalUrl } from '../../../groups/utils/mention.util';
+
 @Component({
   selector: 'app-event-form-modal',
   templateUrl: './event-form-modal.html',
@@ -109,6 +111,7 @@ export class EventFormModal {
   private readonly store = inject(CalendarStore);
   private readonly authStore = inject(AuthStore);
   protected readonly i18n = inject(TranslationService);
+  protected readonly formatExternalUrl = formatExternalUrl;
   private readonly timeFormatService = inject(TimeFormatService);
   private readonly dialog = inject(DialogService);
   private readonly notificationQueue = inject(NotificationQueue);
@@ -945,14 +948,18 @@ export class EventFormModal {
         return;
       }
     } else {
+      const confirmed = await this.dialog.confirm(
+        this.i18n.t('event.deleteConfirmMessage', { title: current.title || this.i18n.t('event.untitled') }),
+        {
+          title: this.i18n.t('event.deleteConfirmTitle'),
+          confirmLabel: this.i18n.t('common.delete'),
+          cancelLabel: this.i18n.t('common.cancel'),
+          danger: true,
+        },
+      );
+      if (!confirmed) return;
       await this.store.deleteEvent(current.id);
     }
-    // Không toast xác nhận ở đây: modal đóng lại và sự kiện biến mất khỏi
-    // lịch ngay trước mắt người vừa bấm xoá — đã đủ rõ ràng, thêm một thẻ nổi
-    // kèm nút "Xem chi tiết/Hoãn" (vốn không có tác dụng gì với một sự kiện
-    // vừa bị xoá) chỉ khiến người dùng thấy phiền. Thông báo trong
-    // calendar-store.ts vẫn giữ nguyên — nó chỉ báo khi NGƯỜI KHÁC xoá một sự
-    // kiện trên lịch chia sẻ/nhóm, việc bạn chưa hề biết.
     this.closed.emit();
   }
 

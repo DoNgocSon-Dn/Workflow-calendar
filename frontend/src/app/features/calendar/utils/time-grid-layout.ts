@@ -83,17 +83,31 @@ export function layoutDayEvents(
   hourHeight: number,
   day: Date,
 ): PositionedEvent[] {
-  const dayEnd = addDays(startOfDay(day), 1);
-  const timed = [...events].sort((a, b) => {
-    const start = a.start.getTime() - b.start.getTime();
-    if (start !== 0) return start;
-    return (b.end.getTime() - b.start.getTime()) - (a.end.getTime() - a.start.getTime());
-  });
+  const dayStart = startOfDay(day);
+  const dayEnd = addDays(dayStart, 1);
 
-  // Tính một lần rồi tra lại, thay vì tính lại trong từng phép so trùng giờ.
-  const layoutEnd = new Map<CalendarEvent, number>(
-    timed.map((e) => [e, layoutEndTime(e, hourHeight)]),
-  );
+  const effectiveRanges = new Map<
+    CalendarEvent,
+    { start: Date; end: Date; startMs: number; endMs: number; layoutEndMs: number }
+  >();
+
+  for (const e of events) {
+    const startMs = Math.max(e.start.getTime(), dayStart.getTime());
+    const endMs = Math.min(e.end.getTime(), dayEnd.getTime());
+    const start = new Date(startMs);
+    const end = new Date(endMs);
+    const minDurationMs = (MIN_BLOCK_HEIGHT / hourHeight) * 60 * 60 * 1000;
+    const layoutEndMs = Math.max(endMs, startMs + minDurationMs);
+    effectiveRanges.set(e, { start, end, startMs, endMs, layoutEndMs });
+  }
+
+  const timed = [...events].sort((a, b) => {
+    const ra = effectiveRanges.get(a)!;
+    const rb = effectiveRanges.get(b)!;
+    const start = ra.startMs - rb.startMs;
+    if (start !== 0) return start;
+    return (rb.endMs - rb.startMs) - (ra.endMs - ra.startMs);
+  });
 
   const result: PositionedEvent[] = [];
   let cluster: CalendarEvent[] = [];
@@ -102,37 +116,46 @@ export function layoutDayEvents(
   const flush = () => {
     if (!cluster.length) return;
 
-    // Bước 1 — xếp cột tham lam: mỗi sự kiện rơi vào cột trống sớm nhất từ trái.
-    //
-    // Đánh số cột theo VỊ TRÍ trong cluster, không theo id. Trước đây dùng
-    // Map<id, cột>: hai bản ghi trùng id (xảy ra khi cùng một sự kiện lọt vào
-    // danh sách hai lần) sẽ ghi đè nhau, nên cả hai cùng nhận số cột của bản
-    // ghi sau — kết quả là MỘT khối vẽ lệch sang nửa phải như thể đang trùng
-    // giờ, dù người dùng chỉ thấy một sự kiện.
     const columns: CalendarEvent[][] = [];
     const columnEndTimes: number[] = [];
     const columnOfIndex: number[] = [];
     for (const e of cluster) {
-      let col = columnEndTimes.findIndex((end) => end <= e.start.getTime());
+      const range = effectiveRanges.get(e)!;
+      let col = columnEndTimes.findIndex((end) => end <= range.startMs);
       if (col === -1) {
         col = columnEndTimes.length;
-        columnEndTimes.push(layoutEnd.get(e)!);
+        columnEndTimes.push(range.layoutEndMs);
         columns.push([e]);
       } else {
-        columnEndTimes[col] = layoutEnd.get(e)!;
+        columnEndTimes[col] = range.layoutEndMs;
         columns[col].push(e);
       }
       columnOfIndex.push(col);
     }
 
-    // Bước 2 — nong sang phải qua những cột không có ai trùng giờ.
     const colCount = columns.length;
     cluster.forEach((e, index) => {
+      const range = effectiveRanges.get(e)!;
       const col = columnOfIndex[index];
-      const span = columnSpan(e, columns, col, layoutEnd);
-      const top = (minutesSinceMidnight(e.start) / 60) * hourHeight;
-      const visibleEnd = e.end.getTime() > dayEnd.getTime() ? dayEnd : e.end;
-      const height = Math.max((diffMinutes(e.start, visibleEnd) / 60) * hourHeight, MIN_BLOCK_HEIGHT);
+      let span = 1;
+      for (let next = col + 1; next < columns.length; next++) {
+        if (
+          columns[next].some((other) => {
+            const rother = effectiveRanges.get(other)!;
+            return range.startMs < rother.layoutEndMs && rother.startMs < range.layoutEndMs;
+          })
+        ) {
+          break;
+        }
+        span++;
+      }
+
+      const top = (minutesSinceMidnight(range.start) / 60) * hourHeight;
+      const height = Math.max(
+        (diffMinutes(range.start, range.end) / 60) * hourHeight,
+        MIN_BLOCK_HEIGHT,
+      );
+
       result.push({
         event: e,
         top,
@@ -146,11 +169,12 @@ export function layoutDayEvents(
   };
 
   for (const e of timed) {
-    if (cluster.length && e.start.getTime() >= clusterEnd) {
+    const range = effectiveRanges.get(e)!;
+    if (cluster.length && range.startMs >= clusterEnd) {
       flush();
     }
     cluster.push(e);
-    clusterEnd = Math.max(clusterEnd, layoutEnd.get(e)!);
+    clusterEnd = Math.max(clusterEnd, range.layoutEndMs);
   }
   flush();
 

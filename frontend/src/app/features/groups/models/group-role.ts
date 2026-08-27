@@ -82,3 +82,8 @@ export function canAssignRole(actor: GroupRole | null, role: GroupRole): boolean
 export function canTransferLeadership(actor: GroupRole | null): boolean {
   return actor === GroupRole.LEADER;
 }
+
+/** GUEST chỉ được xem — không nhắn tin, không tạo/sửa task. Phải khớp canChat ở backend. */
+export function canChat(actor: GroupRole | null): boolean {
+  return !!actor && actor !== GroupRole.GUEST;
+}

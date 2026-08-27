@@ -12,7 +12,7 @@ import { TranslationService } from '../../../../core/i18n/translation.service';
 import { DialogService } from '../../../../core/services/dialog.service';
 import { GroupStore } from '../../../groups/data/group-store';
 import { Group } from '../../../groups/models/group.models';
-import { CALENDAR_COLOR_HEX, NOTE_COLOR_HEX } from '../../models/calendar.models';
+import { CALENDAR_COLOR_HEX, NOTE_COLOR_HEX, CalendarColor } from '../../models/calendar.models';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { MiniCalendar } from '../mini-calendar/mini-calendar';
 
@@ -35,6 +35,9 @@ function dedupeByName(groups: Group[]): Group[] {
   styleUrl: './calendar-sidebar.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MiniCalendar, Icon],
+  host: {
+    '(document:click)': 'activeColorPickerId.set(null)',
+  },
 })
 export class CalendarSidebar implements OnInit {
   protected readonly store = inject(CalendarStore);
@@ -43,6 +46,33 @@ export class CalendarSidebar implements OnInit {
   private readonly dialog = inject(DialogService);
   protected readonly colorHex = CALENDAR_COLOR_HEX;
   protected readonly noteColorHex = NOTE_COLOR_HEX;
+
+  protected readonly activeColorPickerId = signal<string | null>(null);
+  protected readonly availableColors: CalendarColor[] = [
+    'blue',
+    'green',
+    'orange',
+    'red',
+    'purple',
+    'teal',
+  ];
+
+  toggleColorPicker(event: Event, calendarId: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.activeColorPickerId.update((curr) => (curr === calendarId ? null : calendarId));
+  }
+
+  async selectColor(event: Event, calendarId: string, color: CalendarColor): Promise<void> {
+    event.preventDefault();
+    event.stopPropagation();
+    this.activeColorPickerId.set(null);
+    try {
+      await this.store.updateCalendarColor(calendarId, color);
+    } catch {
+      // Ignore
+    }
+  }
 
   readonly createClicked = output<void>();
   readonly createCalendarClicked = output<void>();
@@ -65,6 +95,10 @@ export class CalendarSidebar implements OnInit {
   );
 
   protected readonly deletingCalendarId = signal<string | null>(null);
+
+  protected isPersonalCalendar(calendarId: string): boolean {
+    return !this.groupCalendarIds().has(calendarId);
+  }
 
   protected canDeleteCalendar(cal: { id: string; canEdit: boolean }): boolean {
     return cal.canEdit && !this.groupCalendarIds().has(cal.id);

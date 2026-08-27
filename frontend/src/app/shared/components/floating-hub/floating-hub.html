@@ -3,7 +3,7 @@
     class="panel"
     [style.--ripple-origin]="rippleOrigin()"
     role="dialog"
-    aria-label="Trợ lý AI"
+    [attr.aria-label]="i18n.t('hub.aiTitle')"
     [style.left.px]="panelLeft()"
     [style.right.px]="panelRight()"
     [style.top.px]="panelTop()"
@@ -24,7 +24,7 @@
             <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
           </svg>
         </span>
-        <span class="drop-overlay__text">Thả file để đính kèm</span>
+        <span class="drop-overlay__text">{{ i18n.t('hub.dropToAttach') }}</span>
       </div>
     }
     <!-- MỘT vòng sóng duy nhất, và chỉ tồn tại trong lượt mở: @if gỡ hẳn nó
@@ -38,8 +38,6 @@
       ></span>
     }
 
-    <!-- Chỉ còn một khu vực duy nhất trong bubble — Trợ lý AI — nên đây là một
-         tiêu đề tĩnh, không phải segmented control nữa. -->
     <div class="panel-tabs">
       <div class="tab-group">
         <span class="tab-btn tab-btn--ai tab-btn--static active">
@@ -49,17 +47,17 @@
               d="M12 2l1.9 5.6L19.5 9.5 13.9 11.4 12 17l-1.9-5.6L4.5 9.5l5.6-1.9zM18 15l.9 2.6 2.6.9-2.6.9L18 22l-.9-2.6-2.6-.9 2.6-.9z"
             />
           </svg>
-          Trợ lý AI
+          {{ i18n.t('hub.aiTitle') }}
         </span>
       </div>
-      <button type="button" class="icon-btn" aria-label="Đóng" (click)="toggle()">
+      <button type="button" class="icon-btn" [attr.aria-label]="i18n.t('common.close')" (click)="toggle()">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
           <path d="M18 6 6 18M6 6l12 12" />
         </svg>
       </button>
     </div>
 
-      <div class="ai-chat-container">
+    <div class="ai-chat-container">
         <div class="messages">
         @if (messages().length === 0) {
           <div class="ai-welcome">
@@ -75,17 +73,16 @@
               </svg>
             </span>
 
-            <h3 class="ai-welcome__title">Hôm nay tôi có thể giúp gì cho bạn?</h3>
+            <h3 class="ai-welcome__title">{{ i18n.t('hub.welcomeTitle') }}</h3>
             <!-- Rút từ 5 dòng xuống 2. Bản cũ vừa dài vừa canh giữa nên lề hai
                  bên đều răng cưa, rất khó đọc; phần hướng dẫn đính kèm file đã
                  nằm sẵn ở tooltip của nút kẹp giấy nên không cần nhắc lại đây. -->
             <p class="ai-welcome__sub">
-              Cứ nói bằng câu tiếng Việt bình thường — mình xếp lịch, tạo sự kiện,
-              hoặc chia một mục tiêu thành danh sách việc để bạn duyệt.
+              {{ i18n.t('hub.welcomeSub') }}
             </p>
 
             <div class="ai-suggestions">
-              @for (s of suggestions; track s.text) {
+              @for (s of suggestions(); track s.text) {
                 <button
                   type="button"
                   class="ai-suggestion"
@@ -150,7 +147,7 @@
                       <rect x="3" y="5" width="18" height="16" rx="2" />
                       <path d="M3 10h18M8 3v4M16 3v4" />
                     </svg>
-                    <span class="sr-only">Ngày:</span>
+                    <span class="sr-only">{{ i18n.t('hub.srDate') }}</span>
                     <span>{{ ev.dateLabel }}</span>
                   </li>
                   <li>
@@ -158,7 +155,7 @@
                       <circle cx="12" cy="12" r="9" />
                       <path d="M12 7v5l3 2" />
                     </svg>
-                    <span class="sr-only">Thời gian:</span>
+                    <span class="sr-only">{{ i18n.t('hub.srTime') }}</span>
                     <span>{{ ev.timeLabel }}</span>
                   </li>
                   @if (ev.location) {
@@ -167,7 +164,7 @@
                         <path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z" />
                         <circle cx="12" cy="10" r="2.5" />
                       </svg>
-                      <span class="sr-only">Địa điểm:</span>
+                      <span class="sr-only">{{ i18n.t('hub.srLocation') }}</span>
                       <span>{{ ev.location }}</span>
                     </li>
                   }
@@ -181,7 +178,7 @@
                 class="text-btn"
                 (click)="openManualForm.emit(m.guessedTitle ?? '')"
               >
-                Mở form nhập tay
+                {{ i18n.t('hub.openManualForm') }}
               </button>
             }
           </div>
@@ -190,27 +187,27 @@
         <!-- Sự kiện AI đọc được từ file. CHƯA lưu gì — người dùng duyệt rồi
              mới bấm thêm vào lịch. -->
         @if (eventProposal(); as proposal) {
-          <section class="event-proposal" aria-label="Sự kiện AI đọc được từ file">
+          <section class="event-proposal" [attr.aria-label]="i18n.t('hub.eventProposalAria')">
             <header class="event-proposal__head">
               <div class="event-proposal__heading">
-                <h4 class="event-proposal__title">AI đã tìm thấy {{ proposal.rows.length }} sự kiện</h4>
-                <p class="event-proposal__hint">Từ {{ proposal.fileName }} — chưa có sự kiện nào được lưu.</p>
+                <h4 class="event-proposal__title">{{ i18n.t('hub.eventFound', { count: proposal.rows.length }) }}</h4>
+                <p class="event-proposal__hint">{{ i18n.t('hub.eventFromFile', { file: proposal.fileName }) }}</p>
               </div>
-              <span class="event-proposal__badge">Bản nháp</span>
+              <span class="event-proposal__badge">{{ i18n.t('hub.draftBadge') }}</span>
             </header>
 
             <div class="event-proposal__bulk">
               <button type="button" class="text-btn" [disabled]="savingEvents()" (click)="selectAllEvents(true)">
-                Chọn tất cả
+                {{ i18n.t('hub.selectAll') }}
               </button>
               <button type="button" class="text-btn" [disabled]="savingEvents()" (click)="selectAllEvents(false)">
-                Bỏ chọn tất cả
+                {{ i18n.t('hub.deselectAll') }}
               </button>
             </div>
 
             @if (incompleteEventCount() > 0) {
               <p class="event-proposal__warn">
-                {{ incompleteEventCount() }} mục thiếu ngày giờ nên chưa được chọn. Hãy điền thời gian trước khi thêm.
+                {{ i18n.t('hub.eventIncomplete', { count: incompleteEventCount() }) }}
               </p>
             }
 
@@ -224,7 +221,7 @@
                       [disabled]="savingEvents() || !row.startLocal"
                       (change)="toggleEventRow(row.id, $any($event.target).checked)"
                     />
-                    <span class="sr-only">Chọn sự kiện {{ row.title }}</span>
+                    <span class="sr-only">{{ i18n.t('hub.selectEvent', { title: row.title }) }}</span>
                   </label>
 
                   <div class="event-proposal__body">
@@ -234,7 +231,7 @@
                       maxlength="200"
                       [value]="row.title"
                       [disabled]="savingEvents()"
-                      aria-label="Tên sự kiện"
+                      [attr.aria-label]="i18n.t('hub.eventNameAria')"
                       (input)="setEventRowTitle(row.id, $any($event.target).value)"
                     />
                     <app-char-counter class="field-counter" [current]="row.title.length" [max]="200" />
@@ -245,7 +242,7 @@
 
                     <div class="event-proposal__times">
                       <label class="event-proposal__field">
-                        <span>Bắt đầu</span>
+                        <span>{{ i18n.t('hub.start') }}</span>
                         <input
                           type="datetime-local"
                           [value]="row.startLocal"
@@ -254,7 +251,7 @@
                         />
                       </label>
                       <label class="event-proposal__field">
-                        <span>Kết thúc</span>
+                        <span>{{ i18n.t('hub.end') }}</span>
                         <input
                           type="datetime-local"
                           [value]="row.endLocal"
@@ -270,8 +267,8 @@
                       maxlength="200"
                       [value]="row.location"
                       [disabled]="savingEvents()"
-                      placeholder="Địa điểm (không bắt buộc)"
-                      aria-label="Địa điểm"
+                      [placeholder]="i18n.t('hub.locationOptional')"
+                      [attr.aria-label]="i18n.t('hub.locationAria')"
                       (input)="setEventRowLocation(row.id, $any($event.target).value)"
                     />
                     <app-char-counter class="field-counter" [current]="row.location.length" [max]="200" />
@@ -281,7 +278,7 @@
                     type="button"
                     class="event-proposal__remove"
                     [disabled]="savingEvents()"
-                    [attr.aria-label]="'Bỏ sự kiện ' + row.title"
+                    [attr.aria-label]="i18n.t('hub.removeEvent', { title: row.title })"
                     (click)="removeEventRow(row.id)"
                   >
                     ×
@@ -301,10 +298,10 @@
                 [disabled]="savingEvents() || selectedEventCount() === 0"
                 (click)="confirmEventProposal()"
               >
-                {{ savingEvents() ? 'Đang thêm…' : 'Thêm ' + selectedEventCount() + ' sự kiện vào lịch' }}
+                {{ savingEvents() ? i18n.t('hub.adding') : i18n.t('hub.addEventsToCalendar', { count: selectedEventCount() }) }}
               </button>
               <button type="button" class="text-btn" [disabled]="savingEvents()" (click)="dismissEventProposal()">
-                Bỏ qua
+                {{ i18n.t('hub.skip') }}
               </button>
             </div>
           </section>
@@ -312,29 +309,29 @@
         <!-- Bảng xem trước: CHƯA có gì được lưu ở bước này. Người dùng bỏ chọn,
              sửa tên, đặt ngày rồi mới bấm thêm. -->
         @if (todoProposal(); as proposal) {
-          <section class="todo-proposal" aria-label="Việc cần làm do AI đề xuất">
+          <section class="todo-proposal" [attr.aria-label]="i18n.t('hub.todoProposalAria')">
             <header class="todo-proposal__head">
               <div class="todo-proposal__heading">
-                <h4 class="todo-proposal__title">{{ proposal.goal || 'Việc cần làm đề xuất' }}</h4>
+                <h4 class="todo-proposal__title">{{ proposal.goal || i18n.t('hub.todoProposalTitle') }}</h4>
                 <p class="todo-proposal__hint">
-                  {{ proposal.rows.length }} việc đề xuất — chưa có việc nào được lưu.
+                  {{ i18n.t('hub.todoProposedCount', { count: proposal.rows.length }) }}
                 </p>
               </div>
-              <span class="todo-proposal__badge">Bản nháp</span>
+              <span class="todo-proposal__badge">{{ i18n.t('hub.draftBadge') }}</span>
             </header>
 
             <div class="todo-proposal__bulk">
               <button type="button" class="text-btn" [disabled]="savingProposal()" (click)="selectAllTodos(true)">
-                Chọn tất cả
+                {{ i18n.t('hub.selectAll') }}
               </button>
               <button type="button" class="text-btn" [disabled]="savingProposal()" (click)="selectAllTodos(false)">
-                Bỏ chọn tất cả
+                {{ i18n.t('hub.deselectAll') }}
               </button>
             </div>
 
             @if (duplicateProposalCount() > 0) {
               <p class="todo-proposal__dup-note">
-                {{ duplicateProposalCount() }} việc đã có trong danh sách nên được bỏ chọn sẵn.
+                {{ i18n.t('hub.todoDupNote', { count: duplicateProposalCount() }) }}
               </p>
             }
 
@@ -348,7 +345,7 @@
                       [disabled]="savingProposal()"
                       (change)="toggleProposalRow(row.id, $any($event.target).checked)"
                     />
-                    <span class="sr-only">Chọn việc {{ row.content }}</span>
+                    <span class="sr-only">{{ i18n.t('hub.selectTodo', { content: row.content }) }}</span>
                   </label>
 
                   <div class="todo-proposal__body">
@@ -358,7 +355,7 @@
                       maxlength="300"
                       [value]="row.content"
                       [disabled]="savingProposal()"
-                      aria-label="Tên việc"
+                      [attr.aria-label]="i18n.t('hub.todoNameAria')"
                       (input)="setProposalRowContent(row.id, $any($event.target).value)"
                     />
                     <app-char-counter class="field-counter" [current]="row.content.length" [max]="300" />
@@ -371,14 +368,14 @@
                         type="date"
                         [value]="row.dueDate"
                         [disabled]="savingProposal()"
-                        aria-label="Ngày thực hiện (không bắt buộc)"
+                        [attr.aria-label]="i18n.t('hub.todoDateAria')"
                         (change)="setProposalRowDate(row.id, $any($event.target).value)"
                       />
                       @if (!row.dueDate) {
-                        <span class="todo-proposal__nodate">Chưa đặt hạn</span>
+                        <span class="todo-proposal__nodate">{{ i18n.t('hub.noDueDate') }}</span>
                       }
                       @if (row.duplicate) {
-                        <span class="todo-proposal__dup">Đã có việc tương tự</span>
+                        <span class="todo-proposal__dup">{{ i18n.t('hub.similarExists') }}</span>
                       }
                     </div>
                   </div>
@@ -387,7 +384,7 @@
                     type="button"
                     class="todo-proposal__remove"
                     [disabled]="savingProposal()"
-                    [attr.aria-label]="'Bỏ việc ' + row.content"
+                    [attr.aria-label]="i18n.t('hub.removeTodo', { content: row.content })"
                     (click)="removeProposalRow(row.id)"
                   >
                     ×
@@ -407,7 +404,7 @@
                 [disabled]="savingProposal() || selectedProposalCount() === 0"
                 (click)="confirmTodoProposal()"
               >
-                {{ savingProposal() ? 'Đang thêm…' : 'Thêm ' + selectedProposalCount() + ' việc đã chọn' }}
+                {{ savingProposal() ? i18n.t('hub.adding') : i18n.t('hub.addSelectedTodos', { count: selectedProposalCount() }) }}
               </button>
               <button
                 type="button"
@@ -415,7 +412,7 @@
                 [disabled]="savingProposal()"
                 (click)="dismissTodoProposal()"
               >
-                Bỏ qua
+                {{ i18n.t('hub.skip') }}
               </button>
             </div>
           </section>
@@ -444,7 +441,7 @@
 
           <!-- Rút gọn còn một dòng. Bản cũ dài 2 dòng và nằm ngay trên ô nhập,
                chiếm mất phần khung nhìn đáng lẽ để đọc hội thoại. -->
-          <p class="ai-disclaimer">WorkflowAI có thể trả lời sai — hãy kiểm tra lại.</p>
+          <p class="ai-disclaimer">{{ i18n.t('hub.disclaimer') }}</p>
 
           <!-- File đã chọn nhưng chưa gửi. Xoá được trước khi gửi. -->
           @if (pendingFile(); as f) {
@@ -463,7 +460,7 @@
                 type="button"
                 class="attachment-chip__remove"
                 [disabled]="sending()"
-                aria-label="Bỏ file đính kèm"
+                [attr.aria-label]="i18n.t('hub.removeAttachment')"
                 (click)="clearPendingFile()"
               >
                 ×
@@ -472,7 +469,7 @@
           }
 
           <div class="input-row">
-            <label class="attach-btn" [class.disabled]="sending()" title="Đính kèm .ics, .csv hoặc .pdf — hoặc copy file rồi nhấn Ctrl + V">
+            <label class="attach-btn" [class.disabled]="sending()" [title]="i18n.t('hub.attachTooltip')">
               <input
                 type="file"
                 class="attach-input"
@@ -480,7 +477,7 @@
                 [disabled]="sending()"
                 (change)="onFilePicked($event)"
               />
-              <span class="sr-only">Đính kèm file</span>
+              <span class="sr-only">{{ i18n.t('hub.attachFile') }}</span>
               <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
                 <path
                   fill="currentColor"
@@ -495,7 +492,7 @@
                 maxlength="2000"
                 [ngModel]="draft()"
                 (ngModelChange)="draft.set($event)"
-                [placeholder]="pendingFile() ? 'Muốn lấy gì từ file này? (không bắt buộc)' : 'Nhập yêu cầu…'"
+                [placeholder]="pendingFile() ? i18n.t('hub.filePromptPlaceholder') : i18n.t('hub.aiPlaceholder')"
                 [disabled]="sending()"
                 (keydown.enter)="$event.preventDefault(); send()"
               />
@@ -511,7 +508,7 @@
               type="button"
               class="send-btn"
               [class.send-btn--loading]="sending()"
-              aria-label="Gửi"
+              [attr.aria-label]="i18n.t('common.send')"
               [disabled]="sending() || (!draft().trim() && !pendingFile())"
               (click)="send()"
             >
@@ -529,14 +526,14 @@
           </div>
         </div>
       </div>
-  </div>
+    </div>
 }
 
 <button
   type="button"
   class="fab"
   [class.dragging]="dragging()"
-  aria-label="Trợ lý AI"
+  [attr.aria-label]="i18n.t('hub.fabAria')"
   [style.left.px]="pos().x"
   [style.top.px]="pos().y"
   (pointerdown)="onFabPointerDown($event)"

@@ -233,6 +233,16 @@ export class TasksPage {
   }
 
   async removeTodo(id: string): Promise<void> {
+    const todo = this.store.todos().find((t) => t.id === id);
+    const confirmed = await this.dialog.confirm(
+      this.i18n.t('tasks.deleteTodoConfirm', { title: todo?.content || '' }),
+      {
+        confirmLabel: this.i18n.t('common.delete'),
+        cancelLabel: this.i18n.t('common.cancel'),
+        danger: true,
+      },
+    );
+    if (!confirmed) return;
     await this.store.deleteTodo(id);
   }
 
@@ -242,11 +252,6 @@ export class TasksPage {
 
   closeUserMenu(): void {
     this.userMenuOpen.set(false);
-  }
-
-  openSettingsFromMenu(): void {
-    this.closeUserMenu();
-    this.settingsModalOpen.set(true);
   }
 
   async logout(): Promise<void> {

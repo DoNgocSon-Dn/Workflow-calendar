@@ -2,7 +2,7 @@
   class="mention-popup"
   [id]="listboxId"
   role="listbox"
-  aria-label="Gợi ý nhắc tên"
+  [attr.aria-label]="i18n.t('mention.ariaLabel')"
   (mousedown)="onMouseDown($event)"
 >
   @for (option of options(); track option.kind + ':' + (option.userId ?? '')) {
@@ -19,7 +19,7 @@
     >
       @if (option.kind === 'all') {
         <span class="mention-avatar mention-avatar--all" aria-hidden="true">&#64;</span>
-        <span class="mention-name">Báo cho cả nhóm</span>
+        <span class="mention-name">{{ i18n.t('mention.all') }}</span>
         <span class="mention-tag">&#64;{{ option.label }}</span>
       } @else {
         <span class="mention-avatar" [style.background-color]="option.color" aria-hidden="true">
@@ -30,6 +30,6 @@
       }
     </button>
   } @empty {
-    <p class="mention-empty">Không tìm thấy thành viên phù hợp</p>
+    <p class="mention-empty">{{ i18n.t('mention.empty') }}</p>
   }
 </div>

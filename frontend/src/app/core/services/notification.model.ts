@@ -35,11 +35,56 @@ export interface MessageNotificationMetadata {
   readonly messagePreview: string;
 }
 
+/** A translation param that is itself a translation key — resolved at render
+ *  time so nested phrases (a status verb, a role name) also follow the current
+ *  language, not the language active when the notification was created. */
+export interface NotifKeyRef {
+  readonly key: string;
+  readonly params?: Readonly<Record<string, string | number>>;
+}
+
+export type NotifParams = Readonly<Record<string, string | number | NotifKeyRef>>;
+
+export function isNotifKeyRef(value: unknown): value is NotifKeyRef {
+  return !!value && typeof value === 'object' && typeof (value as NotifKeyRef).key === 'string';
+}
+
+/**
+ * Resolve a notification's translatable title/message.
+ *
+ * When `key` is set the text is (re)translated on every render, so switching
+ * language updates notifications received earlier too. Falls back to the baked
+ * `fallback` string for backend `system` notices and for notifications stored
+ * before this field existed.
+ */
+export function resolveNotifText(
+  fallback: string,
+  key: string | undefined,
+  params: NotifParams | undefined,
+  translate: TranslateFn,
+): string {
+  if (!key) return fallback;
+  const flat: Record<string, string | number> = {};
+  for (const [k, v] of Object.entries(params ?? {})) {
+    flat[k] = isNotifKeyRef(v) ? translate(v.key, v.params) : v;
+  }
+  // Templates like "{title} · {time}" leave a dangling separator when an
+  // optional slot resolves to empty — trim it off.
+  return translate(key, flat).trim();
+}
+
 export interface AppNotification {
   readonly id: string;
   readonly type: NotificationType;
+  /** Baked text — kept as the fallback and for backend-authored `system`
+   *  notices. When `titleKey`/`messageKey` are present the UI re-translates
+   *  from those instead so the text follows the current language. */
   readonly title: string;
   readonly message: string;
+  readonly titleKey?: string;
+  readonly titleParams?: NotifParams;
+  readonly messageKey?: string;
+  readonly messageParams?: NotifParams;
   /** ISO timestamp. */
   readonly createdAt: string;
   readonly isRead: boolean;
