@@ -1,6 +1,6 @@
 <div class="time-grid">
   <div class="day-header-row" [style.padding-right.px]="scrollbarWidth()">
-    <div class="gutter-spacer"></div>
+    <div class="gutter-spacer gutter-spacer--lunar">{{ i18n.t('calendar.lunarShort') }}</div>
     @for (day of days(); track day.getTime()) {
       @let holiday = holidayFor(day);
       <div class="day-header-cell" [class.holiday]="!!holiday">
@@ -13,13 +13,20 @@
             [class.lunar-fifteen]="getLunarInfo(day).day === 15"
             [title]="lunarTooltip(day)"
           >
-            {{ getLunarInfo(day).displayText }}
+            {{ lunarLabel(day) }}
           </span>
         </div>
         @if (holiday; as h) {
-          <span class="holiday-badge" [title]="holidayTooltip(day)" [attr.aria-label]="holidayTooltip(day)">
+          <button
+            type="button"
+            class="holiday-badge"
+            [class.national-day]="h.id === 'national-day'"
+            [title]="i18n.t('calendar.holidayGridTooltip', { name: h.name })"
+            [attr.aria-label]="i18n.t('calendar.holidayGridTooltip', { name: h.name })"
+            (click)="openHoliday(day, $event)"
+          >
             {{ h.name }}
-          </span>
+          </button>
         }
       </div>
     }

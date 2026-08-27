@@ -148,6 +148,18 @@ export function findLastDayOfLunarMonth(
   );
 }
 
+/**
+ * Nhãn ngắn cho góc ô lịch (month / week view). Chỉ là phần SỐ — chữ "ÂL" và
+ * màu sắc phân biệt với ngày dương do CSS lo, xem `.lunar-day` / `.lunar-dn`.
+ *
+ *  - Mùng 1: "1/8" — kèm tháng âm để không ai đọc nhầm thành ngày dương.
+ *  - Rằm và ngày thường: chỉ số ngày ("15", "7"); rằm được tô nổi bằng class
+ *    `.lunar-fifteen` chứ không thêm chữ "(Rằm)" cho đỡ chật.
+ */
+export function lunarCellLabel(lunar: LunarDate): string {
+  return lunar.day === 1 ? `1/${lunar.month}` : String(lunar.day);
+}
+
 export function convertSolarToLunar(date: Date, timeZone = 7): LunarDate {
   const day = date.getDate();
   const month = date.getMonth() + 1;

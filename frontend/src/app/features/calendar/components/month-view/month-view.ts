@@ -15,9 +15,10 @@ import {
 } from '../../utils/date-utils';
 import { isEventOnDay } from '../../utils/event-utils';
 
-import { convertSolarToLunar, LunarDate } from '../../utils/lunar-calendar';
+import { convertSolarToLunar, LunarDate, lunarCellLabel } from '../../utils/lunar-calendar';
 import { resolveTopHolidayForDate } from '../../utils/holiday-resolver';
 import { Holiday } from '../../../../models/holiday-theme.model';
+import { VN_HOLIDAY_CALENDAR_ID } from '../../data/vietnam-holidays';
 
 interface DragSelectRange {
   start: Date;
@@ -57,12 +58,46 @@ export class MonthView {
     return convertSolarToLunar(day);
   }
 
+  /** Phần số của ngày âm cho góc ô — chữ "ÂL" và màu do template/CSS lo. */
+  lunarLabel(day: Date): string {
+    return lunarCellLabel(this.getLunarInfo(day));
+  }
+
+  /**
+   * Sự kiện "ngày lễ" tổng hợp cho một ngày, dựng từ dữ liệu lễ tĩnh (không
+   * phụ thuộc cửa sổ năm của lịch tham khảo, nên bấm được ở cả năm xa). Dùng
+   * để mở HolidayInfoModal khi người dùng bấm nhãn lễ — vì lễ đã KHÔNG còn
+   * nằm trong danh sách chip nữa.
+   */
+  holidayEventFor(day: Date): CalendarEvent | null {
+    const holiday = this.holidayFor(day);
+    if (!holiday) return null;
+    const base = startOfDay(day);
+    return {
+      id: `${VN_HOLIDAY_CALENDAR_ID}::${holiday.id}::${day.getFullYear()}-0`,
+      calendarId: VN_HOLIDAY_CALENDAR_ID,
+      title: holiday.name,
+      start: base,
+      end: base,
+      allDay: true,
+    };
+  }
+
+  openHoliday(day: Date, domEvent: MouseEvent): void {
+    domEvent.stopPropagation();
+    const event = this.holidayEventFor(day);
+    if (event) this.editRequested.emit(event);
+  }
+
   lunarTooltip(day: Date): string {
     const info = this.getLunarInfo(day);
     return this.i18n.t('calendar.lunarTooltip', { day: info.day, month: info.month });
   }
 
   holidayFor(day: Date): Holiday | null {
+    // Tôn trọng công tắc "Ngày lễ ở Việt Nam" trong thanh bên: tắt lịch lễ thì
+    // ẩn luôn nhãn lễ + nền theo lễ, đúng như tắt bất kỳ lịch nào khác.
+    if (!this.store.visibleCalendarIds().has(VN_HOLIDAY_CALENDAR_ID)) return null;
     return resolveTopHolidayForDate(day);
   }
 
@@ -96,7 +131,11 @@ export class MonthView {
     const map = new Map<string, CalendarEvent[]>();
     for (const day of this.days()) {
       const key = toDateInputValue(day);
-      const list = this.store.visibleEvents().filter((e) => isEventOnDay(e, day));
+      // Ngày lễ VN KHÔNG vào danh sách chip nữa — chúng hiển thị riêng thành
+      // nhãn lễ dưới số ngày (xem template). Chip chỉ còn sự kiện người dùng tạo.
+      const list = this.store
+        .visibleEvents()
+        .filter((e) => e.calendarId !== VN_HOLIDAY_CALENDAR_ID && isEventOnDay(e, day));
       list.sort((a, b) => {
         if (a.allDay !== b.allDay) return a.allDay ? -1 : 1;
         return a.start.getTime() - b.start.getTime();

@@ -19,10 +19,27 @@
    nhau, nên chỉ cần một bên dùng `1fr` còn bên kia `minmax(0, 1fr)` là ngày
    nào có chữ dài sẽ đẩy hai lưới lệch cột khỏi nhau. */
 .weekday-row {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg-sidebar);
+}
+
+/* Chú thích "ÂL = ngày âm lịch" — hiện MỘT lần ở góc hàng thứ, đủ để người
+   dùng hiểu con số nhỏ bên phải mỗi ô là ngày âm chứ không phải ngày dương
+   thứ hai. Đặt absolute để không phá lưới 7 cột. */
+.lunar-legend {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-text-tertiary);
+  opacity: 0.75;
+  pointer-events: none;
 }
 
 .weekday-cell {
@@ -112,10 +129,39 @@
   opacity: 0.15;
 }
 
-/* Nhãn ngày lễ là phần tử DUY NHẤT trong hàng đầu ô được phép co lại: số ngày
-   và ngày âm đều ngắn và phải đọc trọn vẹn. flex-shrink của hai cái kia đặt về
-   0 ở dưới, nên toàn bộ phần thiếu chỗ dồn hết vào đây rồi cắt bằng ellipsis. */
-.holiday-badge {
+/* Nhãn ngày lễ — nay là dòng RIÊNG dưới số ngày (không còn chen trong hàng
+   đầu, không còn trộn vào danh sách chip sự kiện). Là một nút bấm được để mở
+   thẻ thông tin ngày lễ. */
+.holiday-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+  min-width: 0;
+  border: none;
+  background: var(--holiday-surface-tint);
+  border-left: 3px solid var(--holiday-accent);
+  border-radius: var(--radius-xs);
+  padding: 0.12rem 0.35rem;
+  cursor: pointer;
+  text-align: left;
+  transition: filter 0.15s ease, background 0.15s ease;
+}
+
+.holiday-label:hover {
+  filter: brightness(1.04);
+  background: color-mix(in srgb, var(--holiday-accent) 16%, var(--color-surface));
+}
+
+.holiday-label__dot {
+  flex: none;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: var(--radius-full);
+  background: var(--holiday-accent);
+}
+
+.holiday-label__text {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
@@ -123,8 +169,26 @@
   white-space: nowrap;
   font-size: 0.68rem;
   font-weight: 600;
-  line-height: 1;
+  line-height: 1.15;
   color: var(--holiday-accent);
+}
+
+/* Quốc khánh 2/9 — nhãn đỏ cờ, tách khỏi accent vàng của theme national-day. */
+.holiday-label.national-day {
+  border-left-color: #b91c1c;
+}
+.holiday-label.national-day .holiday-label__dot {
+  background: #b91c1c;
+}
+.holiday-label.national-day .holiday-label__text {
+  color: #b91c1c;
+}
+
+/* Vạch ngăn mảnh giữa nhãn lễ và danh sách sự kiện người dùng tự tạo. */
+.cell-divider {
+  height: 1px;
+  margin: 0.1rem 0.1rem 0;
+  background: var(--color-border);
 }
 
 .day-number {
@@ -132,9 +196,10 @@
   /* Không bao giờ co: số ngày bị bóp thì cả ô mất nghĩa. */
   flex: none;
   font-family: var(--font-heading);
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  /* Đậm hơn ngày âm hẳn một bậc — đây là con số CHÍNH của ô. */
+  font-weight: 700;
+  color: var(--color-text);
   width: 1.65rem;
   height: 1.65rem;
   display: flex;
@@ -173,14 +238,25 @@
 
 .lunar-day {
   margin-left: auto;
-  /* Cũng không co: "1/8Âm" mà bị cắt thành "1/8…" là sai thông tin. */
+  /* Cũng không co: "1/8" mà bị cắt thành "1/8…" là sai thông tin. */
   flex: none;
-  font-size: 0.68rem;
+  display: inline-flex;
+  align-items: baseline;
+  font-size: 0.66rem;
   font-weight: 500;
   color: var(--color-text-tertiary);
-  opacity: 0.75;
+  opacity: 0.8;
   padding-right: 0.15rem;
   letter-spacing: -0.02em;
+}
+
+/* Dấu chấm giữa ngăn số dương với số âm — để mắt đọc chúng như hai đại lượng
+   khác nhau chứ không phải một dãy số. */
+.lunar-day::before {
+  content: '·';
+  margin: 0 0.2rem;
+  color: var(--color-text-tertiary);
+  opacity: 0.6;
 }
 
 .day-cell.outside .lunar-day {
@@ -314,7 +390,10 @@
   .day-cell {
     min-height: 3.5rem;
   }
-  .chip-list {
+  .chip-list,
+  .holiday-label,
+  .cell-divider,
+  .lunar-legend {
     display: none;
   }
 }

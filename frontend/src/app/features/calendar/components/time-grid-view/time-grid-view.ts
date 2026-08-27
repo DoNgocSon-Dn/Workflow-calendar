@@ -32,9 +32,10 @@ import {
 import { isEventOnDay } from '../../utils/event-utils';
 import { PositionedEvent, layoutDayEvents } from '../../utils/time-grid-layout';
 
-import { convertSolarToLunar, LunarDate } from '../../utils/lunar-calendar';
+import { convertSolarToLunar, LunarDate, lunarCellLabel } from '../../utils/lunar-calendar';
 import { resolveTopHolidayForDate } from '../../utils/holiday-resolver';
 import { Holiday } from '../../../../models/holiday-theme.model';
+import { VN_HOLIDAY_CALENDAR_ID } from '../../data/vietnam-holidays';
 
 const HOUR_HEIGHT = 48;
 const SNAP_MINUTES = 15;
@@ -71,12 +72,41 @@ export class TimeGridView {
     return convertSolarToLunar(day);
   }
 
+  /** Phần số của ngày âm cho tiêu đề cột — chữ "ÂL" hiện một lần ở máng giờ. */
+  lunarLabel(day: Date): string {
+    return lunarCellLabel(this.getLunarInfo(day));
+  }
+
+  /** Sự kiện "ngày lễ" tổng hợp để mở HolidayInfoModal khi bấm nhãn lễ — lễ
+   *  đã không còn nằm trong hàng "Cả ngày" cùng sự kiện người dùng tạo. */
+  holidayEventFor(day: Date): CalendarEvent | null {
+    const holiday = this.holidayFor(day);
+    if (!holiday) return null;
+    const base = startOfDay(day);
+    return {
+      id: `${VN_HOLIDAY_CALENDAR_ID}::${holiday.id}::${day.getFullYear()}-0`,
+      calendarId: VN_HOLIDAY_CALENDAR_ID,
+      title: holiday.name,
+      start: base,
+      end: base,
+      allDay: true,
+    };
+  }
+
+  openHoliday(day: Date, domEvent: MouseEvent): void {
+    domEvent.stopPropagation();
+    const event = this.holidayEventFor(day);
+    if (event) this.editRequested.emit(event);
+  }
+
   lunarTooltip(day: Date): string {
     const info = this.getLunarInfo(day);
     return this.i18n.t('calendar.lunarTooltip', { day: info.day, month: info.month });
   }
 
   holidayFor(day: Date): Holiday | null {
+    // Tôn trọng công tắc "Ngày lễ ở Việt Nam" trong thanh bên.
+    if (!this.store.visibleCalendarIds().has(VN_HOLIDAY_CALENDAR_ID)) return null;
     return resolveTopHolidayForDate(day);
   }
 
@@ -127,7 +157,12 @@ export class TimeGridView {
     for (const day of this.days()) {
       const dayEvents = this.store
         .visibleEvents()
-        .filter((e) => !e.allDay && isSameDay(e.start, day));
+        .filter(
+          (e) =>
+            e.calendarId !== VN_HOLIDAY_CALENDAR_ID &&
+            !e.allDay &&
+            isSameDay(e.start, day),
+        );
       map.set(toDateInputValue(day), layoutDayEvents(dayEvents, HOUR_HEIGHT, day));
     }
     return map;
@@ -138,7 +173,16 @@ export class TimeGridView {
     for (const day of this.days()) {
       map.set(
         toDateInputValue(day),
-        this.store.visibleEvents().filter((e) => e.allDay && isEventOnDay(e, day)),
+        // Ngày lễ VN hiện riêng thành nhãn ở tiêu đề cột, không trộn vào hàng
+        // "Cả ngày" cùng sự kiện người dùng tạo nữa.
+        this.store
+          .visibleEvents()
+          .filter(
+            (e) =>
+              e.calendarId !== VN_HOLIDAY_CALENDAR_ID &&
+              e.allDay &&
+              isEventOnDay(e, day),
+          ),
       );
     }
     return map;

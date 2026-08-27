@@ -7,6 +7,7 @@
     @for (wd of weekdayHeaders(); track wd) {
       <span class="weekday-cell">{{ wd }}</span>
     }
+    <span class="lunar-legend" aria-hidden="true">{{ i18n.t('calendar.lunarLegend') }}</span>
   </div>
 
   <div class="month-grid">
@@ -37,20 +38,34 @@
               <span class="national-day-star" aria-hidden="true">★</span>
             }
           </span>
-          @if (holiday; as h) {
-            <span class="holiday-badge" [title]="holidayTooltip(day)" [attr.aria-label]="holidayTooltip(day)">
-              {{ h.name }}
-            </span>
-          }
           <span
             class="lunar-day"
             [class.lunar-first]="getLunarInfo(day).day === 1"
             [class.lunar-fifteen]="getLunarInfo(day).day === 15"
             [title]="lunarTooltip(day)"
           >
-            {{ getLunarInfo(day).displayText }}
+            {{ lunarLabel(day) }}
           </span>
         </div>
+
+        @if (holiday; as h) {
+          <button
+            type="button"
+            class="holiday-label"
+            [class.national-day]="h.id === 'national-day'"
+            [title]="i18n.t('calendar.holidayGridTooltip', { name: h.name })"
+            [attr.aria-label]="i18n.t('calendar.holidayGridTooltip', { name: h.name })"
+            (mousedown)="$event.stopPropagation()"
+            (click)="openHoliday(day, $event)"
+          >
+            <span class="holiday-label__dot" aria-hidden="true"></span>
+            <span class="holiday-label__text">{{ h.name }}</span>
+          </button>
+        }
+
+        @if (holiday && visibleEventsFor(day).length > 0) {
+          <div class="cell-divider" aria-hidden="true"></div>
+        }
 
         <div class="chip-list">
           @for (evt of visibleEventsFor(day); track evt.id) {

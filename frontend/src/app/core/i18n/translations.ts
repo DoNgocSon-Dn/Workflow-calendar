@@ -181,6 +181,9 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'calendar.moreEvents': '+{count} khác',
     'calendar.conflictTooltip': 'Trùng giờ với sự kiện khác',
     'calendar.lunarTooltip': 'Ngày {day} tháng {month} Âm lịch',
+    'calendar.lunarShort': 'ÂL',
+    'calendar.lunarLegend': 'ÂL = ngày âm lịch',
+    'calendar.holidayGridTooltip': '{name} — bấm để xem chi tiết ngày lễ',
     'calendar.allDay': 'Cả ngày',
 
     // --- agenda view ----------------------------------------------------
@@ -584,6 +587,9 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'calendar.moreEvents': '+{count} more',
     'calendar.conflictTooltip': 'Overlaps with another event',
     'calendar.lunarTooltip': 'Day {day}, month {month} (Lunar)',
+    'calendar.lunarShort': 'Lun',
+    'calendar.lunarLegend': 'Lun = lunar day',
+    'calendar.holidayGridTooltip': '{name} — click for holiday details',
     'calendar.allDay': 'All day',
 
     // --- agenda view ----------------------------------------------------
