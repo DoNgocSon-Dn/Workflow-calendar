@@ -34,61 +34,64 @@
   transform: translate(calc(var(--holiday-px, 0) * 6px), calc(var(--holiday-py, 0) * 6px));
 }
 
-.ldm-professions-group {
-  filter: drop-shadow(0 4px 14px rgba(245, 158, 11, 0.45));
+.ldm-gears-group {
+  filter: drop-shadow(0 4px 12px rgba(245, 158, 11, 0.22));
 }
 
 /* Hào quang nhịp thở */
 .ldm-halo-glow {
+  transform-origin: 106px 76px;
   animation: ldmGlowPulse 4s ease-in-out infinite alternate;
 }
 
-/* Tia hào quang xoay liên tục */
-.ldm-halo-spin {
-  animation: ldmHaloRotate 26s linear infinite;
-  transform-origin: 100px 80px;
+/* ---------------- 4 BÁNH RĂNG ĐAN KHỚP HOÀN HẢO (1 tooth/sec) ---------------- */
+
+/* Gear A: 16 Teeth, CW, 16s period */
+.ldm-gear--a {
+  transform-origin: 0 0;
+  animation: ldmGearSpinCW 16s linear infinite;
 }
 
-/* Ngôi sao trung tâm đập nhẹ */
-.ldm-center-star {
-  animation: ldmStarPulse 3.5s ease-in-out infinite alternate;
-  transform-origin: 100px 80px;
+/* Gear B: 12 Teeth, CCW, 12s period */
+.ldm-gear--b {
+  transform-origin: 0 0;
+  animation: ldmGearSpinCCW 12s linear infinite;
 }
 
-/* Các mũ ngành nghề nảy nhẹ bồng bềnh */
-.ldm-hat--construction {
-  animation: ldmHatFloat1 4.8s ease-in-out infinite alternate;
-  transform-origin: 100px 32px;
+/* Gear C: 8 Teeth, CCW, 8s period */
+.ldm-gear--c {
+  transform-origin: 0 0;
+  animation: ldmGearSpinCCW 8s linear infinite;
 }
 
-.ldm-hat--farmer {
-  animation: ldmHatFloat2 5.5s ease-in-out 0.4s infinite alternate;
-  transform-origin: 48px 58px;
+/* Gear D: 10 Teeth, CW, 10s period */
+.ldm-gear--d {
+  transform-origin: 0 0;
+  animation: ldmGearSpinCW 10s linear infinite;
 }
 
-.ldm-hat--doctor {
-  animation: ldmHatFloat1 5.2s ease-in-out 0.8s infinite alternate;
-  transform-origin: 152px 58px;
-}
+/* ---------------- Hạt Lấp Lánh / Bụi Xưởng ---------------- */
 
-.ldm-hat--academic {
-  animation: ldmHatFloat2 6s ease-in-out 1.2s infinite alternate;
-  transform-origin: 58px 114px;
-}
-
-.ldm-hat--tech {
-  animation: ldmHatFloat1 5s ease-in-out 0.6s infinite alternate;
-  transform-origin: 142px 114px;
-}
-
-/* Hạt lấp lánh */
 .ldm-sparkle {
+  transform-origin: 0 0;
   animation: ldmSparkleFade 3s ease-in-out infinite alternate;
+}
+
+.ldm-sparkle--bg {
+  animation-duration: 4.2s;
+}
+
+.ldm-sparkle--mid {
+  animation-duration: 3.2s;
+}
+
+.ldm-sparkle--fg {
+  animation-duration: 2.5s;
 }
 
 /* ================= Keyframes ================= */
 
-@keyframes ldmHaloRotate {
+@keyframes ldmGearSpinCW {
   from {
     transform: rotate(0deg);
   }
@@ -97,65 +100,51 @@
   }
 }
 
+@keyframes ldmGearSpinCCW {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
 @keyframes ldmGlowPulse {
   0% {
-    opacity: 0.7;
-    transform: scale(0.96);
+    opacity: 0.3;
+    transform: scale(0.95);
   }
   100% {
-    opacity: 1;
-    transform: scale(1.08);
-  }
-}
-
-@keyframes ldmStarPulse {
-  0% {
-    transform: translate(100px, 80px) scale(0.96);
-  }
-  100% {
-    transform: translate(100px, 80px) scale(1.08);
-  }
-}
-
-@keyframes ldmHatFloat1 {
-  0% {
-    transform: translateY(0);
-  }
-  100% {
-    transform: translateY(-4px);
-  }
-}
-
-@keyframes ldmHatFloat2 {
-  0% {
-    transform: translateY(0);
-  }
-  100% {
-    transform: translateY(-3px);
+    opacity: 0.65;
+    transform: scale(1.06);
   }
 }
 
 @keyframes ldmSparkleFade {
   0% {
-    opacity: 0.2;
-    transform: scale(0.8);
+    opacity: 0.15;
+    transform: scale(0.7);
   }
   100% {
-    opacity: 0.8;
+    opacity: 0.6;
     transform: scale(1.2);
   }
 }
 
-:host-context(.dark) .ldm-professions-group {
-  filter: drop-shadow(0 4px 18px rgba(245, 158, 11, 0.65));
+:host-context(.dark) .ldm-gears-group {
+  filter: drop-shadow(0 4px 14px rgba(245, 158, 11, 0.35));
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ldm-halo-glow,
-  .ldm-halo-spin,
-  .ldm-center-star,
-  .ldm-hat,
+  .ldm-gear--a,
+  .ldm-gear--b,
+  .ldm-gear--c,
+  .ldm-gear--d,
   .ldm-sparkle {
     animation: none !important;
   }
 }
+
+
+

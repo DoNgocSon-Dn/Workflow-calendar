@@ -37,36 +37,36 @@
   }
 }
 
-/* Cụm 5 Mũ Ngành Nghề Việt Nam 1/5 & 30/4 — đặt CHÍNH GIỮA màn hình rực rỡ, sắc nét */
+/* Cụm Bánh Răng Cơ Khí 1/5 — đặt CHÍNH GIỮA màn hình mờ dịu nhã nhặn */
 .holiday-backdrop--labor-day .holiday-backdrop__motif {
   top: 50%;
   left: 50%;
   right: auto;
   transform: translate(-50%, -50%);
-  width: min(56vw, 580px);
-  height: min(65%, 480px);
-  opacity: 0.85;
-  mask-image: radial-gradient(70% 70% at 50% 50%, #000 65%, transparent 100%);
-  -webkit-mask-image: radial-gradient(70% 70% at 50% 50%, #000 65%, transparent 100%);
+  width: min(46vw, 480px);
+  height: min(56%, 420px);
+  opacity: 0.25;
+  mask-image: radial-gradient(60% 60% at 50% 50%, #000 50%, transparent 100%);
+  -webkit-mask-image: radial-gradient(60% 60% at 50% 50%, #000 50%, transparent 100%);
 }
 
 :host-context(.dark) .holiday-backdrop--labor-day .holiday-backdrop__motif {
-  opacity: 0.92;
+  opacity: 0.30;
 }
 
 @media (max-width: 1200px) {
   .holiday-backdrop--labor-day .holiday-backdrop__motif {
-    width: min(62vw, 440px);
-    height: min(52%, 380px);
-    opacity: 0.8;
+    width: min(52vw, 380px);
+    height: min(44%, 310px);
+    opacity: 0.20;
   }
 }
 
 @media (max-width: 900px) {
   .holiday-backdrop--labor-day .holiday-backdrop__motif {
-    width: min(76vw, 320px);
-    height: min(38%, 240px);
-    opacity: 0.75;
+    width: min(68vw, 280px);
+    height: min(34%, 200px);
+    opacity: 0.16;
   }
 }
 

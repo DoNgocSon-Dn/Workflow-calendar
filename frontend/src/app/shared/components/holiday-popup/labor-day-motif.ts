@@ -35,15 +35,11 @@ function buildParticles(count: number, seedOffset: number, depthMin: number, dep
 let nextInstanceId = 0;
 
 /**
- * Scene ngày Quốc tế Lao động (1/5): 5 người lao động — ẢNH THẬT đã tách nền
- * (`/assets/holidays/labor-day/workers.png`) — đứng dọc mép dưới, trôi rất
- * nhẹ; nền là lưới kỹ thuật + silhouette nhà máy rất mờ + particle "bụi
- * xưởng". Cùng vai trò với các motif khác: dùng chung giữa popup chúc mừng và
- * lớp nền động sau lịch (`CalendarHolidayBackdrop`).
- *
- * (Trước đây scene này là cụm bánh răng + cờ lê + búa vẽ SVG — đổi sang ảnh
- * người lao động theo yêu cầu, cùng quy ước ảnh ghép của skyline 2/9 và Dinh
- * Độc Lập 30/4.)
+ * Scene ngày Quốc tế Lao động (1/5): Biểu tượng cơ khí 3D bao gồm cụm 3 Bánh răng (Gears)
+ * đan khớp xoay tròn đều đặn (chất liệu Thép không gỉ, Vàng kim loại & Titanium), kết hợp
+ * Búa thép & Cờ lê va chạm tạo tia lửa (Spark particles) bắn ra sinh động cùng Mũ bảo hộ
+ * công nhân 3D lơ lửng. Cùng vai trò với các motif khác: dùng chung giữa popup chúc mừng
+ * và lớp nền động sau lịch (`CalendarHolidayBackdrop`).
  *
  * Chia sẵn 3 lớp bg/mid/fg — mỗi lớp một `<svg>` riêng để `appHolidayParallax`
  * ở nơi gọi tịnh tiến từng lớp với độ sâu khác nhau bằng CSS `transform`
