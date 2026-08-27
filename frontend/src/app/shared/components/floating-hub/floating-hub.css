@@ -207,16 +207,29 @@
   margin-top: -2px;
 }
 
-.todo-edit-field,
-.ai-draft-field {
+.todo-edit-field {
   flex: 1;
   min-width: 0;
 }
 
-/* Số đếm trong viên thuốc composer nằm sát ngay cạnh nút gửi tròn — viên
-   thuốc chỉ chừa 0.3rem padding phải, không đủ thở. Đẩy ra thêm một chút. */
+.ai-draft-field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+/* Số đếm trong viên thuốc composer nằm ngang cùng dòng với ô gõ, căn giữa theo chiều dọc */
 .ai-draft-field .field-counter {
-  margin-right: 0.5rem;
+  margin-top: 0;
+  margin-left: 0.25rem;
+  margin-right: 0.4rem;
+  align-self: center;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  opacity: 0.7;
 }
 
 .add-row {
