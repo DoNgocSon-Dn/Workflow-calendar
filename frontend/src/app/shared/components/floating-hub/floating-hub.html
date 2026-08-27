@@ -102,6 +102,7 @@
           (ngModelChange)="newNoteContent.set($event)"
           placeholder="Viết ghi chú mới…"
         ></textarea>
+        <app-char-counter class="field-counter" [current]="newNoteContent().length" [max]="2000" />
         <div class="color-row">
           @for (c of noteColors; track c) {
             <button

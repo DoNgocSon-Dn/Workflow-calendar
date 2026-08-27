@@ -11,6 +11,7 @@ import {
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { OverflowTooltip } from '../../directives/overflow-tooltip';
+import { CharCounter } from '../char-counter/char-counter';
 import { AuthStore } from '../../../core/auth/auth-store';
 import { NotificationQueue } from '../../../core/realtime/notification-queue';
 import { NotificationSoundService } from '../../../core/services/notification-sound.service';
@@ -385,7 +386,7 @@ function buildRecurringConfirmation(events: readonly { start: string }[]): strin
   templateUrl: './floating-hub.html',
   styleUrl: './floating-hub.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, OverflowTooltip],
+  imports: [FormsModule, OverflowTooltip, CharCounter],
 })
 export class FloatingHub {
   private readonly store = inject(CalendarStore);

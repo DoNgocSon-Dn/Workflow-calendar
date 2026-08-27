@@ -156,7 +156,7 @@
           </ul>
         </section>
       } @else if (visibleLists().length === 0) {
-        <p class="hint-text">Chưa có danh sách nào đang hiển thị — bật lại ở thanh bên trái.</p>
+        <p class="hint-text">{{ i18n.t('tasks.noVisibleLists') }}</p>
       } @else {
         @for (list of visibleLists(); track list.id) {
           <section class="column">
@@ -180,7 +180,7 @@
               }
               @if (hasTodos(list.id)) {
                 <button type="button" class="clear-all-btn" (click)="clearAllTodos(list)">
-                  Xoá tất cả
+                  {{ i18n.t('tasks.clearAll') }}
                 </button>
               }
             </header>
@@ -189,7 +189,7 @@
               <input
                 type="text"
                 class="add-todo-input"
-                placeholder="+ Thêm việc cần làm"
+                [placeholder]="i18n.t('tasks.addTodoPlaceholder')"
                 maxlength="300"
                 [value]="todoDraft(list.id)"
                 (input)="setTodoDraft(list.id, $any($event.target).value)"
@@ -235,11 +235,11 @@
                   </button>
                 </li>
               } @empty {
-                <li class="todo-empty">Chưa có việc cần làm nào.</li>
+                <li class="todo-empty">{{ i18n.t('tasks.noTodos') }}</li>
               }
 
               @if (doneTodosForList(list.id).length > 0) {
-                <li class="todo-divider">Đã xong ({{ doneTodosForList(list.id).length }})</li>
+                <li class="todo-divider">{{ i18n.t('tasks.doneCount', { count: doneTodosForList(list.id).length }) }}</li>
                 @for (todo of doneTodosForList(list.id); track todo.id) {
                   <li class="todo-item todo-item-done">
                     <input type="checkbox" [checked]="todo.done" (change)="toggleTodo(todo)" />
