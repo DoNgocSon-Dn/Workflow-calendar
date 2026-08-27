@@ -1,5 +1,6 @@
 import { HttpErrorResponse, HttpHandlerFn, HttpRequest, HttpResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
 import { Observable, firstValueFrom, of, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { SUPABASE_CLIENT } from '../supabase-client';
@@ -14,6 +15,7 @@ class FakeAuthStore {
   token: string | null = 'expired-token';
   refreshCalls = 0;
   refreshSucceeds = true;
+  signOutCalls = 0;
 
   accessToken = () => this.token;
 
@@ -23,12 +25,26 @@ class FakeAuthStore {
     this.token = 'fresh-token';
     return true;
   };
+
+  signOut = async (): Promise<void> => {
+    this.signOutCalls += 1;
+  };
 }
 
-function setup(store: FakeAuthStore) {
+/** Router giả — chỉ đếm lời gọi navigate, không cần điều hướng thật. */
+class FakeRouter {
+  navigateCalls: unknown[][] = [];
+  navigate = async (...args: unknown[]): Promise<boolean> => {
+    this.navigateCalls.push(args);
+    return true;
+  };
+}
+
+function setup(store: FakeAuthStore, router: FakeRouter = new FakeRouter()) {
   TestBed.configureTestingModule({
     providers: [
       { provide: AuthStore, useValue: store },
+      { provide: Router, useValue: router },
       { provide: SUPABASE_CLIENT, useValue: {} },
     ],
   });
@@ -97,10 +113,11 @@ describe('authInterceptor', () => {
     expect((res as HttpResponse<unknown>).body).toEqual({ ok: true });
   });
 
-  it('làm mới thất bại thì trả lại lỗi 401 gốc, không gửi lại', async () => {
+  it('làm mới thất bại thì trả lại lỗi 401 gốc, không gửi lại — và đá về /login', async () => {
     const store = new FakeAuthStore();
     store.refreshSucceeds = false;
-    setup(store);
+    const router = new FakeRouter();
+    setup(store, router);
 
     let calls = 0;
     const next: HttpHandlerFn = () => {
@@ -111,6 +128,14 @@ describe('authInterceptor', () => {
     await expect(firstValueFrom(run(apiReq(), next))).rejects.toMatchObject({ status: 401 });
     expect(calls).toBe(1);
     expect(store.refreshCalls).toBe(1);
+
+    // signOut()/navigate() chạy "fire-and-forget" (không await trong
+    // interceptor) — nhường vài tick cho promise chain đó chạy xong trước khi
+    // kiểm tra, nếu không assertion sẽ bắt được lúc chưa kịp gọi.
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(store.signOutCalls).toBe(1);
+    expect(router.navigateCalls).toEqual([[['/login'], { queryParams: { sessionExpired: '1' } }]]);
   });
 
   it('token mới vẫn 401 thì DỪNG, không lặp vô tận', async () => {

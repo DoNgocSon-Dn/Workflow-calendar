@@ -74,7 +74,14 @@ export class LoginPage implements OnInit, AfterViewInit {
 
   readonly submitting = signal(false);
   readonly revealed = signal(false);
-  readonly errorMessage = signal<string | null>(null);
+  // authInterceptor đá về đây kèm ?sessionExpired=1 khi refresh token cũng đã
+  // chết — dùng khung "danger" (đỏ) chứ không phải successMessage (xanh),
+  // đúng bản chất "phiên đã hết hạn" chứ không phải một tin vui.
+  readonly errorMessage = signal<string | null>(
+    this.route.snapshot.queryParamMap.get('sessionExpired')
+      ? 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.'
+      : null,
+  );
   readonly successMessage = signal<string | null>(this.route.snapshot.queryParamMap.get('message'));
   /** Trang cần quay lại sau khi đăng nhập xong (authGuard gắn vào khi chặn
    *  một route cần đăng nhập, vd. trang "xin vào nhóm" từ link mời). Chỉ nhận
