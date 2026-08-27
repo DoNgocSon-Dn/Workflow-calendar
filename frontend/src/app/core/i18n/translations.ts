@@ -22,6 +22,12 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'common.previous': 'Trước',
     'common.next': 'Sau',
 
+    // --- onboarding (popup hoàn tất hồ sơ lần đầu) -------------------------
+    'onboarding.title': 'Chào mừng bạn đến với Workflow!',
+    'onboarding.desc': 'Vui lòng hoàn tất hồ sơ trước khi vào app: Tên hiển thị xuất hiện trên lịch và khi tham gia nhóm làm việc, còn Ngày sinh để Workflow gửi lời chúc mừng sinh nhật đúng ngày.',
+    'onboarding.namePlaceholder': 'Nhập tên của bạn (VD: Hoàng Cường)',
+    'onboarding.submit': 'Bắt đầu sử dụng',
+
     // --- sidebar ------------------------------------------------------------
     'sidebar.createEvent': 'Tạo sự kiện',
     'sidebar.workspaces': 'Nhóm làm việc',
@@ -541,6 +547,12 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'common.today': 'Today',
     'common.previous': 'Previous',
     'common.next': 'Next',
+
+    // --- onboarding (first-run profile completion popup) ------------------
+    'onboarding.title': 'Welcome to Workflow!',
+    'onboarding.desc': 'Please complete your profile first: your display name appears on the calendar and in workspaces, and your date of birth lets Workflow send birthday wishes on the right day.',
+    'onboarding.namePlaceholder': 'Enter your name (e.g. Alex Carter)',
+    'onboarding.submit': 'Get started',
 
     // --- sidebar ------------------------------------------------------------
     'sidebar.createEvent': 'Create event',
