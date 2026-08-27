@@ -754,6 +754,43 @@ export class GroupsService {
     }));
   }
 
+  /**
+   * Trần số thành viên một nhóm.
+   *
+   * Đặt ở tầng service để báo lỗi bằng câu tiếng Việt rõ ràng ngay tại thao tác
+   * người dùng vừa làm, thay vì để RPC ném ra một lỗi Postgres khó hiểu.
+   */
+  private static readonly MAX_MEMBERS = 50;
+
+  /**
+   * Chặn trước khi nhóm vượt trần.
+   *
+   * Gọi ở CẢ BA đường thêm người — mời qua email, chấp nhận lời mời, duyệt yêu
+   * cầu qua link. Chỉ chặn ở đường mời là hở: lời mời gửi lúc nhóm còn chỗ có
+   * thể nằm đó hàng ngày, tới lúc bấm chấp nhận thì nhóm đã đầy.
+   *
+   * head: true + count: 'exact' chỉ lấy CON SỐ, không kéo hàng nào về.
+   */
+  private async assertGroupHasRoom(
+    supabase: SupabaseClient,
+    groupId: string,
+  ): Promise<void> {
+    const { count, error } = await supabase
+      .from('group_members')
+      .select('user_id', { count: 'exact', head: true })
+      .eq('group_id', groupId);
+
+    // Không đếm được thì KHÔNG chặn: thà cho qua còn hơn khoá người dùng ra
+    // khỏi nhóm vì một lỗi mạng. RPC vẫn là lớp cuối.
+    if (error || count === null) return;
+
+    if (count >= GroupsService.MAX_MEMBERS) {
+      throw new ConflictException(
+        `Nhóm đã đạt giới hạn ${GroupsService.MAX_MEMBERS} thành viên`,
+      );
+    }
+  }
+
   async inviteMember(
     supabase: SupabaseClient,
     inviter: User,
@@ -768,6 +805,8 @@ export class GroupsService {
         'Chỉ trưởng nhóm và quản trị viên mới được mời thành viên',
       );
     }
+
+    await this.assertGroupHasRoom(supabase, groupId);
 
     const role = normalizeGroupRole(dto.role ?? DEFAULT_GROUP_ROLE);
     if (!canAssignRole(inviterRole, role)) {
@@ -908,6 +947,17 @@ export class GroupsService {
     inviteId: string,
     dto: RespondGroupInviteDto,
   ): Promise<GroupInviteDto> {
+    // Chỉ kiểm khi ĐỒNG Ý. Từ chối thì không thêm ai nên nhóm đầy cũng mặc kệ,
+    // chặn ở đây sẽ khoá luôn cả đường dọn lời mời cũ.
+    if (dto.status === 'accepted') {
+      const { data: inv } = await supabase
+        .from('group_invites')
+        .select('group_id')
+        .eq('id', inviteId)
+        .maybeSingle<{ group_id: string }>();
+      if (inv) await this.assertGroupHasRoom(supabase, inv.group_id);
+    }
+
     const { data, error } = await supabase
       .rpc('respond_group_invite', {
         p_invite_id: inviteId,
@@ -1180,6 +1230,8 @@ export class GroupsService {
     let request: GroupJoinRequestDto;
 
     if (dto.status === 'approved') {
+      await this.assertGroupHasRoom(supabase, groupId);
+
       const { data, error } = await supabase
         .rpc('approve_group_join_request', { p_request_id: requestId })
         .single<{

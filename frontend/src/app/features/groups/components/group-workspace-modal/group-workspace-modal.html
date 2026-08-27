@@ -841,40 +841,12 @@
             </div>
 
             <div class="info-card meet-card">
-              <h3><app-icon name="video" /> Phòng họp Google Meet</h3>
+              <h3><app-icon name="video" /> Phòng họp trực tuyến</h3>
               <p>
-                Bấm <strong>Tạo phòng họp mới</strong> để Google mở một phòng Meet, rồi dán link
-                phòng đó vào ô bên dưới. Link sẽ được gắn vào lịch nhóm và báo cho cả nhóm.
+                Bấm <strong>Tạo phòng họp</strong> là có link ngay — không phải đi lấy rồi dán
+                về. Link hiện ở dưới để sao chép, đồng thời được gắn vào lịch nhóm và báo cho
+                cả nhóm.
               </p>
-
-              <button type="button" class="btn btn-ghost meet-new-btn" (click)="openNewMeetRoom()">
-                Tạo phòng họp mới
-                <app-icon name="arrow-right" />
-              </button>
-
-              <label class="meet-label" for="meet-link-input">Dán link Meet vừa tạo</label>
-              <input
-                id="meet-link-input"
-                type="text"
-                class="text-input"
-                [class.meet-input-invalid]="meetLinkInvalid()"
-                placeholder="https://meet.google.com/abc-defg-hij"
-                maxlength="500"
-                autocomplete="off"
-                spellcheck="false"
-                [value]="meetLinkInput()"
-                (input)="meetLinkInput.set($any($event.target).value)"
-              />
-              @if (meetLinkInvalid()) {
-                <p class="meet-hint meet-hint-error">
-                  Đây không phải link phòng Google Meet. Dán dạng
-                  <code>meet.google.com/abc-defg-hij</code> hoặc mã <code>abc-defg-hij</code>.
-                </p>
-              } @else if (normalizedMeetLink(); as normalized) {
-                <p class="meet-hint meet-hint-ok">
-                  <app-icon name="check" /> {{ normalized }}
-                </p>
-              }
 
               <label class="meet-label" for="meet-title-input">Tiêu đề buổi họp</label>
               <input
@@ -952,13 +924,13 @@
               <button
                 type="button"
                 class="btn btn-primary meet-save-btn"
-                [disabled]="!canSaveMeet()"
-                (click)="saveMeetRoom()"
+                [disabled]="!canCreateMeet()"
+                (click)="createMeetRoom()"
               >
                 @if (meetSaving()) {
-                  Đang lưu...
+                  Đang tạo...
                 } @else {
-                  Lưu phòng họp
+                  Tạo phòng họp
                 }
               </button>
 

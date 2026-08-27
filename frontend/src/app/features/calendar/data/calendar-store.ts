@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Subject, debounceTime, distinctUntilChanged, firstValueFrom } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { environment } from '../../../../environments/environment';
@@ -330,6 +330,7 @@ const EVENTS_REFRESH_DEBOUNCE_MS = 500;
 @Injectable({ providedIn: 'root' })
 export class CalendarStore {
   private readonly clock = inject(Clock);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly http = inject(HttpClient);
   private readonly authStore = inject(AuthStore);
   private readonly realtime = inject(RealtimeService);
@@ -480,6 +481,21 @@ export class CalendarStore {
   private loadedUserId: string | null = null;
 
   constructor() {
+    // Phòng realtime bám theo DANH SÁCH LỊCH, không chỉ chạy một lần lúc tải.
+    //
+    // Trước đây joinAllCalendarRooms() chỉ được gọi ở cuối loadAll() và mỗi lần
+    // socket nối lại. Người đang mở app mà được thêm vào một nhóm giữa chừng sẽ
+    // thấy lịch nhóm hiện ra trong danh sách, nhưng KHÔNG ai join phòng của nó —
+    // nên mọi sự kiện nhóm tạo sau đó đều không tới được máy họ, và phải F5 mới
+    // có. Đúng triệu chứng "tạo sự kiện mà cả nhóm không thấy".
+    //
+    // effect() chạy lại mỗi khi calendars() đổi nên lịch mới được join ngay.
+    // Gọi trùng là vô hại: joinedRooms phía client là Set, còn client.join()
+    // của Socket.IO cũng bỏ qua phòng đã ở trong.
+    effect(() => {
+      for (const cal of this.calendars()) this.realtime.joinCalendar(cal.id);
+    });
+
     // debounceTime tự huỷ giá trị trước mỗi khi có phím mới, nên không bao
     // giờ có hai bộ đếm chạy song song và luôn chỉ lọc theo giá trị mới nhất.
     // distinctUntilChanged chặn việc lọc lại khi từ khoá không đổi (gõ rồi
@@ -572,6 +588,7 @@ export class CalendarStore {
     this.realtime.connect();
     this.joinAllCalendarRooms();
     this.bindRealtimeListenersOnce();
+    this.startBackgroundSyncOnce();
     void this.checkMissedReminders();
   }
 
@@ -742,6 +759,81 @@ export class CalendarStore {
       const next = new Set(set);
       next.delete(calendarId);
       return next;
+    });
+  }
+
+  /**
+   * Đồng bộ ngầm định kỳ — LƯỚI AN TOÀN cho realtime, không phải thay thế nó.
+   *
+   * Socket có thể chết lặng: proxy cắt kết nối nhàn rỗi, máy ngủ rồi thức dậy,
+   * mạng đổi từ wifi sang 4G. Những lúc đó 'event:created' không bao giờ tới và
+   * lịch đứng im mà không có dấu hiệu gì. Vòng lặp này kéo lại dữ liệu thật mỗi
+   * 30 giây nên sai lệch nhiều nhất chỉ tồn tại một nhịp.
+   *
+   * KHÔNG dùng reload trang. refreshEvents() chỉ gọi GET /events rồi set lại
+   * signal; mọi danh sách đều @for ... track evt.id nên Angular tái dùng node
+   * DOM sẵn có — vị trí cuộn giữ nguyên, modal/popover đang mở không bị đụng
+   * tới vì chúng nằm ở state khác, và không có cờ loading nào bật lên nên
+   * không chớp khung xương.
+   */
+  private static readonly POLL_MS = 30_000;
+
+  private pollTimer?: ReturnType<typeof setInterval>;
+  private pollInFlight = false;
+  private backgroundSyncStarted = false;
+
+  private startBackgroundSyncOnce(): void {
+    // loadAll() chạy lại mỗi lần token refresh; không chặn thì mỗi lần lại đẻ
+    // thêm một setInterval và tần suất gọi API nhân lên theo số lần đăng nhập.
+    if (this.backgroundSyncStarted) return;
+    this.backgroundSyncStarted = true;
+
+    const sync = (): void => {
+      // Nhịp trước chưa về thì bỏ nhịp này. Mạng chậm hơn 30s mà vẫn bắn đều
+      // sẽ dồn thành một hàng request chồng nhau, và cái về sau có thể ghi đè
+      // dữ liệu mới hơn bằng dữ liệu cũ hơn.
+      if (this.pollInFlight || document.hidden) return;
+      this.pollInFlight = true;
+      this.refreshEvents()
+        .catch(() => {
+          // Im lặng có chủ đích: đây là việc chạy ngầm người dùng không yêu
+          // cầu, hiện lỗi mạng ở đây chỉ làm phiền. Nhịp sau sẽ thử lại.
+        })
+        .finally(() => {
+          this.pollInFlight = false;
+        });
+    };
+
+    const start = (): void => {
+      if (this.pollTimer) return;
+      this.pollTimer = setInterval(sync, CalendarStore.POLL_MS);
+    };
+
+    const stop = (): void => {
+      if (!this.pollTimer) return;
+      clearInterval(this.pollTimer);
+      this.pollTimer = undefined;
+    };
+
+    // Tab ẩn thì DỪNG HẲN đồng hồ, không chỉ bỏ qua công việc: trình duyệt vẫn
+    // phải đánh thức timer để rồi không làm gì, còn máy dùng pin thì tốn vô ích.
+    // Quay lại thì fetch NGAY rồi mới đặt lại nhịp — đợi thêm 30 giây nữa mới
+    // cập nhật là đúng lúc người dùng đang nhìn vào màn hình.
+    const onVisibility = (): void => {
+      if (document.hidden) {
+        stop();
+      } else {
+        sync();
+        start();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibility);
+    if (!document.hidden) start();
+
+    this.destroyRef.onDestroy(() => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibility);
     });
   }
 

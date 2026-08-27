@@ -261,8 +261,22 @@
 .event-block {
   --chip-color: #2563eb;
   position: absolute;
-  background: color-mix(in srgb, var(--chip-color) 88%, white);
-  border-left: 3px solid var(--chip-color);
+
+  /* Màu ĐỤC 100%: đúng một mã hex của lịch, không color-mix, không rgba(),
+     không opacity. Trước đây nền là color-mix(chip 88%, white) nên mỗi khối
+     hiện ra nhạt hơn màu lịch thật — hai khối trùng giờ nằm cạnh nhau trông
+     như đã bị hoà vào nền. */
+  --block-bg: var(--chip-color);
+  background-color: var(--block-bg);
+
+  /* Viền trong suốt + background-clip: padding-box tạo khe hở THẬT giữa hai
+     khối kề nhau (nhìn xuyên xuống lưới giờ) mà không phải ghi cứng màu nền
+     của từng theme. Nền chỉ tô tới mép padding nên viền không bị nhuộm màu
+     khối. Cũng là thứ tách hai khối trùng giờ nằm cạnh nhau — chúng cùng màu
+     hồng nên không có khe hở thì trông như một khối liền. */
+  border: 1px solid transparent;
+  background-clip: padding-box;
+
   border-radius: var(--radius-sm);
   padding: 0.15rem 0.4rem;
   color: #fff;
@@ -270,14 +284,18 @@
   cursor: grab;
   z-index: 10;
   box-sizing: border-box;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, filter 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease,
+    border-color 0.15s ease;
 }
 
+/* Nổi khối bằng BÓNG và viền sáng, không dùng filter: brightness() — đổi độ
+   sáng là đổi màu, và người dùng đang rê chuột qua nhiều khối liên tiếp sẽ
+   thấy màu lịch nhấp nháy mỗi lần đi qua. */
 .event-block:hover {
   transform: translateY(-1px) scale(1.012);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  filter: brightness(1.04);
+  border-color: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
   z-index: 12;
 }
 
@@ -285,11 +303,21 @@
   cursor: grabbing;
 }
 
+/*
+ * Quy ước chung: mọi sự kiện đang trùng giờ đều mang MỘT màu hồng cố định,
+ * bất kể thuộc lịch nào.
+ *
+ * Vẫn là một mã hex ĐỤC, không color-mix với --chip-color như cách cũ
+ * (danger 55% + chip). Trộn thì mỗi lịch cho ra một màu khác nhau — xanh lá
+ * thành rgb(131, 94, 54) tức màu nâu, xanh dương thành tím — nên "đang trùng
+ * giờ" không còn là tín hiệu đọc được, mà chỉ giống một lỗi hoà màu. Dùng
+ * chung đúng một màu thì liếc qua là nhận ra ngay.
+ */
 .event-block.conflict {
-  border-left-color: var(--color-danger);
-  outline: 1px dashed var(--color-danger);
-  outline-offset: -1px;
-  background: color-mix(in srgb, var(--color-danger) 55%, var(--chip-color));
+  /* Đổi qua --block-bg chứ không ghi đè background-color: nền của khối chỉ có
+     MỘT nguồn duy nhất, nên sau này thêm trạng thái nào cũng không thể lỡ tay
+     dựng hai lớp nền chồng lên nhau. */
+  --block-bg: var(--color-conflict);
 }
 
 .block-content {
@@ -310,7 +338,10 @@
 
 .block-time {
   font-size: 0.65rem;
-  opacity: 0.9;
+  /* Trắng ĐẶC, không opacity cũng không pha nhạt theo nền: pha xuống 82%
+     chỉ còn 3.5:1 trên nền hồng, dưới ngưỡng AA. Thứ bậc so với tiêu đề đã do
+     cỡ chữ và font-weight lo, không cần mượn tới độ mờ. */
+  color: #fff;
   white-space: nowrap;
 }
 

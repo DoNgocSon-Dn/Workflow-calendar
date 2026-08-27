@@ -70,6 +70,7 @@ function extractErrorMessage(err: unknown, fallback: string): string {
 }
 
 import { convertSolarToLunar } from '../../utils/lunar-calendar';
+import { createMeetingRoomLink } from '../../../../shared/utils/meeting-link.util';
 
 interface DurationPreset {
   labelKey: string;
@@ -541,10 +542,13 @@ export class EventFormModal {
     });
   }
 
+  /** Dùng chung `createMeetingRoomLink()` với nút tạo phòng họp bên tab Lịch
+   *  Nhóm — hai chỗ cùng sinh ra một dạng link thì người dùng không phải đoán
+   *  chỗ nào cho ra loại phòng gì. Bản cũ tự ghép chuỗi bằng `Math.random()`,
+   *  vừa lệch định dạng vừa không đủ ngẫu nhiên cho một link ai có cũng vào
+   *  được (xem chú thích trong util). */
   generateVideoCallLink(): void {
-    const roomName = 'Meet-' + Math.random().toString(36).substring(2, 9);
-    const link = `https://meet.jit.si/${roomName}`;
-    this.form.patchValue({ meetLink: link });
+    this.form.patchValue({ meetLink: createMeetingRoomLink() });
   }
 
   removeMeetLink(): void {
