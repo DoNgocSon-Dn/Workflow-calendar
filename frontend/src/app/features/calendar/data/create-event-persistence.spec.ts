@@ -53,7 +53,7 @@ describe('CalendarStore.createEvent — chỉ coi là xong khi backend đã lưu
             joinCalendar: () => undefined,
           },
         },
-        { provide: GroupStore, useValue: { loadGroups: () => Promise.resolve() } },
+        { provide: GroupStore, useValue: { loadGroups: () => Promise.resolve(), groups: () => [] } },
         { provide: NotificationService, useValue: { ingest: () => undefined } },
         {
           provide: SUPABASE_CLIENT,

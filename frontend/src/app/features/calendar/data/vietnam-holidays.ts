@@ -1,11 +1,17 @@
 import { HOLIDAYS } from '../../../data/holidays.data';
 import { CalendarDef, CalendarEvent } from '../models/calendar.models';
-import { holidayCalendarType, resolveOccurrenceDatesForYear } from '../utils/holiday-resolver';
+import {
+  holidayCalendarType,
+  holidayTitle,
+  resolveOccurrenceDatesForYear,
+} from '../utils/holiday-resolver';
 
 export const VN_HOLIDAY_CALENDAR_ID = 'vn-holidays';
 
 export const VN_HOLIDAY_CALENDAR_DEF: CalendarDef = {
   id: VN_HOLIDAY_CALENDAR_ID,
+  // Display label is localised at each surface via `calendar.vnHolidaysName`
+  // (calendar-store rewrites this before exposing `otherCalendars`).
   name: 'Ngày lễ ở Việt Nam',
   color: 'green',
   // Lịch dựng sẵn, không nằm trên server — không ai thêm sự kiện vào đây được,
@@ -28,7 +34,10 @@ const EVENT_ID_SEPARATOR = '::';
  * `calendarType` gắn theo `holidayCalendarType(holiday)` (suy từ `dateRule.kind`),
  * để "Lịch Dương" / "Lịch Âm" lọc được mà không cần đoán theo tên.
  */
-export function buildVietnamHolidayEvents(years: readonly number[]): CalendarEvent[] {
+export function buildVietnamHolidayEvents(
+  years: readonly number[],
+  locale = 'vi',
+): CalendarEvent[] {
   const events: CalendarEvent[] = [];
 
   for (const holiday of HOLIDAYS) {
@@ -45,7 +54,7 @@ export function buildVietnamHolidayEvents(years: readonly number[]): CalendarEve
       const end = new Date(dates[dates.length - 1]);
       end.setDate(end.getDate() + 1);
 
-      const resolvedTitle = holiday.content.title
+      const resolvedTitle = holidayTitle(holiday, locale)
         .replace(/\{year\}/g, String(year))
         .replace(/\{nextYear\}/g, String(year + 1));
 

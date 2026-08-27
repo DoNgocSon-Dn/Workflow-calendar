@@ -3,6 +3,15 @@
    không khớp với phần còn lại của app dù nội bộ có nhất quán với nhau, nhìn
    vẫn lệch "gu" so với mọi modal khác. */
 
+/* Dùng chung cho mọi "45/200" đặt ngay dưới một input/textarea trong cột dọc
+   (task, sửa nhóm, tiêu đề họp...) — kéo sát lên input phía trên thay vì lấy
+   nguyên khoảng gap mặc định của khối cha, rồi đẩy sang phải cho khỏi lẫn với
+   chữ nhập. */
+.field-counter {
+  align-self: flex-end;
+  margin-top: -6px;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;

@@ -50,6 +50,7 @@
             [value]="editName()"
             (input)="editName.set($any($event.target).value)"
           />
+          <app-char-counter class="field-counter" [current]="editName().length" [max]="100" />
           <input
             type="text"
             class="text-input"
@@ -58,6 +59,7 @@
             [value]="editDescription()"
             (input)="editDescription.set($any($event.target).value)"
           />
+          <app-char-counter class="field-counter" [current]="editDescription().length" [max]="500" />
           <div class="color-picker" role="radiogroup" aria-label="Màu nhóm">
             @for (c of groupColors; track c) {
               <button
@@ -145,6 +147,7 @@
                   [value]="taskTitle()"
                   (input)="taskTitle.set($any($event.target).value)"
                 />
+                <app-char-counter class="field-counter" [current]="taskTitle().length" [max]="200" />
                 <input
                   type="text"
                   class="text-input"
@@ -153,6 +156,7 @@
                   [value]="taskDescription()"
                   (input)="taskDescription.set($any($event.target).value)"
                 />
+                <app-char-counter class="field-counter" [current]="taskDescription().length" [max]="2000" />
                 <div class="form-row">
                   <div class="assignee-picker">
                     <button type="button" class="assignee-picker-btn" aria-haspopup="listbox" [attr.aria-expanded]="assigneeMenuOpen()" (click)="toggleAssigneeMenu()">
@@ -724,6 +728,7 @@
                             (input)="onEditInput($event)"
                             (keydown)="onEditKeydown($event, msg)"
                           ></textarea>
+                          <app-char-counter [current]="editingText().length" [max]="2000" />
                           <button type="button" class="btn-mini" (click)="saveEditMessage(msg)">Lưu</button>
                           <button type="button" class="btn-mini btn-mini-ghost" (click)="cancelEditMessage()">Hủy</button>
                         </div>
@@ -815,6 +820,7 @@
                   (blur)="onChatBlur()"
                 ></textarea>
               </div>
+              <app-char-counter [current]="chatMessage().length" [max]="2000" />
               <button
                 type="button"
                 class="btn btn-primary"
@@ -858,6 +864,7 @@
                 [value]="meetTitle()"
                 (input)="meetTitle.set($any($event.target).value)"
               />
+              <app-char-counter class="field-counter" [current]="meetTitle().length" [max]="200" />
 
               <label class="meet-label">Thời gian bắt đầu</label>
               <div class="meet-schedule">

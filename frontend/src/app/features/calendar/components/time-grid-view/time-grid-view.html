@@ -1,5 +1,5 @@
 <div class="time-grid">
-  <div class="day-header-row" [style.padding-right.px]="scrollbarWidth()">
+  <div class="day-header-row" #dayHeaderRow [style.padding-right.px]="scrollbarWidth()">
     <div class="gutter-spacer gutter-spacer--lunar">{{ i18n.t('calendar.lunarShort') }}</div>
     @for (day of days(); track day.getTime()) {
       @let holiday = holidayFor(day);
@@ -21,18 +21,18 @@
             type="button"
             class="holiday-badge"
             [class.national-day]="h.id === 'national-day'"
-            [title]="i18n.t('calendar.holidayGridTooltip', { name: h.name })"
-            [attr.aria-label]="i18n.t('calendar.holidayGridTooltip', { name: h.name })"
+            [title]="i18n.t('calendar.holidayGridTooltip', { name: holidayLabel(h) })"
+            [attr.aria-label]="i18n.t('calendar.holidayGridTooltip', { name: holidayLabel(h) })"
             (click)="openHoliday(day, $event)"
           >
-            {{ h.name }}
+            {{ holidayLabel(h) }}
           </button>
         }
       </div>
     }
   </div>
 
-  <div class="all-day-row" [style.padding-right.px]="scrollbarWidth()">
+  <div class="all-day-row" #allDayRow [style.padding-right.px]="scrollbarWidth()">
     <div class="gutter-spacer">{{ i18n.t('calendar.allDay') }}</div>
     @for (day of days(); track day.getTime()) {
       <div class="all-day-cell" (click)="onAllDayCellClick(day)">
@@ -50,7 +50,7 @@
     }
   </div>
 
-  <div class="scroll-area" #scrollContainer>
+  <div class="scroll-area" #scrollContainer (scroll)="onGridScroll($event)">
     <div class="grid-body" [style.height.px]="DAY_HEIGHT">
       <div class="gutter">
         @for (h of hours; track h) {

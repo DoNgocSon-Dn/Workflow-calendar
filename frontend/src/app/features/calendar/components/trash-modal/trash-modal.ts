@@ -1,13 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
 import { CalendarStore } from '../../data/calendar-store';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 import { CalendarEvent } from '../../models/calendar.models';
-
-const DATE_TIME = new Intl.DateTimeFormat('vi-VN', {
-  day: 'numeric',
-  month: 'short',
-  hour: '2-digit',
-  minute: '2-digit',
-});
 
 @Component({
   selector: 'app-trash-modal',
@@ -17,6 +11,17 @@ const DATE_TIME = new Intl.DateTimeFormat('vi-VN', {
 })
 export class TrashModal {
   private readonly store = inject(CalendarStore);
+  protected readonly i18n = inject(TranslationService);
+
+  private readonly dateTime = computed(
+    () =>
+      new Intl.DateTimeFormat(this.i18n.t('common.dateLocale'), {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+  );
 
   readonly closed = output<void>();
 
@@ -36,18 +41,18 @@ export class TrashModal {
     try {
       this.items.set(await this.store.listTrash());
     } catch {
-      this.error.set('Không tải được thùng rác, vui lòng thử lại.');
+      this.error.set(this.i18n.t("trash.loadError"));
     } finally {
       this.loading.set(false);
     }
   }
 
   eventRange(evt: CalendarEvent): string {
-    return `${DATE_TIME.format(evt.start)} – ${DATE_TIME.format(evt.end)}`;
+    return `${this.dateTime().format(evt.start)} – ${this.dateTime().format(evt.end)}`;
   }
 
   deletedAtLabel(evt: CalendarEvent): string {
-    return evt.deletedAt ? DATE_TIME.format(evt.deletedAt) : '';
+    return evt.deletedAt ? this.dateTime().format(evt.deletedAt) : '';
   }
 
   async restore(id: string): Promise<void> {
@@ -56,7 +61,7 @@ export class TrashModal {
       await this.store.restoreEvent(id);
       this.items.update((list) => list.filter((e) => e.id !== id));
     } catch {
-      this.error.set('Khôi phục thất bại, vui lòng thử lại.');
+      this.error.set(this.i18n.t("trash.restoreError"));
     } finally {
       this.busyId.set(null);
     }
@@ -76,7 +81,7 @@ export class TrashModal {
       await this.store.permanentlyDeleteEvent(id);
       this.items.update((list) => list.filter((e) => e.id !== id));
     } catch {
-      this.error.set('Xoá vĩnh viễn thất bại, vui lòng thử lại.');
+      this.error.set(this.i18n.t("trash.deleteError"));
     } finally {
       this.confirmingId.set(null);
       this.busyId.set(null);

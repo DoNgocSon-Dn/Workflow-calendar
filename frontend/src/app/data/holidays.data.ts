@@ -23,6 +23,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'tet-nguyen-dan',
     name: 'Tết Nguyên Đán',
+    nameEn: 'Lunar New Year (Tết)',
     priority: 5,
     type: 'le-lon',
     officialHoliday: true,
@@ -52,6 +53,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'national-day',
     name: 'Quốc khánh Việt Nam',
+    nameEn: 'Vietnam National Day',
     priority: 15,
     type: 'le-lon',
     officialHoliday: true,
@@ -78,6 +80,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'reunification-day',
     name: 'Giải phóng miền Nam',
+    nameEn: 'Reunification Day',
     priority: 30,
     type: 'le-lon',
     officialHoliday: true,
@@ -106,6 +109,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'labor-day',
     name: 'Quốc tế Lao động',
+    nameEn: 'International Labor Day',
     priority: 65,
     type: 'quoc-te',
     officialHoliday: true,
@@ -132,6 +136,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'teachers-day',
     name: 'Ngày Nhà giáo Việt Nam',
+    nameEn: "Vietnamese Teachers' Day",
     priority: 60,
     type: 'ky-niem',
     popupEnabled: true,
@@ -156,6 +161,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'womens-day',
     name: 'Ngày Quốc tế Phụ nữ',
+    nameEn: "International Women's Day",
     priority: 60,
     type: 'quoc-te',
     dateRule: { kind: 'fixed', month: 3, day: 8 },
@@ -179,6 +185,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'vietnamese-womens-day',
     name: 'Ngày Phụ nữ Việt Nam',
+    nameEn: "Vietnamese Women's Day",
     priority: 60,
     type: 'ky-niem',
     dateRule: { kind: 'fixed', month: 10, day: 20 },
@@ -219,6 +226,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'mid-autumn',
     name: 'Tết Trung Thu',
+    nameEn: 'Mid-Autumn Festival',
     priority: 45,
     type: 'le-hoi',
     popupEnabled: true,
@@ -287,6 +295,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'childrens-day',
     name: 'Ngày Quốc tế Thiếu nhi',
+    nameEn: "International Children's Day",
     priority: 65,
     type: 'quoc-te',
     dateRule: { kind: 'fixed', month: 6, day: 1 },
@@ -310,6 +319,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'new-year',
     name: 'Tết Dương Lịch',
+    nameEn: "New Year's Day",
     priority: 40,
     officialHoliday: true,
     popupEnabled: true,
@@ -356,6 +366,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'army-day',
     name: 'Ngày thành lập Quân đội Nhân dân Việt Nam',
+    nameEn: "Vietnam People's Army Foundation Day",
     priority: 55,
     type: 'ky-niem',
     dateRule: { kind: 'fixed', month: 12, day: 22 },
@@ -382,6 +393,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'student-day',
     name: 'Ngày Sinh viên - Học sinh Việt Nam',
+    nameEn: "Vietnamese Students' Day",
     priority: 85,
     type: 'ky-niem',
     dateRule: { kind: 'fixed', month: 1, day: 9 },
@@ -390,6 +402,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'party-founding-day',
     name: 'Ngày thành lập Đảng Cộng sản Việt Nam',
+    nameEn: 'Founding of the Communist Party of Vietnam',
     priority: 45,
     type: 'ky-niem',
     dateRule: { kind: 'fixed', month: 2, day: 3 },
@@ -401,6 +414,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'vietnamese-doctors-day',
     name: 'Ngày Thầy thuốc Việt Nam',
+    nameEn: "Vietnamese Doctors' Day",
     priority: 85,
     type: 'ky-niem',
     dateRule: { kind: 'fixed', month: 2, day: 27 },
@@ -409,6 +423,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'youth-union-day',
     name: 'Ngày thành lập Đoàn TNCS Hồ Chí Minh',
+    nameEn: 'Ho Chi Minh Communist Youth Union Day',
     priority: 82,
     type: 'ky-niem',
     dateRule: { kind: 'fixed', month: 3, day: 26 },
@@ -417,6 +432,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'april-fools',
     name: 'Cá tháng Tư',
+    nameEn: "April Fools' Day",
     priority: 90,
     type: 'le-hoi',
     dateRule: { kind: 'fixed', month: 4, day: 1 },
@@ -425,6 +441,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'book-day',
     name: 'Ngày Sách và Văn hóa đọc Việt Nam',
+    nameEn: 'Vietnam Book and Reading Culture Day',
     priority: 88,
     type: 'ky-niem',
     dateRule: { kind: 'fixed', month: 4, day: 21 },
@@ -433,6 +450,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'dien-bien-phu',
     name: 'Ngày Chiến thắng Điện Biên Phủ',
+    nameEn: 'Dien Bien Phu Victory Day',
     priority: 50,
     type: 'le-lon',
     dateRule: { kind: 'fixed', month: 5, day: 7 },
@@ -441,6 +459,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'children-team-day',
     name: 'Ngày thành lập Đội TNTP Hồ Chí Minh',
+    nameEn: 'Ho Chi Minh Young Pioneers Day',
     priority: 86,
     type: 'ky-niem',
     dateRule: { kind: 'fixed', month: 5, day: 15 },
@@ -449,6 +468,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'ho-chi-minh-birthday',
     name: 'Ngày sinh Chủ tịch Hồ Chí Minh',
+    nameEn: "President Ho Chi Minh's Birthday",
     priority: 42,
     type: 'le-lon',
     dateRule: { kind: 'fixed', month: 5, day: 19 },
@@ -457,6 +477,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'press-day',
     name: 'Ngày Báo chí Cách mạng Việt Nam',
+    nameEn: 'Vietnam Revolutionary Press Day',
     priority: 78,
     type: 'ky-niem',
     dateRule: { kind: 'fixed', month: 6, day: 21 },
@@ -465,6 +486,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'vietnam-family-day',
     name: 'Ngày Gia đình Việt Nam',
+    nameEn: 'Vietnamese Family Day',
     priority: 84,
     type: 'ky-niem',
     dateRule: { kind: 'fixed', month: 6, day: 28 },
@@ -473,6 +495,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'world-population-day',
     name: 'Ngày Dân số Thế giới',
+    nameEn: 'World Population Day',
     priority: 92,
     type: 'quoc-te',
     dateRule: { kind: 'fixed', month: 7, day: 11 },
@@ -481,6 +504,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'war-invalids-martyrs-day',
     name: 'Ngày Thương binh, Liệt sĩ',
+    nameEn: "War Invalids and Martyrs' Day",
     priority: 58,
     type: 'ky-niem',
     dateRule: { kind: 'fixed', month: 7, day: 27 },
@@ -489,6 +513,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'trade-union-day',
     name: 'Ngày thành lập Công đoàn Việt Nam',
+    nameEn: 'Vietnam Trade Union Foundation Day',
     priority: 83,
     type: 'ky-niem',
     dateRule: { kind: 'fixed', month: 7, day: 28 },
@@ -497,6 +522,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'august-revolution',
     name: 'Ngày Cách mạng tháng Tám thành công',
+    nameEn: 'August Revolution Day',
     priority: 48,
     type: 'le-lon',
     dateRule: { kind: 'fixed', month: 8, day: 19 },
@@ -505,6 +531,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'vietnam-fatherland-front',
     name: 'Ngày thành lập Mặt trận Tổ quốc Việt Nam',
+    nameEn: 'Vietnam Fatherland Front Foundation Day',
     priority: 87,
     type: 'ky-niem',
     dateRule: { kind: 'fixed', month: 9, day: 10 },
@@ -516,6 +543,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'elderly-day',
     name: 'Ngày Quốc tế Người cao tuổi',
+    nameEn: 'International Day of Older Persons',
     priority: 89,
     type: 'quoc-te',
     dateRule: { kind: 'fixed', month: 10, day: 1 },
@@ -524,6 +552,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'hanoi-liberation-day',
     name: 'Ngày Giải phóng Thủ đô',
+    nameEn: 'Liberation Day of the Capital (Hanoi)',
     priority: 52,
     type: 'ky-niem',
     dateRule: { kind: 'fixed', month: 10, day: 10 },
@@ -532,6 +561,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'vietnam-entrepreneurs-day',
     name: 'Ngày Doanh nhân Việt Nam',
+    nameEn: "Vietnamese Entrepreneurs' Day",
     priority: 81,
     type: 'ky-niem',
     dateRule: { kind: 'fixed', month: 10, day: 13 },
@@ -540,6 +570,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'vietnam-law-day',
     name: 'Ngày Pháp luật Việt Nam',
+    nameEn: 'Vietnam Law Day',
     priority: 91,
     type: 'ky-niem',
     dateRule: { kind: 'fixed', month: 11, day: 9 },
@@ -548,6 +579,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'red-cross-day',
     name: 'Ngày thành lập Hội Chữ thập đỏ Việt Nam',
+    nameEn: 'Vietnam Red Cross Foundation Day',
     priority: 86,
     type: 'ky-niem',
     dateRule: { kind: 'fixed', month: 11, day: 23 },
@@ -556,6 +588,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'world-aids-day',
     name: 'Ngày Thế giới phòng chống AIDS',
+    nameEn: 'World AIDS Day',
     priority: 93,
     type: 'quoc-te',
     dateRule: { kind: 'fixed', month: 12, day: 1 },
@@ -569,6 +602,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'than-tai',
     name: 'Ngày Vía Thần Tài',
+    nameEn: 'God of Wealth Day',
     priority: 79,
     type: 'le-hoi',
     dateRule: { kind: 'lunar', month: 1, day: 10 },
@@ -577,6 +611,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'nguyen-tieu',
     name: 'Tết Nguyên Tiêu',
+    nameEn: 'Lantern Festival (Nguyên Tiêu)',
     priority: 77,
     type: 'le-hoi',
     dateRule: { kind: 'lunar', month: 1, day: 15 },
@@ -585,6 +620,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'han-thuc',
     name: 'Tết Hàn Thực',
+    nameEn: 'Cold Food Festival (Hàn Thực)',
     priority: 88,
     type: 'le-hoi',
     dateRule: { kind: 'lunar', month: 3, day: 3 },
@@ -593,6 +629,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'hung-kings',
     name: 'Giỗ Tổ Hùng Vương',
+    nameEn: 'Hung Kings Commemoration Day',
     priority: 35,
     type: 'le-lon',
     officialHoliday: true,
@@ -621,6 +658,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'vesak',
     name: 'Lễ Phật Đản',
+    nameEn: 'Vesak (Buddha Day)',
     priority: 68,
     type: 'le-hoi',
     dateRule: { kind: 'lunar', month: 4, day: 15 },
@@ -629,6 +667,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'doan-ngo',
     name: 'Tết Đoan Ngọ',
+    nameEn: 'Doan Ngo Festival',
     priority: 76,
     type: 'le-hoi',
     dateRule: { kind: 'lunar', month: 5, day: 5 },
@@ -637,6 +676,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'vu-lan',
     name: 'Lễ Vu Lan',
+    nameEn: 'Vu Lan (Ghost Festival)',
     priority: 66,
     type: 'le-hoi',
     dateRule: { kind: 'lunar', month: 7, day: 15 },
@@ -645,6 +685,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'double-ninth',
     name: 'Tết Trùng Cửu',
+    nameEn: 'Double Ninth Festival',
     priority: 90,
     type: 'le-hoi',
     dateRule: { kind: 'lunar', month: 9, day: 9 },
@@ -653,6 +694,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'double-tenth',
     name: 'Tết Trùng Thập',
+    nameEn: 'Double Tenth Festival',
     priority: 91,
     type: 'le-hoi',
     dateRule: { kind: 'lunar', month: 10, day: 10 },
@@ -661,6 +703,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'ha-nguyen',
     name: 'Lễ Hạ Nguyên',
+    nameEn: 'Ha Nguyen Festival',
     priority: 92,
     type: 'le-hoi',
     dateRule: { kind: 'lunar', month: 10, day: 15 },
@@ -669,6 +712,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'tao-quan',
     name: 'Ông Công, Ông Táo',
+    nameEn: 'Kitchen Gods Day',
     priority: 47,
     type: 'le-hoi',
     dateRule: { kind: 'lunar', month: 12, day: 23 },
@@ -677,6 +721,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'tat-nien',
     name: 'Tất niên (Đêm Giao thừa)',
+    nameEn: "Lunar New Year's Eve (Tất niên)",
     priority: 44,
     type: 'le-lon',
     dateRule: { kind: 'lunar-month-end', month: 12 },

@@ -1,8 +1,8 @@
 <div class="backdrop" (click)="onBackdropClick($event)">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="trash-modal-title">
     <header class="modal-header">
-      <h2 id="trash-modal-title">Thùng rác</h2>
-      <button type="button" class="icon-btn" aria-label="Đóng" (click)="cancel()">
+      <h2 id="trash-modal-title">{{ i18n.t('trash.title') }}</h2>
+      <button type="button" class="icon-btn" [attr.aria-label]="i18n.t('common.close')" (click)="cancel()">
         <svg viewBox="0 0 24 24" width="20" height="20">
           <path fill="currentColor"
             d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
@@ -16,9 +16,9 @@
       }
 
       @if (loading()) {
-        <p class="hint-text">Đang tải…</p>
+        <p class="hint-text">{{ i18n.t('trash.loading') }}</p>
       } @else if (items().length === 0) {
-        <p class="empty-hint">Thùng rác trống.</p>
+        <p class="empty-hint">{{ i18n.t('trash.empty') }}</p>
       } @else {
         <ul class="trash-list">
           @for (evt of items(); track evt.id) {
@@ -26,7 +26,7 @@
               <div class="trash-info">
                 <span class="trash-title">{{ evt.title }}</span>
                 <span class="trash-meta">
-                  {{ eventRange(evt) }} · Đã xoá lúc {{ deletedAtLabel(evt) }}
+                  {{ eventRange(evt) }} · {{ i18n.t('trash.deletedAt', { time: deletedAtLabel(evt) }) }}
                 </span>
               </div>
               <div class="trash-actions">
@@ -36,7 +36,7 @@
                   [disabled]="busyId() === evt.id"
                   (click)="restore(evt.id)"
                 >
-                  Khôi phục
+                  {{ i18n.t('trash.restore') }}
                 </button>
                 <button
                   type="button"
@@ -44,7 +44,7 @@
                   [disabled]="busyId() === evt.id"
                   (click)="requestPermanentDelete(evt.id)"
                 >
-                  {{ confirmingId() === evt.id ? 'Bấm lần nữa để xoá hẳn' : 'Xoá vĩnh viễn' }}
+                  {{ confirmingId() === evt.id ? i18n.t('trash.confirmDelete') : i18n.t('trash.deleteForever') }}
                 </button>
               </div>
             </li>

@@ -1,21 +1,21 @@
 import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { CalendarStore } from '../../data/calendar-store';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 import { CALENDAR_COLOR_HEX, CalendarColor } from '../../models/calendar.models';
+import { CharCounter } from '../../../../shared/components/char-counter/char-counter';
 
 const CALENDAR_COLORS = Object.keys(CALENDAR_COLOR_HEX) as CalendarColor[];
 
-function extractErrorMessage(err: unknown): string {
+function extractErrorMessage(err: unknown, i18n: TranslationService): string {
   if (err instanceof HttpErrorResponse) {
-    if (err.status === 0) {
-      return 'Không kết nối được tới server, vui lòng kiểm tra lại và thử lại.';
-    }
+    if (err.status === 0) return i18n.t('createCal.networkError');
     const inner = err.error as { message?: string | string[] } | undefined;
     const msg = inner?.message;
     if (Array.isArray(msg)) return msg.join(', ');
     if (typeof msg === 'string') return msg;
   }
-  return 'Không thể tạo lịch nhóm. Vui lòng thử lại.';
+  return i18n.t('createCal.error');
 }
 
 @Component({
@@ -23,9 +23,11 @@ function extractErrorMessage(err: unknown): string {
   templateUrl: './create-calendar-modal.html',
   styleUrl: './create-calendar-modal.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CharCounter],
 })
 export class CreateCalendarModal {
   private readonly store = inject(CalendarStore);
+  protected readonly i18n = inject(TranslationService);
 
   protected readonly colorHex = CALENDAR_COLOR_HEX;
   protected readonly colors = CALENDAR_COLORS;
@@ -53,7 +55,7 @@ export class CreateCalendarModal {
       this.created.emit({ calendarId: calendar.id, calendarName: calendar.name });
       this.closed.emit();
     } catch (err) {
-      this.error.set(extractErrorMessage(err));
+      this.error.set(extractErrorMessage(err, this.i18n));
     } finally {
       this.creating.set(false);
     }

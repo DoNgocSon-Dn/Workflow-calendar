@@ -125,17 +125,10 @@ export interface HolidayTheme {
   readonly backgroundImage?: string;
 }
 
-/** Optional badge shown under the motif. */
+/** Optional badge shown under the motif. `HolidayType` → display label is
+ *  resolved per-locale via i18n keys (`holiday.typeLeLon` …) at each surface
+ *  that renders the badge; there is no hard-coded label map. */
 export type HolidayType = 'le-lon' | 'ky-niem' | 'quoc-te' | 'le-hoi';
-
-/** Vietnamese label for each `HolidayType` — shared by every surface that
- *  renders the badge (auto-popup, calendar event info card, ...). */
-export const HOLIDAY_TYPE_LABEL: Record<HolidayType, string> = {
-  'le-lon': 'Lễ lớn',
-  'ky-niem': 'Ngày kỷ niệm',
-  'quoc-te': 'Ngày quốc tế',
-  'le-hoi': 'Lễ hội',
-};
 
 export interface HolidayContent {
   /** Supports `{year}` / `{nextYear}` placeholders, resolved at render time. */
@@ -156,6 +149,9 @@ export interface Holiday {
    *  `content.title`, which is festive popup copy (e.g. "Chúc Mừng Năm
    *  Mới") and not always suitable outside the popup. */
   readonly name: string;
+  /** English variant of `name`, shown when the app language is English.
+   *  Falls back to `name` when omitted. Resolve via `holidayName()`. */
+  readonly nameEn?: string;
   readonly priority: HolidayPriority;
   readonly dateRule: HolidayDateRule;
   readonly type?: HolidayType;

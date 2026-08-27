@@ -422,41 +422,28 @@
   }
 }
 
-/* Điện thoại: 3 cụm .left/.center/.right nhồi chung một hàng thì tràn/vỡ
-   dòng lung tung (search box, view-dropdown, app-switch, avatar chen nhau).
-   Xếp lại thành 2 hàng RÕ RÀNG bằng order + flex-basis, không đổi thứ tự
-   trong DOM — .left (menu + logo) một hàng, .center (điều hướng ngày) và
-   .right (tìm kiếm + tiện ích) dồn xuống hàng dưới, canh phải/trái để không
-   còn khoảng trắng lệch lạc. Không ẩn bớt chức năng nào, chỉ đổi cách gói. */
+/* Điện thoại: .right gộp 5 phần tử (ô tìm kiếm + 4 nút tiện ích) trên MỘT
+   hàng không cho wrap (`nowrap` mặc định) — cộng dồn thừa bề ngang ở màn hẹp,
+   ô tìm kiếm bị ép co gần về 0 hoặc cả cụm tràn ra ngoài viewport. Cho .right
+   tự xuống dòng NỘI BỘ: ô tìm kiếm chiếm trọn một hàng riêng (order: -1 đưa
+   nó lên trước), cụm nút tiện ích rơi xuống hàng dưới — không đụng tới
+   .left/.center nên không ảnh hưởng độ cao header mà app-calendar-sidebar
+   (breakpoint 720px ở trên) đang giả định. */
 @media (max-width: 640px) {
   .topbar {
     padding: 0.5rem 0.75rem;
-    gap: 0.5rem;
-    row-gap: 0.6rem;
-  }
-
-  .left {
-    order: 1;
-  }
-
-  .center {
-    order: 3;
-    flex-basis: 100%;
-    justify-content: center;
-    gap: 0.35rem;
+    gap: 0.5rem 0.5rem;
+    row-gap: 0.5rem;
   }
 
   .right {
-    order: 2;
-    flex-basis: 100%;
-    margin-left: 0;
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
     justify-content: flex-end;
   }
 
-  /* Ô tìm kiếm không còn phải chia hàng với 5-6 nút khác nữa (đã xuống hàng
-     riêng cùng .right) nên co giãn thoải mái thay vì bị ép còn 140px. */
   .search-box {
-    flex: 1 1 auto;
+    flex: 1 1 100%;
     order: -1;
   }
 

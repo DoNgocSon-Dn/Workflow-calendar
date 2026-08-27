@@ -1,17 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
 import { NotificationQueue } from '../../../../core/realtime/notification-queue';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 
-interface SnoozeOption {
-  readonly minutes: number;
-  readonly label: string;
-}
-
-const SNOOZE_OPTIONS: readonly SnoozeOption[] = [
-  { minutes: 5, label: '5 phút' },
-  { minutes: 10, label: '10 phút' },
-  { minutes: 30, label: '30 phút' },
-  { minutes: 60, label: '1 giờ' },
-];
+const SNOOZE_MINUTES: readonly number[] = [5, 10, 30, 60];
 
 /** Phải khớp thời lượng animation `toastOut` trong CSS — card chỉ bị gỡ khỏi
  *  hàng đợi sau khi đã lùi hẳn vào chiều sâu, nếu không nó biến mất đột ngột. */
@@ -32,10 +23,19 @@ const FEEDBACK_MS = 160;
 })
 export class NotificationPopup {
   protected readonly notificationQueue = inject(NotificationQueue);
+  protected readonly i18n = inject(TranslationService);
 
   readonly viewDetail = output<string>();
 
-  protected readonly snoozeOptions = SNOOZE_OPTIONS;
+  protected readonly snoozeOptions = computed(() =>
+    SNOOZE_MINUTES.map((minutes) => ({
+      minutes,
+      label:
+        minutes < 60
+          ? this.i18n.t('snooze.minutes', { n: minutes })
+          : this.i18n.t('snooze.hours', { n: minutes / 60 }),
+    })),
+  );
 
   /** Id toast đang mở menu hoãn. Mở menu cũng phải GIỮ đồng hồ lại, không thì
    *  card tự tắt ngay lúc người dùng đang chọn thời lượng. */

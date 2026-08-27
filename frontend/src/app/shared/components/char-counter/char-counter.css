@@ -1,0 +1,19 @@
+:host {
+  display: inline-flex;
+}
+
+.char-counter {
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.char-counter--warn {
+  color: var(--color-warning);
+}
+
+.char-counter--max {
+  color: var(--color-danger);
+  font-weight: 600;
+}

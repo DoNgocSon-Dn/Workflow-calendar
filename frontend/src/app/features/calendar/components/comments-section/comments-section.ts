@@ -12,7 +12,9 @@ import { FormsModule } from '@angular/forms';
 import { AuthStore } from '../../../../core/auth/auth-store';
 import { RealtimeService } from '../../../../core/realtime/realtime.service';
 import { CalendarStore } from '../../data/calendar-store';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 import { EventComment } from '../../models/calendar.models';
+import { CharCounter } from '../../../../shared/components/char-counter/char-counter';
 
 interface CommentCreatedPayload {
   eventId: string;
@@ -29,12 +31,13 @@ interface CommentDeletedPayload {
   templateUrl: './comments-section.html',
   styleUrl: './comments-section.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [FormsModule, CharCounter],
 })
 export class CommentsSection {
   private readonly store = inject(CalendarStore);
   private readonly authStore = inject(AuthStore);
   private readonly realtime = inject(RealtimeService);
+  protected readonly i18n = inject(TranslationService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly eventId = input.required<string>();

@@ -12,6 +12,20 @@ export function holidayCalendarType(holiday: Holiday): CalendarType {
   return holiday.dateRule.kind.startsWith('lunar') ? 'lunar' : 'solar';
 }
 
+/** Plain badge/row/tooltip label for `holiday`, in the given app locale.
+ *  Falls back to the Vietnamese `name` when no `nameEn` is defined. */
+export function holidayName(holiday: Holiday, locale: string): string {
+  return locale === 'en' && holiday.nameEn ? holiday.nameEn : holiday.name;
+}
+
+/** Festive popup/reference-calendar title for `holiday`, in the given app
+ *  locale, with `{year}` / `{nextYear}` still unresolved. Falls back to the
+ *  Vietnamese `content.title` when no `titleEn` is defined. */
+export function holidayTitle(holiday: Holiday, locale: string): string {
+  const c = holiday.content;
+  return locale === 'en' && c.titleEn ? c.titleEn : c.title;
+}
+
 /**
  * Single shared "which holidays fall on this day" query — every surface that
  * needs holiday info (popup, theme engine, calendar-grid badges, agenda view,

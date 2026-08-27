@@ -90,7 +90,7 @@
                   <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
                     <div>
                       <span style="font-size: 0.82rem; font-weight: 700; color: var(--color-text-tertiary); display: block; margin-bottom: 0.2rem; text-transform: uppercase; letter-spacing: 0.04em;">
-                        🎂 Ngày sinh của bạn
+                        🎂 {{ i18n.t('settings.dobHeading') }}
                       </span>
                       @if (formattedDob(); as dobStr) {
                         <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
@@ -100,7 +100,7 @@
                         </div>
                       } @else {
                         <span style="font-size: 0.88rem; color: var(--color-text-secondary); font-style: italic;">
-                          Chưa ghi nhận (Đăng nhập Google để tự động đồng bộ)
+                          {{ i18n.t('settings.dobEmpty') }}
                         </span>
                       }
                     </div>
@@ -111,7 +111,7 @@
                       style="background: transparent; border: 1px solid var(--color-border); color: var(--color-text-secondary); padding: 0.35rem 0.75rem; font-size: 0.8rem; font-weight: 600;"
                       (click)="editingDob.set(!editingDob())"
                     >
-                      {{ editingDob() ? 'Đóng' : (formattedDob() ? 'Thay đổi' : 'Thêm ngày sinh') }}
+                      {{ editingDob() ? i18n.t('common.close') : (formattedDob() ? i18n.t('settings.dobChange') : i18n.t('settings.dobAdd')) }}
                     </button>
                   </div>
 
@@ -119,7 +119,7 @@
                     <div class="dob-picker-container" style="margin-top: 0.75rem; background: var(--color-surface); padding: 0.85rem; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md);">
                       <div class="dob-select-grid" style="display: grid; grid-template-columns: 1fr 1.2fr 1.1fr; gap: 0.5rem; margin-bottom: 0.75rem;">
                         <div class="select-wrapper">
-                          <label for="dob-day-select" style="font-size: 0.75rem; font-weight: 600; color: var(--color-text-secondary); display: block; margin-bottom: 0.25rem;">Ngày</label>
+                          <label for="dob-day-select" style="font-size: 0.75rem; font-weight: 600; color: var(--color-text-secondary); display: block; margin-bottom: 0.25rem;">{{ i18n.t("settings.dobDay") }}</label>
                           <select
                             id="dob-day-select"
                             class="dob-select"
@@ -133,21 +133,21 @@
                         </div>
 
                         <div class="select-wrapper">
-                          <label for="dob-month-select" style="font-size: 0.75rem; font-weight: 600; color: var(--color-text-secondary); display: block; margin-bottom: 0.25rem;">Tháng</label>
+                          <label for="dob-month-select" style="font-size: 0.75rem; font-weight: 600; color: var(--color-text-secondary); display: block; margin-bottom: 0.25rem;">{{ i18n.t("settings.dobMonth") }}</label>
                           <select
                             id="dob-month-select"
                             class="dob-select"
                             [value]="selectedDobMonth()"
                             (change)="onDobMonthChange($any($event.target).value)"
                           >
-                            @for (m of monthsOptions; track m.value) {
+                            @for (m of monthsOptions(); track m.value) {
                               <option [value]="m.value">{{ m.label }}</option>
                             }
                           </select>
                         </div>
 
                         <div class="select-wrapper">
-                          <label for="dob-year-select" style="font-size: 0.75rem; font-weight: 600; color: var(--color-text-secondary); display: block; margin-bottom: 0.25rem;">Năm</label>
+                          <label for="dob-year-select" style="font-size: 0.75rem; font-weight: 600; color: var(--color-text-secondary); display: block; margin-bottom: 0.25rem;">{{ i18n.t('settings.dobYear') }}</label>
                           <select
                             id="dob-year-select"
                             class="dob-select"
@@ -163,7 +163,7 @@
 
                       <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
                         <span style="font-size: 0.82rem; font-weight: 600; color: var(--color-text-secondary);">
-                          Đã chọn: <strong style="color: var(--holiday-accent, #2563eb);">{{ formattedDobDraft() }}</strong>
+                          {{ i18n.t('settings.dobSelected') }} <strong style="color: var(--holiday-accent, #2563eb);">{{ formattedDobDraft() }}</strong>
                         </span>
                         <button
                           type="button"
@@ -171,11 +171,11 @@
                           [disabled]="savingDob()"
                           (click)="saveDob()"
                         >
-                          {{ savingDob() ? 'Đang lưu…' : 'Lưu lại' }}
+                          {{ savingDob() ? i18n.t('common.saving') : i18n.t('common.save') }}
                         </button>
                       </div>
                       @if (dobSaved()) {
-                        <span class="profile-success" style="display: block; margin-top: 0.4rem;">Đã lưu ngày sinh thành công!</span>
+                        <span class="profile-success" style="display: block; margin-top: 0.4rem;">{{ i18n.t("settings.dobSaved") }}</span>
                       }
                     </div>
                   }
@@ -188,7 +188,7 @@
                     style="background: #f59e0b; color: #181924; width: 100%; border: none; padding: 0.65rem 1rem; border-radius: var(--radius-md); font-weight: 700; cursor: pointer;"
                     (click)="testBirthdayPopup()"
                   >
-                    🎂 Xem thử màn hình chúc mừng sinh nhật (Bánh kem 🎉)
+                    🎂 {{ i18n.t('settings.dobTestPopup') }}
                   </button>
                 </div>
 

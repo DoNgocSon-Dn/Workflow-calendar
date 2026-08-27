@@ -59,6 +59,11 @@
   gap: 14px;
 }
 
+.field-counter {
+  align-self: flex-end;
+  margin-top: -8px;
+}
+
 .field-label {
   font-size: 0.85rem;
   font-weight: 500;

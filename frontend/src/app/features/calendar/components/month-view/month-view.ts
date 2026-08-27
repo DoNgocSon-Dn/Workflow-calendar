@@ -16,7 +16,11 @@ import {
 import { isEventOnDay } from '../../utils/event-utils';
 
 import { convertSolarToLunar, LunarDate, lunarCellLabel } from '../../utils/lunar-calendar';
-import { resolveTopHolidayForDate, holidayCalendarType } from '../../utils/holiday-resolver';
+import {
+  resolveTopHolidayForDate,
+  holidayCalendarType,
+  holidayName,
+} from '../../utils/holiday-resolver';
 import { Holiday } from '../../../../models/holiday-theme.model';
 import { VN_HOLIDAY_CALENDAR_ID } from '../../data/vietnam-holidays';
 
@@ -76,7 +80,7 @@ export class MonthView {
     return {
       id: `${VN_HOLIDAY_CALENDAR_ID}::${holiday.id}::${day.getFullYear()}`,
       calendarId: VN_HOLIDAY_CALENDAR_ID,
-      title: holiday.name,
+      title: holidayName(holiday, this.i18n.locale()),
       start: base,
       end: base,
       allDay: true,
@@ -104,7 +108,14 @@ export class MonthView {
 
   holidayTooltip(day: Date): string {
     const holiday = this.holidayFor(day);
-    return holiday ? this.i18n.t('holiday.badgeTooltip', { name: holiday.name }) : '';
+    return holiday
+      ? this.i18n.t('holiday.badgeTooltip', { name: holidayName(holiday, this.i18n.locale()) })
+      : '';
+  }
+
+  /** Nhãn hiển thị của ngày lễ, dịch theo ngôn ngữ hiện tại. */
+  holidayLabel(holiday: Holiday): string {
+    return holidayName(holiday, this.i18n.locale());
   }
 
   conflictTooltip(eventId: string): string {

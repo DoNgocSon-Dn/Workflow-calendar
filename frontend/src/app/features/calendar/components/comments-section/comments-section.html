@@ -1,5 +1,5 @@
 <div class="comments-section">
-  <span class="presets-label">Bình luận:</span>
+  <span class="presets-label">{{ i18n.t('comments.label') }}</span>
 
   @if (comments().length > 0) {
     <ul class="comment-list">
@@ -10,7 +10,7 @@
             <button
               type="button"
               class="comment-delete-btn"
-              aria-label="Xoá bình luận"
+              [attr.aria-label]="i18n.t('comments.delete')"
               (click)="remove(c.id)"
             >
               ×
@@ -28,11 +28,12 @@
       maxlength="2000"
       [ngModel]="newComment()"
       (ngModelChange)="newComment.set($event)"
-      placeholder="Viết bình luận…"
+      [placeholder]="i18n.t('comments.placeholder')"
       (keydown.enter)="$event.preventDefault(); send()"
     />
+    <app-char-counter [current]="newComment().length" [max]="2000" />
     <button type="button" class="text-btn" [disabled]="sending()" (click)="send()">
-      Gửi
+      {{ i18n.t('common.send') }}
     </button>
   </div>
 </div>

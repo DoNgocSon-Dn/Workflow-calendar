@@ -64,7 +64,7 @@ describe('CalendarStore — xoá chuỗi sự kiện lặp lại', () => {
             joinCalendar: () => undefined,
           },
         },
-        { provide: GroupStore, useValue: { loadGroups: () => Promise.resolve() } },
+        { provide: GroupStore, useValue: { loadGroups: () => Promise.resolve(), groups: () => [] } },
         { provide: NotificationService, useValue: { ingest: () => undefined } },
         {
           provide: SUPABASE_CLIENT,

@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { TimeFormatService } from '../../../../core/time-format/time-format-service';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 import { formatTimeLabel, parseTime24 } from '../../utils/date-utils';
 
 interface ClockMark {
@@ -63,8 +64,10 @@ const LIST_OPTIONS = Array.from({ length: 48 }, (_, i) => {
 export class TimePicker implements ControlValueAccessor {
   private readonly host = inject(ElementRef<HTMLElement>);
   private readonly timeFormatService = inject(TimeFormatService);
+  private readonly i18n = inject(TranslationService);
 
-  readonly ariaLabel = input<string>('Chọn giờ');
+  readonly ariaLabelIn = input<string>('', { alias: 'ariaLabel' });
+  protected readonly ariaLabel = computed(() => this.ariaLabelIn() || this.i18n.t('picker.selectTime'));
 
   readonly currentValue = signal('09:00');
   readonly disabled = signal(false);

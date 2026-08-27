@@ -177,6 +177,10 @@
   padding-top: 0.15rem;
 }
 
+.field-counter {
+  align-self: flex-end;
+}
+
 /* Nút "Thêm ..." (trạng thái thu gọn) — canh CHỮ thẳng lề trái với nội dung
    các hàng khác; nền hover tràn nhẹ ra 2 bên để giữ lề chữ 0px. */
 .field-toggle {

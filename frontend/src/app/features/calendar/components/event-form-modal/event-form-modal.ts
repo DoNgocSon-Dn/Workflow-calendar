@@ -18,7 +18,7 @@ import { TranslationService } from '../../../../core/i18n/translation.service';
 import { TimeFormatService } from '../../../../core/time-format/time-format-service';
 import { DialogService } from '../../../../core/services/dialog.service';
 import { NotificationSoundService } from '../../../../core/services/notification-sound.service';
-import { CalendarStore } from '../../data/calendar-store';
+import { CalendarStore, localizedCalendarName } from '../../data/calendar-store';
 import {
   Attendee,
   CALENDAR_COLOR_HEX,
@@ -43,6 +43,7 @@ import {
 import { CommentsSection } from '../comments-section/comments-section';
 import { TimePicker } from '../time-picker/time-picker';
 import { DatePicker } from '../date-picker/date-picker';
+import { CharCounter } from '../../../../shared/components/char-counter/char-counter';
 import {
   RecurrenceEndType,
   RecurrenceOption,
@@ -101,7 +102,7 @@ const DURATION_PRESETS: DurationPreset[] = [
   templateUrl: './event-form-modal.html',
   styleUrl: './event-form-modal.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, TimePicker, DatePicker, CommentsSection],
+  imports: [ReactiveFormsModule, TimePicker, DatePicker, CommentsSection, CharCounter],
 })
 export class EventFormModal {
   private readonly fb = inject(FormBuilder);
@@ -147,6 +148,11 @@ export class EventFormModal {
   readonly todoLists = this.store.todoLists;
   readonly todoListId = signal<string | null>(null);
   readonly loadingTodoLists = signal(false);
+
+  /** Display label for a calendar — localises the auto-created "Cá nhân". */
+  protected calendarLabel(cal: { name: string }): string {
+    return localizedCalendarName(cal.name, (k) => this.i18n.t(k));
+  }
 
   protected readonly lunarDateHint = computed(() => {
     const startDateStr = this.form.controls.startDate.value;

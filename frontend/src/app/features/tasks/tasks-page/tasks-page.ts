@@ -3,11 +3,13 @@ import { DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth-store';
 import { DialogService } from '../../../core/services/dialog.service';
+import { TranslationService } from '../../../core/i18n/translation.service';
 import { CalendarStore } from '../../calendar/data/calendar-store';
 import { Todo, TodoList } from '../../calendar/models/calendar.models';
 import { BrandLogo } from '../../../shared/components/brand-logo/brand-logo';
 import { Icon } from '../../../shared/components/icon/icon';
 import { SettingsModal } from '../../calendar/components/settings-modal/settings-modal';
+import { CharCounter } from '../../../shared/components/char-counter/char-counter';
 
 const HIDDEN_LISTS_STORAGE_KEY = 'tasks-hidden-lists';
 
@@ -32,13 +34,14 @@ function readStoredHiddenLists(): Set<string> {
   templateUrl: './tasks-page.html',
   styleUrl: './tasks-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BrandLogo, Icon, RouterLink, DatePipe, SettingsModal],
+  imports: [BrandLogo, Icon, RouterLink, DatePipe, SettingsModal, CharCounter],
 })
 export class TasksPage {
   protected readonly store = inject(CalendarStore);
   protected readonly authStore = inject(AuthStore);
   private readonly router = inject(Router);
   private readonly dialog = inject(DialogService);
+  protected readonly i18n = inject(TranslationService);
 
   protected readonly userEmail = computed(() => this.authStore.user()?.email ?? '');
   protected readonly displayName = computed(() => this.authStore.displayName() ?? this.userEmail());
@@ -94,7 +97,7 @@ export class TasksPage {
       .map((t) => t.id);
     if (ids.length === 0) return;
     const ok = await this.dialog.confirm(
-      `Xoá toàn bộ ${ids.length} việc cần làm trong "${list.name}"?`,
+      this.i18n.t('tasks.clearAllConfirm', { count: ids.length, name: list.name }),
       { danger: true },
     );
     if (!ok) return;
@@ -158,18 +161,19 @@ export class TasksPage {
 
   async removeList(list: TodoList): Promise<void> {
     if (this.lists().length <= 1) {
-      await this.dialog.alert('Không thể xoá danh sách cuối cùng.');
+      await this.dialog.alert(this.i18n.t('tasks.cannotDeleteLast'));
       return;
     }
     const ok = await this.dialog.confirm(
-      `Xoá danh sách "${list.name}" và toàn bộ việc cần làm trong đó?`,
+      this.i18n.t('tasks.deleteListConfirm', { name: list.name }),
       { danger: true },
     );
     if (!ok) return;
     try {
       await this.store.deleteTodoList(list.id);
-    } catch (err: any) {
-      await this.dialog.alert(err?.error?.message || 'Không thể xoá danh sách.');
+    } catch (err: unknown) {
+      const body = (err as { error?: { message?: string } })?.error;
+      await this.dialog.alert(body?.message || this.i18n.t('tasks.deleteListError'));
     }
   }
 

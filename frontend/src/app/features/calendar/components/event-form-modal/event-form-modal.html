@@ -4,6 +4,7 @@
     <header class="modal-header">
       <input id="event-modal-title" class="title-input" type="text" formControlName="title" [placeholder]="i18n.t('event.addTitle')"
         maxlength="200" autofocus />
+      <app-char-counter [current]="form.controls.title.value.length" [max]="200" />
       @if (event()) {
         <button type="button" class="icon-btn danger" [attr.aria-label]="i18n.t('common.delete')" [title]="i18n.t('common.delete')" (click)="remove()">
           <svg viewBox="0 0 24 24" width="20" height="20">
@@ -327,6 +328,7 @@
         <div class="field-content">
           <input class="text-input" type="text" formControlName="location" maxlength="200"
             [placeholder]="i18n.t('event.addLocation')" />
+          <app-char-counter class="field-counter" [current]="form.controls.location.value.length" [max]="200" />
         </div>
         } @else {
         <button type="button" class="field-toggle" [class.has-value]="!!form.controls.location.value"
@@ -345,6 +347,7 @@
         @if (descriptionOpen()) {
         <div class="field-content">
           <textarea class="text-input" rows="3" formControlName="description" maxlength="2000" [placeholder]="i18n.t('event.addDescription')"></textarea>
+          <app-char-counter class="field-counter" [current]="form.controls.description.value.length" [max]="2000" />
         </div>
         } @else {
         <button type="button" class="field-toggle" [class.has-value]="!!form.controls.description.value"
@@ -439,7 +442,7 @@
             <label class="swatch-option">
               <input type="radio" formControlName="calendarId" [value]="cal.id" (change)="calendarPickerOpen.set(false)" />
               <span class="swatch-dot" [style.background]="colorHex[cal.color]"></span>
-              {{ cal.name }}
+              {{ calendarLabel(cal) }}
             </label>
             }
           </div>
@@ -448,7 +451,7 @@
             <span class="calendar-picker-toggle-label">
               @if (selectedCalendar(); as cal) {
                 <span class="swatch-dot" [style.background]="colorHex[cal.color]"></span>
-                {{ cal.name }}
+                {{ calendarLabel(cal) }}
               } @else {
                 {{ i18n.t('event.selectCalendar') }}
               }
@@ -501,6 +504,7 @@
         @if (descriptionOpen()) {
         <div class="field-content">
           <textarea class="text-input" rows="3" formControlName="description" maxlength="2000" [placeholder]="i18n.t('event.addDescription')"></textarea>
+          <app-char-counter class="field-counter" [current]="form.controls.description.value.length" [max]="2000" />
         </div>
         } @else {
         <button type="button" class="field-toggle" [class.has-value]="!!form.controls.description.value"
@@ -528,7 +532,7 @@
             @for (list of todoLists(); track list.id) {
             <option [value]="list.id">{{ list.name }}</option>
             }
-            <option [value]="newTodoListValue">+ Tạo danh sách mới</option>
+            <option [value]="newTodoListValue">{{ i18n.t('event.createNewList') }}</option>
           </select>
           }
         </div>

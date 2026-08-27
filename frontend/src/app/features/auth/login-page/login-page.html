@@ -61,20 +61,20 @@
 
   <nav class="login-nav">
     <div class="nav-left">
-      <a class="back-link" routerLink="/landing" aria-label="Quay lại trang giới thiệu">
+      <a class="back-link" routerLink="/landing" [attr.aria-label]="i18n.t('login.backToLanding')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M19 12H5" />
           <path d="M12 19 5 12l7-7" />
         </svg>
-        <span>Quay lại</span>
+        <span>{{ i18n.t('login.back') }}</span>
       </a>
 
-      <a class="logo" routerLink="/landing" aria-label="Về trang giới thiệu Workflow">
+      <a class="logo" routerLink="/landing" [attr.aria-label]="i18n.t('login.logoAria')">
         <app-brand-logo />
       </a>
     </div>
 
-    <button type="button" class="theme-toggle" aria-label="Chuyển đổi giao diện sáng/tối" (click)="toggleTheme($event)">
+    <button type="button" class="theme-toggle" [attr.aria-label]="i18n.t('login.themeToggle')" (click)="toggleTheme($event)">
       <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
       </svg>
@@ -90,10 +90,10 @@
       <span class="auth-halo" aria-hidden="true"></span>
       <div class="auth-card" [class.revealed]="revealed()">
         <span class="card-ignition" aria-hidden="true"></span>
-      <div class="auth-kicker">Chào mừng</div>
-      <h1>Đăng nhập vào Workflow</h1>
+      <div class="auth-kicker">{{ i18n.t('login.kicker') }}</div>
+      <h1>{{ i18n.t('login.heading') }}</h1>
       <p class="sub">
-        Lịch thông minh với trợ lý AI, đồng bộ real-time và lịch âm Việt Nam. Tiếp tục nơi bạn đã dừng lại.
+        {{ i18n.t('login.subtitle') }}
       </p>
 
       @if (successMessage()) {
@@ -123,7 +123,7 @@
           <path fill="#FBBC05" d="M5.27 14.27A7.2 7.2 0 0 1 4.89 12c0-.79.14-1.56.38-2.27V6.62H1.26A11.98 11.98 0 0 0 0 12c0 1.94.47 3.77 1.26 5.38l4.01-3.11z" />
           <path fill="#EA4335" d="M12 4.77c1.76 0 3.34.6 4.58 1.79l3.44-3.44C17.95 1.19 15.24 0 12 0 7.28 0 3.24 2.7 1.26 6.62l4.01 3.11C6.22 6.88 8.87 4.77 12 4.77z" />
         </svg>
-        <span>{{ submitting() ? 'Đang chuyển hướng đến Google…' : 'Tiếp tục với Google' }}</span>
+        <span>{{ submitting() ? i18n.t('login.redirecting') : i18n.t('login.continueWithGoogle') }}</span>
       </button>
 
       </div>

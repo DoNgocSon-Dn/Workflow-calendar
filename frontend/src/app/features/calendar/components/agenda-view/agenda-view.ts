@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { CalendarStore } from '../../data/calendar-store';
+import { CalendarStore, localizedCalendarName } from '../../data/calendar-store';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { AuthStore } from '../../../../core/auth/auth-store';
 import { Icon } from '../../../../shared/components/icon/icon';
@@ -115,10 +115,12 @@ export class AgendaView {
   protected eventMeta(event: AgendaEvent): string {
     const type = this.calendarTypeLabel(event);
     if (this.isSystemEvent(event)) return `${type} • ${this.i18n.t('agenda.sourceSystem')}`;
-    const cal =
+    const rawCal =
       this.store.calendars().find((c) => c.id === event.calendarId)?.name ??
-      this.store.otherCalendars.find((c) => c.id === event.calendarId)?.name ??
-      this.i18n.t('agenda.sourceUser');
+      this.store.otherCalendars().find((c) => c.id === event.calendarId)?.name;
+    const cal = rawCal
+      ? localizedCalendarName(rawCal, (k) => this.i18n.t(k))
+      : this.i18n.t('agenda.sourceUser');
     return `${type} • ${cal}`;
   }
 

@@ -12,6 +12,7 @@ import {
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { gsap } from 'gsap';
 import { AuthStore } from '../../../core/auth/auth-store';
+import { TranslationService } from '../../../core/i18n/translation.service';
 import { BrandLogo } from '../../../shared/components/brand-logo/brand-logo';
 
 /** Thời gian giữ vòng xoay trước khi mở màn (ms). */
@@ -51,6 +52,7 @@ export class LoginPage implements OnInit, AfterViewInit {
   private readonly authStore = inject(AuthStore);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  protected readonly i18n = inject(TranslationService);
 
   private readonly page = viewChild.required<ElementRef<HTMLElement>>('page');
   private readonly preloader = viewChild.required<ElementRef<HTMLElement>>('preloader');
@@ -79,7 +81,7 @@ export class LoginPage implements OnInit, AfterViewInit {
   // đúng bản chất "phiên đã hết hạn" chứ không phải một tin vui.
   readonly errorMessage = signal<string | null>(
     this.route.snapshot.queryParamMap.get('sessionExpired')
-      ? 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.'
+      ? this.i18n.t('login.sessionExpired')
       : null,
   );
   readonly successMessage = signal<string | null>(this.route.snapshot.queryParamMap.get('message'));
@@ -184,7 +186,7 @@ export class LoginPage implements OnInit, AfterViewInit {
       if (error) {
         this.errorMessage.set(
           error.message.includes('provider') || error.message.includes('disabled')
-            ? 'Đăng nhập Google chưa được kích hoạt trong Supabase Dashboard. Vui lòng thêm Google Client ID & Secret.'
+            ? this.i18n.t('login.googleProviderDisabled')
             : error.message,
         );
         this.reverseDeparture();
@@ -193,8 +195,8 @@ export class LoginPage implements OnInit, AfterViewInit {
       // Khi thành công Supabase điều hướng sang Google, nên giữ nguyên trạng
       // thái "đang chuyển hướng" cho tới lúc trang bị thay thế.
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Chưa cấu hình Google Credentials';
-      this.errorMessage.set(`Lỗi đăng nhập Google: ${message}`);
+      const message = err instanceof Error ? err.message : this.i18n.t('login.googleNoCredentials');
+      this.errorMessage.set(this.i18n.t('login.googleSignInError', { message }));
       this.reverseDeparture();
       this.submitting.set(false);
     }

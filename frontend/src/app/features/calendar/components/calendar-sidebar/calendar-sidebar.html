@@ -131,18 +131,18 @@
 
         <div class="calendar-items-wrapper">
           @for (cal of displayCalendars(); track cal.id) {
-            <label class="calendar-item" [title]="cal.name">
+            <label class="calendar-item" [title]="calendarLabel(cal)">
               <input
                 type="checkbox"
                 [checked]="isVisible(cal.id)"
                 (change)="store.toggleCalendarVisibility(cal.id)"
               />
               <span class="color-dot" [style.background]="colorHex[cal.color]"></span>
-              <span class="calendar-name">{{ cal.name }}</span>
+              <span class="calendar-name">{{ calendarLabel(cal) }}</span>
               <button
                 type="button"
                 class="invite-btn"
-                [attr.aria-label]="i18n.t('sidebar.inviteFriendsAria', { name: cal.name })"
+                [attr.aria-label]="i18n.t('sidebar.inviteFriendsAria', { name: calendarLabel(cal) })"
                 [title]="i18n.t('sidebar.inviteFriends')"
                 (click)="onInviteClicked($event, cal.id, cal.name)"
               >
@@ -155,10 +155,10 @@
                 <button
                   type="button"
                   class="delete-calendar-btn"
-                  [attr.aria-label]="'Xóa lịch ' + cal.name"
-                  title="Xóa lịch"
+                  [attr.aria-label]="i18n.t('sidebar.deleteCalendarAria', { name: calendarLabel(cal) })"
+                  [title]="i18n.t('sidebar.deleteCalendarTitleShort')"
                   [disabled]="deletingCalendarId() === cal.id"
-                  (click)="onDeleteCalendarClicked($event, cal.id, cal.name)"
+                  (click)="onDeleteCalendarClicked($event, cal.id, calendarLabel(cal))"
                 >
                   <app-icon name="trash" />
                 </button>
@@ -172,7 +172,7 @@
       <div class="calendar-list">
         <h2 class="calendar-list-title">{{ i18n.t('sidebar.otherCalendars') }}</h2>
         <div class="calendar-items-wrapper">
-          @for (cal of store.otherCalendars; track cal.id) {
+          @for (cal of store.otherCalendars(); track cal.id) {
             <label class="calendar-item" [title]="cal.name">
               <input
                 type="checkbox"
@@ -204,7 +204,7 @@
           </button>
         }
 
-        @if (displayCalendars().length > 0 || store.otherCalendars.length > 0) {
+        @if (displayCalendars().length > 0 || store.otherCalendars().length > 0) {
           <div class="rail-divider"></div>
         }
 
@@ -213,15 +213,15 @@
             type="button"
             class="rail-item"
             [class.is-off]="!isVisible(cal.id)"
-            [title]="cal.name"
-            [attr.aria-label]="cal.name"
+            [title]="calendarLabel(cal)"
+            [attr.aria-label]="calendarLabel(cal)"
             (click)="store.toggleCalendarVisibility(cal.id)"
           >
             <span class="color-dot" [style.background]="colorHex[cal.color]"></span>
           </button>
         }
 
-        @for (cal of store.otherCalendars; track cal.id) {
+        @for (cal of store.otherCalendars(); track cal.id) {
           <button
             type="button"
             class="rail-item"

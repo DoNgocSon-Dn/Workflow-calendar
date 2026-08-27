@@ -53,13 +53,13 @@
             type="button"
             class="holiday-label"
             [class.national-day]="h.id === 'national-day'"
-            [title]="i18n.t('calendar.holidayGridTooltip', { name: h.name })"
-            [attr.aria-label]="i18n.t('calendar.holidayGridTooltip', { name: h.name })"
+            [title]="i18n.t('calendar.holidayGridTooltip', { name: holidayLabel(h) })"
+            [attr.aria-label]="i18n.t('calendar.holidayGridTooltip', { name: holidayLabel(h) })"
             (mousedown)="$event.stopPropagation()"
             (click)="openHoliday(day, $event)"
           >
             <span class="holiday-label__dot" aria-hidden="true"></span>
-            <span class="holiday-label__text">{{ h.name }}</span>
+            <span class="holiday-label__text">{{ holidayLabel(h) }}</span>
           </button>
         }
 

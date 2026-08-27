@@ -16,6 +16,7 @@ import { Clock } from '../../../../core/clock';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { DialogService } from '../../../../core/services/dialog.service';
 import { Icon } from '../../../../shared/components/icon/icon';
+import { CharCounter } from '../../../../shared/components/char-counter/char-counter';
 import { CalendarStore } from '../../../calendar/data/calendar-store';
 import {
   addMinutes,
@@ -95,7 +96,7 @@ function meetAnnouncement(title: string, start: Date, end: Date, link: string): 
   templateUrl: './group-workspace-modal.html',
   styleUrl: './group-workspace-modal.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, Icon, MentionPopup],
+  imports: [DatePipe, Icon, MentionPopup, CharCounter],
 })
 export class GroupWorkspaceModal {
   protected readonly store = inject(GroupStore);

@@ -7,7 +7,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { CalendarStore } from '../../data/calendar-store';
+import { CalendarStore, localizedCalendarName } from '../../data/calendar-store';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { DialogService } from '../../../../core/services/dialog.service';
 import { GroupStore } from '../../../groups/data/group-store';
@@ -81,6 +81,11 @@ export class CalendarSidebar implements OnInit {
     return this.store.visibleCalendarIds().has(calendarId);
   }
 
+  /** Display label for a calendar — localises the auto-created "Cá nhân". */
+  calendarLabel(cal: { name: string }): string {
+    return localizedCalendarName(cal.name, (k) => this.i18n.t(k));
+  }
+
   onInviteClicked(event: Event, calendarId: string, calendarName: string): void {
     event.preventDefault();
     event.stopPropagation();
@@ -96,21 +101,26 @@ export class CalendarSidebar implements OnInit {
     // import, tạo sự kiện nhanh) giả định defaultWritableCalendar() luôn có.
     const writableCount = this.store.calendars().filter((c) => c.canEdit).length;
     if (writableCount <= 1) {
-      await this.dialog.alert('Bạn cần giữ lại ít nhất một lịch có thể chỉnh sửa.');
+      await this.dialog.alert(this.i18n.t('sidebar.needWritableCalendar'));
       return;
     }
 
     const ok = await this.dialog.confirm(
-      `Toàn bộ sự kiện trong lịch "${calendarName}" sẽ bị xóa và KHÔNG thể khôi phục.`,
-      { title: `Xóa lịch "${calendarName}"?`, confirmLabel: 'Đồng ý xóa', danger: true },
+      this.i18n.t('sidebar.deleteCalendarBody', { name: calendarName }),
+      {
+        title: this.i18n.t('sidebar.deleteCalendarTitle', { name: calendarName }),
+        confirmLabel: this.i18n.t('sidebar.deleteCalendarConfirm'),
+        danger: true,
+      },
     );
     if (!ok) return;
 
     this.deletingCalendarId.set(calendarId);
     try {
       await this.store.deleteCalendar(calendarId);
-    } catch (err: any) {
-      await this.dialog.alert(err?.error?.message || 'Không thể xóa lịch này.');
+    } catch (err: unknown) {
+      const body = (err as { error?: { message?: string } })?.error;
+      await this.dialog.alert(body?.message || this.i18n.t('sidebar.deleteCalendarError'));
     } finally {
       this.deletingCalendarId.set(null);
     }
@@ -130,7 +140,7 @@ export class CalendarSidebar implements OnInit {
     try {
       await this.groupStore.setGroupHidden(group.id, !group.hidden);
     } catch {
-      await this.dialog.alert('Không thể cập nhật trạng thái hiển thị của nhóm.');
+      await this.dialog.alert(this.i18n.t('sidebar.groupVisibilityError'));
     }
   }
 }

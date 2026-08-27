@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { GroupStore } from '../../data/group-store';
 import { GROUP_COLOR_HEX, GROUP_COLORS, GroupColor } from '../../models/group.models';
 import { Icon } from '../../../../shared/components/icon/icon';
+import { CharCounter } from '../../../../shared/components/char-counter/char-counter';
 
 function extractErrorMessage(err: unknown): string {
   if (err instanceof HttpErrorResponse) {
@@ -22,7 +23,7 @@ function extractErrorMessage(err: unknown): string {
   templateUrl: './create-group-modal.html',
   styleUrl: './create-group-modal.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon],
+  imports: [Icon, CharCounter],
 })
 export class CreateGroupModal {
   private readonly groupStore = inject(GroupStore);

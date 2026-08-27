@@ -76,7 +76,7 @@ describe('CalendarStore — debounce tải lại khi được mời dồn dập'
             joinCalendar: () => undefined,
           },
         },
-        { provide: GroupStore, useValue: { loadGroups: () => Promise.resolve() } },
+        { provide: GroupStore, useValue: { loadGroups: () => Promise.resolve(), groups: () => [] } },
         { provide: NotificationService, useValue: { ingest: () => undefined } },
         {
           provide: SUPABASE_CLIENT,

@@ -77,20 +77,13 @@ export class SettingsModal {
   protected readonly uploadingAvatar = signal(false);
   protected readonly profileError = signal<string | null>(null);
 
-  protected readonly monthsOptions = [
-    { value: 1, label: 'Tháng 1' },
-    { value: 2, label: 'Tháng 2' },
-    { value: 3, label: 'Tháng 3' },
-    { value: 4, label: 'Tháng 4' },
-    { value: 5, label: 'Tháng 5' },
-    { value: 6, label: 'Tháng 6' },
-    { value: 7, label: 'Tháng 7' },
-    { value: 8, label: 'Tháng 8' },
-    { value: 9, label: 'Tháng 9' },
-    { value: 10, label: 'Tháng 10' },
-    { value: 11, label: 'Tháng 11' },
-    { value: 12, label: 'Tháng 12' },
-  ];
+  protected readonly monthsOptions = computed(() => {
+    const fmt = new Intl.DateTimeFormat(this.i18n.t('common.dateLocale'), { month: 'long' });
+    return Array.from({ length: 12 }, (_, i) => ({
+      value: i + 1,
+      label: fmt.format(new Date(2000, i, 1)),
+    }));
+  });
 
   protected readonly yearsOptions = Array.from(
     { length: new Date().getFullYear() - 1920 + 1 },
@@ -124,8 +117,13 @@ export class SettingsModal {
     if (parts.length === 3) {
       const d = parseInt(parts[2], 10);
       const m = parseInt(parts[1], 10);
-      const y = parts[0];
-      return `${parts[2]}/${parts[1]}/${y} (Ngày ${d} tháng ${m} năm ${y})`;
+      const y = parseInt(parts[0], 10);
+      const long = new Intl.DateTimeFormat(this.i18n.t('common.dateLocale'), {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }).format(new Date(y, m - 1, d));
+      return `${parts[2]}/${parts[1]}/${parts[0]} (${long})`;
     }
     return this.dobDraft();
   });
@@ -228,7 +226,7 @@ export class SettingsModal {
     this.savingName.set(false);
 
     if (error) {
-      this.profileError.set('Không thể lưu tên. Vui lòng thử lại.');
+      this.profileError.set(this.i18n.t('settings.saveNameError'));
       return;
     }
     this.nameSaved.set(true);
@@ -241,11 +239,11 @@ export class SettingsModal {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      this.profileError.set('Vui lòng chọn một tệp hình ảnh.');
+      this.profileError.set(this.i18n.t('settings.imageTypeError'));
       return;
     }
     if (file.size > MAX_AVATAR_BYTES) {
-      this.profileError.set('Ảnh quá lớn (tối đa 5MB).');
+      this.profileError.set(this.i18n.t('settings.imageSizeError'));
       return;
     }
 
@@ -255,7 +253,7 @@ export class SettingsModal {
     this.uploadingAvatar.set(false);
 
     if (typeof result !== 'string') {
-      this.profileError.set('Không thể tải ảnh lên. Vui lòng thử lại.');
+      this.profileError.set(this.i18n.t('settings.uploadError'));
     }
   }
 

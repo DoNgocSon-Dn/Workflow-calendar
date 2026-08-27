@@ -258,6 +258,16 @@ function toCalendarDef(dto: CalendarApiDto): CalendarDef {
 // client, kéo theo mất cả trong visibleCalendarIds.
 const DEFAULT_PERSONAL_CALENDAR_NAME = 'cá nhân';
 
+/** The auto-created personal calendar is stored with the Vietnamese name
+ *  "Cá nhân" in the DB. Swap it for the localised label at display time only
+ *  — never in the data, since `dedupeCalendars` still matches on the raw
+ *  name and other surfaces match calendars by name too. */
+export function localizedCalendarName(name: string, t: (key: string) => string): string {
+  return name.trim().toLowerCase() === DEFAULT_PERSONAL_CALENDAR_NAME
+    ? t('calendar.personalCalendarName')
+    : name;
+}
+
 function dedupeCalendars(list: CalendarDef[]): CalendarDef[] {
   let seenDefault = false;
   return list.filter((c) => {
@@ -307,9 +317,14 @@ function toEventApiPayload(draft: Partial<CalendarEventDraft>): Record<string, u
   return payload;
 }
 
-function eventTimeLabel(event: CalendarEvent, format: TimeFormat): string {
-  if (event.allDay) return 'Cả ngày';
-  return `${formatTimeLabel(event.start, 'vi', format)} - ${formatTimeLabel(event.end, 'vi', format)}`;
+function eventTimeLabel(
+  event: CalendarEvent,
+  format: TimeFormat,
+  locale: 'vi' | 'en',
+  allDayLabel: string,
+): string {
+  if (event.allDay) return allDayLabel;
+  return `${formatTimeLabel(event.start, locale, format)} - ${formatTimeLabel(event.end, locale, format)}`;
 }
 
 /**
@@ -393,15 +408,19 @@ export class CalendarStore {
   readonly todosLoaded = signal(false);
 
   // Lịch tham khảo chỉ đọc, không lưu ở backend — hiển thị trong mục "Lịch khác".
-  readonly otherCalendars: CalendarDef[] = [VN_HOLIDAY_CALENDAR_DEF];
-  readonly holidayEvents: CalendarEvent[] = buildVietnamHolidayEvents(
-    holidayYearWindow(this.clock.now()),
+  // Tên lịch dịch theo ngôn ngữ hiện tại (VN_HOLIDAY_CALENDAR_DEF giữ tên gốc).
+  readonly otherCalendars = computed<CalendarDef[]>(() => [
+    { ...VN_HOLIDAY_CALENDAR_DEF, name: this.i18n.t('calendar.vnHolidaysName') },
+  ]);
+  // Sự kiện lịch lễ VN — tiêu đề dịch theo ngôn ngữ, dựng lại khi đổi ngôn ngữ.
+  readonly holidayEvents = computed<CalendarEvent[]>(() =>
+    buildVietnamHolidayEvents(holidayYearWindow(this.clock.now()), this.i18n.locale()),
   );
 
   readonly visibleEvents = computed(() => {
     const visible = this.visibleCalendarIds();
     const query = this.searchQuery().trim().toLowerCase();
-    return [...this.events(), ...this.holidayEvents].filter((e) => {
+    return [...this.events(), ...this.holidayEvents()].filter((e) => {
       if (!visible.has(e.calendarId)) return false;
       if (!query) return true;
       return matchScore(e, query) !== null;
@@ -453,7 +472,7 @@ export class CalendarStore {
   readonly calendarColor = computed(() => {
     const map = new Map<string, CalendarColor>();
     for (const c of this.calendars()) map.set(c.id, c.color);
-    for (const c of this.otherCalendars) map.set(c.id, c.color);
+    for (const c of this.otherCalendars()) map.set(c.id, c.color);
     // Group workspace calendars aren't part of `calendars()` (they're listed
     // separately under "Nhóm làm việc"), so without this their events fall
     // back to the default blue instead of the group's own color.
@@ -1018,7 +1037,7 @@ export class CalendarStore {
     // phải "đã lưu chưa" — form nói rồi — mà là "cả nhóm đã được báo chưa".
     // Không có dòng thông báo này thì sự kiện chỉ lặng lẽ hiện lên lưới, người
     // tạo không có cách nào biết nó đã đi tới nhóm hay chỉ nằm ở máy mình.
-    const timeLabel = eventTimeLabel(event, this.timeFormatService.format());
+    const timeLabel = eventTimeLabel(event, this.timeFormatService.format(), this.i18n.locale(), this.nt('calendar.allDay'));
     const isMine = this.isCreatedByCurrentUser(dto);
 
     // Đánh dấu ngay để nhịp đồng bộ ngầm không báo lại lần nữa cho cùng sự
@@ -1117,7 +1136,7 @@ export class CalendarStore {
   private handleRemoteUpdated(dto: EventApiDto): void {
     const event = toCalendarEvent(dto);
     this.upsertEvent(event);
-    const timeLabel = eventTimeLabel(event, this.timeFormatService.format());
+    const timeLabel = eventTimeLabel(event, this.timeFormatService.format(), this.i18n.locale(), this.nt('calendar.allDay'));
     if (!this.notifyIfNotSelfOrigin(event.id, 'updated', this.nt('nq.remoteUpdated', { title: event.title }), timeLabel)) {
       return;
     }

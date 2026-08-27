@@ -64,6 +64,10 @@
   gap: 0.4rem;
 }
 
+.field-counter {
+  align-self: flex-end;
+}
+
 .field-label {
   font-size: 0.8rem;
   font-weight: 500;

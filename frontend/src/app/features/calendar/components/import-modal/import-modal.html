@@ -1,21 +1,20 @@
 <div class="page">
   <div class="modal">
     <header class="modal-header">
-      <button type="button" class="icon-btn back-btn" (click)="cancel()" aria-label="Về trang Lịch">‹</button>
-      <h2>📥 Import Lịch từ File</h2>
+      <button type="button" class="icon-btn back-btn" (click)="cancel()" [attr.aria-label]="i18n.t('import.backToCalendar')">‹</button>
+      <h2>{{ i18n.t('import.title') }}</h2>
     </header>
 
     @if (importSuccess()) {
       <div class="success-banner">
-        ✅ Đã nhập thành công {{ eventsPreview().length }} sự kiện vào lịch của bạn!
+        {{ i18n.t('import.successBanner', { n: eventsPreview().length }) }}
       </div>
     } @else {
       <div class="modal-body">
         <p class="mode-note">
-          📄 Hỗ trợ file <strong>.ics</strong> và <strong>.csv</strong>.
-          File .pdf hãy đính kèm cho <strong>Trợ lý AI</strong> ở bong bóng ✨.
+          <span [innerHTML]="i18n.t('import.modeNoteFormats')"></span>
           <br />
-          ⏱️ Mỗi tài khoản chỉ đọc file được tối đa <strong>10 lần/giờ</strong> — vượt quá sẽ phải đợi.
+          <span [innerHTML]="i18n.t('import.modeNoteRate')"></span>
         </p>
 
         <div class="upload-section">
@@ -35,12 +34,12 @@
             />
             @if (dragActive()) {
               <span class="upload-icon">📄</span>
-              <span class="upload-text">Thả file để import</span>
+              <span class="upload-text">{{ i18n.t('import.dropToImport') }}</span>
             } @else {
               <span class="upload-icon">📁</span>
               <span class="upload-copy">
-                <span class="upload-text">Nhấn để chọn file .ics hoặc .csv</span>
-                <span class="upload-hint">hoặc kéo file vào đây, hoặc nhấn Ctrl + V</span>
+                <span class="upload-text">{{ i18n.t('import.clickToChoose') }}</span>
+                <span class="upload-hint">{{ i18n.t('import.dragHint') }}</span>
               </span>
             }
           </label>
@@ -57,7 +56,7 @@
                 type="button"
                 class="import-file-chip__remove"
                 [disabled]="parsing() || importing()"
-                aria-label="Bỏ file đã chọn"
+                [attr.aria-label]="i18n.t('import.removeFile')"
                 (click)="clearSelectedFile()"
               >
                 ×
@@ -71,7 +70,7 @@
             [disabled]="!selectedFile() || parsing()"
             (click)="parseFile()"
           >
-            {{ parsing() ? 'Đang đọc & xử lý file...' : 'Đọc file sự kiện' }}
+            {{ parsing() ? i18n.t('import.parsing') : i18n.t('import.parseBtn') }}
           </button>
         </div>
 
@@ -82,12 +81,12 @@
         @if (eventsPreview().length > 0) {
           <div class="preview-section">
             <div class="preview-header">
-              <h3>Xem trước danh sách ({{ eventsPreview().length }} sự kiện)</h3>
+              <h3>{{ i18n.t('import.previewTitle', { n: eventsPreview().length }) }}</h3>
               <div class="calendar-select-box">
-                <label>Lưu vào Lịch:</label>
+                <label>{{ i18n.t('import.saveToCalendar') }}</label>
                 <select [(ngModel)]="selectedCalendarId" class="select-input">
                   @for (c of store.calendars(); track c.id) {
-                    <option [value]="c.id">{{ c.name }}</option>
+                    <option [value]="c.id">{{ calendarLabel(c) }}</option>
                   }
                 </select>
               </div>
@@ -95,7 +94,7 @@
 
             @if (conflicts().length > 0) {
               <div class="conflict-alert">
-                ⚠️ Phát hiện {{ conflicts().length }} sự kiện có thể bị trùng giờ trong lịch của bạn.
+                {{ i18n.t('import.conflictAlert', { n: conflicts().length }) }}
               </div>
             }
 
@@ -109,28 +108,28 @@
                       maxlength="200"
                       [(ngModel)]="item.title"
                       class="table-input title-input"
-                      placeholder="Tiêu đề sự kiện"
+                      [placeholder]="i18n.t('import.fieldTitle')"
                       appOverflowTooltip
                     />
-                    <button type="button" class="danger-btn" (click)="removeEvent($index)">Xóa</button>
+                    <button type="button" class="danger-btn" (click)="removeEvent($index)">{{ i18n.t('common.delete') }}</button>
                   </div>
                   <div class="preview-card__fields">
                     <div class="preview-field">
-                      <label class="preview-field__label">Bắt đầu</label>
+                      <label class="preview-field__label">{{ i18n.t('import.fieldStart') }}</label>
                       <input type="datetime-local" [(ngModel)]="item.startLocal" class="table-input datetime-input" />
                     </div>
                     <div class="preview-field">
-                      <label class="preview-field__label">Kết thúc</label>
+                      <label class="preview-field__label">{{ i18n.t('import.fieldEnd') }}</label>
                       <input type="datetime-local" [(ngModel)]="item.endLocal" class="table-input datetime-input" />
                     </div>
                     <div class="preview-field preview-field--location">
-                      <label class="preview-field__label">Địa điểm</label>
+                      <label class="preview-field__label">{{ i18n.t('import.fieldLocation') }}</label>
                       <input
                         type="text"
                         maxlength="200"
                         [(ngModel)]="item.location"
                         class="table-input location-input"
-                        placeholder="Địa điểm / ghi chú"
+                        [placeholder]="i18n.t('import.fieldLocationPlaceholder')"
                         appOverflowTooltip
                       />
                     </div>
@@ -143,7 +142,7 @@
       </div>
 
       <footer class="modal-footer">
-        <button type="button" class="btn-secondary" (click)="cancel()">Hủy</button>
+        <button type="button" class="btn-secondary" (click)="cancel()">{{ i18n.t('common.cancel') }}</button>
         @if (eventsPreview().length > 0) {
           <button
             type="button"
@@ -151,7 +150,7 @@
             [disabled]="importing()"
             (click)="confirmImport()"
           >
-            {{ importing() ? 'Đang lưu...' : 'Xác nhận Lưu vào Lịch' }}
+            {{ importing() ? i18n.t('import.saving') : i18n.t('import.confirmBtn') }}
           </button>
         }
       </footer>

@@ -96,15 +96,18 @@
             </li>
           }
         </ul>
-        <input
-          type="text"
-          class="new-list-input"
-          placeholder="+ Tạo danh sách mới"
-          maxlength="80"
-          [value]="newListName()"
-          (input)="newListName.set($any($event.target).value)"
-          (keydown.enter)="createList()"
-        />
+        <div class="field-with-counter">
+          <input
+            type="text"
+            class="new-list-input"
+            placeholder="+ Tạo danh sách mới"
+            maxlength="80"
+            [value]="newListName()"
+            (input)="newListName.set($any($event.target).value)"
+            (keydown.enter)="createList()"
+          />
+          <app-char-counter class="field-counter" [current]="newListName().length" [max]="80" />
+        </div>
       </aside>
     }
 
@@ -159,16 +162,19 @@
           <section class="column">
             <header class="column-header">
               @if (renamingListId() === list.id) {
-                <input
-                  type="text"
-                  class="rename-input"
-                  maxlength="80"
-                  [value]="renameDraft()"
-                  (input)="renameDraft.set($any($event.target).value)"
-                  (keydown.enter)="saveRenameList(list.id)"
-                  (keydown.escape)="cancelRenameList()"
-                  autofocus
-                />
+                <div class="field-with-counter">
+                  <input
+                    type="text"
+                    class="rename-input"
+                    maxlength="80"
+                    [value]="renameDraft()"
+                    (input)="renameDraft.set($any($event.target).value)"
+                    (keydown.enter)="saveRenameList(list.id)"
+                    (keydown.escape)="cancelRenameList()"
+                    autofocus
+                  />
+                  <app-char-counter class="field-counter" [current]="renameDraft().length" [max]="80" />
+                </div>
               } @else {
                 <h3 class="column-title" (click)="startRenameList(list)">{{ list.name }}</h3>
               }
@@ -179,31 +185,37 @@
               }
             </header>
 
-            <input
-              type="text"
-              class="add-todo-input"
-              placeholder="+ Thêm việc cần làm"
-              maxlength="300"
-              [value]="todoDraft(list.id)"
-              (input)="setTodoDraft(list.id, $any($event.target).value)"
-              (keydown.enter)="addTodo(list.id)"
-            />
+            <div class="field-with-counter">
+              <input
+                type="text"
+                class="add-todo-input"
+                placeholder="+ Thêm việc cần làm"
+                maxlength="300"
+                [value]="todoDraft(list.id)"
+                (input)="setTodoDraft(list.id, $any($event.target).value)"
+                (keydown.enter)="addTodo(list.id)"
+              />
+              <app-char-counter class="field-counter" [current]="todoDraft(list.id).length" [max]="300" />
+            </div>
 
             <ul class="todo-list">
               @for (todo of pendingTodosForList(list.id); track todo.id) {
                 <li class="todo-item">
                   <input type="checkbox" [checked]="todo.done" (change)="toggleTodo(todo)" />
                   @if (editingTodoId() === todo.id) {
-                    <input
-                      type="text"
-                      class="todo-edit-input"
-                      maxlength="300"
-                      [value]="editingTodoContent()"
-                      (input)="editingTodoContent.set($any($event.target).value)"
-                      (keydown.enter)="saveEditTodo(todo.id)"
-                      (keydown.escape)="cancelEditTodo()"
-                      autofocus
-                    />
+                    <div class="todo-edit-field">
+                      <input
+                        type="text"
+                        class="todo-edit-input"
+                        maxlength="300"
+                        [value]="editingTodoContent()"
+                        (input)="editingTodoContent.set($any($event.target).value)"
+                        (keydown.enter)="saveEditTodo(todo.id)"
+                        (keydown.escape)="cancelEditTodo()"
+                        autofocus
+                      />
+                      <app-char-counter class="field-counter" [current]="editingTodoContent().length" [max]="300" />
+                    </div>
                   } @else {
                     <div class="todo-main" (click)="startEditTodo(todo)">
                       <span class="todo-content">{{ todo.content }}</span>

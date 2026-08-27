@@ -61,7 +61,8 @@ export class DatePicker implements ControlValueAccessor {
   private readonly host = inject(ElementRef<HTMLElement>);
   protected readonly i18n = inject(TranslationService);
 
-  readonly ariaLabel = input<string>('Chọn ngày');
+  readonly ariaLabelIn = input<string>('', { alias: 'ariaLabel' });
+  protected readonly ariaLabel = computed(() => this.ariaLabelIn() || this.i18n.t('picker.selectDate'));
 
   /** "yyyy-MM-dd", or '' when no date is set. */
   readonly currentValue = signal('');

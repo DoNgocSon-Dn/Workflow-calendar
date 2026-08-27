@@ -1,18 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject, isDevMode, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Clock } from '../../../core/clock';
-import { AuthStore } from '../../../core/auth/auth-store';
 
-/** Đang chạy bản dev (ng serve / build development) — đọc một lần, không đổi
- *  trong suốt phiên. */
-const IS_DEV_BUILD = isDevMode();
-
-/** Ngoài bản dev, công cụ giả lập ngày chỉ mở cho các tài khoản này (dùng để
- *  test hiệu ứng lễ / sinh nhật / deadline ngay trên bản đã deploy). */
-const DEV_DATE_TOOL_EMAILS = new Set([
-  'sondokiri2006@gmail.com',
-  'tpken2496@gmail.com',
-  'myheroacademiatsh1242@gmail.com',
-]);
+/** Gõ liền dãy này ở BẤT KỲ đâu (ngoài ô nhập chữ) thì mở khoá panel trong
+ *  PHIÊN NÀY — không nhớ qua lần tải trang sau, không tự hiện theo tài khoản
+ *  hay theo bản dev nữa. Mặc định ẩn tuyệt đối, gõ lại từ đầu mỗi lần cần. */
+const UNLOCK_SEQUENCE = '@@@@';
 
 function toDateInputValue(date: Date): string {
   const y = date.getFullYear();
@@ -25,28 +17,31 @@ function toDateInputValue(date: Date): string {
  * Nút nổi để giả lập "hôm nay" — test hiệu ứng lễ/sinh nhật/deadline mà không
  * phải chờ tới đúng ngày thật, cũng không cần sửa code mỗi lần.
  *
- * Hiện với: bản dev (`isDevMode()`), HOẶC tài khoản trong
- * `DEV_DATE_TOOL_EMAILS` (để dùng được ngay trên bản đã deploy). Ngoài ra
- * component KHÔNG render gì cả (`@if (canUse())`), không phải chỉ ẩn bằng CSS
- * — nên người dùng thường không thấy kể cả khi mở devtools.
+ * Mặc định ẩn tuyệt đối, kể cả với bản dev hay tài khoản của người phát
+ * triển — chỉ hiện SAU KHI gõ đúng dãy `UNLOCK_SEQUENCE` ("@@@@") ở đâu đó
+ * trên trang trong phiên đang mở, và ẩn lại ngay khi tải lại trang (không
+ * lưu localStorage). Component KHÔNG render gì cả khi chưa mở khoá
+ * (`@if (canUse())`), không phải chỉ ẩn bằng CSS — nên kể cả mở devtools soi
+ * DOM cũng không thấy dấu vết.
  */
 @Component({
   selector: 'app-dev-date-panel',
   templateUrl: './dev-date-panel.html',
   styleUrl: './dev-date-panel.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '(document:keydown)': 'onGlobalKeydown($event)',
+  },
 })
 export class DevDatePanel {
   private readonly clock = inject(Clock);
-  private readonly authStore = inject(AuthStore);
 
-  /** Panel chỉ hiện khi tài khoản đăng nhập nằm trong danh sách
-   *  được cấp quyền (`DEV_DATE_TOOL_EMAILS`). Ngoài trường hợp đó thì
-   *  component không render gì. */
-  protected readonly canUse = computed(() => {
-    const email = this.authStore.user()?.email?.toLowerCase();
-    return !!email && DEV_DATE_TOOL_EMAILS.has(email);
-  });
+  private readonly secretUnlocked = signal(false);
+  /** Vài ký tự gõ gần nhất — so khớp đuôi với UNLOCK_SEQUENCE mỗi lần gõ,
+   *  không cần biết trước lúc nào người dùng "bắt đầu" gõ mã. */
+  private keyBuffer = '';
+
+  protected readonly canUse = computed(() => this.secretUnlocked());
   protected readonly open = signal(false);
   protected readonly draftDate = signal(toDateInputValue(this.clock.now()));
 
@@ -72,5 +67,23 @@ export class DevDatePanel {
 
   reset(): void {
     this.clock.setDevOverride(null);
+  }
+
+  /** Gõ "@@@@" ở BẤT KỲ đâu trên trang (kể cả không focus vào panel) thì mở
+   *  khoá panel. Bỏ qua khi đang gõ trong ô nhập chữ thật — người dùng có thể
+   *  vô tình gõ liền mấy dấu @ khi đang soạn email/ghi chú, không nên bị hiểu
+   *  nhầm thành mã bí mật. */
+  protected onGlobalKeydown(event: KeyboardEvent): void {
+    if (this.secretUnlocked()) return;
+
+    const target = event.target as HTMLElement | null;
+    const tag = target?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return;
+
+    this.keyBuffer = (this.keyBuffer + event.key).slice(-UNLOCK_SEQUENCE.length);
+    if (this.keyBuffer !== UNLOCK_SEQUENCE) return;
+
+    this.secretUnlocked.set(true);
+    this.open.set(true);
   }
 }

@@ -378,3 +378,30 @@
   transform: translateY(-1px);
   filter: brightness(1.08);
 }
+
+/* Màn hẹp: 7 cột `flex: 1` (mỗi cột chỉ còn vài chục pixel) khiến các khối
+   sự kiện trùng giờ (đặt cạnh nhau bằng left%/width% của .event-block, xem
+   time-grid-layout) bị bóp tới mức đè lên nhau, chữ không đọc nổi.
+   Đổi mỗi cột sang bề rộng CỐ ĐỊNH và cho cuộn ngang — đúng cách Google
+   Calendar/Outlook xử lý tuần trên điện thoại: vuốt ngang để xem ngày khác
+   thay vì bóp méo cả 7 cột cho vừa màn hình.
+   .scroll-area vốn đã overflow-y: scroll — theo quy tắc CSS overflow (một
+   trục non-visible thì trục kia tự bị nâng lên `auto`), nó LUÔN tự có
+   overflow-x: auto bất kể có khai báo hay không, nên đó là nơi thực sự hiện
+   thanh cuộn ngang. Hai hàng còn lại (tiêu đề + "Cả ngày") không có
+   overflow-y nên không bị quy tắc đó chi phối — phải tự khai overflow-x:
+   hidden rồi kéo scrollLeft bằng tay theo lưới giờ (xem onGridScroll trong
+   .ts), nếu không ba hàng lệch cột ngay khi vuốt. */
+@media (max-width: 820px) {
+  .day-header-cell,
+  .all-day-cell,
+  .day-col {
+    flex: 0 0 5.5rem;
+    min-width: 5.5rem;
+  }
+
+  .day-header-row,
+  .all-day-row {
+    overflow-x: hidden;
+  }
+}

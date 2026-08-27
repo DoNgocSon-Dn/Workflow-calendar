@@ -20,6 +20,7 @@
         (keydown.enter)="create()"
         autofocus
       />
+      <app-char-counter class="field-counter" [current]="name().length" [max]="100" />
 
       <label class="field-label" for="group-desc-input">Mô tả nhóm (không bắt buộc)</label>
       <textarea
@@ -31,6 +32,7 @@
         (input)="description.set($any($event.target).value)"
         rows="2"
       ></textarea>
+      <app-char-counter class="field-counter" [current]="description().length" [max]="500" />
 
       <label class="field-label">Màu nhận diện</label>
       <div class="color-palette" role="radiogroup">

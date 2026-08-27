@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { CalendarStore } from '../../data/calendar-store';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 import { CalendarMemberRole } from '../../models/calendar.models';
 
 @Component({
@@ -10,6 +11,7 @@ import { CalendarMemberRole } from '../../models/calendar.models';
 })
 export class InviteModal {
   private readonly store = inject(CalendarStore);
+  protected readonly i18n = inject(TranslationService);
 
   readonly calendarId = input.required<string>();
   readonly calendarName = input.required<string>();
@@ -39,7 +41,7 @@ export class InviteModal {
     } catch (err) {
       const message = (err as { error?: { message?: string | string[] } })?.error?.message;
       this.error.set(
-        (Array.isArray(message) ? message[0] : message) ?? 'Không thể gửi lời mời. Vui lòng thử lại.',
+        (Array.isArray(message) ? message[0] : message) ?? this.i18n.t('inviteModal.error'),
       );
     } finally {
       this.sending.set(false);

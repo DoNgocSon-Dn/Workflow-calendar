@@ -33,7 +33,11 @@ import { isEventOnDay } from '../../utils/event-utils';
 import { PositionedEvent, layoutDayEvents } from '../../utils/time-grid-layout';
 
 import { convertSolarToLunar, LunarDate, lunarCellLabel } from '../../utils/lunar-calendar';
-import { resolveTopHolidayForDate, holidayCalendarType } from '../../utils/holiday-resolver';
+import {
+  resolveTopHolidayForDate,
+  holidayCalendarType,
+  holidayName,
+} from '../../utils/holiday-resolver';
 import { Holiday } from '../../../../models/holiday-theme.model';
 import { VN_HOLIDAY_CALENDAR_ID } from '../../data/vietnam-holidays';
 
@@ -86,7 +90,7 @@ export class TimeGridView {
     return {
       id: `${VN_HOLIDAY_CALENDAR_ID}::${holiday.id}::${day.getFullYear()}`,
       calendarId: VN_HOLIDAY_CALENDAR_ID,
-      title: holiday.name,
+      title: holidayName(holiday, this.i18n.locale()),
       start: base,
       end: base,
       allDay: true,
@@ -113,7 +117,14 @@ export class TimeGridView {
 
   holidayTooltip(day: Date): string {
     const holiday = this.holidayFor(day);
-    return holiday ? this.i18n.t('holiday.badgeTooltip', { name: holiday.name }) : '';
+    return holiday
+      ? this.i18n.t('holiday.badgeTooltip', { name: holidayName(holiday, this.i18n.locale()) })
+      : '';
+  }
+
+  /** Nhãn hiển thị của ngày lễ, dịch theo ngôn ngữ hiện tại. */
+  holidayLabel(holiday: Holiday): string {
+    return holidayName(holiday, this.i18n.locale());
   }
 
   conflictTooltip(eventId: string): string {
@@ -143,6 +154,13 @@ export class TimeGridView {
   protected readonly hours = Array.from({ length: 24 }, (_, i) => i);
 
   private readonly scrollContainer = viewChild<ElementRef<HTMLElement>>('scrollContainer');
+  // Điện thoại: mỗi cột ngày được ép một bề rộng tối thiểu (xem CSS) để 7 cột
+  // không bị bóp còn vài chục pixel, nên .scroll-area cuộn NGANG lẫn dọc. Hai
+  // hàng còn lại (tiêu đề + "Cả ngày") phải cuộn ngang THEO — không có thanh
+  // cuộn riêng của chúng (CSS đặt overflow-x: hidden), scrollLeft của chúng bị
+  // đẩy bằng tay ở đây mỗi khi .scroll-area cuộn.
+  private readonly dayHeaderRow = viewChild<ElementRef<HTMLElement>>('dayHeaderRow');
+  private readonly allDayRow = viewChild<ElementRef<HTMLElement>>('allDayRow');
 
   protected readonly scrollbarWidth = signal(6);
 
@@ -210,6 +228,18 @@ export class TimeGridView {
     const el = this.scrollContainer()?.nativeElement;
     if (!el) return;
     this.scrollbarWidth.set(el.offsetWidth - el.clientWidth);
+  }
+
+  /** Kéo hai hàng tiêu đề/"Cả ngày" theo đúng vị trí cuộn ngang của lưới giờ.
+   *  Chỉ có tác dụng khi cột ngày đủ rộng để tràn khỏi khung nhìn (điện
+   *  thoại) — bình thường .scroll-area không cuộn ngang nên scrollLeft luôn
+   *  là 0 và hai dòng gọi này là no-op. */
+  protected onGridScroll(event: Event): void {
+    const scrollLeft = (event.target as HTMLElement).scrollLeft;
+    const header = this.dayHeaderRow()?.nativeElement;
+    const allDay = this.allDayRow()?.nativeElement;
+    if (header) header.scrollLeft = scrollLeft;
+    if (allDay) allDay.scrollLeft = scrollLeft;
   }
 
   dayKey(day: Date): string {

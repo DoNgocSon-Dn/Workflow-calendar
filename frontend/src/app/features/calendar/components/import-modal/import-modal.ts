@@ -10,9 +10,10 @@ import {
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { DialogService } from '../../../../core/services/dialog.service';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../../environments/environment';
-import { CalendarStore } from '../../data/calendar-store';
+import { CalendarStore, localizedCalendarName } from '../../data/calendar-store';
 import { FormsModule } from '@angular/forms';
 import { OverflowTooltip } from '../../../../shared/directives/overflow-tooltip';
 import {
@@ -46,14 +47,18 @@ function isServerRejection(err: unknown): err is HttpErrorResponse {
   return err instanceof HttpErrorResponse && err.status > 0 && err.status < 500;
 }
 
-function serverErrorMessage(err: HttpErrorResponse, fallback: string): string {
+function serverErrorMessage(
+  err: HttpErrorResponse,
+  fallback: string,
+  msgs: { rateLimit: string; tooLarge: string },
+): string {
   // 429/413 phải kiểm TRƯỚC khi đọc body.message: ThrottlerException mặc định
   // của NestJS tự đặt message thành chuỗi kỹ thuật "ThrottlerException: Too
   // Many Requests" — đó VẪN LÀ một message hợp lệ (khác rỗng), nên nếu đọc
   // body.message trước thì câu tiếng Việt thân thiện bên dưới không bao giờ
   // được dùng tới cho đúng hai mã lỗi mà mình đã biết rõ nguyên nhân.
-  if (err.status === 429) return 'Bạn đã vượt quá giới hạn import. Vui lòng thử lại sau.';
-  if (err.status === 413) return 'File vượt quá giới hạn cho phép.';
+  if (err.status === 429) return msgs.rateLimit;
+  if (err.status === 413) return msgs.tooLarge;
 
   const body = err.error as { message?: string | string[] } | undefined;
   const msg = body?.message;
@@ -128,6 +133,13 @@ export class ImportModalComponent {
   protected readonly store = inject(CalendarStore);
   private readonly router = inject(Router);
   private readonly dialog = inject(DialogService);
+  protected readonly i18n = inject(TranslationService);
+
+  /** 429/413 friendly messages for `serverErrorMessage`. */
+  private readonly serverMsgs = () => ({
+    rateLimit: this.i18n.t('import.errRateLimit'),
+    tooLarge: this.i18n.t('import.errTooLarge'),
+  });
 
   readonly selectedFile = signal<File | null>(null);
   readonly parsing = signal(false);
@@ -170,6 +182,11 @@ export class ImportModalComponent {
       ? (size / 1024 / 1024).toFixed(1) + ' MB'
       : (size / 1024).toFixed(1) + ' KB';
   });
+
+  /** Display label for a calendar — localises the auto-created "Cá nhân". */
+  protected calendarLabel(cal: { name: string }): string {
+    return localizedCalendarName(cal.name, (k) => this.i18n.t(k));
+  }
 
   clearSelectedFile(): void {
     this.selectedFile.set(null);
@@ -277,10 +294,13 @@ export class ImportModalComponent {
     // Thuộc tính `accept` chỉ lọc hộp thoại chọn file — kéo-thả hoặc chọn
     // "Tất cả tệp" vẫn lọt, nên phải tự kiểm.
     if (!ALLOWED_EXTENSIONS.some((ext) => name.endsWith(ext))) {
-      return 'Chỉ hỗ trợ file .ics hoặc .csv. File .pdf hãy gửi cho Trợ lý AI.';
+      return this.i18n.t('import.errExtension');
     }
     if (file.size > MAX_UPLOAD_BYTES) {
-      return `File vượt quá giới hạn ${MAX_UPLOAD_LABEL} (file của bạn ${(file.size / 1024 / 1024).toFixed(1)} MB).`;
+      return this.i18n.t('import.errTooBig', {
+        limit: MAX_UPLOAD_LABEL,
+        size: (file.size / 1024 / 1024).toFixed(1),
+      });
     }
     return null;
   }
@@ -289,7 +309,7 @@ export class ImportModalComponent {
   async parseFile(): Promise<void> {
     const file = this.selectedFile();
     if (!file) {
-      this.parseError.set('Vui lòng chọn 1 file trước.');
+      this.parseError.set(this.i18n.t('import.errNoFile'));
       return;
     }
 
@@ -334,7 +354,7 @@ export class ImportModalComponent {
         // Server đã xem file và từ chối (quá lớn, quá nhiều sự kiện, sai định
         // dạng, hết hạn mức). Hiện đúng lý do, KHÔNG tự parse cục bộ để lách.
         this.parseError.set(
-          serverErrorMessage(err, 'Không import được file. Vui lòng kiểm tra lại nội dung file.'),
+          serverErrorMessage(err, this.i18n.t('import.errParseServer'), this.serverMsgs()),
         );
         this.parsing.set(false);
         return;
@@ -356,10 +376,10 @@ export class ImportModalComponent {
       }));
       this.eventsPreview.set(uiEvents);
       if (uiEvents.length === 0) {
-        this.parseError.set('Không đọc được sự kiện từ file. Vui lòng kiểm tra lại nội dung file.');
+        this.parseError.set(this.i18n.t('import.errNoEvents'));
       }
-    } catch (err: any) {
-      this.parseError.set('Lỗi khi đọc file. Vui lòng thử lại với file .ics, .csv hoặc .txt');
+    } catch {
+      this.parseError.set(this.i18n.t('import.errReadFile'));
     } finally {
       this.parsing.set(false);
     }
@@ -383,7 +403,9 @@ export class ImportModalComponent {
             const dtendMatch = block.match(/DTEND[:;](.*)/i);
             const locMatch = block.match(/LOCATION:(.*)/i);
 
-            const title = summaryMatch ? summaryMatch[1].trim() : `Sự kiện ${i}`;
+            const title = summaryMatch
+              ? summaryMatch[1].trim()
+              : this.i18n.t('import.fallbackTitle', { n: i });
             let start = new Date();
             if (dtstartMatch) {
               const val = dtstartMatch[1].replace(/[^0-9T]/g, '');
@@ -414,7 +436,7 @@ export class ImportModalComponent {
               !line.startsWith('---')
             ) {
               const parts = line.split(/[,;\t]/).map((p) => p.replace(/^"|"$/g, '').trim());
-              const title = parts[0] || `Sự kiện ${i + 1}`;
+              const title = parts[0] || this.i18n.t('import.fallbackTitle', { n: i + 1 });
               const dateMatch = line.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
               let start = new Date(now.getTime() + i * 86400000);
               if (dateMatch) {
@@ -455,7 +477,7 @@ export class ImportModalComponent {
     }
 
     if (events.length === 0) {
-      this.parseError.set('Danh sách sự kiện nhập trống.');
+      this.parseError.set(this.i18n.t('import.errEmptyList'));
       return;
     }
 
@@ -483,7 +505,8 @@ export class ImportModalComponent {
           this.parseError.set(
             serverErrorMessage(
               backendErr,
-              'Không lưu được danh sách sự kiện. Vui lòng thử lại.',
+              this.i18n.t('import.errSaveServer'),
+              this.serverMsgs(),
             ),
           );
           this.importing.set(false);
@@ -508,8 +531,9 @@ export class ImportModalComponent {
       this.importSuccess.set(true);
       // importSuccess() = true nên isImportDirty() đã là false — không hỏi lại.
       setTimeout(() => void this.cancel(), 1200);
-    } catch (err: any) {
-      this.parseError.set(err?.error?.message || 'Lỗi khi lưu sự kiện hàng loạt.');
+    } catch (err: unknown) {
+      const body = (err as { error?: { message?: string } })?.error;
+      this.parseError.set(body?.message || this.i18n.t('import.errSaveBulk'));
     } finally {
       this.importing.set(false);
     }
@@ -548,11 +572,11 @@ export class ImportModalComponent {
 
     if (this.isImportDirty()) {
       const confirmed = await this.dialog.confirm(
-        'Dữ liệu hoặc file bạn đã thêm sẽ không được lưu. Bạn có chắc chắn muốn hủy?',
+        this.i18n.t('import.cancelConfirmBody'),
         {
-          title: 'Hủy quá trình import?',
-          confirmLabel: 'Hủy Import',
-          cancelLabel: 'Tiếp tục Import',
+          title: this.i18n.t('import.cancelConfirmTitle'),
+          confirmLabel: this.i18n.t('import.cancelConfirmYes'),
+          cancelLabel: this.i18n.t('import.cancelConfirmNo'),
           danger: true,
         },
       );
