@@ -323,9 +323,20 @@ export class GroupWorkspaceModal {
         if (!this.meetDate()) this.seedMeetSchedule();
       });
     });
+
+    effect(() => {
+      const tab = this.activeTab();
+      if (tab === 'calendar' && !this.canUserSeeGroupCalendar()) {
+        this.store.setActiveWorkspaceTab('tasks');
+      } else if (tab === 'chat' && !this.canUserSeeChat()) {
+        this.store.setActiveWorkspaceTab('tasks');
+      }
+    });
   }
 
   setTab(tab: WorkspaceTab): void {
+    if (tab === 'calendar' && !this.canUserSeeGroupCalendar()) return;
+    if (tab === 'chat' && !this.canUserSeeChat()) return;
     this.store.activeWorkspaceTab.set(tab);
     if (tab === 'chat') {
       this.store.unreadChatCount.set(0);

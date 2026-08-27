@@ -111,25 +111,29 @@
           <app-icon class="tab-icon" name="users" /> {{ i18n.t('group.tabMembers') }}
           <span class="tab-badge">{{ store.members().length }}</span>
         </button>
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeTab() === 'chat'"
-          (click)="setTab('chat')"
-        >
-          <app-icon class="tab-icon" name="message" /> {{ i18n.t('group.tabChat') }}
-          @if (store.unreadChatCount() > 0) {
-            <span class="tab-badge">{{ store.unreadChatCount() }}</span>
-          }
-        </button>
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeTab() === 'calendar'"
-          (click)="setTab('calendar')"
-        >
-          <app-icon class="tab-icon" name="calendar" /> {{ i18n.t('group.tabCalendar') }}
-        </button>
+        @if (canUserSeeChat()) {
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab() === 'chat'"
+            (click)="setTab('chat')"
+          >
+            <app-icon class="tab-icon" name="message" /> {{ i18n.t('group.tabChat') }}
+            @if (store.unreadChatCount() > 0) {
+              <span class="tab-badge">{{ store.unreadChatCount() }}</span>
+            }
+          </button>
+        }
+        @if (canUserSeeGroupCalendar()) {
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab() === 'calendar'"
+            (click)="setTab('calendar')"
+          >
+            <app-icon class="tab-icon" name="calendar" /> {{ i18n.t('group.tabCalendar') }}
+          </button>
+        }
       </nav>
 
       <div class="modal-body">
@@ -688,7 +692,7 @@
         }
 
         <!-- TAB 3: CHAT -->
-        @if (activeTab() === 'chat') {
+        @if (activeTab() === 'chat' && canUserSeeChat()) {
           <div class="chat-section">
             <div class="chat-messages">
               @for (msg of store.messages(); track msg.clientMessageId ?? msg.id) {
@@ -851,7 +855,7 @@
         }
 
         <!-- TAB 4: CALENDAR INFO -->
-        @if (activeTab() === 'calendar') {
+        @if (activeTab() === 'calendar' && canUserSeeGroupCalendar()) {
           <div class="calendar-section">
             <div class="info-card">
               <h3><app-icon name="calendar" /> {{ i18n.t('group.calendarTabTitle') }}</h3>
