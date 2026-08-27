@@ -81,8 +81,8 @@ export class EventsService {
       .single();
 
     if (error) {
-      this.logger.warn(`Insert event failed (${error.message}), retrying fallback without series_id/recurrence_rule...`);
-      const { series_id, recurrence_rule, ...fallbackRow } = row;
+      this.logger.warn(`Insert event failed (${error.message}), retrying fallback without series_id/recurrence_rule/calendar_type...`);
+      const { series_id, recurrence_rule, calendar_type, ...fallbackRow } = row;
       const res = await supabase
         .from('events')
         .insert(fallbackRow)
@@ -187,8 +187,8 @@ export class EventsService {
       .returns<EventRow[]>();
 
     if (error) {
-      this.logger.warn(`Insert series failed (${error.message}), retrying fallback without series_id/recurrence_rule...`);
-      const fallbackRows = rows.map(({ series_id, recurrence_rule, ...rest }) => rest);
+      this.logger.warn(`Insert series failed (${error.message}), retrying fallback without series_id/recurrence_rule/calendar_type...`);
+      const fallbackRows = rows.map(({ series_id, recurrence_rule, calendar_type, ...rest }) => rest);
       const res = await supabase
         .from('events')
         .insert(fallbackRows)

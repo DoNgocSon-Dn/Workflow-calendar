@@ -87,6 +87,13 @@
   text-transform: capitalize;
 }
 
+.meta-line {
+  margin: 0.6rem 0 0;
+  font-size: 0.85rem;
+  color: var(--holiday-subtitle, var(--color-text-tertiary));
+  opacity: 0.9;
+}
+
 @keyframes holidayInfoBackdropIn {
   from {
     opacity: 0;

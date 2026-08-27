@@ -18,6 +18,7 @@ export interface EventRow {
   meet_link: string | null;
   series_id: string | null;
   recurrence_rule: RecurrenceRuleDto | null;
+  calendar_type: 'solar' | 'lunar' | null;
 }
 
 export interface EventDto {
@@ -33,6 +34,9 @@ export interface EventDto {
   meetLink?: string;
   seriesId?: string;
   recurrenceRule?: RecurrenceRuleDto;
+  /** 'solar' (Dương lịch) hoặc 'lunar' (Âm lịch). Hàng cũ chưa có cột này
+   *  đọc ra 'solar'. */
+  calendarType: 'solar' | 'lunar';
   /**
    * Ai đã tạo sự kiện này.
    *
@@ -58,6 +62,7 @@ export function toEventDto(row: EventRow): EventDto {
     meetLink: row.meet_link ?? undefined,
     seriesId: row.series_id ?? undefined,
     recurrenceRule: row.recurrence_rule ?? undefined,
+    calendarType: row.calendar_type ?? 'solar',
     createdBy: row.created_by ?? undefined,
   };
 }
@@ -79,6 +84,7 @@ export function toEventInsertRow(
     meet_link: dto.meetLink ?? null,
     series_id: series?.seriesId ?? null,
     recurrence_rule: series?.recurrenceRule ?? null,
+    calendar_type: dto.calendarType ?? 'solar',
   };
 }
 
@@ -92,6 +98,7 @@ export function toEventUpdateRow(dto: UpdateEventDto): Record<string, unknown> {
   if (dto.end !== undefined) row['end_at'] = dto.end;
   if (dto.allDay !== undefined) row['all_day'] = dto.allDay;
   if (dto.meetLink !== undefined) row['meet_link'] = dto.meetLink;
+  if (dto.calendarType !== undefined) row['calendar_type'] = dto.calendarType;
   return row;
 }
 

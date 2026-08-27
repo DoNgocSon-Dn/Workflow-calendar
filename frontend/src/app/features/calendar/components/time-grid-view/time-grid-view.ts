@@ -33,7 +33,7 @@ import { isEventOnDay } from '../../utils/event-utils';
 import { PositionedEvent, layoutDayEvents } from '../../utils/time-grid-layout';
 
 import { convertSolarToLunar, LunarDate, lunarCellLabel } from '../../utils/lunar-calendar';
-import { resolveTopHolidayForDate } from '../../utils/holiday-resolver';
+import { resolveTopHolidayForDate, holidayCalendarType } from '../../utils/holiday-resolver';
 import { Holiday } from '../../../../models/holiday-theme.model';
 import { VN_HOLIDAY_CALENDAR_ID } from '../../data/vietnam-holidays';
 
@@ -84,12 +84,13 @@ export class TimeGridView {
     if (!holiday) return null;
     const base = startOfDay(day);
     return {
-      id: `${VN_HOLIDAY_CALENDAR_ID}::${holiday.id}::${day.getFullYear()}-0`,
+      id: `${VN_HOLIDAY_CALENDAR_ID}::${holiday.id}::${day.getFullYear()}`,
       calendarId: VN_HOLIDAY_CALENDAR_ID,
       title: holiday.name,
       start: base,
       end: base,
       allDay: true,
+      calendarType: holidayCalendarType(holiday),
     };
   }
 

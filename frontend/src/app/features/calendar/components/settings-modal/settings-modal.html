@@ -55,6 +55,7 @@
                       id="display-name-input"
                       type="text"
                       class="name-input"
+                      maxlength="100"
                       [placeholder]="i18n.t('settings.displayNamePlaceholder')"
                       [value]="nameDraft()"
                       (input)="onNameInput($any($event.target).value)"

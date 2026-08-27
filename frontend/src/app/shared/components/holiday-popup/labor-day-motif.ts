@@ -1,25 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
-interface GearSpec {
-  readonly cx: number;
-  readonly cy: number;
-  readonly r: number;
-  readonly toothW: number;
-  readonly toothH: number;
-  readonly teethAngles: readonly number[];
-}
-
-function gear(cx: number, cy: number, r: number, teethCount: number, toothW: number, toothH: number): GearSpec {
-  return {
-    cx,
-    cy,
-    r,
-    toothW,
-    toothH,
-    teethAngles: Array.from({ length: teethCount }, (_, i) => (360 / teethCount) * i),
-  };
-}
-
 type ParticleShape = 'square' | 'line';
 
 interface MechParticle {
@@ -55,17 +35,19 @@ function buildParticles(count: number, seedOffset: number, depthMin: number, dep
 let nextInstanceId = 0;
 
 /**
- * 4 bánh răng 3D (SVG + CSS, không WebGL) + dụng cụ lao động cho scene Quốc
- * tế Lao động — cùng vai trò với `TetBranchMotif`: dùng chung giữa popup
- * chúc mừng và lớp nền động sau lịch (`CalendarHolidayBackdrop`).
+ * Scene ngày Quốc tế Lao động (1/5): 5 người lao động — ẢNH THẬT đã tách nền
+ * (`/assets/holidays/labor-day/workers.png`) — đứng dọc mép dưới, trôi rất
+ * nhẹ; nền là lưới kỹ thuật + silhouette nhà máy rất mờ + particle "bụi
+ * xưởng". Cùng vai trò với các motif khác: dùng chung giữa popup chúc mừng và
+ * lớp nền động sau lịch (`CalendarHolidayBackdrop`).
  *
- * Chia sẵn 3 lớp bg/mid/fg (xem `.html`) — mỗi lớp là một `<svg>` riêng để
- * `appHolidayParallax` ở nơi gọi (ghi `--holiday-px/py` lên `.holiday-backdrop`
- * cha) tịnh tiến từng lớp với độ sâu khác nhau bằng CSS `transform` thuần,
- * không lệ thuộc tỉ lệ scale của viewBox. Bánh răng chạm nhau LUÔN quay
- * ngược chiều nhau (A↔B, B↔C) — đúng cơ học bánh răng thật, không phải tất cả
- * quay cùng chiều. Particle cơ khí (vuông/gạch) sinh bằng công thức
- * deterministic như `DongSonDrumMotif.dust` — không `Math.random()`.
+ * (Trước đây scene này là cụm bánh răng + cờ lê + búa vẽ SVG — đổi sang ảnh
+ * người lao động theo yêu cầu, cùng quy ước ảnh ghép của skyline 2/9 và Dinh
+ * Độc Lập 30/4.)
+ *
+ * Chia sẵn 3 lớp bg/mid/fg — mỗi lớp một `<svg>` riêng để `appHolidayParallax`
+ * ở nơi gọi tịnh tiến từng lớp với độ sâu khác nhau bằng CSS `transform`
+ * thuần. Particle sinh bằng công thức deterministic — không `Math.random()`.
  */
 @Component({
   selector: 'app-labor-day-motif',
@@ -74,16 +56,10 @@ let nextInstanceId = 0;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LaborDayMotif {
-  /** id duy nhất cho <pattern> lưới kỹ thuật — popup và nền lịch có thể
-   *  render cùng lúc hai instance, id trùng sẽ khiến trình duyệt chọn nhầm
-   *  pattern của instance kia (giống lý do có gridId/clipId ở các motif khác). */
+  /** id duy nhất cho <pattern> lưới kỹ thuật — popup và nền lịch có thể render
+   *  cùng lúc hai instance, id trùng sẽ khiến trình duyệt chọn nhầm pattern
+   *  của instance kia. */
   protected readonly gridId = `ldm-grid-${nextInstanceId++}`;
-
-  // Bg: lớn nhất + rất nhỏ. Mid: trung bình, ăn khớp A. Fg: nhỏ hơn, ăn khớp B.
-  protected readonly gearA = gear(156, 46, 34, 14, 11, 15);
-  protected readonly gearB = gear(110, 86, 23, 10, 9, 12);
-  protected readonly gearC = gear(80, 124, 14, 8, 6, 9);
-  protected readonly gearD = gear(176, 118, 9, 6, 4, 6);
 
   protected readonly bgParticles = buildParticles(6, 0, 0.15, 0.45);
   protected readonly midParticles = buildParticles(6, 20, 0.4, 0.7);

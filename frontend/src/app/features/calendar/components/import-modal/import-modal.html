@@ -106,6 +106,7 @@
                     <span class="preview-card__index">{{ $index + 1 }}</span>
                     <input
                       type="text"
+                      maxlength="200"
                       [(ngModel)]="item.title"
                       class="table-input title-input"
                       placeholder="Tiêu đề sự kiện"
@@ -126,6 +127,7 @@
                       <label class="preview-field__label">Địa điểm</label>
                       <input
                         type="text"
+                        maxlength="200"
                         [(ngModel)]="item.location"
                         class="table-input location-input"
                         placeholder="Địa điểm / ghi chú"

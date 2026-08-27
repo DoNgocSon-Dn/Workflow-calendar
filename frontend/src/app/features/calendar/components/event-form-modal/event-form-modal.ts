@@ -25,6 +25,7 @@ import {
   CalendarColor,
   CalendarDef,
   CalendarEvent,
+  CalendarType,
   ConflictEvent,
   ReminderDraft,
   ReminderType,
@@ -198,6 +199,9 @@ export class EventFormModal {
   /** Chỉ sửa được lúc TẠO MỚI — sự kiện đã có chỉ hiển thị tóm tắt quy tắc
    *  lặp (xem describeRecurrence trong template), không cho đổi giữa chừng. */
   readonly recurrenceRule = signal<RecurrenceRule | null>(null);
+  /** Loại lịch của sự kiện — quyết định nó hiện ở "Lịch Dương" hay "Lịch Âm"
+   *  trong chế độ xem Lịch biểu. Mặc định 'solar'. */
+  readonly calendarType = signal<CalendarType>('solar');
   readonly repeatPickerOpen = signal(false);
   readonly customRecurrenceOpen = signal(false);
   readonly customInterval = signal(1);
@@ -320,6 +324,7 @@ export class EventFormModal {
       this.remindersOpen.set(!evt);
       this.commentsOpen.set(false);
       this.recurrenceRule.set(evt?.seriesId ? evt.recurrenceRule ?? null : null);
+      this.calendarType.set(evt?.calendarType ?? 'solar');
       this.repeatPickerOpen.set(false);
       this.customRecurrenceOpen.set(false);
       this.customInterval.set(1);
@@ -728,6 +733,7 @@ export class EventFormModal {
       location: v.location.trim() || undefined,
       description: v.description.trim() || undefined,
       meetLink: v.meetLink.trim() || undefined,
+      calendarType: this.calendarType(),
     };
 
     const current = this.event();

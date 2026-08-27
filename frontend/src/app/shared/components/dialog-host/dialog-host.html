@@ -12,6 +12,7 @@
         <input
           type="text"
           class="dh-input"
+          maxlength="200"
           [value]="dialog.inputValue()"
           (input)="dialog.inputValue.set($any($event.target).value)"
           (keydown.enter)="dialog.submitPrompt()"

@@ -47,6 +47,14 @@
   min-width: 0;
 }
 
+/* Item flex mặc định không co dưới bề rộng nội dung — thiếu dòng này, tên
+   nhóm dài một từ (không dấu cách, tối đa 100 ký tự) sẽ đẩy khối tiêu đề
+   giãn hết cỡ, che mất hàng nút "Ẩn nhóm / Sửa / Xóa nhóm / Đóng" thay vì
+   để chính h2 bên trong tự cắt gọn kèm "...". */
+.header-title-text {
+  min-width: 0;
+}
+
 .group-avatar {
   flex: 0 0 auto;
   width: 40px;
@@ -258,6 +266,10 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  /* Item lưới/flex mặc định không co dưới bề rộng nội dung — thiếu dòng này,
+     một tiêu đề task dài không dấu cách sẽ đẩy cả cột kanban phình ra, vỡ
+     bố cục 3 cột thay vì tự xuống dòng bên trong cột. */
+  min-width: 0;
 }
 
 .col-title {
@@ -335,6 +347,9 @@
 .task-item-header {
   font-size: 0.9rem;
   color: var(--color-text);
+  /* Xuống dòng đè lên chữ nếu cần — tiêu đề dài một từ (không dấu cách) mặc
+     định không có chỗ ngắt dòng nên sẽ tràn khỏi thẻ task. */
+  overflow-wrap: anywhere;
 }
 
 .task-desc {
@@ -344,6 +359,8 @@
   font-size: 0.8rem;
   color: var(--color-text-tertiary);
   margin: 4px 0 8px 0;
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .task-actions {

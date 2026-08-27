@@ -3,7 +3,7 @@
     @if (store.activeGroup(); as group) {
       <header class="modal-header">
         <div class="header-title-box">
-          <div>
+          <div class="header-title-text">
             <h2>{{ group.name }}</h2>
             <p class="group-desc">{{ group.description || 'Không gian làm việc nhóm' }}</p>
           </div>
@@ -425,6 +425,7 @@
                   <input
                     type="email"
                     class="text-input"
+                    maxlength="254"
                     placeholder="Email người muốn mời..."
                     [value]="inviteEmail()"
                     (input)="onInviteEmailInput($any($event.target).value)"

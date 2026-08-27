@@ -11,5 +11,10 @@
     <span class="badge">{{ badgeLabel() }}</span>
     <h2 class="title">{{ displayTitle() }}</h2>
     <p class="date">{{ displayDate() }}</p>
+    <p class="meta-line">
+      {{ i18n.t('event.calendarType') }}: {{ calendarTypeLabel() }}
+      &nbsp;•&nbsp;
+      {{ i18n.t('event.sourceLabel') }}: {{ i18n.t('event.sourceSystem') }}
+    </p>
   </div>
 </div>

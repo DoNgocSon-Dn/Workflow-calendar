@@ -6,23 +6,37 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { CalendarStore } from '../../data/calendar-store';
 import { TranslationService } from '../../../../core/i18n/translation.service';
-import { CALENDAR_COLOR_HEX, CalendarEvent } from '../../models/calendar.models';
-import { DatePipe } from '@angular/common';
-import { convertSolarToLunar } from '../../utils/lunar-calendar';
-import { resolveHolidaysForDate, resolveTopHolidayForDate } from '../../utils/holiday-resolver';
-import { VN_HOLIDAY_CALENDAR_ID } from '../../data/vietnam-holidays';
+import { AuthStore } from '../../../../core/auth/auth-store';
 import { Icon } from '../../../../shared/components/icon/icon';
+import { CALENDAR_COLOR_HEX, CalendarEvent, CalendarType } from '../../models/calendar.models';
+import { convertSolarToLunar } from '../../utils/lunar-calendar';
+import { resolveHolidaysForDate, holidayCalendarType } from '../../utils/holiday-resolver';
+import {
+  AgendaScope,
+  LUNAR_SYSTEM_CALENDAR_ID,
+  eventSource,
+  matchesAgendaScope,
+} from '../../utils/event-classification';
+import { VN_HOLIDAY_CALENDAR_ID } from '../../data/vietnam-holidays';
+import { isSameDay, startOfDay, toDateInputValue } from '../../utils/date-utils';
+
+type AgendaEvent = CalendarEvent & { isLunarMarker?: boolean };
 
 export interface GroupedAgendaDay {
   date: Date;
   dateLabel: string;
-  events: (CalendarEvent & { isLunarEvent?: boolean })[];
+  events: AgendaEvent[];
 }
 
 export type AgendaRangeFilter = 'month' | 'next30' | 'all';
-export type CalendarType = 'solar' | 'lunar';
+export type MineTimeFilter = 'today' | '7d' | '30d' | 'month' | 'all';
+export type MineStatusFilter = 'all' | 'upcoming' | 'past';
+export type MineTypeFilter = 'all' | CalendarType;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 @Component({
   selector: 'app-agenda-view',
@@ -34,36 +48,96 @@ export type CalendarType = 'solar' | 'lunar';
 export class AgendaView {
   protected readonly store = inject(CalendarStore);
   protected readonly i18n = inject(TranslationService);
+  private readonly authStore = inject(AuthStore);
   protected readonly colorHex = CALENDAR_COLOR_HEX;
 
   readonly selectEvent = output<string>();
 
+  /** ☀️ Lịch Dương · 🌙 Lịch Âm · ⭐ Sự kiện của tôi. */
+  protected readonly scope = signal<AgendaScope>('solar');
+
+  /** Bộ lọc khoảng thời gian cho scope 'solar' / 'lunar'. */
   protected readonly filterMode = signal<AgendaRangeFilter>('month');
-  protected readonly calendarType = signal<CalendarType>('lunar');
+
+  /** Bộ lọc riêng cho "Sự kiện của tôi". */
+  protected readonly mineType = signal<MineTypeFilter>('all');
+  protected readonly mineTime = signal<MineTimeFilter>('month');
+  protected readonly mineStatus = signal<MineStatusFilter>('all');
+
   protected readonly maxDisplayedDays = signal<number>(10);
+
+  setScope(scope: AgendaScope): void {
+    this.scope.set(scope);
+    this.maxDisplayedDays.set(10);
+  }
 
   setFilterMode(mode: AgendaRangeFilter): void {
     this.filterMode.set(mode);
     this.maxDisplayedDays.set(10);
   }
 
-  setCalendarType(type: CalendarType): void {
-    this.calendarType.set(type);
+  setMineType(v: MineTypeFilter): void {
+    this.mineType.set(v);
+    this.maxDisplayedDays.set(10);
+  }
+  setMineTime(v: MineTimeFilter): void {
+    this.mineTime.set(v);
+    this.maxDisplayedDays.set(10);
+  }
+  setMineStatus(v: MineStatusFilter): void {
+    this.mineStatus.set(v);
+    this.maxDisplayedDays.set(10);
   }
 
   loadMore(): void {
     this.maxDisplayedDays.update((prev) => prev + 10);
   }
 
-  holidayTagFor(date: Date): string | null {
-    const holiday = resolveTopHolidayForDate(date);
-    if (!holiday) return null;
-    return holiday.name;
+  protected colorFor(event: AgendaEvent): string {
+    if (event.isLunarMarker) return 'var(--color-warning)';
+    if (event.calendarId === VN_HOLIDAY_CALENDAR_ID) {
+      return event.calendarType === 'lunar' ? 'var(--color-warning)' : 'var(--holiday-accent)';
+    }
+    return this.colorHex[this.store.calendarColor().get(event.calendarId) ?? 'blue'];
   }
 
-  protected colorFor(event: CalendarEvent & { isLunarEvent?: boolean }): string {
-    if (event.isLunarEvent) return 'var(--color-warning)';
-    return this.colorHex[this.store.calendarColor().get(event.calendarId) ?? 'blue'];
+  protected isSystemEvent(event: AgendaEvent): boolean {
+    return !!event.isLunarMarker || eventSource(event) === 'system';
+  }
+
+  protected calendarTypeLabel(event: AgendaEvent): string {
+    return (event.calendarType ?? 'solar') === 'lunar'
+      ? this.i18n.t('agenda.calendarTypeLunar')
+      : this.i18n.t('agenda.calendarTypeSolar');
+  }
+
+  /** Dòng phụ dưới tiêu đề event: "Dương lịch • <lịch>" hoặc "Âm lịch • Sự kiện hệ thống". */
+  protected eventMeta(event: AgendaEvent): string {
+    const type = this.calendarTypeLabel(event);
+    if (this.isSystemEvent(event)) return `${type} • ${this.i18n.t('agenda.sourceSystem')}`;
+    const cal =
+      this.store.calendars().find((c) => c.id === event.calendarId)?.name ??
+      this.store.otherCalendars.find((c) => c.id === event.calendarId)?.name ??
+      this.i18n.t('agenda.sourceUser');
+    return `${type} • ${cal}`;
+  }
+
+  /** Nhãn khoảng cho event kéo dài nhiều ngày (Tết Mùng 1 → Mùng 5). */
+  protected multiDaySpan(event: AgendaEvent): string | null {
+    const spanDays = Math.round((event.end.getTime() - event.start.getTime()) / DAY_MS);
+    if (spanDays <= 1) return null;
+    const last = new Date(event.end.getTime() - DAY_MS);
+    if (this.scope() === 'lunar') {
+      const a = convertSolarToLunar(event.start);
+      const b = convertSolarToLunar(last);
+      return this.i18n.t('agenda.dateSpan', {
+        start: `${a.day}/${a.month}`,
+        end: `${b.day}/${b.month} ÂL`,
+      });
+    }
+    const fmt = (d: Date) =>
+      `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+    return this.i18n.t('agenda.dateSpan', { start: fmt(event.start), end: fmt(last) });
   }
 
   protected readonly currentMonthLabel = computed(() => {
@@ -73,155 +147,46 @@ export class AgendaView {
   });
 
   protected readonly allGroupedDays = computed<GroupedAgendaDay[]>(() => {
-    const allEvents = this.store.visibleEvents();
+    const scope = this.scope();
     const focused = this.store.focusedDate();
-    const mode = this.filterMode();
-    const calType = this.calendarType();
+    const today = this.store.today();
     const intlLocale = this.i18n.locale() === 'en' ? 'en-US' : 'vi-VN';
 
-    let filtered = allEvents;
+    // 1. Lọc theo phạm vi (Dương / Âm / Của tôi) — hoàn toàn dựa `calendarType`
+    //    và nguồn sự kiện, KHÔNG đoán theo tên.
+    let list = this.store.visibleEvents().filter((e) => matchesAgendaScope(e, scope));
 
-    if (mode === 'month') {
-      const year = focused.getFullYear();
-      const month = focused.getMonth();
-      filtered = allEvents.filter((e) => {
-        const d = new Date(e.start);
-        return d.getFullYear() === year && d.getMonth() === month;
-      });
-    } else if (mode === 'next30') {
-      const startMs = new Date(
-        focused.getFullYear(),
-        focused.getMonth(),
-        focused.getDate(),
-      ).getTime();
-      const endMs = startMs + 30 * 24 * 60 * 60 * 1000;
-      filtered = allEvents.filter((e) => {
-        const time = new Date(e.start).getTime();
-        return time >= startMs && time <= endMs;
-      });
+    // 2. Lọc thời gian
+    list =
+      scope === 'mine'
+        ? this.applyMineFilters(list, today, focused)
+        : this.applyRangeFilter(list, this.filterMode(), focused, today);
+
+    // 3. Gom theo ngày Dương của MỐC BẮT ĐẦU — event nhiều ngày chỉ một dòng.
+    const map = new Map<string, { date: Date; events: AgendaEvent[] }>();
+    for (const e of list) {
+      const key = toDateInputValue(e.start);
+      if (!map.has(key)) map.set(key, { date: startOfDay(e.start), events: [] });
+      map.get(key)!.events.push({ ...e });
     }
 
-    // Khi chọn Lịch Âm: Lọc bỏ các sự kiện Lễ Dương lịch để nhường chỗ cho ngày Lễ Âm Lịch
-    if (calType === 'lunar') {
-      filtered = filtered.filter((e) => e.calendarId !== VN_HOLIDAY_CALENDAR_ID);
+    // 4. Scope Âm: chèn mốc Mùng 1 / Rằm hàng tháng (KHÔNG dựng lại ngày lễ —
+    //    lễ âm đã là event thật ở bước 1). Bỏ qua nếu ngày đó đã có lễ âm.
+    if (scope === 'lunar') {
+      this.injectLunarMarkers(map, focused, this.filterMode(), today);
     }
 
-    const map = new Map<string, { date: Date; events: (CalendarEvent & { isLunarEvent?: boolean })[] }>();
-
-    for (const e of filtered) {
-      const startDate = new Date(e.start);
-      const endDate = new Date(e.end);
-      const year = startDate.getFullYear();
-      const month = String(startDate.getMonth() + 1).padStart(2, '0');
-      const day = String(startDate.getDate()).padStart(2, '0');
-      const dayKey = `${year}-${month}-${day}`;
-
-      if (!map.has(dayKey)) {
-        map.set(dayKey, { date: startDate, events: [] });
-      }
-      map.get(dayKey)!.events.push({
-        ...e,
-        start: startDate,
-        end: endDate,
-      });
-    }
-
-    // Khi ở chế độ Lịch Âm: Tự động tính toán & chèn các Sự kiện Âm lịch (Tết Nguyên Đán, Rằm, Mùng 1, Giỗ Tổ...)
-    if (calType === 'lunar') {
-      const dateList: Date[] = [];
-      const baseDate = new Date(focused.getFullYear(), focused.getMonth(), focused.getDate());
-
-      if (mode === 'month') {
-        const year = focused.getFullYear();
-        const month = focused.getMonth();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        for (let d = 1; d <= daysInMonth; d++) {
-          dateList.push(new Date(year, month, d));
-        }
-      } else if (mode === 'next30') {
-        for (let i = 0; i < 30; i++) {
-          const d = new Date(baseDate);
-          d.setDate(d.getDate() + i);
-          dateList.push(d);
-        }
-      } else {
-        // Mode 'all': Gom các ngày có sự kiện + 365 ngày của năm để Lịch Âm luôn có đầy đủ Tết Trung Thu, Tết Nguyên Đán, Rằm...
-        const dateSet = new Set<string>();
-        for (let i = 0; i < 365; i++) {
-          const d = new Date(baseDate);
-          d.setDate(d.getDate() + i);
-          const k = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-          dateSet.add(k);
-          dateList.push(d);
-        }
-
-        for (const e of allEvents) {
-          const d = new Date(e.start);
-          const k = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-          if (!dateSet.has(k)) {
-            dateSet.add(k);
-            dateList.push(d);
-          }
-        }
-      }
-
-      for (const d of dateList) {
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        const dayKey = `${year}-${month}-${day}`;
-
-        const holidays = resolveHolidaysForDate(d);
-        const lunar = convertSolarToLunar(d);
-
-        const titles: string[] = [];
-
-        for (const h of holidays) {
-          if (!titles.includes(h.name)) {
-            titles.push(h.name);
-          }
-        }
-
-        // Bổ sung Tết Trung Thu nếu trùng 15/8 âm lịch mà chưa có
-        if (lunar.month === 8 && lunar.day === 15 && !titles.includes('Tết Trung Thu')) {
-          titles.push('Tết Trung Thu');
-        }
-
-        // Bổ sung Mùng 1 & Rằm hàng tháng (không icon emoji)
-        if (lunar.day === 1 && !titles.some((t) => t.includes('Mùng 1'))) {
-          titles.push(`Mùng 1 Tháng ${lunar.month} Âm Lịch`);
-        } else if (lunar.day === 15 && !titles.some((t) => t.includes('Rằm'))) {
-          titles.push(`Ngày Rằm Tháng ${lunar.month} Âm Lịch`);
-        }
-
-        for (const title of titles) {
-          if (!map.has(dayKey)) {
-            map.set(dayKey, { date: d, events: [] });
-          }
-          const group = map.get(dayKey)!;
-          const exists = group.events.some((ev) => ev.title === title);
-          if (!exists) {
-            group.events.unshift({
-              id: `lunar-evt-${dayKey}-${title}`,
-              calendarId: 'lunar-sys',
-              title,
-              start: d,
-              end: d,
-              allDay: true,
-              isLunarEvent: true,
-            });
-          }
-        }
-      }
-    }
-
-    const keys = Array.from(map.keys()).sort();
-    return keys
+    // 5. Nhãn ngày + sắp xếp
+    return Array.from(map.keys())
+      .sort()
       .map((key) => {
         const item = map.get(key)!;
-        let dateLabel = '';
-
-        if (calType === 'lunar') {
+        item.events.sort((a, b) => {
+          if (a.allDay !== b.allDay) return a.allDay ? -1 : 1;
+          return a.start.getTime() - b.start.getTime();
+        });
+        let dateLabel: string;
+        if (scope === 'lunar') {
           const lunar = convertSolarToLunar(item.date);
           const weekday = item.date.toLocaleDateString(intlLocale, { weekday: 'long' });
           dateLabel = this.i18n.t('agenda.lunarDateLabel', {
@@ -239,21 +204,122 @@ export class AgendaView {
             year: 'numeric',
           });
         }
-
-        return {
-          date: item.date,
-          dateLabel,
-          events: item.events,
-        };
+        return { date: item.date, dateLabel, events: item.events };
       })
-      .filter((group) => group.events.length > 0);
+      .filter((g) => g.events.length > 0);
   });
 
-  protected readonly visibleGroupedDays = computed<GroupedAgendaDay[]>(() => {
-    return this.allGroupedDays().slice(0, this.maxDisplayedDays());
-  });
+  private applyRangeFilter(
+    list: CalendarEvent[],
+    mode: AgendaRangeFilter,
+    focused: Date,
+    today: Date,
+  ): CalendarEvent[] {
+    if (mode === 'all') return list;
+    if (mode === 'month') {
+      return list.filter(
+        (e) =>
+          e.start.getFullYear() === focused.getFullYear() &&
+          e.start.getMonth() === focused.getMonth(),
+      );
+    }
+    const startMs = startOfDay(today).getTime();
+    const endMs = startMs + 30 * DAY_MS;
+    return list.filter((e) => {
+      const t = e.start.getTime();
+      return t >= startMs && t <= endMs;
+    });
+  }
 
-  protected readonly hasMore = computed<boolean>(() => {
-    return this.allGroupedDays().length > this.maxDisplayedDays();
-  });
+  private applyMineFilters(list: CalendarEvent[], today: Date, focused: Date): CalendarEvent[] {
+    const mineType = this.mineType();
+    const mineTime = this.mineTime();
+    const mineStatus = this.mineStatus();
+    const todayMs = startOfDay(today).getTime();
+    const myId = this.authStore.user()?.id;
+    return list.filter((e) => {
+      // "Của tôi" theo nghĩa hẹp: do chính mình tạo. Backend cũ không gửi
+      // `createdBy` ⇒ lùi về "mọi sự kiện người dùng" (đã lọc ở matchesAgendaScope).
+      if (myId && e.createdBy && e.createdBy !== myId) return false;
+      if (mineType !== 'all' && (e.calendarType ?? 'solar') !== mineType) return false;
+
+      const startMs = e.start.getTime();
+      if (mineTime === 'today') {
+        if (!isSameDay(e.start, today)) return false;
+      } else if (mineTime === '7d') {
+        if (startMs < todayMs || startMs > todayMs + 7 * DAY_MS) return false;
+      } else if (mineTime === '30d') {
+        if (startMs < todayMs || startMs > todayMs + 30 * DAY_MS) return false;
+      } else if (mineTime === 'month') {
+        if (
+          e.start.getFullYear() !== focused.getFullYear() ||
+          e.start.getMonth() !== focused.getMonth()
+        ) {
+          return false;
+        }
+      }
+
+      if (mineStatus === 'upcoming' && e.end.getTime() < todayMs) return false;
+      if (mineStatus === 'past' && e.end.getTime() >= todayMs) return false;
+      return true;
+    });
+  }
+
+  private injectLunarMarkers(
+    map: Map<string, { date: Date; events: AgendaEvent[] }>,
+    focused: Date,
+    mode: AgendaRangeFilter,
+    today: Date,
+  ): void {
+    const dates: Date[] = [];
+    if (mode === 'month') {
+      const y = focused.getFullYear();
+      const m = focused.getMonth();
+      const n = new Date(y, m + 1, 0).getDate();
+      for (let d = 1; d <= n; d++) dates.push(new Date(y, m, d));
+    } else {
+      const base = startOfDay(today);
+      const span = mode === 'next30' ? 30 : 365;
+      for (let i = 0; i < span; i++) dates.push(new Date(base.getTime() + i * DAY_MS));
+    }
+
+    for (const d of dates) {
+      const lunar = convertSolarToLunar(d);
+      if (lunar.day !== 1 && lunar.day !== 15) continue;
+      // Đã có lễ âm thật hôm nay (vd Rằm tháng 8 = Trung Thu) thì không thêm mốc chung.
+      if (resolveHolidaysForDate(d).some((h) => holidayCalendarType(h) === 'lunar')) continue;
+
+      const key = toDateInputValue(d);
+      const title =
+        lunar.day === 1
+          ? this.i18n.t('agenda.lunarFirstDay', { month: lunar.month })
+          : this.i18n.t('agenda.lunarFullMoon', { month: lunar.month });
+      if (!map.has(key)) map.set(key, { date: startOfDay(d), events: [] });
+      const group = map.get(key)!;
+      if (group.events.some((e) => e.title === title)) continue;
+      group.events.unshift({
+        id: `lunar-marker-${key}`,
+        calendarId: LUNAR_SYSTEM_CALENDAR_ID,
+        title,
+        start: startOfDay(d),
+        end: startOfDay(d),
+        allDay: true,
+        calendarType: 'lunar',
+        isLunarMarker: true,
+      });
+    }
+  }
+
+  protected readonly visibleGroupedDays = computed<GroupedAgendaDay[]>(() =>
+    this.allGroupedDays().slice(0, this.maxDisplayedDays()),
+  );
+
+  protected readonly hasMore = computed<boolean>(
+    () => this.allGroupedDays().length > this.maxDisplayedDays(),
+  );
+
+  protected onCardClick(event: AgendaEvent): void {
+    if (event.isLunarMarker) return; // mốc lịch, không có chi tiết
+    this.selectEvent.emit(event.id);
+  }
 }

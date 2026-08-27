@@ -25,6 +25,7 @@
     <input
       class="text-input"
       type="text"
+      maxlength="2000"
       [ngModel]="newComment()"
       (ngModelChange)="newComment.set($event)"
       placeholder="Viết bình luận…"

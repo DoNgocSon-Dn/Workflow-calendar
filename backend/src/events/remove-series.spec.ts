@@ -77,7 +77,7 @@ class FakeQuery {
     const data = matched.map((r) => {
       if (!this.selectCols) return { ...r };
       const out: Record<string, unknown> = {};
-      for (const c of this.selectCols) out[c] = (r as Record<string, unknown>)[c];
+      for (const c of this.selectCols) out[c] = (r as unknown as Record<string, unknown>)[c];
       return out;
     });
     return { data, error: null };

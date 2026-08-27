@@ -2,6 +2,11 @@ import { RecurrenceRule } from '../utils/recurrence';
 
 export type CalendarViewMode = 'month' | 'week' | 'day' | 'agenda';
 
+/** Loại lịch một sự kiện thuộc về — quyết định nó hiện trong "Lịch Dương" hay
+ *  "Lịch Âm" ở chế độ xem Lịch biểu. Ngày lễ hệ thống suy ra từ `dateRule.kind`
+ *  (xem `holidayCalendarType`), sự kiện người dùng lưu ở cột `calendar_type`. */
+export type CalendarType = 'solar' | 'lunar';
+
 export type CalendarColor =
   | 'blue'
   | 'green'
@@ -42,6 +47,13 @@ export interface CalendarEvent {
   /** Có giá trị khi sự kiện này là một lần lặp thuộc một chuỗi lặp lại. */
   seriesId?: string;
   recurrenceRule?: RecurrenceRule;
+  /** 'solar' (Dương) mặc định cho mọi sự kiện cũ; 'lunar' (Âm) do người dùng
+   *  chọn trong form. Vắng mặt ⇒ coi như 'solar'. Ngày lễ hệ thống được gắn
+   *  sẵn khi dựng (`buildVietnamHolidayEvents`). */
+  calendarType?: CalendarType;
+  /** Id người tạo — dùng để lọc "Sự kiện của tôi". Không phải lúc nào backend
+   *  cũng gửi (bản cũ). */
+  createdBy?: string;
 }
 
 /** Phạm vi áp dụng khi sửa/xoá một lần lặp trong chuỗi lặp lại. */

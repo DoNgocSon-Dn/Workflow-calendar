@@ -216,6 +216,49 @@
   color: var(--color-text-secondary);
 }
 
+/* Loại lịch: Dương / Âm — segmented đơn sắc, dùng token hệ thống, không gradient. */
+.caltype-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-text-tertiary);
+  margin-bottom: 0.35rem;
+}
+
+.caltype-seg {
+  display: inline-flex;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  padding: 3px;
+  gap: 3px;
+}
+
+.caltype-opt {
+  border: none;
+  background: none;
+  color: var(--color-text-tertiary);
+  padding: 0.25rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.caltype-opt:hover {
+  color: var(--color-text);
+}
+
+.caltype-opt.active {
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
+}
+
+.caltype-source {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-text-tertiary);
+}
+
 .repeat-options-list {
   max-height: 14rem;
   padding: 0.35rem;

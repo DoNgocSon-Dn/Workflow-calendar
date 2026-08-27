@@ -137,6 +137,7 @@
           type="text"
           class="name-prompt-input"
           placeholder="Nhập tên của bạn (VD: Hoàng Cường)"
+          maxlength="100"
           [value]="nameDraft()"
           (input)="nameDraft.set($any($event.target).value)"
           (keyup.enter)="completeOnboarding()"

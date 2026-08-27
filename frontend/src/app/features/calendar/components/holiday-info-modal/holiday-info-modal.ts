@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { CalendarEvent } from '../../models/calendar.models';
 import { resolveHolidayIdFromEvent } from '../../data/vietnam-holidays';
+import { holidayCalendarType } from '../../utils/holiday-resolver';
 import { HOLIDAYS } from '../../../../data/holidays.data';
 import { DEFAULT_HOLIDAY_THEME } from '../../../../models/holiday-theme.model';
 
@@ -55,6 +56,17 @@ export class HolidayInfoModal {
     const raw = (this.i18n.locale() === 'en' && content?.titleEn) ? content.titleEn : (content?.title ?? this.event().title);
     const year = this.event().start.getFullYear();
     return raw.replace(/\{year\}/g, String(year)).replace(/\{nextYear\}/g, String(year + 1));
+  });
+
+  /** "Dương lịch" / "Âm lịch" — ưu tiên loại đã gắn trên event, fallback suy
+   *  từ `dateRule.kind` của ngày lễ khớp. */
+  protected readonly calendarTypeLabel = computed(() => {
+    const type =
+      this.event().calendarType ??
+      (this.matchedHoliday() ? holidayCalendarType(this.matchedHoliday()!) : 'solar');
+    return type === 'lunar'
+      ? this.i18n.t('event.calendarTypeLunar')
+      : this.i18n.t('event.calendarTypeSolar');
   });
 
   protected readonly badgeLabel = computed(() => {

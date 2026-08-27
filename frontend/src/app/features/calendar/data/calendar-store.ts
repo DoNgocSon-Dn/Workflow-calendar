@@ -93,6 +93,7 @@ interface EventApiDto {
   meetLink?: string;
   seriesId?: string;
   recurrenceRule?: RecurrenceRule;
+  calendarType?: 'solar' | 'lunar';
   /** Ai tạo sự kiện. Dùng để nhận ra tiếng vọng realtime của chính mình. */
   createdBy?: string;
 }
@@ -281,6 +282,8 @@ function toCalendarEvent(dto: EventApiDto): CalendarEvent {
     meetLink: dto.meetLink,
     seriesId: dto.seriesId,
     recurrenceRule: dto.recurrenceRule,
+    calendarType: dto.calendarType ?? 'solar',
+    createdBy: dto.createdBy,
   };
 }
 

@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsIn,
   IsISO8601,
   IsNotEmpty,
   IsOptional,
@@ -41,7 +42,14 @@ export class CreateEventDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   meetLink?: string;
+
+  /** Loại lịch của sự kiện người dùng: 'solar' (Dương) mặc định, 'lunar' (Âm).
+   *  Quyết định sự kiện xuất hiện trong "Lịch Dương" hay "Lịch Âm". */
+  @IsOptional()
+  @IsIn(['solar', 'lunar'])
+  calendarType?: 'solar' | 'lunar';
 
   @IsOptional()
   @ValidateNested()

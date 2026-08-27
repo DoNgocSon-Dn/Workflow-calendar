@@ -336,6 +336,10 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* overflow:hidden + ellipsis chỉ có tác dụng khi hộp có bề rộng bị chặn —
+     <button> mặc định tự giãn theo nội dung, nên tiêu đề dài một từ vẫn tràn
+     khỏi ô ngày trước khi bị cắt. */
+  max-width: 100%;
   transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), filter 0.15s ease;
 }
 

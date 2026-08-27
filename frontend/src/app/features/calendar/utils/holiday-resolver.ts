@@ -1,6 +1,16 @@
 import { HOLIDAYS } from '../../../data/holidays.data';
 import { Holiday } from '../../../models/holiday-theme.model';
+import { CalendarType } from '../models/calendar.models';
 import { findLastDayOfLunarMonth, findLunarDateInSolarYear } from './lunar-calendar';
+
+/**
+ * Loại lịch của một ngày lễ — suy TRỰC TIẾP từ `dateRule.kind`, không đoán
+ * theo tên. `lunar` / `lunar-range` / `lunar-month-end` là Âm lịch; `fixed` /
+ * `fixed-range` / `explicit` là Dương lịch.
+ */
+export function holidayCalendarType(holiday: Holiday): CalendarType {
+  return holiday.dateRule.kind.startsWith('lunar') ? 'lunar' : 'solar';
+}
 
 /**
  * Single shared "which holidays fall on this day" query — every surface that

@@ -525,6 +525,11 @@ export class GroupStore {
     this.markGroupUnread(groupId || message.groupId);
 
     const group = this.groups().find((g) => g.id === groupId || g.id === message.groupId);
+    // Nhóm đã ẩn mà có người nhắn tin tới thì tự hiện lại — ẩn là để dọn bớt
+    // sidebar khi nhóm im ắng, không phải để lỡ mất tin nhắn mới.
+    if (group?.hidden) {
+      void this.setGroupHidden(group.id, false);
+    }
     const text = message.message ?? (message.attachmentName ? `Đã gửi tệp: ${message.attachmentName}` : '');
     const input: GroupMessageDraftInput = {
       senderId: message.senderId,

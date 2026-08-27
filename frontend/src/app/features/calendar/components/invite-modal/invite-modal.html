@@ -16,6 +16,7 @@
         <input
           type="email"
           class="field-input"
+          maxlength="254"
           placeholder="ban@example.com"
           [value]="email()"
           (input)="email.set($any($event.target).value)"

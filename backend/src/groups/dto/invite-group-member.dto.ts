@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsIn } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsIn, MaxLength } from 'class-validator';
 import { ASSIGNABLE_GROUP_ROLES } from '../group-role';
 
 /**
@@ -14,6 +14,7 @@ const ALLOWED_ROLES = [
 export class InviteGroupMemberDto {
   @IsNotEmpty()
   @IsEmail()
+  @MaxLength(254)
   email: string;
 
   @IsOptional()

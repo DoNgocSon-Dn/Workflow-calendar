@@ -88,6 +88,7 @@
         <textarea
           class="note-input"
           rows="2"
+          maxlength="2000"
           [ngModel]="newNoteContent()"
           (ngModelChange)="newNoteContent.set($event)"
           placeholder="Viết ghi chú mới…"
@@ -117,6 +118,7 @@
               <textarea
                 class="note-input"
                 rows="2"
+                maxlength="2000"
                 [ngModel]="editingContent()"
                 (ngModelChange)="editingContent.set($event)"
               ></textarea>
@@ -146,6 +148,7 @@
           <input
             class="text-input"
             type="text"
+            maxlength="300"
             [ngModel]="newTodoContent()"
             (ngModelChange)="newTodoContent.set($event)"
             placeholder="Thêm việc cần làm…"
@@ -172,6 +175,7 @@
               <input
                 class="text-input todo-edit-input"
                 type="text"
+                maxlength="300"
                 [ngModel]="editingTodoContent()"
                 (ngModelChange)="editingTodoContent.set($event)"
                 (keydown.enter)="$event.preventDefault(); saveEditTodo(todo.id)"
@@ -349,6 +353,7 @@
                     <input
                       class="event-proposal__name"
                       type="text"
+                      maxlength="200"
                       [value]="row.title"
                       [disabled]="savingEvents()"
                       aria-label="Tên sự kiện"
@@ -383,6 +388,7 @@
                     <input
                       class="event-proposal__location"
                       type="text"
+                      maxlength="200"
                       [value]="row.location"
                       [disabled]="savingEvents()"
                       placeholder="Địa điểm (không bắt buộc)"
@@ -469,6 +475,7 @@
                     <input
                       class="todo-proposal__name"
                       type="text"
+                      maxlength="300"
                       [value]="row.content"
                       [disabled]="savingProposal()"
                       aria-label="Tên việc"
@@ -603,6 +610,7 @@
             <input
               class="text-input"
               type="text"
+              maxlength="2000"
               [ngModel]="draft()"
               (ngModelChange)="draft.set($event)"
               [placeholder]="pendingFile() ? 'Muốn lấy gì từ file này? (không bắt buộc)' : 'Nhập yêu cầu…'"
