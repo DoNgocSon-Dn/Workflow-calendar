@@ -378,3 +378,84 @@
   transform: translateY(-1px);
   filter: brightness(1.08);
 }
+
+/* ============================================================
+   RESPONSIVE
+
+   Chế độ Tuần vẽ 7 cột ngày cạnh nhau. Ở 360px, sau khi trừ máng giờ 3rem,
+   mỗi cột còn ~44px — không đủ cho "T4" cộng số ngày cộng ngày âm, và một
+   khối sự kiện rộng 44px thì chẳng đọc được chữ nào.
+
+   Cách xử lý: cho mỗi cột một bề ngang SÀN rồi để cả lưới cuộn ngang bên
+   trong .time-grid. Vuốt ngang là thao tác quen thuộc trên lịch điện thoại,
+   và quan trọng hơn: đây là cuộn NỘI BỘ của một khối, không phải cuộn ngang
+   toàn trang.
+
+   Vì sàn đặt trên từng Ô chứ không phải trên cả hàng, chế độ Ngày (1 cột) tự
+   động không bị ảnh hưởng — một cột `flex: 1` luôn rộng hơn sàn nên không có
+   gì để tràn, không có gì để cuộn. Cùng một component, hai hành vi đúng, mà
+   không cần component biết nó đang vẽ mấy ngày.
+
+   Cả ba hàng (tiêu đề / cả-ngày / lưới giờ) đều phải nhận min-width như nhau,
+   nếu không chúng cuộn lệch nhau và cột giờ trôi khỏi tiêu đề của nó.
+   ============================================================ */
+@media (max-width: 767.98px) {
+  .time-grid {
+    overflow-x: auto;
+    /* Chiều dọc do .scroll-area lo. Để `visible` ở đây thì trình duyệt tự
+       nâng nó thành `auto` (quy tắc của overflow) và đẻ thêm một thanh cuộn
+       dọc thứ hai bọc ngoài. */
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+  }
+
+  .day-header-row,
+  .all-day-row,
+  .scroll-area,
+  .grid-body,
+  .columns {
+    min-width: min-content;
+  }
+
+  .day-header-cell,
+  .all-day-cell,
+  .day-col {
+    min-width: 4.75rem;
+  }
+
+  /* Máng giờ hẹp lại — "23" vẫn vừa, mà trả được gần 1rem cho các cột ngày. */
+  .gutter-spacer,
+  .gutter {
+    width: 2.5rem;
+  }
+
+  .hour-label {
+    right: 0.25rem;
+  }
+}
+
+/* Mobile: nhãn ngày lễ trong ô tiêu đề là thứ tốn chỗ nhất mà ít cần nhất —
+   ngày lễ đã có nền tô riêng cho cả cột, và bấm vào vẫn ra popup đầy đủ. */
+@media (max-width: 599.98px) {
+  .day-header-cell {
+    padding: 0.3rem 0;
+  }
+
+  .holiday-badge {
+    font-size: 0.55rem;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .block-title {
+    font-size: 0.68rem;
+  }
+
+  /* Giờ bắt đầu trong khối: ở cột hẹp nó đẩy tiêu đề xuống mất hút. Tiêu đề
+     mới là thứ cần đọc trước; giờ thì nhìn vị trí khối trên lưới là biết. */
+  .block-time {
+    display: none;
+  }
+}

@@ -20,7 +20,7 @@
 
          Viết hoa ngay trong nội dung, KHÔNG dùng text-transform: trình đọc
          màn hình và thao tác copy đều lấy đúng thứ đang hiển thị. -->
-    <div class="preloader-wordmark">WORKFLOW</div>
+    <div class="preloader-wordmark">{{ i18n.t('landing.wordmark') }}</div>
   </div>
   <div class="preloader-panel left" aria-hidden="true"></div>
   <div class="preloader-panel right" aria-hidden="true"></div>
@@ -49,26 +49,35 @@
           <rect x="3.6" y="4.6" width="16.8" height="15.8" rx="2" fill="none" stroke="#1a73e8" stroke-width="1.2" />
         </svg>
       </span>
-      <span>Workflow</span>
+      <span>{{ i18n.t('landing.brand') }}</span>
     </div>
 
     <div class="links">
       <a href="#about" [class.is-active]="activeSection() === 'about'"
         [attr.aria-current]="activeSection() === 'about' ? 'true' : null"
-        (click)="scrollToSection($event, 'about')">Giới thiệu</a>
+        (click)="scrollToSection($event, 'about')">{{ i18n.t('landing.nav.about') }}</a>
       <a href="#features" [class.is-active]="activeSection() === 'features'"
         [attr.aria-current]="activeSection() === 'features' ? 'true' : null"
-        (click)="scrollToSection($event, 'features')">Tính năng</a>
+        (click)="scrollToSection($event, 'features')">{{ i18n.t('landing.nav.features') }}</a>
       <a href="#showcase" [class.is-active]="activeSection() === 'showcase'"
         [attr.aria-current]="activeSection() === 'showcase' ? 'true' : null"
-        (click)="scrollToSection($event, 'showcase')">Khả năng</a>
+        (click)="scrollToSection($event, 'showcase')">{{ i18n.t('landing.nav.showcase') }}</a>
       <a href="#process" [class.is-active]="activeSection() === 'process'"
         [attr.aria-current]="activeSection() === 'process' ? 'true' : null"
-        (click)="scrollToSection($event, 'process')">Quy trình</a>
+        (click)="scrollToSection($event, 'process')">{{ i18n.t('landing.nav.process') }}</a>
     </div>
 
     <div class="nav-right">
-      <button class="theme-toggle" id="themeToggle" aria-label="Chuyển đổi giao diện sáng/tối"
+      <!-- Bộ đổi ngôn ngữ. Bản trước chỉ có trong Cài đặt — tức là sau khi đăng
+           nhập — nên khách vào landing không có cách nào đổi. -->
+      <div class="lang-switch" role="group" [attr.aria-label]="i18n.t('landing.a11y.lang')">
+        <button type="button" [class.on]="i18n.locale() === 'vi'"
+          [attr.aria-pressed]="i18n.locale() === 'vi'" (click)="setLocale('vi')">VI</button>
+        <button type="button" [class.on]="i18n.locale() === 'en'"
+          [attr.aria-pressed]="i18n.locale() === 'en'" (click)="setLocale('en')">EN</button>
+      </div>
+
+      <button class="theme-toggle" id="themeToggle" [attr.aria-label]="i18n.t('landing.a11y.theme')"
         (click)="toggleTheme($event)">
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
@@ -82,12 +91,12 @@
         </svg>
       </button>
 
-      <a class="nav-cta" routerLink="/login">Bắt đầu miễn phí</a>
+      <a class="nav-cta" routerLink="/login">{{ i18n.t('landing.cta.start') }}</a>
 
       <!-- Chỉ hiện ở <=860px, đúng chỗ mà .links bị ẩn đi. Trước đây menu bị
            ẩn mà không có gì thay thế, nên mobile mất hẳn điều hướng. -->
       <button class="nav-burger" type="button" aria-controls="mobileMenu" [attr.aria-expanded]="mobileMenuOpen()"
-        [attr.aria-label]="mobileMenuOpen() ? 'Đóng menu' : 'Mở menu'" (click)="toggleMobileMenu()">
+        [attr.aria-label]="mobileMenuOpen() ? i18n.t('landing.a11y.menuClose') : i18n.t('landing.a11y.menuOpen')" (click)="toggleMobileMenu()">
         <span class="burger-bars" [class.is-open]="mobileMenuOpen()" aria-hidden="true">
           <i></i><i></i><i></i>
         </span>
@@ -101,18 +110,17 @@
   }
   <div id="mobileMenu" class="mobile-menu" [class.is-open]="mobileMenuOpen()">
     <a href="#about" [class.is-active]="activeSection() === 'about'"
-      [attr.aria-current]="activeSection() === 'about' ? 'true' : null" (click)="scrollToSection($event, 'about')">Giới
-      thiệu</a>
+      [attr.aria-current]="activeSection() === 'about' ? 'true' : null" (click)="scrollToSection($event, 'about')">{{ i18n.t('landing.footer.about') }}</a>
     <a href="#features" [class.is-active]="activeSection() === 'features'"
       [attr.aria-current]="activeSection() === 'features' ? 'true' : null"
-      (click)="scrollToSection($event, 'features')">Tính năng</a>
+      (click)="scrollToSection($event, 'features')">{{ i18n.t('landing.nav.features') }}</a>
     <a href="#showcase" [class.is-active]="activeSection() === 'showcase'"
       [attr.aria-current]="activeSection() === 'showcase' ? 'true' : null"
-      (click)="scrollToSection($event, 'showcase')">Khả năng</a>
+      (click)="scrollToSection($event, 'showcase')">{{ i18n.t('landing.nav.showcase') }}</a>
     <a href="#process" [class.is-active]="activeSection() === 'process'"
       [attr.aria-current]="activeSection() === 'process' ? 'true' : null"
-      (click)="scrollToSection($event, 'process')">Quy trình</a>
-    <a class="mobile-menu-cta" routerLink="/login">Bắt đầu miễn phí</a>
+      (click)="scrollToSection($event, 'process')">{{ i18n.t('landing.nav.process') }}</a>
+    <a class="mobile-menu-cta" routerLink="/login">{{ i18n.t('landing.cta.start') }}</a>
   </div>
 
   <!-- HERO SECTION -->
@@ -134,24 +142,22 @@
          đây "Kéo xuống" định vị tuyệt đối nên không được tính vào phép căn
          và đè lên nút CTA. -->
     <div class="hero-inner">
-      <div class="hero-eyebrow">Lịch cá nhân · thế hệ mới</div>
+      <div class="hero-eyebrow">{{ i18n.t('landing.hero.eyebrow') }}</div>
 
       <h1>
-        <span class="line"><span>Tối ưu lịch trình</span></span>
-        <span class="line"><span><em>liền mạch mọi khoảnh khắc</em></span></span>
+        <span class="line"><span>{{ i18n.t('landing.hero.title1') }}</span></span>
+        <span class="line"><span><em>{{ i18n.t('landing.hero.title2') }}</em></span></span>
       </h1>
       <!-- CHỈ chữ thuần, không thẻ con: splitHeroText() đọc textContent rồi
            ghi đè innerHTML để tách cụm, nên mọi thẻ đặt ở đây đều bị xoá. -->
-      <p class="hero-sub">
-        Lịch có trợ lý AI hiểu tiếng Việt, tự phát hiện trùng giờ, đồng bộ tức thì và sẵn ngày âm cùng ngày lễ Việt Nam.
-      </p>
+      <p class="hero-sub">{{ i18n.t('landing.hero.sub') }}</p>
 
       <div class="hero-cta">
-        <a class="btn-primary" routerLink="/login">Bắt đầu miễn phí</a>
+        <a class="btn-primary" routerLink="/login">{{ i18n.t('landing.cta.start') }}</a>
         <!-- CTA phụ cho người chưa sẵn sàng đăng nhập. .btn-ghost vốn đã được
              style đầy đủ nhưng không có ai dùng — chỗ trống này chính là nơi
              nó được dựng ra để đứng. -->
-        <a class="btn-ghost" href="#about" (click)="scrollToSection($event, 'about')">Workflow là gì?</a>
+        <a class="btn-ghost" href="#about" (click)="scrollToSection($event, 'about')">{{ i18n.t('landing.hero.q') }}</a>
       </div>
 
       <!-- Bốn điều người ta cần biết TRƯỚC khi bấm "Bắt đầu miễn phí": giá,
@@ -159,15 +165,15 @@
            hiện ở khối CTA cuối trang, tức là sau khi người đọc đã phải tự
            đoán suốt cả trang. -->
       <ul class="hero-facts">
-        <li>Miễn phí toàn bộ, không có gói trả phí</li>
-        <li>Đăng nhập Google, không cần đặt mật khẩu</li>
-        <li>Chạy thẳng trên trình duyệt, không cần cài đặt</li>
-        <li>Giao diện Tiếng Việt &amp; English</li>
+        <li>{{ i18n.t('landing.hero.b1') }}</li>
+        <li>{{ i18n.t('landing.hero.b2') }}</li>
+        <li>{{ i18n.t('landing.hero.b3') }}</li>
+        <li>{{ i18n.t('landing.hero.b4') }}</li>
       </ul>
     </div>
 
     <div class="scroll-hint">
-      <span>Kéo xuống</span>
+      <span>{{ i18n.t('landing.hero.scroll') }}</span>
       <span class="bar"></span>
     </div>
   </section>
@@ -177,31 +183,31 @@
     <!-- Danh sách phải được lặp NGUYÊN VẸN hai lần thì animation cuộn tới
          -50% mới nối liền thành vòng. Muốn thêm/bớt mục thì sửa cả hai nửa. -->
     <div class="marquee">
-      <span><b>Trợ lý AI</b>: gõ một câu, lịch tự được tạo</span>
-      <span><b>Kéo &amp; thả</b>: kéo trên lưới để tạo, kéo mép để đổi thời lượng</span>
-      <span><b>Phát hiện trùng lịch</b>: cảnh báo ngay khi đang tạo sự kiện</span>
-      <span><b>Bốn chế độ xem</b>: Tháng, Tuần, Ngày, Lịch biểu</span>
-      <span><b>Đồng bộ real-time</b>: cập nhật tức thì trên mọi thiết bị</span>
-      <span><b>Xác nhận qua email</b>: không cần mở app hay đăng nhập</span>
-      <span><b>49 ngày lễ dựng sẵn</b>: Tết, Vu Lan, Trung Thu, Quốc khánh</span>
-      <span><b>Ngày âm trên từng ô lịch</b>: tính bằng quy tắc, năm nào cũng đúng</span>
-      <span><b>Nhiều lịch</b>: mỗi lịch một màu, chia sẻ riêng từng lịch</span>
-      <span><b>Không gian nhóm</b>: chat, giao việc, lịch chung một chỗ</span>
-      <span><b>Song ngữ</b>: Tiếng Việt &amp; English, đổi trong một cú bấm</span>
-      <span><b>Miễn phí</b>: không có gói trả phí</span>
+      <span><b>{{ i18n.t('landing.mq.ai') }}</b>{{ i18n.t('landing.mq.aiDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.drag') }}</b>{{ i18n.t('landing.mq.dragDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.conflict') }}</b>{{ i18n.t('landing.mq.conflictDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.views') }}</b>{{ i18n.t('landing.mq.viewsDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.rt') }}</b>{{ i18n.t('landing.mq.rtDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.mail') }}</b>{{ i18n.t('landing.mq.mailDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.holi') }}</b>{{ i18n.t('landing.mq.holiDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.lunar') }}</b>{{ i18n.t('landing.mq.lunarDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.multi') }}</b>{{ i18n.t('landing.mq.multiDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.group') }}</b>{{ i18n.t('landing.mq.groupDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.bi') }}</b>{{ i18n.t('landing.mq.biDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.free') }}</b>{{ i18n.t('landing.mq.freeDesc') }}</span>
 
-      <span><b>Trợ lý AI</b>: gõ một câu, lịch tự được tạo</span>
-      <span><b>Kéo &amp; thả</b>: kéo trên lưới để tạo, kéo mép để đổi thời lượng</span>
-      <span><b>Phát hiện trùng lịch</b>: cảnh báo ngay khi đang tạo sự kiện</span>
-      <span><b>Bốn chế độ xem</b>: Tháng, Tuần, Ngày, Lịch biểu</span>
-      <span><b>Đồng bộ real-time</b>: cập nhật tức thì trên mọi thiết bị</span>
-      <span><b>Xác nhận qua email</b>: không cần mở app hay đăng nhập</span>
-      <span><b>49 ngày lễ dựng sẵn</b>: Tết, Vu Lan, Trung Thu, Quốc khánh</span>
-      <span><b>Ngày âm trên từng ô lịch</b>: tính bằng quy tắc, năm nào cũng đúng</span>
-      <span><b>Nhiều lịch</b>: mỗi lịch một màu, chia sẻ riêng từng lịch</span>
-      <span><b>Không gian nhóm</b>: chat, giao việc, lịch chung một chỗ</span>
-      <span><b>Song ngữ</b>: Tiếng Việt &amp; English, đổi trong một cú bấm</span>
-      <span><b>Miễn phí</b>: không có gói trả phí</span>
+      <span><b>{{ i18n.t('landing.mq.ai') }}</b>{{ i18n.t('landing.mq.aiDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.drag') }}</b>{{ i18n.t('landing.mq.dragDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.conflict') }}</b>{{ i18n.t('landing.mq.conflictDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.views') }}</b>{{ i18n.t('landing.mq.viewsDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.rt') }}</b>{{ i18n.t('landing.mq.rtDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.mail') }}</b>{{ i18n.t('landing.mq.mailDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.holi') }}</b>{{ i18n.t('landing.mq.holiDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.lunar') }}</b>{{ i18n.t('landing.mq.lunarDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.multi') }}</b>{{ i18n.t('landing.mq.multiDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.group') }}</b>{{ i18n.t('landing.mq.groupDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.bi') }}</b>{{ i18n.t('landing.mq.biDesc') }}</span>
+      <span><b>{{ i18n.t('landing.mq.free') }}</b>{{ i18n.t('landing.mq.freeDesc') }}</span>
     </div>
   </div>
 
@@ -210,40 +216,26 @@
        sách tính năng, nên người vào lần đầu đọc xong cả màn hero vẫn chưa
        biết đây là sản phẩm gì, cho ai, thay thế cái gì. -->
   <section class="section-pad" id="about">
-    <div class="kicker reveal">Workflow là gì</div>
-    <h2 class="section-title reveal">Một chiếc lịch <span class="dim">thay cho ba ứng dụng</span></h2>
-    <p class="section-desc reveal">
-      Ứng dụng lịch chạy trên trình duyệt, làm cho người Việt và các nhóm nhỏ. Xếp giờ, bàn bạc và ghi chú gộp về đúng
-      chỗ công việc đang diễn ra, thay vì ba app rời.
-    </p>
+    <div class="kicker reveal">{{ i18n.t('landing.about.kicker') }}</div>
+    <h2 class="section-title reveal">{{ i18n.t('landing.about.t1') }}<span class="dim">{{ i18n.t('landing.about.t2') }}</span></h2>
+    <p class="section-desc reveal">{{ i18n.t('landing.about.desc') }}</p>
 
     <div class="about-grid">
       <div class="about-card reveal">
-        <div class="about-label">Dành cho những ai</div>
-        <p>
-          Người đi làm và sinh viên cần lịch có sẵn ngày âm, ngày rằm và ngày lễ Việt Nam. Nhóm học tập, nhóm dự án hay
-          câu lạc bộ cần lịch chung mà không phải dựng cả hệ thống quản lý.
-        </p>
+        <div class="about-label">{{ i18n.t('landing.about.l1') }}</div>
+        <p>{{ i18n.t('landing.about.p1') }}</p>
       </div>
       <div class="about-card reveal">
-        <div class="about-label">Giải quyết việc gì</div>
-        <p>
-          Ba việc tốn thời gian nhất khi xếp lịch: gõ tay từng ô, phát hiện trùng giờ quá muộn, tra ngày âm ở chỗ khác.
-          Trợ lý AI, cảnh báo xung đột và lịch âm dựng sẵn lo đúng ba việc đó.
-        </p>
+        <div class="about-label">{{ i18n.t('landing.about.l2') }}</div>
+        <p>{{ i18n.t('landing.about.p2') }}</p>
       </div>
       <div class="about-card reveal">
-        <div class="about-label">Chạy ở đâu</div>
-        <p>
-          Chạy thẳng trên trình duyệt, không tải về, không cài đặt. Đăng nhập bằng Google là bắt đầu làm việc ngay.
-        </p>
+        <div class="about-label">{{ i18n.t('landing.about.l3') }}</div>
+        <p>{{ i18n.t('landing.about.p3') }}</p>
       </div>
       <div class="about-card reveal">
-        <div class="about-label">Chi phí</div>
-        <p>
-          Miễn phí toàn bộ: không gói trả phí, không tính năng bị khoá, không cần thẻ ngân hàng. Giao diện có sẵn Tiếng
-          Việt và English.
-        </p>
+        <div class="about-label">{{ i18n.t('landing.about.l4') }}</div>
+        <p>{{ i18n.t('landing.about.p4') }}</p>
       </div>
     </div>
   </section>
@@ -253,11 +245,9 @@
        độc lập — nên nó dùng .section-pad--lead để bỏ padding đáy, chảy thẳng
        vào phần scrollytelling thay vì để trống nguyên một màn hình. -->
   <section class="section-pad section-pad--lead" id="features">
-    <div class="kicker reveal">Tính năng cốt lõi</div>
-    <h2 class="section-title reveal">Một chiếc lịch <span class="dim">biết suy nghĩ</span> thay bạn</h2>
-    <p class="section-desc reveal">
-      Bốn tính năng nền tảng của Workflow. Cuộn tiếp để xem từng cái chạy trên giao diện lịch thật.
-    </p>
+    <div class="kicker reveal">{{ i18n.t('landing.feat.kicker') }}</div>
+    <h2 class="section-title reveal">{{ i18n.t('landing.about.t1') }}<span class="dim">{{ i18n.t('landing.feat.t2') }}</span>{{ i18n.t('landing.feat.t3') }}</h2>
+    <p class="section-desc reveal">{{ i18n.t('landing.feat.desc') }}</p>
 
     <!-- Mục lục của phần trình diễn ngay bên dưới. Trước đây section này chỉ
          có ba dòng chữ rồi hết, nên ai bấm "Tính năng" trên nav sẽ rơi vào một
@@ -265,23 +255,23 @@
     <ol class="feature-toc reveal">
       <li>
         <span class="ftoc-num">01</span>
-        <b>Trợ lý AI</b>
-        <i>Gõ một câu tiếng Việt, sự kiện tự được tạo</i>
+        <b>{{ i18n.t('landing.mq.ai') }}</b>
+        <i>{{ i18n.t('landing.feat.n1d') }}</i>
       </li>
       <li>
         <span class="ftoc-num">02</span>
-        <b>Trung tâm thông báo</b>
-        <i>Mọi hoạt động đổ về một nơi, hiện ngay tức thì</i>
+        <b>{{ i18n.t('landing.feat.n2') }}</b>
+        <i>{{ i18n.t('landing.feat.n2d') }}</i>
       </li>
       <li>
         <span class="ftoc-num">03</span>
-        <b>Phát hiện xung đột</b>
-        <i>Cảnh báo trùng giờ ngay lúc đang tạo sự kiện</i>
+        <b>{{ i18n.t('landing.feat.n3') }}</b>
+        <i>{{ i18n.t('landing.feat.n3d') }}</i>
       </li>
       <li>
         <span class="ftoc-num">04</span>
-        <b>Lịch âm &amp; ngày lễ</b>
-        <i>Ngày âm dưới mỗi ngày dương, 49 ngày lễ dựng sẵn</i>
+        <b>{{ i18n.t('landing.feat.n4') }}</b>
+        <i>{{ i18n.t('landing.feat.n4d') }}</i>
       </li>
     </ol>
   </section>
@@ -292,43 +282,34 @@
       <!-- ── CỘT CHỮ: đổi nội dung theo từng stage ── -->
       <div class="scrolly-copy">
         <article class="copy-step" data-step="0">
-          <h3>Mọi thứ xoay quanh <em>một chiếc lịch</em></h3>
-          <p>
-            Không phải chuyển qua lại giữa nhiều ứng dụng. Mọi tính năng đều nằm trên một giao diện lịch duy nhất. Cuộn
-            xuống để xem.
-          </p>
+          <h3>{{ i18n.t('landing.sc.s0t1') }}<em>{{ i18n.t('landing.sc.s0t2') }}</em></h3>
+          <p>{{ i18n.t('landing.sc.s0d') }}</p>
         </article>
 
         <article class="copy-step" data-step="1">
-          <div class="feature-index">01 / Trợ lý AI</div>
-          <h3>Gõ một câu lịch tự được tạo</h3>
-          <p>
-            Gõ "Họp với Hùng thứ 6 lúc 3 giờ chiều" là xong. Trợ lý AI hiểu tiếng Việt tự nhiên và tạo đúng sự kiện. Câu
-            mơ hồ được chuyển sang form thủ công để bạn xác nhận.
-          </p>
+          <div class="feature-index">{{ i18n.t('landing.sc.s1i') }}</div>
+          <h3>{{ i18n.t('landing.sc.s1t') }}</h3>
+          <p>{{ i18n.t('landing.sc.s1d') }}</p>
           <div class="chip-row">
-            <span class="chip">Hiểu tiếng Việt tự nhiên</span>
-            <span class="chip">Luôn có bước xác nhận</span>
+            <span class="chip">{{ i18n.t('landing.sc.s1c1') }}</span>
+            <span class="chip">{{ i18n.t('landing.sc.s1c2') }}</span>
           </div>
 
           <div class="pop pop-ai" aria-hidden="true">
-            <div class="pop-head">Trợ lý AI</div>
-            <p class="pop-quote">"Họp với Hùng thứ 6 lúc 3 giờ chiều"</p>
-            <div class="pop-foot"><span class="pop-tick">✓</span> Đã tạo sự kiện · Thứ 6, 15:00</div>
+            <div class="pop-head">{{ i18n.t('landing.mq.ai') }}</div>
+            <p class="pop-quote">{{ i18n.t('landing.sc.s1q') }}</p>
+            <div class="pop-foot"><span class="pop-tick">✓</span>{{ i18n.t('landing.sc.s1f') }}</div>
           </div>
         </article>
 
         <article class="copy-step" data-step="2">
-          <div class="feature-index">02 / Trung tâm thông báo</div>
-          <h3>Biết ngay việc cần biết</h3>
-          <p>
-            Sự kiện mới, tin nhắn nhóm, lời mời — tất cả đổ về một nơi và hiện ngay, không cần tải lại trang. Sáu bộ lọc
-            giúp tìm nhanh việc cần, lời mời bấm đồng ý ngay tại chỗ.
-          </p>
+          <div class="feature-index">{{ i18n.t('landing.sc.s2i') }}</div>
+          <h3>{{ i18n.t('landing.sc.s2t') }}</h3>
+          <p>{{ i18n.t('landing.sc.s2d') }}</p>
           <div class="chip-row">
-            <span class="chip">Hiện ngay tức thì</span>
-            <span class="chip">Sáu bộ lọc</span>
-            <span class="chip">Xử lý ngay trong thông báo</span>
+            <span class="chip">{{ i18n.t('landing.sc.s2c1') }}</span>
+            <span class="chip">{{ i18n.t('landing.sc.s2c2') }}</span>
+            <span class="chip">{{ i18n.t('landing.sc.s2c3') }}</span>
           </div>
 
           <!-- Mô phỏng đúng bảng thông báo thật của app: nhãn số chưa đọc, hàng
@@ -342,98 +323,90 @@
                   <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
                   <path d="M13.7 21a2 2 0 0 1-3.4 0" />
                 </svg>
-              </span>
-              Thông báo
-              <span class="notif-count">3 mới</span>
+              </span>{{ i18n.t('landing.notif.title') }}<span class="notif-count">{{ i18n.t('landing.notif.count') }}</span>
             </div>
 
             <div class="notif-tabs">
-              <span class="ntab on">Tất cả</span>
-              <span class="ntab">Chưa đọc</span>
-              <span class="ntab">Tin nhắn</span>
-              <span class="ntab">Công việc</span>
-              <span class="ntab">Sự kiện</span>
-              <span class="ntab">Nhóm</span>
+              <span class="ntab on">{{ i18n.t('landing.notif.all') }}</span>
+              <span class="ntab">{{ i18n.t('landing.notif.unread') }}</span>
+              <span class="ntab">{{ i18n.t('landing.notif.msg') }}</span>
+              <span class="ntab">{{ i18n.t('landing.notif.task') }}</span>
+              <span class="ntab">{{ i18n.t('landing.notif.event') }}</span>
+              <span class="ntab">{{ i18n.t('landing.notif.group') }}</span>
             </div>
 
             <div class="notif-row">
               <span class="nrow-dot nrow-dot--event"></span>
               <span class="notif-body">
-                <b>Sự kiện mới</b>
-                <i>"đi học" đã được thêm vào lịch · 12:00</i>
+                <b>{{ i18n.t('landing.notif.r1') }}</b>
+                <i>{{ i18n.t('landing.notif.r1d') }}</i>
               </span>
             </div>
 
             <div class="notif-row">
               <span class="nrow-dot nrow-dot--msg"></span>
               <span class="notif-body">
-                <b>Tin nhắn nhóm</b>
-                <i>Sơn đã nhắn trong nhóm "bài học"</i>
+                <b>{{ i18n.t('landing.notif.r2') }}</b>
+                <i>{{ i18n.t('landing.notif.r2d') }}</i>
               </span>
             </div>
 
             <div class="notif-row is-invite">
               <span class="nrow-dot nrow-dot--invite"></span>
               <span class="notif-body">
-                <b>Lời mời tham gia nhóm</b>
-                <i>Sơn mời bạn vào nhóm "lambai"</i>
+                <b>{{ i18n.t('landing.notif.r3') }}</b>
+                <i>{{ i18n.t('landing.notif.r3d') }}</i>
               </span>
             </div>
 
             <div class="pop-btns">
-              <span class="pbtn yes">Chấp nhận</span>
-              <span class="pbtn no">Từ chối</span>
+              <span class="pbtn yes">{{ i18n.t('landing.notif.accept') }}</span>
+              <span class="pbtn no">{{ i18n.t('landing.notif.decline') }}</span>
             </div>
           </div>
         </article>
 
         <article class="copy-step" data-step="3">
-          <div class="feature-index">03 / Phát hiện xung đột</div>
-          <h3>Không bao giờ đặt trùng lịch nữa</h3>
-          <p>
-            Workflow tự kiểm tra chồng chéo giờ cho bạn và người được mời ngay lúc tạo sự kiện. Cảnh báo hiện trong form
-            kèm viền đỏ trên lịch.
-          </p>
+          <div class="feature-index">{{ i18n.t('landing.sc.s3i') }}</div>
+          <h3>{{ i18n.t('landing.sc.s3t') }}</h3>
+          <p>{{ i18n.t('landing.sc.s3d') }}</p>
           <div class="chip-row">
-            <span class="chip">Cảnh báo tức thì</span>
-            <span class="chip">Kiểm tra cho cả người mời</span>
+            <span class="chip">{{ i18n.t('landing.sc.s3c1') }}</span>
+            <span class="chip">{{ i18n.t('landing.sc.s3c2') }}</span>
           </div>
 
           <div class="pop pop-warn" aria-hidden="true">
             <span class="warn-badge">⚠</span>
             <div>
-              <p class="pop-title">Trùng lịch 14:00 - 15:00</p>
-              <p class="pop-sub">Sơn đã có "Họp khách hàng" từ 14:00–15:00</p>
+              <p class="pop-title">{{ i18n.t('landing.sc.s3w') }}</p>
+              <p class="pop-sub">{{ i18n.t('landing.sc.s3wd') }}</p>
             </div>
           </div>
         </article>
 
         <article class="copy-step" data-step="4">
-          <div class="feature-index">04 / Lịch âm &amp; Ngày lễ Việt Nam</div>
-          <h3>Âm lịch và ngày lễ Việt <em>có sẵn từ đầu</em></h3>
-          <p>
-            Theo dõi ngày âm, ngày giỗ và dịp lễ Việt Nam ngay trên lịch, không phải tra cứu riêng. Dữ liệu tự cập nhật
-            đúng mỗi năm.
-          </p>
+          <div class="feature-index">{{ i18n.t('landing.sc.s4i') }}</div>
+          <h3>{{ i18n.t('landing.sc.s4t1') }}<em>{{ i18n.t('landing.sc.s4t2') }}</em></h3>
+          <p>{{ i18n.t('landing.sc.s4d') }}</p>
           <div class="chip-row">
-            <span class="chip">Xem song song âm – dương</span>
-            <span class="chip">Đầy đủ ngày lễ Việt Nam</span>
+            <span class="chip">{{ i18n.t('landing.sc.s4c1') }}</span>
+            <span class="chip">{{ i18n.t('landing.sc.s4c2') }}</span>
           </div>
 
           <div class="pop pop-lunar" aria-hidden="true">
-            <div class="pop-head">Hôm nay</div>
+            <div class="pop-head">{{ i18n.t('landing.sc.today') }}</div>
             <div class="lunar-row">
               <span class="lunar-cell">
                 <b>6</b>
-                <i>Tháng 9 · dương</i>
+                <i>{{ i18n.t('landing.sc.solarM') }}</i>
               </span>
               <span class="lunar-div"></span>
               <span class="lunar-cell is-lunar">
                 <b>15</b>
-                <i>Tháng 7 · âm</i>
+                <i>{{ i18n.t('landing.sc.lunarM') }}</i>
               </span>
             </div>
-            <p class="pop-sub">Rằm tháng 7: Lễ Vu Lan, nhận ra từ chính ngày âm</p>
+            <p class="pop-sub">{{ i18n.t('landing.sc.lunarNote') }}</p>
           </div>
         </article>
       </div>
@@ -447,7 +420,7 @@
             <!-- mặt trước: giao diện lịch thật -->
             <div class="board-face">
               <header class="board-top">
-                <span class="board-month">Tháng 9 · Tuần này</span>
+                <span class="board-month">{{ i18n.t('landing.sc.week') }}</span>
                 <div class="board-cmd">
                   <span class="cmd-spark">✦</span>
                   <span class="cmd-text"></span>
@@ -473,41 +446,41 @@
                    thông báo hiện ra. -->
               <div class="board-drop">
                 <div class="bdrop-top">
-                  <b>Thông báo</b>
-                  <span class="bdrop-badge">3 mới</span>
+                  <b>{{ i18n.t('landing.notif.title') }}</b>
+                  <span class="bdrop-badge">{{ i18n.t('landing.notif.count') }}</span>
                 </div>
                 <div class="bdrop-acts">
-                  <span>Đánh dấu tất cả đã đọc</span>
-                  <span>Xóa tất cả</span>
+                  <span>{{ i18n.t('landing.notif.markAll') }}</span>
+                  <span>{{ i18n.t('landing.notif.clearAll') }}</span>
                 </div>
                 <div class="bdrop-tabs">
-                  <span class="on">Tất cả</span>
-                  <span>Chưa đọc</span>
-                  <span>Tin nhắn</span>
-                  <span>Công việc</span>
-                  <span>Sự kiện</span>
-                  <span>Nhóm</span>
+                  <span class="on">{{ i18n.t('landing.notif.all') }}</span>
+                  <span>{{ i18n.t('landing.notif.unread') }}</span>
+                  <span>{{ i18n.t('landing.notif.msg') }}</span>
+                  <span>{{ i18n.t('landing.notif.task') }}</span>
+                  <span>{{ i18n.t('landing.notif.event') }}</span>
+                  <span>{{ i18n.t('landing.notif.group') }}</span>
                 </div>
-                <div class="bdrop-group">MỚI <b>3</b></div>
+                <div class="bdrop-group">{{ i18n.t('landing.notif.new') }}<b>3</b></div>
                 <div class="bdrop-item">
                   <span class="nrow-dot nrow-dot--event"></span>
                   <span class="notif-body">
-                    <b>Sự kiện mới</b>
-                    <i>"đi học" đã được thêm vào lịch · 12:00</i>
+                    <b>{{ i18n.t('landing.notif.r1') }}</b>
+                    <i>{{ i18n.t('landing.notif.r1d') }}</i>
                   </span>
                 </div>
                 <div class="bdrop-item">
                   <span class="nrow-dot nrow-dot--msg"></span>
                   <span class="notif-body">
-                    <b>Tin nhắn nhóm</b>
-                    <i>Sơn đã nhắn trong nhóm "bài học"</i>
+                    <b>{{ i18n.t('landing.notif.r2') }}</b>
+                    <i>{{ i18n.t('landing.notif.r2d') }}</i>
                   </span>
                 </div>
                 <div class="bdrop-item">
                   <span class="nrow-dot nrow-dot--invite"></span>
                   <span class="notif-body">
-                    <b>Lời mời tham gia nhóm</b>
-                    <i>Sơn mời bạn vào nhóm "lambai"</i>
+                    <b>{{ i18n.t('landing.notif.r3') }}</b>
+                    <i>{{ i18n.t('landing.notif.r3d') }}</i>
                   </span>
                 </div>
               </div>
@@ -516,18 +489,18 @@
                    của app; 2/9 Quốc khánh (lễ dương) và 6/9 = rằm tháng 7,
                    Lễ Vu Lan (lễ âm) rơi cùng tuần. -->
               <div class="board-week">
-                <span class="bday"><i>T2</i><b>1</b><em>10/7</em></span>
-                <span class="bday is-hol"><i>T3</i><b>2</b><em>11/7</em></span>
-                <span class="bday"><i>T4</i><b>3</b><em>12/7</em></span>
-                <span class="bday"><i>T5</i><b>4</b><em>13/7</em></span>
-                <span class="bday hot"><i>T6</i><b>5</b><em>14/7</em></span>
-                <span class="bday is-lunar"><i>T7</i><b>6</b><em>15/7</em></span>
-                <span class="bday"><i>CN</i><b>7</b><em>16/7</em></span>
+                <span class="bday"><i>{{ i18n.t('landing.board.mon') }}</i><b>1</b><em>10/7</em></span>
+                <span class="bday is-hol"><i>{{ i18n.t('landing.board.tue') }}</i><b>2</b><em>11/7</em></span>
+                <span class="bday"><i>{{ i18n.t('landing.board.wed') }}</i><b>3</b><em>12/7</em></span>
+                <span class="bday"><i>{{ i18n.t('landing.board.thu') }}</i><b>4</b><em>13/7</em></span>
+                <span class="bday hot"><i>{{ i18n.t('landing.board.fri') }}</i><b>5</b><em>14/7</em></span>
+                <span class="bday is-lunar"><i>{{ i18n.t('landing.board.sat') }}</i><b>6</b><em>15/7</em></span>
+                <span class="bday"><i>{{ i18n.t('landing.board.sun') }}</i><b>7</b><em>16/7</em></span>
               </div>
 
               <div class="board-holidays">
-                <span class="bhol solar"><s></s>Quốc khánh · 2/9</span>
-                <span class="bhol lunar"><s></s>Lễ Vu Lan · Rằm tháng 7</span>
+                <span class="bhol solar"><s></s>{{ i18n.t('landing.board.natday') }}</span>
+                <span class="bhol lunar"><s></s>{{ i18n.t('landing.board.vulan') }}</span>
               </div>
 
               <div class="board-grid">
@@ -540,20 +513,20 @@
                   <span class="bcol"></span><span class="bcol"></span><span class="bcol"></span>
                   <span class="bcol"></span>
 
-                  <div class="ev ev-idle" style="left:0%;   top:56px;  height:52px;">Standup</div>
-                  <div class="ev ev-idle" style="left:28.5%;top:112px; height:52px;">Review UI</div>
+                  <div class="ev ev-idle" style="left:0%;   top:56px;  height:52px;">{{ i18n.t('landing.board.ev1') }}</div>
+                  <div class="ev ev-idle" style="left:28.5%;top:112px; height:52px;">{{ i18n.t('landing.board.ev2') }}</div>
 
                   <!-- sự kiện do AI tạo (stage 1) -->
                   <div class="ev ev-ai" style="left:57.1%;top:112px;height:52px;">
-                    <b>Họp với Hùng</b><span>15:00 - 16:00</span>
+                    <b>{{ i18n.t('landing.board.ev3') }}</b><span>15:00 - 16:00</span>
                   </div>
 
                   <!-- cặp sự kiện chồng giờ (stage 3) -->
                   <div class="ev ev-clash a" style="left:57.1%;top:56px;height:52px;">
-                    <b>Họp khách hàng</b><span>14:00 - 15:00</span>
+                    <b>{{ i18n.t('landing.board.ev4') }}</b><span>14:00 - 15:00</span>
                   </div>
                   <div class="ev ev-clash b" style="left:62%;  top:70px;height:52px;">
-                    <b>Review nội bộ</b><span>14:15 - 15:15</span>
+                    <b>{{ i18n.t('landing.board.ev5') }}</b><span>14:15 - 15:15</span>
                   </div>
                 </div>
               </div>
@@ -565,10 +538,10 @@
             <div class="board-depth d3"></div>
 
             <!-- 4 node bung ra ở stage 0 -->
-            <div class="node n1"><i>✦</i>Trợ lý AI</div>
-            <div class="node n2"><i>◔</i>Trung tâm thông báo</div>
-            <div class="node n3"><i>⚠</i>Phát hiện xung đột</div>
-            <div class="node n4"><i>☾</i>Lịch âm &amp; ngày lễ</div>
+            <div class="node n1"><i>✦</i>{{ i18n.t('landing.mq.ai') }}</div>
+            <div class="node n2"><i>◔</i>{{ i18n.t('landing.feat.n2') }}</div>
+            <div class="node n3"><i>⚠</i>{{ i18n.t('landing.feat.n3') }}</div>
+            <div class="node n4"><i>☾</i>{{ i18n.t('landing.feat.n4') }}</div>
           </div>
         </div>
 
@@ -593,102 +566,72 @@
       <span class="fx-blob fx-blob--b"></span>
     </div>
 
-    <div class="kicker reveal">Khả năng</div>
-    <h2 class="section-title reveal">Được thiết kế cho <span class="dim">mọi nhịp làm việc</span></h2>
+    <div class="kicker reveal">{{ i18n.t('landing.nav.showcase') }}</div>
+    <h2 class="section-title reveal">{{ i18n.t('landing.show.t1') }}<span class="dim">{{ i18n.t('landing.show.t2') }}</span></h2>
 
     <div class="gallery">
       <div class="gallery-row">
         <div class="gallery-card gallery-card--wide reveal">
-          <span class="tag">Bốn chế độ xem</span>
-          <h5>Tháng · Tuần · Ngày · Lịch biểu</h5>
-          <p>
-            Tháng để nhìn tổng quan kèm ngày âm mỗi ô. Tuần và Ngày chia lưới theo khung giờ. Lịch biểu đọc dạng danh
-            sách, hợp hôm lịch dày. Lịch nhỏ ở thanh bên để nhảy nhanh sang ngày khác.
-          </p>
+          <span class="tag">{{ i18n.t('landing.mq.views') }}</span>
+          <h5>{{ i18n.t('landing.show.c1t') }}</h5>
+          <p>{{ i18n.t('landing.show.c1d') }}</p>
         </div>
         <div class="gallery-card reveal">
-          <span class="tag">Kéo &amp; thả</span>
-          <h5>Sửa lịch bằng chuột không cần mở form</h5>
-          <p>
-            Kéo một vệt trên lưới giờ là tạo được sự kiện đúng khung đó. Kéo cả khối sang
-            giờ khác để dời. Kéo mép dưới để đổi thời lượng.
-          </p>
+          <span class="tag">{{ i18n.t('landing.mq.drag') }}</span>
+          <h5>{{ i18n.t('landing.show.c2t') }}</h5>
+          <p>{{ i18n.t('landing.show.c2d') }}</p>
         </div>
       </div>
 
       <div class="gallery-row">
         <div class="gallery-card reveal">
-          <span class="tag">Tìm kiếm</span>
-          <h5>Gõ vài chữ là ra đúng sự kiện</h5>
-          <p>
-            Ô tìm kiếm trên thanh công cụ, kết quả xổ xuống ngay lúc gõ kèm màu lịch và ngày. Bấm một kết quả là nhảy
-            thẳng tới đúng ngày.
-          </p>
+          <span class="tag">{{ i18n.t('landing.show.c3l') }}</span>
+          <h5>{{ i18n.t('landing.show.c3t') }}</h5>
+          <p>{{ i18n.t('landing.show.c3d') }}</p>
         </div>
         <div class="gallery-card gallery-card--wide reveal">
-          <span class="tag">Nhiều lịch</span>
-          <h5>Tách việc riêng khỏi việc chung rồi chia sẻ từng lịch</h5>
-          <p>
-            Tạo bao nhiêu lịch cũng được — đi làm, gia đình, học hành. Mỗi lịch một màu, bật/tắt riêng ở thanh bên. Chia
-            sẻ từng lịch qua email với quyền chỉnh sửa hoặc chỉ xem.
-          </p>
+          <span class="tag">{{ i18n.t('landing.mq.multi') }}</span>
+          <h5>{{ i18n.t('landing.show.c4t') }}</h5>
+          <p>{{ i18n.t('landing.show.c4d') }}</p>
         </div>
       </div>
 
       <div class="gallery-row">
         <div class="gallery-card gallery-card--wide reveal">
-          <span class="tag">Import lịch</span>
-          <h5>Nhập lịch hàng loạt trong vài giây</h5>
-          <p>
-            Import Lịch đọc .ics và .csv theo chuẩn. File trình bày tự do thì gửi Trợ lý AI — nó đọc .ics, .csv và .pdf
-            rồi rút lịch trình ra. Cả hai đều cho xem trước và sửa trước khi lưu.
-          </p>
+          <span class="tag">{{ i18n.t('landing.show.c5l') }}</span>
+          <h5>{{ i18n.t('landing.show.c5t') }}</h5>
+          <p>{{ i18n.t('landing.show.c5d') }}</p>
         </div>
         <div class="gallery-card reveal">
-          <span class="tag">Nhắc nhở</span>
-          <h5>Nhắc nhở đa cấp đúng kênh</h5>
-          <p>
-            Ba mốc dựng sẵn (15 phút, 1 giờ, 1 ngày trước) và thêm mốc tuỳ chỉnh tuỳ ý. Mỗi mốc chọn kênh riêng: popup
-            hoặc email. Chưa kịp xử lý thì bấm hoãn.
-          </p>
+          <span class="tag">{{ i18n.t('landing.show.c6l') }}</span>
+          <h5>{{ i18n.t('landing.show.c6t') }}</h5>
+          <p>{{ i18n.t('landing.show.c6d') }}</p>
         </div>
       </div>
 
       <div class="gallery-row">
         <div class="gallery-card gallery-card--wide reveal">
-          <span class="tag">Không gian nhóm</span>
-          <h5>Không gian làm việc cho cả nhóm</h5>
-          <p>
-            Chat real-time, giao task kèm hạn và trạng thái, lịch chung — tất cả một chỗ. Bốn cấp quyền: Trưởng nhóm,
-            Quản trị viên, Thành viên, Khách. Ghế Trưởng nhóm chỉ sang tay qua chức năng chuyển quyền.
-          </p>
+          <span class="tag">{{ i18n.t('landing.mq.group') }}</span>
+          <h5>{{ i18n.t('landing.show.c7t') }}</h5>
+          <p>{{ i18n.t('landing.show.c7d') }}</p>
         </div>
         <div class="gallery-card reveal">
-          <span class="tag">Cá nhân &amp; đội nhóm</span>
-          <h5>Ghi chú riêng bình luận chung</h5>
-          <p>
-            Lịch cá nhân có ghi chú riêng tư, lịch nhóm có bình luận trong sự kiện. Mỗi sự kiện còn có địa điểm, mô tả
-            và tuỳ chọn cả ngày.
-          </p>
+          <span class="tag">{{ i18n.t('landing.show.c8l') }}</span>
+          <h5>{{ i18n.t('landing.show.c8t') }}</h5>
+          <p>{{ i18n.t('landing.show.c8d') }}</p>
         </div>
       </div>
 
       <div class="gallery-row">
         <div class="gallery-card reveal">
-          <span class="tag">Thùng rác</span>
-          <h5>Xoá nhầm vẫn lấy lại được</h5>
-          <p>
-            Sự kiện xoá đi nằm trong thùng rác chờ khôi phục, chỉ mất hẳn khi chính bạn xoá
-            vĩnh viễn.
-          </p>
+          <span class="tag">{{ i18n.t('landing.show.c9l') }}</span>
+          <h5>{{ i18n.t('landing.show.c9t') }}</h5>
+          <p>{{ i18n.t('landing.show.c9d') }}</p>
         </div>
         <div class="gallery-card gallery-card--wide reveal">
-          <span class="tag">Cá nhân hoá &amp; song ngữ</span>
-          <h5>Chỉnh cho vừa mắt mình</h5>
-          <p>
-            Giao diện sáng/tối, màu nhấn, mật độ lịch, giờ 12 hay 24, ảnh đại diện, âm thanh thông báo riêng cho tin
-            nhắn và việc chung. Có sẵn Tiếng Việt và English. Cần bản cứng thì in ra giấy.
-          </p>
+          <span class="tag">{{ i18n.t('landing.show.c10l') }}</span>
+          <h5>{{ i18n.t('landing.show.c10t') }}</h5>
+          <p>{{ i18n.t('landing.show.c10d') }}</p>
         </div>
       </div>
     </div>
@@ -704,31 +647,30 @@
       <span class="fx-sweep"></span>
     </div>
 
-    <div class="kicker reveal">Quy trình</div>
-    <h2 class="section-title reveal">Từ ý nghĩ đến <span class="dim">lịch trình trong vài giây</span></h2>
-    <p class="section-desc reveal">Không cần học cách dùng. Workflow được thiết kế để bạn tạo lịch nhanh như đang nhắn
-      tin.</p>
+    <div class="kicker reveal">{{ i18n.t('landing.nav.process') }}</div>
+    <h2 class="section-title reveal">{{ i18n.t('landing.proc.t1') }}<span class="dim">{{ i18n.t('landing.proc.t2') }}</span></h2>
+    <p class="section-desc reveal">{{ i18n.t('landing.proc.desc') }}</p>
 
     <div class="process-grid">
       <div class="process-step reveal">
         <div class="process-num">01</div>
-        <h4>Nói hoặc gõ một câu</h4>
-        <p>Gõ "Họp với Hùng thứ 6 lúc 3 giờ chiều". Trợ lý AI hiểu và tạo sự kiện thật, không cần điền form.</p>
+        <h4>{{ i18n.t('landing.proc.h1') }}</h4>
+        <p>{{ i18n.t('landing.proc.d1') }}</p>
       </div>
       <div class="process-step reveal">
         <div class="process-num">02</div>
-        <h4>Mời người liên quan</h4>
-        <p>Gửi lời mời qua email. Người nhận bấm "Đồng ý/Từ chối" ngay trong mail, không cần tài khoản.</p>
+        <h4>{{ i18n.t('landing.proc.h2') }}</h4>
+        <p>{{ i18n.t('landing.proc.d2') }}</p>
       </div>
       <div class="process-step reveal">
         <div class="process-num">03</div>
-        <h4>Được cảnh báo kịp thời</h4>
-        <p>Workflow tự kiểm tra trùng lịch và nhắc nhở đúng lúc, qua popup hoặc email, đúng người cần biết.</p>
+        <h4>{{ i18n.t('landing.proc.h3') }}</h4>
+        <p>{{ i18n.t('landing.proc.d3') }}</p>
       </div>
       <div class="process-step reveal">
         <div class="process-num">04</div>
-        <h4>Cộng tác trong nhóm</h4>
-        <p>Mỗi nhóm có bảng task, trò chuyện và lịch chung. Giao việc kèm người làm, hạn chót, phân quyền.</p>
+        <h4>{{ i18n.t('landing.proc.h4') }}</h4>
+        <p>{{ i18n.t('landing.proc.d4') }}</p>
       </div>
     </div>
   </section>
@@ -752,13 +694,11 @@
 
     <div class="cta-inner">
       <span class="cta-badge reveal">
-        <span class="cta-badge-dot"></span>
-        Đăng nhập bằng Google · 30 giây là xong
-      </span>
-      <h2 class="reveal">Sẵn sàng cho <span class="dim">nhịp mới</span> chưa?</h2>
-      <p class="sub reveal">Đăng nhập bằng Google là dùng được ngay, không cần đặt mật khẩu, không có gói trả phí.</p>
+        <span class="cta-badge-dot"></span>{{ i18n.t('landing.story.badge') }}</span>
+      <h2 class="reveal">{{ i18n.t('landing.story.t1') }}<span class="dim">{{ i18n.t('landing.story.t2') }}</span>{{ i18n.t('landing.story.t3') }}</h2>
+      <p class="sub reveal">{{ i18n.t('landing.story.sub') }}</p>
       <div class="hero-cta reveal">
-        <a class="btn-primary" routerLink="/login">Bắt đầu miễn phí</a>
+        <a class="btn-primary" routerLink="/login">{{ i18n.t('landing.cta.start') }}</a>
       </div>
     </div>
   </section>
@@ -786,17 +726,17 @@
           <rect x="3.6" y="4.6" width="16.8" height="15.8" rx="2" fill="none" stroke="#1a73e8" stroke-width="1.2" />
         </svg>
       </span>
-      <span>Workflow</span>
+      <span>{{ i18n.t('landing.brand') }}</span>
     </div>
     <!-- Chưa có route /terms và /privacy nên footer KHÔNG trỏ tới chúng: một
          link 404 ở chân trang bào mòn niềm tin nhanh hơn là không có link.
          Khi hai trang đó được dựng thì thêm vào đây. -->
     <div class="f-links">
-      <a href="#about" (click)="scrollToSection($event, 'about')">Giới thiệu</a>
-      <a href="#features" (click)="scrollToSection($event, 'features')">Tính năng</a>
-      <a href="#showcase" (click)="scrollToSection($event, 'showcase')">Khả năng</a>
-      <a href="mailto:tpken249&#64;gmail.com">Liên hệ</a>
-      <a routerLink="/login">Đăng nhập</a>
+      <a href="#about" (click)="scrollToSection($event, 'about')">{{ i18n.t('landing.nav.about') }}</a>
+      <a href="#features" (click)="scrollToSection($event, 'features')">{{ i18n.t('landing.nav.features') }}</a>
+      <a href="#showcase" (click)="scrollToSection($event, 'showcase')">{{ i18n.t('landing.nav.showcase') }}</a>
+      <a href="mailto:tpken249&#64;gmail.com">{{ i18n.t('landing.nav.contact') }}</a>
+      <a routerLink="/login">{{ i18n.t('landing.nav.login') }}</a>
     </div>
     <div>© {{ currentYear }} Workflow · Miễn phí, không có gói trả phí</div>
   </footer>

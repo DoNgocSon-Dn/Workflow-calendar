@@ -51,6 +51,35 @@ import { VN_HOLIDAY_CALENDAR_DEF, VN_HOLIDAY_CALENDAR_ID, buildVietnamHolidayEve
 const SELF_ORIGIN_TTL_MS = 8000;
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'sidebar-collapsed';
 
+/**
+ * Dưới ngưỡng này thanh bên tự ẨN HẲN.
+ *
+ * 1100px là chỗ mà 256px của thanh bên bắt đầu ăn quá nhiều: lưới bảy cột của
+ * khung Tuần bị bóp tới mức tên sự kiện chỉ còn một hai chữ.
+ *
+ * Ẩn hẳn chứ không thu về thanh biểu tượng 64px: ở dạng thu gọn, thanh bên chỉ
+ * còn nút cộng và mấy chấm màu không nhãn — chiếm chỗ mà gần như không nói được
+ * gì. Thà trả toàn bộ bề ngang cho lưới lịch, người dùng cần thì bấm nút ba
+ * gạch trên header là nó hiện lại.
+ */
+const SIDEBAR_AUTO_HIDE_PX = 1100;
+
+/**
+ * Sidebar có đang ở dạng drawer (đè lên nội dung) hay không.
+ *
+ * Phải khớp mốc `--bp-tablet` trong styles.css — cùng một ngưỡng mà CSS dùng
+ * để đổi sidebar sang `position: absolute`. Hai nơi lệch nhau thì sẽ có một
+ * dải bề ngang mà JS tưởng là desktop còn CSS đã vẽ ra drawer.
+ */
+export function isSidebarDrawerViewport(): boolean {
+  // matchMedia vắng mặt ở mọi môi trường không phải trình duyệt thật: jsdom
+  // trong test, và cả render phía server nếu sau này bật SSR. Không có thông
+  // tin về bề rộng thì coi như KHÔNG phải drawer — trả về đúng hành vi cũ
+  // (sidebar mở sẵn) thay vì ném lỗi ngay lúc khởi tạo store.
+  if (typeof matchMedia !== 'function') return false;
+  return matchMedia('(max-width: 767.98px)').matches;
+}
+
 function readStoredSidebarCollapsed(): boolean {
   return localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === '1';
 }
@@ -353,7 +382,19 @@ export class CalendarStore {
   readonly today = signal(startOfDay(this.clock.now()));
   readonly focusedDate = signal(startOfDay(this.clock.now()));
   readonly viewMode = signal<CalendarViewMode>('week');
-  readonly sidebarOpen = signal(true);
+  /**
+   * Mở sẵn trên desktop, đóng sẵn ở khổ drawer.
+   *
+   * Từ 768px xuống, sidebar là một tấm phủ đè lên vùng nội dung (xem
+   * calendar-page.css). Mở sẵn ở đó nghĩa là vừa vào app đã bị che mất đúng
+   * cái lịch mình định xem, trên máy 360px là che gần hết bề ngang.
+   *
+   * Đây là chỗ hiếm hoi phải hỏi matchMedia thay vì để CSS lo: cái cần quyết
+   * là TRẠNG THÁI ban đầu của một signal, không phải cách hiển thị. Đọc đúng
+   * một lần lúc khởi tạo, không nghe sự kiện resize — người dùng đã tự bật/tắt
+   * thì kéo co cửa sổ không được phép giật nó về.
+   */
+  readonly sidebarOpen = signal(!isSidebarDrawerViewport());
   readonly sidebarCollapsed = signal<boolean>(readStoredSidebarCollapsed());
 
   readonly calendars = signal<CalendarDef[]>([]);
@@ -589,6 +630,7 @@ export class CalendarStore {
     this.joinAllCalendarRooms();
     this.bindRealtimeListenersOnce();
     this.startBackgroundSyncOnce();
+    this.startSidebarAutoCollapse();
     void this.checkMissedReminders();
   }
 
@@ -1376,6 +1418,38 @@ export class CalendarStore {
   toggleSidebar(): void {
     this.sidebarOpen.update((v) => !v);
   }
+
+  /**
+   * Tự ẩn thanh bên khi cửa sổ hẹp, tự hiện lại khi rộng ra.
+   *
+   * Người dùng vẫn bấm nút ba gạch để mở/đóng bất cứ lúc nào; lần vượt ngưỡng
+   * TIẾP THEO sẽ ghi đè lựa chọn đó. Đây là chủ ý: bề rộng cửa sổ là ràng buộc
+   * vật lý, còn nút ba gạch chỉ là ý muốn nhất thời — dưới 1100px thì thanh bên
+   * và lưới lịch không thể cùng vừa, nên bề rộng phải thắng.
+   *
+   * Dùng matchMedia thay vì nghe sự kiện resize: trình duyệt chỉ báo khi VƯỢT
+   * ngưỡng, không phải mỗi pixel kéo chuột.
+   */
+  private startSidebarAutoCollapse(): void {
+    if (this.sidebarAutoCollapseBound) return;
+    this.sidebarAutoCollapseBound = true;
+
+    const mq = window.matchMedia(`(max-width: ${SIDEBAR_AUTO_HIDE_PX}px)`);
+
+    const apply = (narrow: boolean): void => {
+      // sidebarOpen điều khiển một @if trong template nên thanh bên bị gỡ hẳn
+      // khỏi DOM, không phải chỉ co lại. Đó là khác biệt với sidebarCollapsed.
+      this.sidebarOpen.set(!narrow);
+    };
+
+    const onChange = (e: MediaQueryListEvent): void => apply(e.matches);
+    mq.addEventListener('change', onChange);
+    apply(mq.matches);
+
+    this.destroyRef.onDestroy(() => mq.removeEventListener('change', onChange));
+  }
+
+  private sidebarAutoCollapseBound = false;
 
   toggleSidebarCollapsed(): void {
     this.sidebarCollapsed.update((v) => !v);

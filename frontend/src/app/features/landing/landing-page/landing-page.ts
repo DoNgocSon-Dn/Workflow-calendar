@@ -10,6 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { Locale, TranslationService } from '../../../core/i18n/translation.service';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -35,13 +36,23 @@ export class LandingPage implements OnInit, AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly zone = inject(NgZone);
 
-  protected readonly currentYear = new Date().getFullYear();
+  /** Public để template gọi trực tiếp i18n.t(...) — cùng cách mọi component
+   *  khác trong app đang dùng. */
+  readonly i18n = inject(TranslationService);
+
+  /** Đổi ngôn ngữ ngay trên landing. Không có nút này thì khách chưa đăng nhập
+   *  không có đường nào tới bộ chuyển trong Cài đặt. */
+  setLocale(locale: Locale): void {
+    this.i18n.setLocale(locale);
+  }
+
+  readonly currentYear = new Date().getFullYear();
 
   /** Menu điều hướng trên mobile (<=860px). */
-  protected readonly mobileMenuOpen = signal(false);
+  readonly mobileMenuOpen = signal(false);
 
   /** Id của section đang chiếm phần trên khung nhìn. Null khi đang ở hero. */
-  protected readonly activeSection = signal<string | null>(null);
+  readonly activeSection = signal<string | null>(null);
 
   /**
    * Ánh xạ mục nav sang các section thuộc về nó, theo đúng thứ tự trên trang.
@@ -72,16 +83,16 @@ export class LandingPage implements OnInit, AfterViewInit {
     document.documentElement.setAttribute('data-theme', savedTheme);
   }
 
-  protected toggleMobileMenu(): void {
+  toggleMobileMenu(): void {
     this.mobileMenuOpen.update((open) => !open);
   }
 
-  protected closeMobileMenu(): void {
+  closeMobileMenu(): void {
     if (this.mobileMenuOpen()) this.mobileMenuOpen.set(false);
   }
 
   /** Escape đóng drawer — kỳ vọng chuẩn của mọi lớp phủ. */
-  protected onEscape(): void {
+  onEscape(): void {
     this.closeMobileMenu();
   }
 

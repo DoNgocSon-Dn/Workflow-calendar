@@ -412,7 +412,7 @@
   font-weight: 700;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 767.98px) {
   .brand span,
   .brand {
     font-size: 1.15rem;
@@ -428,7 +428,7 @@
    trong DOM — .left (menu + logo) một hàng, .center (điều hướng ngày) và
    .right (tìm kiếm + tiện ích) dồn xuống hàng dưới, canh phải/trái để không
    còn khoảng trắng lệch lạc. Không ẩn bớt chức năng nào, chỉ đổi cách gói. */
-@media (max-width: 640px) {
+@media (max-width: 599.98px) {
   .topbar {
     padding: 0.5rem 0.75rem;
     gap: 0.5rem;
@@ -478,7 +478,7 @@
 /* Điện thoại rất hẹp (~360px): view-dropdown ghi chữ dài ("Lịch biểu") cộng
    nút thông báo + avatar vẫn có thể chật hàng .right — bỏ chữ, giữ icon +
    mũi tên, đỡ tốn ngang mà bấm vẫn ra đúng menu chọn view. */
-@media (max-width: 380px) {
+@media (max-width: 479.98px) {
   .view-dropdown-btn {
     padding: 0.45rem 0.5rem;
   }

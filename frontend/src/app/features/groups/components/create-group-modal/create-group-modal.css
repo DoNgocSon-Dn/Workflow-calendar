@@ -148,3 +148,31 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* .modal-card có overflow: hidden nhưng KHÔNG có trần chiều cao, còn backdrop
+   thì căn giữa và không cuộn. Trên màn hình thấp (điện thoại xoay ngang) card
+   dài hơn viewport sẽ bị cắt cụt cả hai đầu mà không cuộn tới được. Cho nó
+   một trần theo dvh và để phần thân tự cuộn. */
+.modal-card {
+  max-height: 92dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-card > .modal-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 599.98px) {
+  .modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-card {
+    max-width: none;
+    border-radius: 12px 12px 0 0;
+  }
+}

@@ -17,7 +17,7 @@ import { TimeGridView } from '../components/time-grid-view/time-grid-view';
 import { AgendaView } from '../components/agenda-view/agenda-view';
 import { SettingsModal } from '../components/settings-modal/settings-modal';
 import { TrashModal } from '../components/trash-modal/trash-modal';
-import { CalendarStore } from '../data/calendar-store';
+import { CalendarStore, isSidebarDrawerViewport } from '../data/calendar-store';
 import { HolidayThemeService } from '../data/holiday-theme.service';
 import { VN_HOLIDAY_CALENDAR_ID } from '../data/vietnam-holidays';
 import { CalendarEvent } from '../models/calendar.models';
@@ -69,6 +69,11 @@ interface ModalState {
     LoginSuccessTransition,
     DevDatePanel,
   ],
+  host: {
+    // Esc đóng drawer sidebar. Chạm nền mờ là đường chính, nhưng ở khổ hẹp do
+    // ZOOM trình duyệt trên desktop thì người dùng vẫn đang dùng bàn phím.
+    '(document:keydown.escape)': 'closeSidebarDrawer()',
+  },
 })
 export class CalendarPage {
   private readonly birthdayService = inject(BirthdayPopupService);
@@ -80,6 +85,20 @@ export class CalendarPage {
   private readonly notificationQueue = inject(NotificationQueue);
   private readonly densityService = inject(DensityService);
   private readonly router = inject(Router);
+
+  /**
+   * Esc đóng sidebar — nhưng CHỈ khi nó đang là drawer đè lên nội dung.
+   *
+   * Trên desktop sidebar nằm trong luồng và không chặn gì cả, nên nó không
+   * phải thứ Esc nên đụng tới: người ta gõ Esc để thoát modal, và listener này
+   * gắn ở document nên vẫn chạy kể cả khi modal mới là thứ đang nhận phím —
+   * kết quả là đóng modal xong thì sidebar cũng biến mất theo.
+   */
+  protected closeSidebarDrawer(): void {
+    if (this.store.sidebarOpen() && isSidebarDrawerViewport()) {
+      this.store.toggleSidebar();
+    }
+  }
 
   protected readonly weekDays = computed(() => buildWeekDays(this.store.focusedDate()));
   protected readonly dayViewDays = computed(() => [this.store.focusedDate()]);

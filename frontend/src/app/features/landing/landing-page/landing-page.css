@@ -3210,3 +3210,38 @@ footer a {
   padding-top: 44px;
   border-top: 1px solid var(--line);
 }
+
+/* ── Bộ đổi ngôn ngữ trên nav ──
+   Hai nút VI / EN trong một rãnh chìm, cùng ngôn ngữ hình ảnh với segmented
+   control ở panel Trợ lý AI. Đặt cạnh nút sáng/tối vì cả hai đều là tuỳ chọn
+   hiển thị, không phải điều hướng. */
+.lang-switch {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+
+.lang-switch button {
+  border: none;
+  background: none;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--ink) 60%, transparent);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.lang-switch button:hover:not(.on) {
+  color: var(--ink);
+}
+
+.lang-switch button.on {
+  background: var(--accent);
+  color: #fff;
+}

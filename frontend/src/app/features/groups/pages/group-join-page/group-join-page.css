@@ -1,6 +1,9 @@
 :host {
   display: flex;
-  min-height: 100vh;
+  /* dvh: trang này căn giữa thẻ mời theo chiều dọc. Với vh, thanh địa chỉ
+     của trình duyệt di động làm trang cao hơn phần nhìn thấy nên thẻ bị đẩy
+     lệch xuống và nút Tham gia nằm dưới mép màn hình. */
+  min-height: 100dvh;
   align-items: center;
   justify-content: center;
   background: var(--color-surface);

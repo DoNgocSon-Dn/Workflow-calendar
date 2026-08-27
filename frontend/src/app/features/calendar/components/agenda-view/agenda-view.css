@@ -338,3 +338,65 @@
   background: var(--holiday-accent);
   color: var(--holiday-accent-contrast);
 }
+
+/* ============================================================
+   RESPONSIVE
+
+   Agenda vốn là danh sách dọc nên chịu khổ hẹp tốt hơn hai view lưới. Việc
+   cần làm chỉ là hàng điều khiển ở đầu (chuyển Dương/Âm + các pill lọc) —
+   nó là một hàng ngang nhiều nút, đúng kiểu tràn khi hết chỗ.
+   ============================================================ */
+@media (max-width: 767.98px) {
+  .agenda-header-bar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .header-controls {
+    flex-wrap: wrap;
+  }
+
+  /* Các pill lọc cuộn ngang trong chính hàng của nó thay vì gãy thành 3-4
+     dòng đẩy cả danh sách sự kiện xuống dưới màn hình. */
+  .filter-pills {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+    padding-bottom: 0.15rem;
+  }
+
+  .filter-pills::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-pill {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 599.98px) {
+  .agenda-container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  /* Thẻ sự kiện: giờ và phần meta xuống dòng dưới tiêu đề thay vì chen cùng
+     hàng rồi ép tiêu đề còn vài ký tự. */
+  .event-card {
+    flex-wrap: wrap;
+  }
+
+  .event-details {
+    min-width: 0;
+  }
+
+  .event-title {
+    overflow-wrap: anywhere;
+  }
+
+  .mine-filter-row {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+}

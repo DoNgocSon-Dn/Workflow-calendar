@@ -106,6 +106,38 @@
   --holiday-accent-contrast: var(--color-accent-contrast);
   --holiday-surface-tint: transparent;
   --holiday-border: var(--color-border-strong);
+/* ============================================================
+   HỆ BREAKPOINT DÙNG CHUNG
+
+   Sáu nhóm màn hình, năm mốc cắt. Media query KHÔNG đọc được
+   custom property, nên các biến dưới đây là bản ghi chính thức để
+   tra cứu — còn trong @media phải viết thẳng số. Thêm mốc mới thì
+   ghi vào đây trước, đừng đẻ ra mốc rời rạc trong từng file (trước
+   đợt rà soát này app có 24 giá trị khác nhau, không cái nào ăn
+   khớp cái nào).
+
+     Desktop lớn     >= 1440px     (không cần @media, là mặc định)
+     Desktop/Laptop  1024 - 1439   @media (max-width: 1439.98px)
+     Tablet ngang    768 - 1023    @media (max-width: 1023.98px)
+     Tablet dọc      600 - 767     @media (max-width: 767.98px)
+     Mobile lớn      480 - 599     @media (max-width: 599.98px)
+     Mobile nhỏ      < 480         @media (max-width: 479.98px)
+
+   Dùng .98 chứ không phải số tròn: viewport có thể ra số lẻ khi
+   người dùng zoom trình duyệt hoặc ở màn hình có devicePixelRatio
+   lẻ. `max-width: 767px` cộng `min-width: 768px` để lọt khoảng
+   767.5px — không rule nào khớp, layout nháy về mặc định.
+   ============================================================ */
+  --bp-desktop-xl: 1440px;
+  --bp-desktop: 1024px;
+  --bp-tablet: 768px;
+  --bp-tablet-portrait: 600px;
+  --bp-mobile: 480px;
+
+  /* Vùng chạm tối thiểu cho nút chỉ có icon. 44px là ngưỡng của
+     Apple HIG; Material dùng 48px. Lấy 44 làm sàn và nới ra bằng
+     padding ở chỗ nào còn chỗ. */
+  --touch-target: 44px;
 }
 
 :root.density-compact {
