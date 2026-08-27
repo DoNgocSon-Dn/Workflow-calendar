@@ -257,30 +257,6 @@
               </div>
 
               <div class="setting-row">
-                <span class="setting-title">{{ i18n.t('settings.density') }}</span>
-                <div class="segmented" role="radiogroup" [attr.aria-label]="i18n.t('settings.density')">
-                  <button
-                    type="button"
-                    role="radio"
-                    [attr.aria-checked]="densityService.density() === 'comfortable'"
-                    [class.active]="densityService.density() === 'comfortable'"
-                    (click)="setDensity('comfortable')"
-                  >
-                    {{ i18n.t('settings.comfortable') }}
-                  </button>
-                  <button
-                    type="button"
-                    role="radio"
-                    [attr.aria-checked]="densityService.density() === 'compact'"
-                    [class.active]="densityService.density() === 'compact'"
-                    (click)="setDensity('compact')"
-                  >
-                    {{ i18n.t('settings.compact') }}
-                  </button>
-                </div>
-              </div>
-
-              <div class="setting-row">
                 <span class="setting-title">{{ i18n.t('settings.timeFormat') }}</span>
                 <div class="segmented" role="radiogroup" [attr.aria-label]="i18n.t('settings.timeFormat')">
                   <button
@@ -339,12 +315,6 @@
               <div class="setting-row">
                 <span class="setting-title" id="notification-sound-label">{{ i18n.t('settings.notificationSound') }}</span>
                 <div class="setting-inline">
-                  <button type="button" class="sound-preview-btn" (click)="previewNotificationSound()">
-                    {{ i18n.t('settings.soundPreviewGeneral') }}
-                  </button>
-                  <button type="button" class="sound-preview-btn sound-preview-btn--chat" (click)="previewChatSound()">
-                    {{ i18n.t('settings.soundPreviewChat') }}
-                  </button>
                   <label class="toggle-switch">
                     <input
                       type="checkbox"

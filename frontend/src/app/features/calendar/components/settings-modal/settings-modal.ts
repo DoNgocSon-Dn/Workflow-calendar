@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
 import { environment } from '../../../../../environments/environment';
 import { AuthStore } from '../../../../core/auth/auth-store';
-import { Density, DensityService } from '../../../../core/density/density-service';
 import { Locale, TranslationService } from '../../../../core/i18n/translation.service';
 import { HolidayPopupService } from '../../../../core/services/holiday-popup.service';
 import { BirthdayPopupService } from '../../../../core/services/birthday-popup.service';
@@ -51,7 +50,6 @@ const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
 export class SettingsModal {
   protected readonly themeService = inject(ThemeService);
   protected readonly brandThemeService = inject(BrandThemeService);
-  protected readonly densityService = inject(DensityService);
   protected readonly timeFormatService = inject(TimeFormatService);
   protected readonly holidayPopupService = inject(HolidayPopupService);
   protected readonly holidayThemeService = inject(HolidayThemeService);
@@ -184,10 +182,6 @@ export class SettingsModal {
     this.brandThemeService.setBrandTheme(theme);
   }
 
-  setDensity(density: Density): void {
-    this.densityService.setDensity(density);
-  }
-
   setTimeFormat(format: TimeFormat): void {
     this.timeFormatService.setFormat(format);
   }
@@ -210,14 +204,6 @@ export class SettingsModal {
 
   toggleNotificationSound(): void {
     this.soundService.toggle();
-  }
-
-  previewNotificationSound(): void {
-    void this.soundService.preview();
-  }
-
-  previewChatSound(): void {
-    void this.soundService.preview('chat');
   }
 
   onNameInput(value: string): void {

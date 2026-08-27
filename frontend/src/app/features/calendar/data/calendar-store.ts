@@ -307,6 +307,16 @@ function eventTimeLabel(event: CalendarEvent, format: TimeFormat): string {
  */
 const SEARCH_DEBOUNCE_MS = 500;
 
+/**
+ * Được mời vào NHIỀU sự kiện liên tiếp (vd một người mời khách vào từng buổi
+ * của một chuỗi lặp) bắn về nhiều gói `attendee:invited` chỉ cách nhau vài
+ * chục mili-giây. Mỗi gói trước đây gọi thẳng `refreshEvents()` — một lượt
+ * GET /events đầy đủ — nên N lời mời liên tiếp ra N lượt tải lại toàn bộ
+ * danh sách sự kiện. Gộp lại: mỗi gói mới RESET đồng hồ, chỉ tải lại đúng MỘT
+ * lần sau khi dòng sự kiện đã yên trong khoảng thời gian này.
+ */
+const EVENTS_REFRESH_DEBOUNCE_MS = 500;
+
 @Injectable({ providedIn: 'root' })
 export class CalendarStore {
   private readonly clock = inject(Clock);
@@ -351,6 +361,14 @@ export class CalendarStore {
 
   private readonly searchInput$ = new Subject<string>();
   readonly pendingInvites = signal<CalendarInvite[]>([]);
+
+  /** Mỗi gói `attendee:invited` bắn vào đây thay vì gọi thẳng refreshEvents()
+   *  — xem giải thích ở EVENTS_REFRESH_DEBOUNCE_MS. */
+  private readonly attendeeInviteRefresh$ = new Subject<void>();
+  /** Các eventId đang chờ tải lại xong mới báo — title của sự kiện mới chỉ
+   *  tra được SAU khi refreshEvents() hoàn tất (trước đó sự kiện chưa có
+   *  trong `events()`, vì người dùng vừa được thêm làm khách mời). */
+  private pendingAttendeeInviteEventIds: string[] = [];
 
   readonly todos = signal<Todo[]>([]);
   readonly todoLists = signal<TodoList[]>([]);
@@ -455,6 +473,14 @@ export class CalendarStore {
     this.searchInput$
       .pipe(debounceTime(SEARCH_DEBOUNCE_MS), distinctUntilChanged(), takeUntilDestroyed())
       .subscribe((q) => this.searchQuery.set(q));
+
+    // Mỗi lần .next() RESET đồng hồ 500ms — dồn cả chuỗi lời mời liên tiếp
+    // thành đúng MỘT lượt tải lại, chạy ngầm, không có gì báo "đang tải".
+    // takeUntilDestroyed() dọn subscription này cùng lúc dọn cái ở trên, nên
+    // không cần thêm cơ chế cleanup riêng.
+    this.attendeeInviteRefresh$
+      .pipe(debounceTime(EVENTS_REFRESH_DEBOUNCE_MS), takeUntilDestroyed())
+      .subscribe(() => void this.flushAttendeeInviteNotifications());
 
     this.notificationQueue.onSnoozeReminder = (reminderId, minutes) => {
       void this.snoozeReminder(reminderId, minutes);
@@ -901,20 +927,40 @@ export class CalendarStore {
     });
   }
 
-  private async handleAttendeeInvited(payload: {
+  private handleAttendeeInvited(payload: {
     eventId: string;
     attendee: AttendeeApiDto;
-  }): Promise<void> {
+  }): void {
     if (payload.attendee.userId !== this.authStore.user()?.id) return;
-    await this.refreshEvents();
+    // Toast báo ngay — nó không cần biết tên sự kiện (body rỗng) nên không
+    // phải chờ refreshEvents(). Chỉ phần TẢI LẠI DANH SÁCH mới gộp lại.
     this.notificationQueue.push({
       eventId: payload.eventId,
       title: 'Bạn được mời tham gia một sự kiện',
       body: '',
       kind: 'created',
     });
-    const title = this.events().find((e) => e.id === payload.eventId)?.title ?? null;
-    this.notifications.ingest(eventInvitationDraft(payload.eventId, title));
+    this.pendingAttendeeInviteEventIds.push(payload.eventId);
+    this.attendeeInviteRefresh$.next();
+  }
+
+  /**
+   * Chạy sau khi dòng `attendee:invited` liên tiếp đã yên 500ms (xem
+   * EVENTS_REFRESH_DEBOUNCE_MS). Tải lại ĐÚNG MỘT LẦN cho cả đợt, rồi mới đi
+   * tra tên từng sự kiện để đưa vào Notification Center — phải tải lại
+   * trước, vì các sự kiện này còn chưa có trong `events()` (người dùng vừa
+   * được thêm làm khách mời, chưa từng thấy qua sự kiện đó).
+   */
+  private async flushAttendeeInviteNotifications(): Promise<void> {
+    const eventIds = this.pendingAttendeeInviteEventIds;
+    this.pendingAttendeeInviteEventIds = [];
+    if (eventIds.length === 0) return;
+
+    await this.refreshEvents();
+    for (const eventId of eventIds) {
+      const title = this.events().find((e) => e.id === eventId)?.title ?? null;
+      this.notifications.ingest(eventInvitationDraft(eventId, title));
+    }
   }
 
   private handleAttendeeStatusChanged(payload: { eventId: string; attendee: AttendeeApiDto }): void {

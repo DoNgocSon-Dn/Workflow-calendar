@@ -451,33 +451,6 @@
   gap: 0.6rem;
 }
 
-.sound-preview-btn {
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-surface-hover);
-  color: var(--color-text-secondary);
-  border-radius: var(--radius-sm);
-  padding: 0.35rem 0.75rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.sound-preview-btn:hover {
-  background: var(--color-surface-hover-strong);
-  color: var(--color-text);
-}
-
-.sound-preview-btn--chat {
-  border-color: var(--holiday-accent);
-  color: var(--holiday-accent);
-}
-
-.sound-preview-btn--chat:hover {
-  background: var(--holiday-accent-soft);
-  color: var(--holiday-accent);
-}
-
 .setting-hint {
   margin: 0;
   padding: 0 1.25rem 0.9rem;
@@ -512,10 +485,6 @@
    không, nhãn sẽ bị bóp thành nhiều dòng khi nút có chữ dài. */
 .setting-inline {
   flex-shrink: 0;
-}
-
-.setting-inline .sound-preview-btn {
-  white-space: nowrap;
 }
 
 .setting-row > .setting-title {
