@@ -327,6 +327,18 @@
   color: var(--color-danger);
 }
 
+/* Bọc input + số đếm kí tự thành một cột — chữ đếm tự canh phải, sát ngay
+   dưới ô nhập thay vì kéo dãn full-width theo input. */
+.field-with-counter {
+  display: flex;
+  flex-direction: column;
+}
+
+.field-counter {
+  align-self: flex-end;
+  margin-top: 2px;
+}
+
 .new-list-input {
   border: 1px dashed var(--color-border-strong);
   background: none;
@@ -509,6 +521,13 @@
 .todo-item-done .todo-content {
   color: var(--color-text-tertiary);
   text-decoration: line-through;
+}
+
+.todo-edit-field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .todo-edit-input {
