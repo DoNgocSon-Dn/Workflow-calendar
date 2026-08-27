@@ -669,11 +669,24 @@
    Role Colors: Soft Pill Palette
    ============================================================ */
 
+/* ---- Giao diện TỐI ----
+
+   Viền dùng alpha 0.85 chứ không phải 0.4 như trước. Alpha 0.4 cho tương phản
+   viền / nền hàng chỉ 1,65–2,31:1 — cùng loại lỗi với giao diện sáng, chỉ đỡ
+   lộ hơn vì mảng màu đặt trên nền rất tối. 0.85 đưa cả bốn lên trên 3:1, mức
+   WCAG đặt cho đường biên của thành phần giao diện.
+
+   Một con số duy nhất cho cả bốn vai trò: mỗi màu cần một ngưỡng khác nhau
+   (0.55–0.85) nhưng lấy chung giá trị cao nhất thì không màu nào hụt, và sau
+   này thêm vai trò mới cũng không phải đo lại.
+
+   Nền giữ 0.18 — chữ sáng đọc trên đó đạt 7,2–8,9:1, không có lý do đổi. */
+
 /* LEADER (Trưởng nhóm) - Violet/Purple */
 .role-pill.leader,
 .role-select-btn.leader {
   background-color: rgba(139, 92, 246, 0.18);
-  border-color: rgba(139, 92, 246, 0.4);
+  border-color: rgba(139, 92, 246, 0.85);
   color: #c4b5fd;
 }
 
@@ -681,7 +694,7 @@
 .role-pill.admin,
 .role-select-btn.admin {
   background-color: rgba(59, 130, 246, 0.18);
-  border-color: rgba(59, 130, 246, 0.4);
+  border-color: rgba(59, 130, 246, 0.85);
   color: #93c5fd;
 }
 
@@ -689,7 +702,7 @@
 .role-pill.member,
 .role-select-btn.member {
   background-color: rgba(16, 185, 129, 0.18);
-  border-color: rgba(16, 185, 129, 0.4);
+  border-color: rgba(16, 185, 129, 0.85);
   color: #6ee7b7;
 }
 
@@ -697,37 +710,49 @@
 .role-pill.guest,
 .role-select-btn.guest {
   background-color: rgba(245, 158, 11, 0.18);
-  border-color: rgba(245, 158, 11, 0.4);
+  border-color: rgba(245, 158, 11, 0.85);
   color: #fde047;
 }
 
-/* Light mode adjustments */
+/* ---- Giao diện SÁNG ----
+
+   Bản trước chỉ chỉnh cho chữ đọc được (4.5–5.9:1, đều đạt) mà bỏ qua một
+   phép đo khác: VIÊN THUỐC so với NỀN HÀNG. Nền hàng thành viên là #f1f2f4,
+   còn nền pill là #d1fae5 / #dbeafe — tương phản chỉ 1.01–1.09:1, tức gần như
+   cùng một màu. Pill tan vào nền, đó chính là cảm giác "bị nhạt đi".
+
+   Nền pill giữ nhạt là đúng (chữ phải đọc được trên đó), nên ranh giới phải
+   do VIỀN gánh. Viền cũ 1.18–1.61:1 quá mờ; bộ mới đạt 3.28–4.48:1, vượt
+   ngưỡng 3:1 mà WCAG đặt cho đường biên của thành phần giao diện.
+
+   Giao diện tối không đụng tới: ở đó nền pill là rgba(...,0.18) trên nền rất
+   tối nên đã tách bạch sẵn. */
 :root:not(.dark) .role-pill.leader,
 :root:not(.dark) .role-select-btn.leader {
-  background-color: #f3e8ff;
-  border-color: #d8b4fe;
-  color: #7e22ce;
+  background-color: #ede9fe;
+  border-color: #8b5cf6;
+  color: #6d28d9;
 }
 
 :root:not(.dark) .role-pill.admin,
 :root:not(.dark) .role-select-btn.admin {
   background-color: #dbeafe;
-  border-color: #93c5fd;
+  border-color: #3b82f6;
   color: #1d4ed8;
 }
 
 :root:not(.dark) .role-pill.member,
 :root:not(.dark) .role-select-btn.member {
   background-color: #d1fae5;
-  border-color: #6ee7b7;
-  color: #047857;
+  border-color: #059669;
+  color: #065f46;
 }
 
 :root:not(.dark) .role-pill.guest,
 :root:not(.dark) .role-select-btn.guest {
   background-color: #fef3c7;
-  border-color: #fde047;
-  color: #b45309;
+  border-color: #b45309;
+  color: #92400e;
 }
 
 /* Nút hành động dạng icon vuông — thay cho nút chữ dài trước đây, để mọi hàng
@@ -1513,23 +1538,10 @@
   margin: 0;
 }
 
-.meet-new-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  align-self: flex-start;
-  margin: 2px 0 4px;
-}
-
 .meet-label {
   font-size: 0.82rem;
   font-weight: 500;
   color: var(--color-text-secondary);
-}
-
-.meet-input-invalid {
-  border-color: var(--color-danger);
 }
 
 .meet-hint {
@@ -1552,10 +1564,6 @@
 
 .meet-hint-error {
   color: var(--color-danger);
-}
-
-.meet-hint-ok {
-  color: var(--color-success);
 }
 
 .meet-schedule {

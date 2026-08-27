@@ -37,6 +37,14 @@
   --color-live: #ec4899;
   --color-success: #16a34a;
 
+  /* Màu của sự kiện TRÙNG GIỜ. Cố ý giữ NGUYÊN một giá trị ở cả theme sáng
+     lẫn tối và ở mọi lịch: "trùng giờ" là một tín hiệu, mà tín hiệu thì phải
+     luôn hiện ra cùng một màu — pha nó theo màu từng lịch thì lịch xanh lá ra
+     nâu, lịch xanh dương ra tím, và người dùng hết đọc được nó.
+     #db2777 thay vì hồng nhạt hơn (#ec4899) vì chữ trắng trên nền này đạt
+     4.59:1, qua ngưỡng AA 4.5:1 cho cỡ chữ nhỏ của khối sự kiện. */
+  --color-conflict: #db2777;
+
   /* Fixed role-badge hues (group member roles) — deliberately independent of
      --color-accent so they don't shift when the brand accent changes. */
   --color-role-owner: #7c3aed;

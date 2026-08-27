@@ -318,15 +318,21 @@
   border-left: none;
 }
 
+/* Cùng quy ước hồng với .event-block.conflict bên time-grid-view.css. Chip
+   tháng dùng kiểu nền nhạt + chữ đậm, nên hồng được pha với --chip-tint-bg
+   (một màu ĐỤC) chứ không pha với màu lịch — kết quả vẫn đục và vẫn là đúng
+   một màu cho mọi lịch. */
 .event-chip.conflict {
-  border-left-color: var(--color-danger);
-  outline: 1px dashed var(--color-danger);
+  background: color-mix(in srgb, var(--color-conflict) 15%, var(--chip-tint-bg));
+  color: color-mix(in srgb, var(--color-conflict) 85%, var(--chip-tint-text));
+  border-left-color: var(--color-conflict);
+  outline: 1px dashed var(--color-conflict);
   outline-offset: -1px;
-  background: color-mix(in srgb, var(--color-danger) 18%, var(--chip-tint-bg));
 }
 
 .event-chip.conflict.all-day {
-  background: color-mix(in srgb, var(--color-danger) 55%, var(--chip-color));
+  background: var(--color-conflict);
+  color: #fff;
 }
 
 .more-btn {

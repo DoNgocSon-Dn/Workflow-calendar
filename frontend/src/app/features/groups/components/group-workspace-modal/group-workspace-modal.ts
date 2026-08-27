@@ -47,7 +47,7 @@ import {
   GroupTask,
 } from '../../models/group.models';
 import { MentionOption, MentionPopup } from '../mention-popup/mention-popup';
-import { normalizeMeetLink } from '../../utils/meet-link.util';
+import { createMeetingRoomLink } from '../../../../shared/utils/meeting-link.util';
 import {
   ActiveMentionQuery,
   MENTION_ALL_LABEL,
@@ -86,7 +86,7 @@ function meetAnnouncement(title: string, start: Date, end: Date, link: string): 
   return [
     title,
     `Thời gian: ${day}, ${formatTime24(start)} - ${formatTime24(end)}`,
-    `Tham gia Google Meet: ${link}`,
+    `Tham gia phòng họp: ${link}`,
   ].join('\n');
 }
 
@@ -1097,16 +1097,8 @@ export class GroupWorkspaceModal {
   }
 
   // ---------------------------------------------------------------------
-  // Phòng họp Google Meet (tab Lịch Nhóm)
+  // Phòng họp trực tuyến (tab Lịch Nhóm)
   // ---------------------------------------------------------------------
-
-  /**
-   * App chỉ xin scope đăng nhập của Google, KHÔNG có quyền Calendar API, nên
-   * không thể tự sinh một link Meet thật. Đường duy nhất ra link thật là để
-   * chính Google tạo phòng: mở `meet.google.com/new` ở tab mới, người dùng dán
-   * link về đây, rồi mình gắn nó vào lịch nhóm và khung chat.
-   */
-  private static readonly MEET_NEW_ROOM_URL = 'https://meet.google.com/new';
 
   /** Trùng `MaxLength(200)` của CreateEventDto.title — cắt ở client để một tên
    *  nhóm quá dài không biến thành lỗi 400 khó hiểu. */
@@ -1115,7 +1107,6 @@ export class GroupWorkspaceModal {
   /** Các mốc thời lượng hay dùng cho một buổi họp nhóm. */
   protected readonly meetDurations = [30, 45, 60, 90] as const;
 
-  protected readonly meetLinkInput = signal('');
   protected readonly meetTitle = signal('');
   protected readonly meetDate = signal('');
   protected readonly meetTime = signal('');
@@ -1139,14 +1130,6 @@ export class GroupWorkspaceModal {
     return saved.groupId === this.store.activeGroup()?.id ? saved.link : null;
   });
 
-  protected readonly normalizedMeetLink = computed(() => normalizeMeetLink(this.meetLinkInput()));
-
-  /** Chỉ báo sai khi người dùng ĐÃ gõ gì đó — ô trống là chưa nhập, không phải
-   *  nhập sai. */
-  protected readonly meetLinkInvalid = computed(
-    () => !!this.meetLinkInput().trim() && !this.normalizedMeetLink(),
-  );
-
   /**
    * Thành viên thường được gắn vai 'viewer' trên `calendar_members` của lịch
    * nhóm nên RLS chặn họ ghi sự kiện. Ẩn hẳn ô "tạo sự kiện" thay vì để họ tích
@@ -1158,23 +1141,25 @@ export class GroupWorkspaceModal {
     return this.calendarStore.calendars().find((c) => c.id === calendarId)?.canEdit ?? false;
   });
 
-  protected readonly canSaveMeet = computed(() => !!this.normalizedMeetLink() && !this.meetSaving());
-
-  /** Mở phòng mới do Google cấp. `noopener` là bắt buộc: thiếu nó, tab Meet giữ
-   *  tham chiếu `window.opener` trỏ ngược về app. */
-  openNewMeetRoom(): void {
-    window.open(GroupWorkspaceModal.MEET_NEW_ROOM_URL, '_blank', 'noopener,noreferrer');
-  }
+  protected readonly canCreateMeet = computed(() => !this.meetSaving());
 
   selectMeetDuration(minutes: number): void {
     this.meetDuration.set(minutes);
   }
 
-  async saveMeetRoom(): Promise<void> {
+  /**
+   * Sinh link phòng họp rồi gắn thẳng vào lịch nhóm và khung chat.
+   *
+   * Link được tạo NGAY ở đây chứ không bắt người dùng đi lấy rồi dán về:
+   * `createMeetingRoomLink()` dựng ra một phòng Jitsi, mà phòng Jitsi thì tự
+   * tồn tại từ lần đầu có người mở URL — không cần gọi API trước nên không có
+   * gì để chờ.
+   */
+  async createMeetRoom(): Promise<void> {
     const group = this.store.activeGroup();
-    const link = this.normalizedMeetLink();
-    if (!group || !link || this.meetSaving()) return;
+    if (!group || this.meetSaving()) return;
 
+    const link = createMeetingRoomLink();
     const title = this.meetRoomTitle(group.name);
     const start = this.meetStartAt();
     const end = addMinutes(start, this.meetDuration());
@@ -1258,7 +1243,6 @@ export class GroupWorkspaceModal {
   }
 
   private resetMeetForm(): void {
-    this.meetLinkInput.set('');
     this.meetTitle.set('');
     this.meetError.set(null);
     this.seedMeetSchedule();
