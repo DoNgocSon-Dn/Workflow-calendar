@@ -911,6 +911,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'group.descPlaceholder': 'Mô tả nhóm (tuỳ chọn)',
     'group.colorAriaLabel': 'Màu nhóm',
     'group.colorLabel': 'Màu {color}',
+    'group.colorChangedAnnouncement': 'Trưởng nhóm đã thay đổi màu nhận diện của nhóm.',
     'group.saveChanges': 'Lưu thay đổi',
     'group.tabTasks': 'Quản lý Task',
     'group.tabMembers': 'Thành viên',

@@ -95,6 +95,10 @@ export class CalendarSidebar implements OnInit {
 
   protected readonly deletingCalendarId = signal<string | null>(null);
 
+  protected isPersonalCalendar(calendarId: string): boolean {
+    return !this.groupCalendarIds().has(calendarId);
+  }
+
   protected canDeleteCalendar(cal: { id: string; canEdit: boolean }): boolean {
     return cal.canEdit && !this.groupCalendarIds().has(cal.id);
   }

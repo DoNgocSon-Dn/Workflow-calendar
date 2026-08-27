@@ -137,28 +137,32 @@
                 [checked]="isVisible(cal.id)"
                 (change)="store.toggleCalendarVisibility(cal.id)"
               />
-              <div class="color-dot-wrapper" (click)="$event.stopPropagation()">
-                <button
-                  type="button"
-                  class="color-dot-btn"
-                  [style.background]="colorHex[cal.color]"
-                  [title]="i18n.t('sidebar.changeColorTooltip')"
-                  (click)="toggleColorPicker($event, cal.id)"
-                ></button>
-                @if (activeColorPickerId() === cal.id) {
-                  <div class="color-picker-popover">
-                    @for (c of availableColors; track c) {
-                      <button
-                        type="button"
-                        class="color-option-btn"
-                        [class.active]="cal.color === c"
-                        [style.background]="colorHex[c]"
-                        (click)="selectColor($event, cal.id, c)"
-                      ></button>
-                    }
-                  </div>
-                }
-              </div>
+              @if (isPersonalCalendar(cal.id)) {
+                <div class="color-dot-wrapper" (click)="$event.stopPropagation()">
+                  <button
+                    type="button"
+                    class="color-dot-btn"
+                    [style.background]="colorHex[cal.color]"
+                    [title]="i18n.t('sidebar.changeColorTooltip')"
+                    (click)="toggleColorPicker($event, cal.id)"
+                  ></button>
+                  @if (activeColorPickerId() === cal.id) {
+                    <div class="color-picker-popover">
+                      @for (c of availableColors; track c) {
+                        <button
+                          type="button"
+                          class="color-option-btn"
+                          [class.active]="cal.color === c"
+                          [style.background]="colorHex[c]"
+                          (click)="selectColor($event, cal.id, c)"
+                        ></button>
+                      }
+                    </div>
+                  }
+                </div>
+              } @else {
+                <span class="color-dot" [style.background]="colorHex[cal.color]"></span>
+              }
               <span class="calendar-name">{{ calendarLabel(cal) }}</span>
               <button
                 type="button"

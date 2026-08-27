@@ -133,27 +133,33 @@
   }
 }
 
-/* Trống đồng Đông Sơn (Giỗ Tổ Hùng Vương) — khối tròn gọn, không cần trải
-   rộng như cành mai/bánh răng/lá cờ, neo góc trên-phải cùng quy tắc chung. */
+/* Trống đồng Đông Sơn (Giỗ Tổ Hùng Vương) — theo yêu cầu người dùng:
+   đặt CHÍNH GIỮA màn hình, chỉ lấy họa tiết trống đồng hình tròn (bỏ thân trống 3D). */
 .holiday-backdrop--dong-son .holiday-backdrop__motif {
-  width: min(30vw, 340px);
-  height: min(42%, 340px);
-  opacity: 0.9;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, -50%);
+  width: min(52vw, 560px);
+  height: min(66%, 500px);
+  opacity: 0.7;
+  mask-image: radial-gradient(65% 65% at 50% 50%, #000 60%, transparent 100%);
+  -webkit-mask-image: radial-gradient(65% 65% at 50% 50%, #000 60%, transparent 100%);
 }
 
 @media (max-width: 1200px) {
   .holiday-backdrop--dong-son .holiday-backdrop__motif {
-    width: min(36vw, 280px);
-    height: min(38%, 280px);
-    opacity: 0.8;
+    width: min(58vw, 440px);
+    height: min(50%, 360px);
+    opacity: 0.6;
   }
 }
 
 @media (max-width: 900px) {
   .holiday-backdrop--dong-son .holiday-backdrop__motif {
-    width: min(48vw, 240px);
-    height: min(32%, 220px);
-    opacity: 0.75;
+    width: min(74vw, 320px);
+    height: min(38%, 240px);
+    opacity: 0.5;
   }
 }
 

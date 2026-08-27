@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 /** Tâm mặt trống — mọi hoa văn xoay quanh điểm này. */
-const CX = 148;
-const CY = 58;
+const CX = 100;
+const CY = 100;
 
 /** N bản sao của MỘT hình vẽ sẵn ở vị trí 12-giờ — xoay quanh tâm trống để
  *  rải đều thành vòng tròn. Dùng cho các dải răng cưa viền ngoài (phần duy
