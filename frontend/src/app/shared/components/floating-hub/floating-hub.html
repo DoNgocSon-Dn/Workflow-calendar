@@ -125,13 +125,16 @@
         @for (note of notes(); track note.id) {
           <li class="note-card" [class]="'color-' + note.color">
             @if (editingId() === note.id) {
-              <textarea
-                class="note-input"
-                rows="2"
-                maxlength="2000"
-                [ngModel]="editingContent()"
-                (ngModelChange)="editingContent.set($event)"
-              ></textarea>
+              <div class="field-with-counter">
+                <textarea
+                  class="note-input"
+                  rows="2"
+                  maxlength="2000"
+                  [ngModel]="editingContent()"
+                  (ngModelChange)="editingContent.set($event)"
+                ></textarea>
+                <app-char-counter class="field-counter" [current]="editingContent().length" [max]="2000" />
+              </div>
               <div class="note-actions">
                 <button type="button" class="text-btn" (click)="saveEditNote(note.id)">Lưu</button>
                 <button type="button" class="text-btn" (click)="cancelEditNote()">Huỷ</button>
@@ -155,16 +158,19 @@
       @case ('todos') {
       <div class="add-row">
         <div class="todo-input-row">
-          <input
-            class="text-input"
-            type="text"
-            maxlength="300"
-            [ngModel]="newTodoContent()"
-            (ngModelChange)="newTodoContent.set($event)"
-            placeholder="Thêm việc cần làm…"
-            [disabled]="savingTodo()"
-            (keydown.enter)="$event.preventDefault(); addTodo()"
-          />
+          <div class="field-with-counter">
+            <input
+              class="text-input"
+              type="text"
+              maxlength="300"
+              [ngModel]="newTodoContent()"
+              (ngModelChange)="newTodoContent.set($event)"
+              placeholder="Thêm việc cần làm…"
+              [disabled]="savingTodo()"
+              (keydown.enter)="$event.preventDefault(); addTodo()"
+            />
+            <app-char-counter class="field-counter" [current]="newTodoContent().length" [max]="300" />
+          </div>
           <button type="button" class="primary-btn" [disabled]="savingTodo()" (click)="addTodo()">
             Thêm
           </button>
@@ -182,14 +188,17 @@
               <span aria-hidden="true"></span>
             </label>
             @if (editingTodoId() === todo.id) {
-              <input
-                class="text-input todo-edit-input"
-                type="text"
-                maxlength="300"
-                [ngModel]="editingTodoContent()"
-                (ngModelChange)="editingTodoContent.set($event)"
-                (keydown.enter)="$event.preventDefault(); saveEditTodo(todo.id)"
-              />
+              <div class="field-with-counter todo-edit-field">
+                <input
+                  class="text-input todo-edit-input"
+                  type="text"
+                  maxlength="300"
+                  [ngModel]="editingTodoContent()"
+                  (ngModelChange)="editingTodoContent.set($event)"
+                  (keydown.enter)="$event.preventDefault(); saveEditTodo(todo.id)"
+                />
+                <app-char-counter class="field-counter" [current]="editingTodoContent().length" [max]="300" />
+              </div>
               <div class="note-actions">
                 <button type="button" class="text-btn" (click)="saveEditTodo(todo.id)">Lưu</button>
                 <button type="button" class="text-btn" (click)="cancelEditTodo()">Huỷ</button>
@@ -391,6 +400,7 @@
                       aria-label="Tên sự kiện"
                       (input)="setEventRowTitle(row.id, $any($event.target).value)"
                     />
+                    <app-char-counter class="field-counter" [current]="row.title.length" [max]="200" />
 
                     @if (row.missing) {
                       <p class="event-proposal__missing">{{ row.missing }}</p>
@@ -427,6 +437,7 @@
                       aria-label="Địa điểm"
                       (input)="setEventRowLocation(row.id, $any($event.target).value)"
                     />
+                    <app-char-counter class="field-counter" [current]="row.location.length" [max]="200" />
                   </div>
 
                   <button
@@ -513,6 +524,7 @@
                       aria-label="Tên việc"
                       (input)="setProposalRowContent(row.id, $any($event.target).value)"
                     />
+                    <app-char-counter class="field-counter" [current]="row.content.length" [max]="300" />
                     @if (row.description) {
                       <p class="todo-proposal__desc">{{ row.description }}</p>
                     }
