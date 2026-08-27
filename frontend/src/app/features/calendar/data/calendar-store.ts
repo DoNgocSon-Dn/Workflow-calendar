@@ -890,6 +890,17 @@ export class CalendarStore {
     });
   }
 
+  /** Cập nhật màu sắc cho một lịch cá nhân. */
+  async updateCalendarColor(calendarId: string, color: CalendarColor): Promise<void> {
+    const updated = await firstValueFrom(
+      this.http.patch<CalendarApiDto>(`${this.apiUrl}/calendars/${calendarId}`, { color }),
+    );
+    const calendar = toCalendarDef(updated);
+    this.calendars.update((list) =>
+      list.map((c) => (c.id === calendarId ? { ...c, color: calendar.color } : c)),
+    );
+  }
+
   /**
    * Đồng bộ ngầm định kỳ — LƯỚI AN TOÀN cho realtime, không phải thay thế nó.
    *

@@ -76,7 +76,14 @@
                 <div
                   class="drag-preview"
                   [style.top.px]="(dc.startMin / 60) * HOUR_HEIGHT"
-                  [style.height.px]="((dc.endMin - dc.startMin) / 60) * HOUR_HEIGHT"
+                  [style.height.px]="(Math.min(1440 - dc.startMin, dc.endMin - dc.startMin) / 60) * HOUR_HEIGHT"
+                ></div>
+              }
+              @if (dc.endMin > 1440 && isNextDay(dc.dayKey, day)) {
+                <div
+                  class="drag-preview"
+                  [style.top.px]="0"
+                  [style.height.px]="((dc.endMin - 1440) / 60) * HOUR_HEIGHT"
                 ></div>
               }
             }

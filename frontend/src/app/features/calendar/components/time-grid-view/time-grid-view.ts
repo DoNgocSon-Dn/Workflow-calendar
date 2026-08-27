@@ -172,20 +172,37 @@ export class TimeGridView {
   protected readonly dragMove = signal<DragDeltaState | null>(null);
   protected readonly dragResize = signal<DragDeltaState | null>(null);
 
+  protected readonly Math = Math;
+
   protected readonly timedEventsByDay = computed(() => {
     const map = new Map<string, PositionedEvent[]>();
+    const resizeState = this.dragResize();
+    const moveState = this.dragMove();
+
+    // Map events with active drag modifications so multi-day clipping works dynamically during live dragging
+    const events = this.store.visibleEvents().map((e) => {
+      if (resizeState && resizeState.eventId === e.id) {
+        const newEnd = addMinutes(e.end, resizeState.deltaMin);
+        return { ...e, end: newEnd };
+      }
+      if (moveState && moveState.eventId === e.id) {
+        const newStart = addMinutes(e.start, moveState.deltaMin);
+        const newEnd = addMinutes(e.end, moveState.deltaMin);
+        return { ...e, start: newStart, end: newEnd };
+      }
+      return e;
+    });
+
     for (const day of this.days()) {
       const dayStart = startOfDay(day);
       const dayEnd = addDays(dayStart, 1);
-      const dayEvents = this.store
-        .visibleEvents()
-        .filter(
-          (e) =>
-            e.calendarId !== VN_HOLIDAY_CALENDAR_ID &&
-            !e.allDay &&
-            e.start.getTime() < dayEnd.getTime() &&
-            e.end.getTime() > dayStart.getTime(),
-        );
+      const dayEvents = events.filter(
+        (e) =>
+          e.calendarId !== VN_HOLIDAY_CALENDAR_ID &&
+          !e.allDay &&
+          e.start.getTime() < dayEnd.getTime() &&
+          e.end.getTime() > dayStart.getTime(),
+      );
       map.set(toDateInputValue(day), layoutDayEvents(dayEvents, HOUR_HEIGHT, day));
     }
     return map;
@@ -196,8 +213,6 @@ export class TimeGridView {
     for (const day of this.days()) {
       map.set(
         toDateInputValue(day),
-        // Ngày lễ VN hiện riêng thành nhãn ở tiêu đề cột, không trộn vào hàng
-        // "Cả ngày" cùng sự kiện người dùng tạo nữa.
         this.store
           .visibleEvents()
           .filter(
@@ -225,25 +240,26 @@ export class TimeGridView {
     this.destroyRef.onDestroy(() => window.removeEventListener('resize', onResize));
   }
 
-  // Chrome/Edge có thể bỏ qua width khai báo ở ::-webkit-scrollbar tuỳ theo
-  // scrollbar-width; đo trực tiếp offsetWidth - clientWidth để header và
-  // hàng "Cả ngày" luôn thẳng cột với lưới giờ bên dưới, bất kể trình duyệt/hệ điều hành.
   private measureScrollbarWidth(): void {
     const el = this.scrollContainer()?.nativeElement;
     if (!el) return;
     this.scrollbarWidth.set(el.offsetWidth - el.clientWidth);
   }
 
-  /** Kéo hai hàng tiêu đề/"Cả ngày" theo đúng vị trí cuộn ngang của lưới giờ.
-   *  Chỉ có tác dụng khi cột ngày đủ rộng để tràn khỏi khung nhìn (điện
-   *  thoại) — bình thường .scroll-area không cuộn ngang nên scrollLeft luôn
-   *  là 0 và hai dòng gọi này là no-op. */
   protected onGridScroll(event: Event): void {
     const scrollLeft = (event.target as HTMLElement).scrollLeft;
     const header = this.dayHeaderRow()?.nativeElement;
     const allDay = this.allDayRow()?.nativeElement;
     if (header) header.scrollLeft = scrollLeft;
     if (allDay) allDay.scrollLeft = scrollLeft;
+  }
+
+  isNextDay(dayKeyA: string, dayB: Date): boolean {
+    const parts = dayKeyA.split('-').map(Number);
+    if (parts.length !== 3) return false;
+    const dayA = new Date(parts[0], parts[1] - 1, parts[2]);
+    const nextDayA = addDays(dayA, 1);
+    return isSameDay(nextDayA, dayB);
   }
 
   dayKey(day: Date): string {
@@ -263,18 +279,10 @@ export class TimeGridView {
   }
 
   blockTop(pe: PositionedEvent): number {
-    const state = this.dragMove();
-    if (state && state.eventId === pe.event.id) {
-      return pe.top + (state.deltaMin / 60) * HOUR_HEIGHT;
-    }
     return pe.top;
   }
 
   blockHeight(pe: PositionedEvent): number {
-    const state = this.dragResize();
-    if (state && state.eventId === pe.event.id) {
-      return Math.max(pe.height + (state.deltaMin / 60) * HOUR_HEIGHT, 14);
-    }
     return pe.height;
   }
 

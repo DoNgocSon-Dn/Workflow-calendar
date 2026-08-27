@@ -179,7 +179,6 @@
                 [checked]="isVisible(cal.id)"
                 (change)="store.toggleCalendarVisibility(cal.id)"
               />
-              <span class="color-dot" [style.background]="colorHex[cal.color]"></span>
               <span class="calendar-name">{{ cal.name }}</span>
             </label>
           }
@@ -230,7 +229,7 @@
             [attr.aria-label]="cal.name"
             (click)="store.toggleCalendarVisibility(cal.id)"
           >
-            <span class="color-dot" [style.background]="colorHex[cal.color]"></span>
+            <app-icon name="check" />
           </button>
         }
       </div>
