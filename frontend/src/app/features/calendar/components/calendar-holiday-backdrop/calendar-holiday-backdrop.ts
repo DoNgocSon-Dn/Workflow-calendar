@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { HolidayPopupService } from '../../../../core/services/holiday-popup.service';
+import { HolidayThemeService } from '../../data/holiday-theme.service';
 import { HolidayArchetype } from '../../../../models/holiday-theme.model';
 import { TetBranchMotif } from '../../../../shared/components/holiday-popup/tet-branch-motif';
 import { LaborDayMotif } from '../../../../shared/components/holiday-popup/labor-day-motif';
@@ -51,8 +52,10 @@ const SCENE_ARCHETYPES = new Set<HolidayArchetype>([
 })
 export class CalendarHolidayBackdrop {
   private readonly holidayPopupService = inject(HolidayPopupService);
+  private readonly holidayThemeService = inject(HolidayThemeService);
 
   protected readonly activeScene = computed<HolidayArchetype | null>(() => {
+    if (this.holidayThemeService.mode() === 'off') return null;
     const archetype = this.holidayPopupService.activeHoliday()?.theme?.composition.archetype;
     return archetype && SCENE_ARCHETYPES.has(archetype) ? archetype : null;
   });

@@ -108,7 +108,7 @@ export class AiController {
     // Ngữ cảnh lịch: toàn bộ sự kiện người dùng có quyền xem (RLS lọc sẵn qua
     // supabase client theo user), giới hạn về một cửa sổ gần "hiện tại" và cắt
     // bớt số lượng để prompt không phình to vô hạn với người dùng nhiều sự kiện.
-    const allEvents = await this.eventsService.findAll(supabase);
+    const allEvents = await this.eventsService.findAll(supabase, user.id);
     const now = Date.now();
     const windowStart = now - 7 * 24 * 60 * 60 * 1000;
     const windowEnd = now + 30 * 24 * 60 * 60 * 1000;

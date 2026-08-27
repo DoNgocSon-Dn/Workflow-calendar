@@ -56,6 +56,7 @@ export class EventsService {
 
   async findAll(
     supabase: SupabaseClient,
+    userId: string,
     calendarId?: string,
   ): Promise<EventDto[]> {
     let query = supabase
@@ -69,7 +70,35 @@ export class EventsService {
 
     const { data, error } = await query;
     if (error) throw new InternalServerErrorException(error.message);
-    return (data as EventRow[]).map(toEventDto);
+    const rows = new Map<string, EventRow>();
+    for (const row of data as EventRow[]) rows.set(row.id, row);
+
+    // Sự kiện mà người dùng được MỜI (là khách mời) cũng phải hiện trên lịch
+    // NGAY, không đợi họ bấm "Chấp nhận". RLS đáng lẽ lo việc này qua policy
+    // events_select_invited, nhưng policy đó phụ thuộc migration 23/26 đã được
+    // áp trên DB hay chưa — kéo thêm ở đây bằng service-role để tính năng chạy
+    // độc lập với trạng thái migration (cùng cách listMyInvites/respond đã làm).
+    // Bỏ qua lời mời đã TỪ CHỐI: từ chối rồi thì không nên còn nằm trên lịch.
+    const { data: invitedRows, error: invitedErr } = await this.supabaseService
+      .getServiceRoleClient()
+      .from('event_attendees')
+      .select('status, event:events!inner(*)')
+      .eq('user_id', userId)
+      .neq('status', 'declined');
+    if (invitedErr) {
+      this.logger.warn(`findAll: không kéo được sự kiện được mời: ${invitedErr.message}`);
+    } else {
+      for (const r of (invitedRows ?? []) as unknown as { event: EventRow | null }[]) {
+        const ev = r.event;
+        if (!ev || ev.deleted_at) continue;
+        if (calendarId && ev.calendar_id !== calendarId) continue;
+        rows.set(ev.id, ev);
+      }
+    }
+
+    return [...rows.values()]
+      .sort((a, b) => a.start_at.localeCompare(b.start_at))
+      .map(toEventDto);
   }
 
   async create(

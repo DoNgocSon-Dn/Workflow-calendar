@@ -16,6 +16,7 @@ import { GroupApiService } from '../services/group-api.service';
 import { AuthStore } from '../../../core/auth/auth-store';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { SUPABASE_CLIENT } from '../../../core/supabase-client';
+import { NotificationQueue } from '../../../core/realtime/notification-queue';
 import { NotificationService } from '../../../core/services/notification.service';
 import { TranslationService } from '../../../core/i18n/translation.service';
 import {
@@ -54,6 +55,7 @@ export class GroupStore {
   private readonly realtime = inject(RealtimeService);
   private readonly supabase = inject(SUPABASE_CLIENT);
   private readonly notifications = inject(NotificationService);
+  private readonly notificationQueue = inject(NotificationQueue);
   private readonly i18n = inject(TranslationService);
   /** Hàm dịch truyền cho các notification-draft (xem notification-drafts.ts). */
   private readonly nt = (key: string, vars?: Readonly<Record<string, string | number>>) =>
@@ -685,19 +687,15 @@ export class GroupStore {
   private notifyTaskEvent(groupId: string, task: GroupTask, kind: 'created' | 'updated'): void {
     const currentUserId = this.authStore.user()?.id;
     if (!currentUserId) return;
-    // Chỉ báo việc liên quan trực tiếp tới mình, và không báo lại thao tác do
-    // chính mình vừa thực hiện.
+    // Chỉ báo việc liên quan trực tiếp tới mình
     if (task.assignedTo !== currentUserId) return;
-    if (this.selfOriginTaskIds.has(task.id)) {
-      this.selfOriginTaskIds.delete(task.id);
-      return;
-    }
 
     const group = this.groups().find((g) => g.id === groupId || g.id === task.groupId);
+    const groupName = group?.name ?? 'nhóm của bạn';
     const input = {
       taskId: task.id,
       groupId: group?.id ?? task.groupId,
-      groupName: group?.name ?? 'nhóm của bạn',
+      groupName,
       title: task.title,
       status: task.status,
       assignedTo: task.assignedTo,
@@ -707,20 +705,27 @@ export class GroupStore {
     this.notifications.ingest(
       kind === 'created' ? groupTaskAssignedDraft(this.nt, input) : groupTaskUpdatedDraft(this.nt, input),
     );
+
+    this.notificationQueue.push({
+      id: `task-${kind}-${task.id}`,
+      title: kind === 'created' ? 'Nhiệm vụ mới' : 'Cập nhật nhiệm vụ',
+      body: `Bạn được phân công nhiệm vụ "${task.title}" trong ${groupName}`,
+      kind: 'created',
+    });
   }
 
-  /** Cùng bộ lọc với notifyTaskEvent() (chỉ báo nếu đang được giao việc đó +
-   *  không phải tiếng vọng của chính mình vừa xoá) — tách hàm riêng vì
-   *  taskDeleted không còn GroupTask đầy đủ để tái dùng chữ ký cũ, và không
-   *  cần phân biệt created/updated. */
+  /** Cùng bộ lọc với notifyTaskEvent() (chỉ báo nếu đang được giao việc đó) */
   private notifyTaskDeleted(groupId: string, taskId: string, title: string, assignedTo?: string): void {
     const currentUserId = this.authStore.user()?.id;
     if (!currentUserId || assignedTo !== currentUserId) return;
-    if (this.selfOriginTaskIds.has(taskId)) {
-      this.selfOriginTaskIds.delete(taskId);
-      return;
-    }
+
     this.notifications.ingest(groupTaskDeletedDraft(this.nt, taskId, title, groupId));
+    this.notificationQueue.push({
+      id: `task-deleted-${taskId}`,
+      title: 'Xóa nhiệm vụ',
+      body: `Nhiệm vụ "${title}" bạn được phân công đã bị xóa`,
+      kind: 'deleted',
+    });
   }
 
   /** Đánh dấu task vừa được chính người dùng này sửa, để bỏ qua tiếng vọng

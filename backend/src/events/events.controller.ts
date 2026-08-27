@@ -28,9 +28,10 @@ export class EventsController {
   @Get()
   findAll(
     @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
     @Query('calendarId') calendarId?: string,
   ) {
-    return this.eventsService.findAll(supabase, calendarId);
+    return this.eventsService.findAll(supabase, user.id, calendarId);
   }
 
   @Get('trash')

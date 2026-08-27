@@ -4,6 +4,7 @@ import { Holiday } from '../../models/holiday-theme.model';
 import { resolveHolidaysForDate } from '../../features/calendar/utils/holiday-resolver';
 import { scheduleVietnamMidnightTick, todayInVietnam } from '../utils/vietnam-time';
 import { NotificationSoundService } from './notification-sound.service';
+import { HolidayThemeService } from '../../features/calendar/data/holiday-theme.service';
 
 const DISMISS_KEY_PREFIX = 'holiday-popup-dismissed:';
 const NOTIFICATIONS_ENABLED_KEY = 'holiday-notifications-enabled';
@@ -51,6 +52,7 @@ function resolveActivePopupHoliday(today: Date): Holiday | null {
 export class HolidayPopupService {
   private readonly clock = inject(Clock);
   private readonly sound = inject(NotificationSoundService);
+  private readonly holidayThemeService = inject(HolidayThemeService);
 
   /** Theo giờ VN, cập nhật lại quanh nửa đêm — không phải giá trị tính một
    *  lần lúc service khởi tạo (bug cũ: tab mở xuyên nửa đêm sẽ đứng ở ngày
@@ -64,6 +66,7 @@ export class HolidayPopupService {
   readonly notificationsEnabled = signal<boolean>(readStoredNotificationsEnabled());
 
   readonly visible = computed<boolean>(() => {
+    if (this.holidayThemeService.mode() === 'off') return false;
     if (!this.notificationsEnabled()) return false;
     const holiday = this.activeHoliday();
     if (!holiday) return false;
