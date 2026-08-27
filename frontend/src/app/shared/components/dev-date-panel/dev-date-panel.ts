@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { Clock } from '../../../core/clock';
 import { DevUnlockService } from '../../../core/services/dev-unlock.service';
+import { BirthdayPopupService } from '../../../core/services/birthday-popup.service';
 
 function toDateInputValue(date: Date): string {
   const y = date.getFullYear();
@@ -29,6 +30,8 @@ function toDateInputValue(date: Date): string {
 export class DevDatePanel {
   private readonly clock = inject(Clock);
   private readonly devUnlock = inject(DevUnlockService);
+
+  private readonly birthdayPopupService = inject(BirthdayPopupService);
 
   protected readonly canUse = computed(() => this.devUnlock.unlocked());
   protected readonly open = signal(false);
@@ -59,6 +62,19 @@ export class DevDatePanel {
     const value = this.draftDate();
     if (!value) return;
     const [y, m, d] = value.split('-').map(Number);
+    this.clock.setDevOverride(new Date(y, m - 1, d));
+  }
+
+  simulateBirthday(): void {
+    let dob = this.birthdayPopupService.getUserDob();
+    if (!dob) {
+      dob = '2000-05-15';
+      this.birthdayPopupService.setUserDob(dob);
+    }
+    const parsed = this.birthdayPopupService.parseDob(dob);
+    const m = parsed ? parsed.month : 5;
+    const d = parsed ? parsed.day : 15;
+    const y = new Date().getFullYear();
     this.clock.setDevOverride(new Date(y, m - 1, d));
   }
 

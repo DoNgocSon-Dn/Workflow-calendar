@@ -362,3 +362,417 @@
 .btn-start-app:hover {
   background: #1d4ed8;
 }
+
+/* Birthday Mode Tabs */
+.birthday-tabs {
+  display: flex;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 4px;
+  border-radius: 12px;
+  gap: 4px;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.birthday-tab-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.birthday-tab-btn.active {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.birthday-tab-btn:hover:not(.active) {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Meme Container & Stage */
+.birthday-meme-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  width: 100%;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.birthday-meme-container.pop-in {
+  animation: memePopIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.birthday-meme-container.pop-out {
+  opacity: 0;
+  transform: scale(0.92);
+}
+
+@keyframes memePopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.meme-stage {
+  position: relative;
+  width: 100%;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+/* Meme 1: Cat Vibing */
+.meme-cat-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.disco-light {
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(from 0deg, transparent, rgba(255, 0, 128, 0.3), transparent, rgba(0, 200, 255, 0.3), transparent);
+  animation: spinDisco 4s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes spinDisco {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.cat-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: catHeadBob 0.4s ease-in-out infinite alternate;
+}
+
+@keyframes catHeadBob {
+  0% { transform: translateY(0) rotate(-4deg); }
+  100% { transform: translateY(-8px) rotate(4deg); }
+}
+
+.cat-head {
+  position: relative;
+  font-size: 3.8rem;
+  line-height: 1;
+}
+
+.party-hat {
+  position: absolute;
+  top: -24px;
+  left: -4px;
+  font-size: 2rem;
+  animation: hatWiggle 0.8s ease-in-out infinite alternate;
+}
+
+.cat-shades {
+  position: absolute;
+  top: 14px;
+  left: 6px;
+  font-size: 2.2rem;
+}
+
+.cat-paws {
+  font-size: 1.4rem;
+  margin-top: -10px;
+}
+
+.music-notes {
+  position: absolute;
+  right: 20px;
+  bottom: 15px;
+  font-size: 1.4rem;
+  animation: musicFloat 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes musicFloat {
+  0% { transform: translateY(0) scale(1); opacity: 0.7; }
+  100% { transform: translateY(-12px) scale(1.2); opacity: 1; }
+}
+
+/* Meme 2: Doggo Party */
+.meme-doggo-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.doggo-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: doggoBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite alternate;
+}
+
+@keyframes doggoBounce {
+  0% { transform: scale(1) translateY(0); }
+  100% { transform: scale(1.08) translateY(-6px); }
+}
+
+.crown {
+  position: absolute;
+  top: -24px;
+  font-size: 2rem;
+  animation: crownShine 1s ease-in-out infinite alternate;
+}
+
+.doggo-face {
+  font-size: 3.8rem;
+  line-height: 1;
+}
+
+.gold-chain {
+  position: absolute;
+  bottom: 2px;
+  font-size: 1.6rem;
+}
+
+.golden-sparkles {
+  position: absolute;
+  top: 12px;
+  font-size: 1.2rem;
+  letter-spacing: 0.5rem;
+  animation: pulseSparkles 1s infinite alternate;
+}
+
+.party-blower {
+  position: absolute;
+  right: 30px;
+  font-size: 1.6rem;
+  animation: blowerBlow 0.6s infinite alternate;
+}
+
+@keyframes blowerBlow {
+  0% { transform: scale(0.9) rotate(-10deg); }
+  100% { transform: scale(1.2) rotate(10deg); }
+}
+
+/* Meme 3: Money Rain */
+.meme-money-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.falling-dollars {
+  position: absolute;
+  top: 10px;
+  font-size: 1.5rem;
+  display: flex;
+  gap: 12px;
+  animation: dollarsFall 1.5s linear infinite;
+}
+
+@keyframes dollarsFall {
+  0% { transform: translateY(-20px); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(50px); opacity: 0; }
+}
+
+.wealth-pot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: potJump 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite alternate;
+}
+
+@keyframes potJump {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-8px) scale(1.05); }
+}
+
+.pot-emoji {
+  font-size: 3.8rem;
+}
+
+.money-bag {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  font-size: 2rem;
+}
+
+.coin-burst {
+  position: absolute;
+  bottom: 10px;
+  font-size: 1.3rem;
+  letter-spacing: 0.4rem;
+}
+
+/* Meme 4: Capybara Chill */
+.meme-capy-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hotspring-steam {
+  position: absolute;
+  top: 10px;
+  font-size: 1.4rem;
+  animation: steamRise 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes steamRise {
+  0% { transform: translateY(0); opacity: 0.5; }
+  100% { transform: translateY(-12px); opacity: 1; }
+}
+
+.capy-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: capySway 1s ease-in-out infinite alternate;
+}
+
+@keyframes capySway {
+  0% { transform: rotate(-3deg); }
+  100% { transform: rotate(3deg); }
+}
+
+.orange {
+  position: absolute;
+  top: -20px;
+  font-size: 1.6rem;
+}
+
+.capy-face {
+  font-size: 3.8rem;
+  line-height: 1;
+}
+
+.bubbles {
+  position: absolute;
+  right: 25px;
+  font-size: 1.3rem;
+  animation: bubbleUp 1.2s ease-in infinite;
+}
+
+@keyframes bubbleUp {
+  0% { transform: translateY(10px); opacity: 0; }
+  100% { transform: translateY(-30px); opacity: 1; }
+}
+
+/* Meme 5: Cake Blast */
+.meme-cake-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.big-cake {
+  font-size: 4.2rem;
+  animation: cakePulse 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes cakePulse {
+  0% { transform: scale(1) rotate(-2deg); }
+  100% { transform: scale(1.1) rotate(2deg); }
+}
+
+.fireworks {
+  position: absolute;
+  top: 10px;
+  font-size: 1.6rem;
+  letter-spacing: 0.6rem;
+  animation: fireworkPop 0.8s infinite alternate;
+}
+
+@keyframes fireworkPop {
+  0% { transform: scale(0.8); opacity: 0.6; }
+  100% { transform: scale(1.2); opacity: 1; }
+}
+
+.sparklers {
+  position: absolute;
+  bottom: 10px;
+  font-size: 1.4rem;
+  letter-spacing: 0.5rem;
+}
+
+/* Birthday Meme Quote Box */
+.birthday-meme-quote-box {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  padding: 0.85rem 1.15rem;
+  text-align: center;
+  backdrop-filter: blur(8px);
+}
+
+.birthday-meme-quote {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 0.35rem 0;
+  line-height: 1.45;
+}
+
+.birthday-meme-subquote {
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Next Meme Button */
+.btn-next-meme {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  padding: 0.72rem 1.2rem;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+
+.btn-next-meme:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}

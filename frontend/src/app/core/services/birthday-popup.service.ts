@@ -2,6 +2,8 @@ import { Injectable, inject, signal } from '@angular/core';
 import { AuthStore } from '../auth/auth-store';
 import { SUPABASE_CLIENT } from '../supabase-client';
 import { NotificationSoundService } from './notification-sound.service';
+import { Clock } from '../clock';
+import { todayInVietnam } from '../utils/vietnam-time';
 
 export interface BirthdayPopupData {
   readonly userName: string;
@@ -17,6 +19,7 @@ export class BirthdayPopupService {
   private readonly authStore = inject(AuthStore);
   private readonly supabase = inject(SUPABASE_CLIENT);
   private readonly sound = inject(NotificationSoundService);
+  private readonly clock = inject(Clock);
 
   readonly visible = signal<boolean>(false);
   readonly data = signal<BirthdayPopupData | null>(null);
@@ -63,17 +66,51 @@ export class BirthdayPopupService {
   }
 
   /**
+   * Trích xuất tháng và ngày từ chuỗi ngày sinh linh hoạt
+   */
+  parseDob(dob: string): { month: number; day: number } | null {
+    if (!dob) return null;
+    const parts = dob.trim().split(/[-/]/);
+    if (parts.length < 2) return null;
+
+    let month = 0;
+    let day = 0;
+
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        month = parseInt(parts[1], 10);
+        day = parseInt(parts[2], 10);
+      } else {
+        day = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10);
+      }
+    } else if (parts.length === 2) {
+      month = parseInt(parts[0], 10);
+      day = parseInt(parts[1], 10);
+      if (month > 12) {
+        const tmp = month;
+        month = day;
+        day = tmp;
+      }
+    }
+
+    if (!isNaN(month) && !isNaN(day) && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      return { month, day };
+    }
+    return null;
+  }
+
+  /**
    * Trả về định dạng hiển thị ngày sinh kiểu Việt Nam (VD: 15/05/2000 hoặc 15/05)
    */
   getFormattedDobDisplay(): string {
     const raw = this.getUserDob();
     if (!raw) return '';
-    const parts = raw.split('-');
-    if (parts.length === 3) {
-      return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-    if (parts.length === 2) {
-      return `${parts[1]}/${parts[0]}`;
+    const parsed = this.parseDob(raw);
+    if (parsed) {
+      const mStr = String(parsed.month).padStart(2, '0');
+      const dStr = String(parsed.day).padStart(2, '0');
+      return `${dStr}/${mStr}`;
     }
     return raw;
   }
@@ -97,27 +134,26 @@ export class BirthdayPopupService {
   }
 
   /**
-   * Kiểm tra xem hôm nay có phải sinh nhật người dùng hay không và kích hoạt hiển thị
+   * Kiểm tra xem hôm nay (hoặc ngày đang giả lập bằng Clock) có phải sinh nhật hay không
    */
   checkAndTriggerBirthday(): void {
     const dob = this.getUserDob();
     if (!dob) return;
 
-    const parts = dob.split('-');
-    if (parts.length < 2) return;
+    const parsed = this.parseDob(dob);
+    if (!parsed) return;
 
-    const birthMonth = parseInt(parts[parts.length - 2], 10);
-    const birthDay = parseInt(parts[parts.length - 1], 10);
-
-    const now = new Date();
+    // Dùng Clock.now() (hỗ trợ giả lập ngày) thay vì new Date() cứng của máy
+    const now = todayInVietnam(this.clock.now());
     const currentMonth = now.getMonth() + 1;
     const currentDay = now.getDate();
 
-    if (birthMonth === currentMonth && birthDay === currentDay) {
+    if (parsed.month === currentMonth && parsed.day === currentDay) {
       const todayKey = `${SHOWN_PREFIX}${now.getFullYear()}-${currentMonth}-${currentDay}`;
       const alreadyShown = localStorage.getItem(todayKey);
 
-      if (!alreadyShown) {
+      // Nếu đang bật giả lập ngày (devOverride) hoặc chưa hiển thị popup hôm nay -> mở popup sinh nhật
+      if (!alreadyShown || !!this.clock.devOverride()) {
         this.triggerBirthday(dob, false);
       }
     }
@@ -138,8 +174,8 @@ export class BirthdayPopupService {
     this.visible.set(true);
     this.sound.notifyKind('default');
 
-    if (!isPreview) {
-      const now = new Date();
+    if (!isPreview && !this.clock.devOverride()) {
+      const now = todayInVietnam(this.clock.now());
       const todayKey = `${SHOWN_PREFIX}${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
       localStorage.setItem(todayKey, 'true');
     }
@@ -149,3 +185,4 @@ export class BirthdayPopupService {
     this.visible.set(false);
   }
 }
+
