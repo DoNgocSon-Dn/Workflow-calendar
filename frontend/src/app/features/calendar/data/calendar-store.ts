@@ -768,7 +768,7 @@ export class CalendarStore {
    * Socket có thể chết lặng: proxy cắt kết nối nhàn rỗi, máy ngủ rồi thức dậy,
    * mạng đổi từ wifi sang 4G. Những lúc đó 'event:created' không bao giờ tới và
    * lịch đứng im mà không có dấu hiệu gì. Vòng lặp này kéo lại dữ liệu thật mỗi
-   * 30 giây nên sai lệch nhiều nhất chỉ tồn tại một nhịp.
+   * 10 giây nên sai lệch nhiều nhất chỉ tồn tại một nhịp.
    *
    * KHÔNG dùng reload trang. refreshEvents() chỉ gọi GET /events rồi set lại
    * signal; mọi danh sách đều @for ... track evt.id nên Angular tái dùng node
@@ -776,7 +776,7 @@ export class CalendarStore {
    * tới vì chúng nằm ở state khác, và không có cờ loading nào bật lên nên
    * không chớp khung xương.
    */
-  private static readonly POLL_MS = 30_000;
+  private static readonly POLL_MS = 10_000;
 
   private pollTimer?: ReturnType<typeof setInterval>;
   private pollInFlight = false;
@@ -897,6 +897,12 @@ export class CalendarStore {
    * Trả về false khi backend chưa gửi `createdBy` (bản cũ) để rơi về cách
    * nhận diện cũ thay vì im lặng bỏ qua thông báo của người khác.
    */
+  /** Lịch này có phải lịch của một nhóm không. Mỗi Group mang sẵn calendarId
+   *  nên chỉ cần dò trong danh sách nhóm đã tải. */
+  private isGroupCalendar(calendarId: string): boolean {
+    return this.groupStore.groups().some((g) => g.calendarId === calendarId);
+  }
+
   private isCreatedByCurrentUser(dto: EventApiDto): boolean {
     const userId = this.authStore.user()?.id;
     return !!userId && !!dto.createdBy && dto.createdBy === userId;
@@ -912,12 +918,37 @@ export class CalendarStore {
     // không cần một thông báo thứ hai kiểu "Sự kiện mới" với các nút Xem chi
     // tiết / Hoãn / Bỏ qua, vốn dành cho việc do NGƯỜI KHÁC làm hoặc cho nhắc
     // lịch tới giờ.
-    if (this.isCreatedByCurrentUser(dto)) {
+    //
+    // NGOẠI LỆ: sự kiện rơi vào LỊCH NHÓM. Lúc đó thứ người tạo cần biết không
+    // phải "đã lưu chưa" — form nói rồi — mà là "cả nhóm đã được báo chưa".
+    // Không có dòng thông báo này thì sự kiện chỉ lặng lẽ hiện lên lưới, người
+    // tạo không có cách nào biết nó đã đi tới nhóm hay chỉ nằm ở máy mình.
+    const timeLabel = eventTimeLabel(event, this.timeFormatService.format());
+    const isMine = this.isCreatedByCurrentUser(dto);
+
+    if (isMine) {
       this.selfOriginIds.delete(event.id);
+
+      // Lịch cá nhân: im lặng như cũ.
+      if (!this.isGroupCalendar(dto.calendarId)) return;
+
+      // Lịch nhóm: ghi vào trung tâm thông báo NHƯNG không bật popup.
+      // Popup "Xem chi tiết / Hoãn / Bỏ qua" là để phản ứng với việc người
+      // KHÁC làm; bật nó cho chính thao tác mình vừa bấm xong là phiền.
+      // Dòng trong chuông thì khác — nó là bằng chứng lưu lại rằng nhóm đã
+      // được báo, xem lại lúc nào cũng được.
+      this.notifications.ingest(
+        eventCreatedDraft(this.nt, {
+          eventId: event.id,
+          title: event.title,
+          timeLabel,
+          start: dto.start,
+          end: dto.end,
+        }),
+      );
       return;
     }
 
-    const timeLabel = eventTimeLabel(event, this.timeFormatService.format());
     if (!this.notifyIfNotSelfOrigin(event.id, 'created', `Sự kiện mới: ${event.title}`, timeLabel)) {
       return;
     }
