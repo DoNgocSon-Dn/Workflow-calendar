@@ -135,6 +135,22 @@ export function groupTaskUpdatedDraft(t: NotificationT, input: GroupTaskDraftInp
   };
 }
 
+export function groupTaskDeletedDraft(
+  t: NotificationT,
+  taskId: string,
+  title: string,
+  groupId: string,
+): NotificationDraft {
+  return {
+    id: `task-deleted-${taskId}`,
+    type: 'task',
+    title: t('nd.taskDeleted.title'),
+    message: t('nd.taskDeleted.body', { title }),
+    createdAt: new Date().toISOString(),
+    metadata: { groupId },
+  };
+}
+
 /** Ba mốc deadline, khớp đúng `phase` mà cron backend phát ra. */
 export type DeadlinePhase = 'upcoming' | 'due' | 'overdue';
 
@@ -198,6 +214,48 @@ export function groupInvitationDraft(t: NotificationT, input: GroupInvitationDra
     relatedId: input.groupId,
     actionStatus: input.status,
     metadata: { inviteId: input.inviteId, role: input.role },
+  };
+}
+
+/** Vai trò của CHÍNH người nhận trong một nhóm vừa bị đổi. `role` là khoá thô
+ *  từ backend ('LEADER'/'ADMIN'/'MEMBER'/'GUEST', xem GroupRole) — hạ chữ
+ *  thường tại đây để khớp khoá i18n `groupRole.<role>`, thay vì import model
+ *  GroupRole vào file thuần này chỉ để gọi `groupRoleLabelKey()`. */
+export function groupMemberRoleChangedDraft(
+  t: NotificationT,
+  groupId: string,
+  groupName: string,
+  userId: string,
+  role: string,
+): NotificationDraft {
+  return {
+    id: `group-role-changed-${groupId}-${userId}-${role.toLowerCase()}`,
+    type: 'group_invitation',
+    title: t('nd.groupRoleChanged.title'),
+    message: t('nd.groupRoleChanged.body', {
+      group: groupName,
+      role: t(`groupRole.${role.toLowerCase()}`),
+    }),
+    createdAt: new Date().toISOString(),
+    relatedId: groupId,
+  };
+}
+
+/** Chính người nhận vừa bị xoá khỏi một nhóm (bởi người khác — tự rời nhóm
+ *  không đi qua đây, xem markSelfOrigin ở group-store.ts). */
+export function groupMemberRemovedDraft(
+  t: NotificationT,
+  groupId: string,
+  groupName: string | null,
+): NotificationDraft {
+  return {
+    id: `group-member-removed-${groupId}`,
+    type: 'group_invitation',
+    title: t('nd.groupMemberRemoved.title'),
+    message: groupName
+      ? t('nd.groupMemberRemoved.body', { group: groupName })
+      : t('nd.groupMemberRemoved.bodyNoName'),
+    createdAt: new Date().toISOString(),
   };
 }
 
@@ -313,6 +371,37 @@ export function eventsImportedDraft(t: NotificationT, input: EventsImportedDraft
       : t('nd.eventsImported.body', { count: input.count }),
     createdAt: new Date().toISOString(),
     metadata: { count: String(input.count) },
+  };
+}
+
+export interface EventsBulkDraftInput {
+  readonly calendarId: string;
+  readonly eventIds: readonly string[];
+}
+
+/** Sửa hàng loạt lần lặp của một chuỗi lặp lại (updateEventSeries scope
+ *  'following'/'all') — không có batchId sẵn như lúc TẠO hàng loạt, nên ghép
+ *  id ổn định từ chính nội dung lô (calendarId + danh sách id đã sắp xếp) để
+ *  gói socket gửi lại (reconnect, retry) không tạo thông báo trùng. */
+export function eventsBulkUpdatedDraft(t: NotificationT, input: EventsBulkDraftInput): NotificationDraft {
+  const sortedIds = [...input.eventIds].sort();
+  return {
+    id: `events-bulk-updated-${shortHash(input.calendarId, ...sortedIds)}`,
+    type: 'event_update',
+    title: t('nd.eventsBulkUpdated.title'),
+    message: t('nd.eventsBulkUpdated.body', { count: input.eventIds.length }),
+    createdAt: new Date().toISOString(),
+  };
+}
+
+export function eventsBulkDeletedDraft(t: NotificationT, input: EventsBulkDraftInput): NotificationDraft {
+  const sortedIds = [...input.eventIds].sort();
+  return {
+    id: `events-bulk-deleted-${shortHash(input.calendarId, ...sortedIds)}`,
+    type: 'event_update',
+    title: t('nd.eventsBulkDeleted.title'),
+    message: t('nd.eventsBulkDeleted.body', { count: input.eventIds.length }),
+    createdAt: new Date().toISOString(),
   };
 }
 
@@ -443,6 +532,24 @@ export function calendarMemberJoinedDraft(
     message: t('nd.calendarMemberJoined.body', { name: calendarName }),
     createdAt: new Date().toISOString(),
     relatedId: calendarId,
+  };
+}
+
+/** Chủ lịch xoá một lịch mà mình chỉ là thành viên (được mời) — sự kiện của
+ *  lịch đó biến mất khỏi máy mình ngay, cần báo rõ vì sao thay vì im lặng. */
+export function calendarDeletedDraft(
+  t: NotificationT,
+  calendarId: string,
+  calendarName: string | null,
+): NotificationDraft {
+  return {
+    id: `calendar-deleted-${calendarId}`,
+    type: 'event_update',
+    title: t('nd.calendarDeleted.title'),
+    message: calendarName
+      ? t('nd.calendarDeleted.body', { name: calendarName })
+      : t('nd.calendarDeleted.bodyNoName'),
+    createdAt: new Date().toISOString(),
   };
 }
 

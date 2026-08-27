@@ -9,10 +9,13 @@ import { NotificationKind, NotificationQueue } from '../../../core/realtime/noti
 import { NotificationService } from '../../../core/services/notification.service';
 import {
   attendeeStatusDraft,
+  calendarDeletedDraft,
   calendarInvitationDraft,
   calendarMemberJoinedDraft,
   eventConflictDraft,
   eventCreatedDraft,
+  eventsBulkDeletedDraft,
+  eventsBulkUpdatedDraft,
   eventsImportedDraft,
   eventDeletedDraft,
   eventInvitationDraft,
@@ -657,6 +660,34 @@ export class CalendarStore {
       'group:deleted',
       (payload) => this.handleGroupCalendarRemoved(payload.calendarId),
     );
+    this.realtime.on<{ id: string; name: string }>('calendar:deleted', (payload) =>
+      this.handleRemoteCalendarDeleted(payload.id, payload.name),
+    );
+  }
+
+  /** Chủ lịch xoá một lịch mà mình đang chia sẻ (viewer/editor) — dọn lịch +
+   *  sự kiện của nó khỏi máy mình ngay. Chính người xoá cũng nhận lại gói này
+   *  (họ ở trong phòng lịch), nhưng deleteCalendar() đã tự dọn cục bộ ngay khi
+   *  HTTP trả về nên không cần báo lại — markSelfOrigin() chặn đúng phần đó. */
+  private handleRemoteCalendarDeleted(calendarId: string, name: string): void {
+    const isSelfOrigin = this.selfOriginIds.has(calendarId);
+    if (isSelfOrigin) this.selfOriginIds.delete(calendarId);
+
+    this.calendars.update((list) => list.filter((c) => c.id !== calendarId));
+    this.events.update((list) => list.filter((e) => e.calendarId !== calendarId));
+    this.visibleCalendarIds.update((set) => {
+      const next = new Set(set);
+      next.delete(calendarId);
+      return next;
+    });
+
+    if (isSelfOrigin) return;
+    this.notificationQueue.push({
+      kind: 'deleted',
+      title: this.i18n.t('nd.calendarDeleted.title'),
+      body: this.i18n.t('nd.calendarDeleted.body', { name }),
+    });
+    this.notifications.ingest(calendarDeletedDraft(this.nt, calendarId, name));
   }
 
   private handleGroupCalendarRemoved(calendarId: string | null): void {
@@ -752,6 +783,7 @@ export class CalendarStore {
    *  nhóm" để không làm nhóm mồ côi calendar_id). Backend cascade xoá luôn
    *  events/thành viên/lời mời gắn với lịch này. */
   async deleteCalendar(calendarId: string): Promise<void> {
+    this.markSelfOrigin(calendarId);
     await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/calendars/${calendarId}`));
     this.calendars.update((list) => list.filter((c) => c.id !== calendarId));
     this.events.update((list) => list.filter((e) => e.calendarId !== calendarId));
@@ -1128,6 +1160,12 @@ export class CalendarStore {
       body: this.nt('nq.seriesUpdatedBody', { count: events.length }),
       kind: 'updated',
     });
+    this.notifications.ingest(
+      eventsBulkUpdatedDraft(this.nt, {
+        calendarId: payload.calendarId,
+        eventIds: events.map((e) => e.id),
+      }),
+    );
   }
 
   private handleRemoteBulkDeleted(payload: { calendarId: string; ids: string[] }): void {
@@ -1145,6 +1183,9 @@ export class CalendarStore {
       body: this.nt('nq.seriesDeletedBody', { count: ids.length }),
       kind: 'deleted',
     });
+    this.notifications.ingest(
+      eventsBulkDeletedDraft(this.nt, { calendarId: payload.calendarId, eventIds: ids }),
+    );
   }
 
   private handleAttendeeInvited(payload: {

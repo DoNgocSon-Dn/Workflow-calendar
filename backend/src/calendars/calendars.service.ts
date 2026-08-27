@@ -151,14 +151,22 @@ export class CalendarsService {
       .from('calendars')
       .delete()
       .eq('id', id)
-      .select('id');
+      .select('id, name');
 
     if (error) throw new InternalServerErrorException(error.message);
-    if ((data as { id: string }[]).length === 0) {
+    const rows = data as { id: string; name: string }[];
+    if (rows.length === 0) {
       throw new NotFoundException(
         'Calendar not found or you do not have permission to delete it',
       );
     }
+    // Lịch cá nhân có thể đã được chia sẻ cho người khác qua invite() — họ
+    // không hề biết lịch vừa biến mất nếu không có gói realtime này (khác
+    // group:deleted, đã có sẵn cho lịch nhóm).
+    this.realtimeGateway.emitToCalendar(id, 'calendar:deleted', {
+      id,
+      name: rows[0].name,
+    });
   }
 
   async listMembers(

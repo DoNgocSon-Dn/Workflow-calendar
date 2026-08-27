@@ -72,7 +72,15 @@ export class NotificationService {
 
   readonly latest = computed<AppNotification | null>(() => this.notifications()[0] ?? null);
 
-  readonly unreadCount = computed(() => this.notificationsState().filter((n) => !n.isRead).length);
+  // Lời mời chia sẻ lịch ("calendar-invite-*") có nguồn đếm RIÊNG
+  // (CalendarStore.pendingInvites, cộng thêm ở notification-button.ts) — loại
+  // chúng khỏi đây để khớp với danh sách đã hiển thị (NotificationPanel.filtered()
+  // cũng loại trừ đúng tiền tố này) và để badge không đếm trùng một lời mời hai lần.
+  readonly unreadCount = computed(
+    () =>
+      this.notificationsState().filter((n) => !n.isRead && !n.id.startsWith('calendar-invite-'))
+        .length,
+  );
 
   readonly unreadBadgeLabel = computed<string | null>(() => {
     const count = this.unreadCount();

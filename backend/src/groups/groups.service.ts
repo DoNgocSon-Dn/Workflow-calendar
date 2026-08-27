@@ -1395,6 +1395,13 @@ export class GroupsService {
         member: memberDto,
       },
     );
+    // Người bị đổi quyền chưa chắc đang mở nhóm này (phòng "calendar:" ở
+    // trên chỉ tới người đang xem) — bắn thêm vào room riêng của MỌI thành
+    // viên để chính họ biết ngay, không phải đợi mở lại nhóm mới thấy.
+    await this.emitToGroupMembers(supabase, groupId, 'group:memberRoleChanged', {
+      groupId,
+      member: memberDto,
+    });
 
     return memberDto;
   }
@@ -1433,6 +1440,11 @@ export class GroupsService {
       await this.assertCanManageMember(supabase, actor, groupId, userId);
     }
 
+    // Chốt danh sách người cần báo TRƯỚC khi xoá — sau delete(), người vừa bị
+    // xoá không còn nằm trong group_members nữa nên emitToGroupMembers() (tự
+    // truy vấn lại danh sách) sẽ bỏ sót đúng người cần biết nhất.
+    const targetUserIds = await this.listMemberUserIds(supabase, groupId);
+
     await supabase
       .from('group_members')
       .delete()
@@ -1453,6 +1465,16 @@ export class GroupsService {
         userId,
       });
     }
+    // Người bị xoá chưa chắc đang mở nhóm (phòng "calendar:" chỉ tới người
+    // đang xem) — họ cần biết mình vừa mất quyền truy cập NGAY, không phải
+    // đợi thao tác tiếp theo thất bại rồi mới hiểu vì sao.
+    await this.emitToGroupMembers(
+      supabase,
+      groupId,
+      'group:memberRemoved',
+      { groupId, userId },
+      targetUserIds,
+    );
   }
 
   /**
@@ -1542,6 +1564,13 @@ export class GroupsService {
         members,
       });
     }
+    // Người nhận/người giao ghế trưởng nhóm chưa chắc đang mở nhóm này.
+    await this.emitToGroupMembers(supabase, groupId, 'group:leadershipTransferred', {
+      groupId,
+      newLeaderId: targetUserId,
+      previousLeaderId: actor.id,
+      members,
+    });
     return members;
   }
 
@@ -1682,8 +1711,8 @@ export class GroupsService {
       .delete()
       .eq('id', taskId)
       .eq('group_id', groupId)
-      .select('id')
-      .single();
+      .select('id, title, assigned_to')
+      .single<{ id: string; title: string; assigned_to: string | null }>();
 
     if (error || !data) {
       throw new InternalServerErrorException(
@@ -1691,14 +1720,19 @@ export class GroupsService {
       );
     }
 
-    await this.emitToGroupRooms(supabase, groupId, 'group:taskDeleted', {
+    // Kèm title/assignedTo trong payload (khác createTask/updateTask, hàng đã
+    // bị xoá nên không thể tra lại sau) — client cần 2 trường này để biết
+    // task có liên quan tới người nhận không và hiển thị tên task trong
+    // thông báo, kể cả khi họ chưa từng mở nhóm này để có sẵn task trong bộ
+    // nhớ cục bộ.
+    const payload = {
       groupId,
       taskId: data.id,
-    });
-    await this.emitToGroupMembers(supabase, groupId, 'group:taskDeleted', {
-      groupId,
-      taskId: data.id,
-    });
+      title: data.title,
+      assignedTo: data.assigned_to ?? undefined,
+    };
+    await this.emitToGroupRooms(supabase, groupId, 'group:taskDeleted', payload);
+    await this.emitToGroupMembers(supabase, groupId, 'group:taskDeleted', payload);
 
     return { id: data.id };
   }
@@ -1826,6 +1860,12 @@ export class GroupsService {
       groupId,
       message: msgDto,
     });
+    // Cùng lý do với sendMessage(): thành viên đang ẩn nhóm/chưa mở phòng
+    // "calendar:" này sẽ không thấy bản sửa nếu chỉ bắn qua emitToGroupRooms.
+    await this.emitToGroupMembers(supabase, groupId, 'group:messageUpdated', {
+      groupId,
+      message: msgDto,
+    });
 
     return msgDto;
   }
@@ -1846,6 +1886,12 @@ export class GroupsService {
 
     const msgDto = this.mapMessageRow(row);
     await this.emitToGroupRooms(supabase, groupId, 'group:messageDeleted', {
+      groupId,
+      message: msgDto,
+    });
+    // Cùng lý do với sendMessage()/editMessage(): thành viên đang ẩn nhóm sẽ
+    // không thấy tin nhắn biến mất nếu chỉ bắn qua emitToGroupRooms.
+    await this.emitToGroupMembers(supabase, groupId, 'group:messageDeleted', {
       groupId,
       message: msgDto,
     });

@@ -26,7 +26,10 @@ import {
   groupJoinRequestResolvedDraft,
   groupMentionDraft,
   groupMessageDraft,
+  groupMemberRemovedDraft,
+  groupMemberRoleChangedDraft,
   groupTaskAssignedDraft,
+  groupTaskDeletedDraft,
   groupTaskUpdatedDraft,
   systemNoticeDraft,
   taskDeadlineDraft,
@@ -85,6 +88,9 @@ export class GroupStore {
 
   private realtimeInitialized = false;
   private readonly selfOriginTaskIds = new Set<string>();
+  /** `${groupId}:${userId}` — tự rời nhóm (removeMember(groupId, mình)) không
+   *  cần báo lại "bạn đã bị xoá khỏi nhóm" khi tiếng vọng realtime quay về. */
+  private readonly selfOriginMemberRemovals = new Set<string>();
 
   constructor() {
     // Quét lại định kỳ để các mốc deadline đã qua vẫn được bắt khi tab mở lâu
@@ -253,8 +259,16 @@ export class GroupStore {
 
       const targetGroupId = payload.groupId || payload.message.groupId;
       if (this.isActiveGroup(targetGroupId, payload.message.groupId)) {
+        // Tin này có thể đã tới qua kênh Supabase dự phòng ở dưới (cùng một
+        // tin nhắn, hai đường truyền) — chỉ cộng đếm chưa đọc lần ĐẦU TIÊN
+        // thấy id này, nếu không một tin nhắn thật sẽ bị đếm thành hai.
+        const alreadySeen = this.messages().some((m) => m.id === payload.message.id);
         this.upsertMessage(payload.message);
-        if (isFromOther && (!this.activeWorkspaceModalOpen() || this.activeWorkspaceTab() !== 'chat')) {
+        if (
+          !alreadySeen &&
+          isFromOther &&
+          (!this.activeWorkspaceModalOpen() || this.activeWorkspaceTab() !== 'chat')
+        ) {
           this.unreadChatCount.update((count) => count + 1);
         }
       }
@@ -293,8 +307,15 @@ export class GroupStore {
           const isFromOther = currentUser && msg.senderId !== currentUser.id;
 
           if (this.isActiveGroup(msg.groupId)) {
+            // Cùng lý do với handler group:messageSent ở trên: tin này có thể
+            // đã tới qua socket rồi, chỉ đếm lần đầu thấy id này.
+            const alreadySeen = this.messages().some((m) => m.id === msg.id);
             this.upsertMessage(msg);
-            if (isFromOther && (!this.activeWorkspaceModalOpen() || this.activeWorkspaceTab() !== 'chat')) {
+            if (
+              !alreadySeen &&
+              isFromOther &&
+              (!this.activeWorkspaceModalOpen() || this.activeWorkspaceTab() !== 'chat')
+            ) {
               this.unreadChatCount.update((count) => count + 1);
             }
           }
@@ -334,12 +355,16 @@ export class GroupStore {
       this.notifyTaskEvent(payload.groupId, payload.task, 'updated');
     });
 
-    this.realtime.on<{ groupId: string; taskId: string }>('group:taskDeleted', (payload) => {
-      if (!payload?.taskId) return;
-      if (this.isActiveGroup(payload.groupId)) {
-        this.tasks.update((list) => list.filter((t) => t.id !== payload.taskId));
-      }
-    });
+    this.realtime.on<{ groupId: string; taskId: string; title: string; assignedTo?: string }>(
+      'group:taskDeleted',
+      (payload) => {
+        if (!payload?.taskId) return;
+        if (this.isActiveGroup(payload.groupId)) {
+          this.tasks.update((list) => list.filter((t) => t.id !== payload.taskId));
+        }
+        this.notifyTaskDeleted(payload.groupId, payload.taskId, payload.title, payload.assignedTo);
+      },
+    );
 
     // Ba sự kiện dưới đây đến từ room riêng của user (không phải room nhóm) nên
     // vẫn nhận được kể cả khi chưa mở nhóm — đó là điều kiện để nhóm đang ẩn tự
@@ -428,6 +453,72 @@ export class GroupStore {
         }
       },
     );
+
+    // Vai trò đổi: cập nhật danh sách nếu đang mở nhóm, và báo riêng cho
+    // CHÍNH người bị đổi — họ chưa chắc đang mở nhóm này (bắn qua room riêng
+    // của mọi thành viên ở backend, không chỉ room "calendar:").
+    this.realtime.on<{ groupId: string; member: GroupMember }>(
+      'group:memberRoleChanged',
+      (payload) => {
+        if (!payload?.member) return;
+        if (this.isActiveGroup(payload.groupId)) {
+          this.members.update((list) =>
+            list.map((m) => (m.userId === payload.member.userId ? payload.member : m)),
+          );
+        }
+        const currentUserId = this.authStore.user()?.id;
+        if (payload.member.userId !== currentUserId) return;
+        const groupName = this.groups().find((g) => g.id === payload.groupId)?.name ?? '';
+        this.notifications.ingest(
+          groupMemberRoleChangedDraft(
+            this.nt,
+            payload.groupId,
+            groupName,
+            payload.member.userId,
+            payload.member.role,
+          ),
+        );
+      },
+    );
+
+    // Bị xoá khỏi nhóm (hoặc tự rời — markSelfOrigin ở removeMember() chặn
+    // thông báo dội lại cho chính người rời). Người khác bị xoá thì chỉ cập
+    // nhật danh sách thành viên nếu đang mở đúng nhóm đó.
+    this.realtime.on<{ groupId: string; userId: string }>('group:memberRemoved', (payload) => {
+      if (!payload?.userId) return;
+      const currentUserId = this.authStore.user()?.id;
+      if (payload.userId === currentUserId) {
+        const key = `${payload.groupId}:${payload.userId}`;
+        const isSelfOrigin = this.selfOriginMemberRemovals.has(key);
+        if (isSelfOrigin) this.selfOriginMemberRemovals.delete(key);
+        const groupName = this.groups().find((g) => g.id === payload.groupId)?.name ?? null;
+        this.removeGroupLocally(payload.groupId);
+        if (!isSelfOrigin) {
+          this.notifications.ingest(groupMemberRemovedDraft(this.nt, payload.groupId, groupName));
+        }
+        return;
+      }
+      if (this.isActiveGroup(payload.groupId)) {
+        this.members.update((list) => list.filter((m) => m.userId !== payload.userId));
+      }
+    });
+
+    // Chuyển quyền trưởng nhóm: đồng bộ danh sách thành viên + ownerId của
+    // nhóm cho MỌI người đang mở app, kể cả người không mở nhóm này.
+    this.realtime.on<{
+      groupId: string;
+      newLeaderId: string;
+      previousLeaderId: string;
+      members: GroupMember[];
+    }>('group:leadershipTransferred', (payload) => {
+      if (!payload?.members) return;
+      if (this.isActiveGroup(payload.groupId)) {
+        this.members.set(payload.members);
+      }
+      this.groups.update((list) =>
+        list.map((g) => (g.id === payload.groupId ? { ...g, ownerId: payload.newLeaderId } : g)),
+      );
+    });
 
     // Kết quả cho chính người đã gửi yêu cầu — họ chưa ở trong room nào của
     // nhóm nên phải là room riêng của họ.
@@ -618,6 +709,20 @@ export class GroupStore {
     );
   }
 
+  /** Cùng bộ lọc với notifyTaskEvent() (chỉ báo nếu đang được giao việc đó +
+   *  không phải tiếng vọng của chính mình vừa xoá) — tách hàm riêng vì
+   *  taskDeleted không còn GroupTask đầy đủ để tái dùng chữ ký cũ, và không
+   *  cần phân biệt created/updated. */
+  private notifyTaskDeleted(groupId: string, taskId: string, title: string, assignedTo?: string): void {
+    const currentUserId = this.authStore.user()?.id;
+    if (!currentUserId || assignedTo !== currentUserId) return;
+    if (this.selfOriginTaskIds.has(taskId)) {
+      this.selfOriginTaskIds.delete(taskId);
+      return;
+    }
+    this.notifications.ingest(groupTaskDeletedDraft(this.nt, taskId, title, groupId));
+  }
+
   /** Đánh dấu task vừa được chính người dùng này sửa, để bỏ qua tiếng vọng
    *  realtime của chính thao tác đó (server không gửi kèm "ai vừa sửa"). */
   private markTaskSelfOrigin(taskId: string): void {
@@ -775,8 +880,11 @@ export class GroupStore {
   }
 
   async removeMember(groupId: string, userId: string): Promise<void> {
+    this.selfOriginMemberRemovals.add(`${groupId}:${userId}`);
+    setTimeout(() => this.selfOriginMemberRemovals.delete(`${groupId}:${userId}`), SELF_ORIGIN_TTL_MS);
     await this.api.removeMember(groupId, userId);
     this.members.update((prev) => prev.filter((m) => m.userId !== userId));
+    if (userId === this.authStore.user()?.id) this.removeGroupLocally(groupId);
   }
 
   async loadTasks(groupId: string): Promise<void> {
@@ -830,6 +938,7 @@ export class GroupStore {
   }
 
   async deleteTask(groupId: string, taskId: string): Promise<void> {
+    this.markTaskSelfOrigin(taskId);
     await this.api.deleteTask(groupId, taskId);
     this.tasks.update((prev) => prev.filter((t) => t.id !== taskId));
   }

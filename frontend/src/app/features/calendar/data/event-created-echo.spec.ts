@@ -63,7 +63,13 @@ describe('tiếng vọng event:created của chính mình', () => {
             joinCalendar: () => undefined,
           },
         },
-        { provide: GroupStore, useValue: { loadGroups: () => Promise.resolve() } },
+        {
+          provide: GroupStore,
+          // isGroupCalendar() (handleRemoteCreated) đọc groupStore.groups() để
+          // biết sự kiện có rơi vào lịch nhóm không — thêm từ bản merge gần
+          // đây, mock này chưa có nên test văng "not a function".
+          useValue: { loadGroups: () => Promise.resolve(), groups: () => [] },
+        },
         { provide: NotificationService, useValue: { ingest: () => undefined } },
         {
           provide: SUPABASE_CLIENT,
