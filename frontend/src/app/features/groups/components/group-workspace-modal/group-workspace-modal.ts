@@ -35,6 +35,8 @@ import {
   canChat,
   canInvite,
   canManage,
+  canSeeGroupCalendar,
+  canSeeGroupChat,
   canTransferLeadership,
   groupRoleLabelKey,
 } from '../../models/group-role';
@@ -149,6 +151,8 @@ export class GroupWorkspaceModal {
   protected readonly canInviteMembers = computed(() => canInvite(this.currentRole()));
   protected readonly canTransfer = computed(() => canTransferLeadership(this.currentRole()));
   protected readonly canUserChat = computed(() => canChat(this.currentRole()));
+  protected readonly canUserSeeGroupCalendar = computed(() => canSeeGroupCalendar(this.currentRole()));
+  protected readonly canUserSeeChat = computed(() => canSeeGroupChat(this.currentRole()));
 
   /** Có hiện cột thao tác trong danh sách thành viên không. Thành viên thường
    *  không quản lý được ai nên cả cột bị ẩn. */
@@ -319,9 +323,20 @@ export class GroupWorkspaceModal {
         if (!this.meetDate()) this.seedMeetSchedule();
       });
     });
+
+    effect(() => {
+      const tab = this.activeTab();
+      if (tab === 'calendar' && !this.canUserSeeGroupCalendar()) {
+        this.store.setActiveWorkspaceTab('tasks');
+      } else if (tab === 'chat' && !this.canUserSeeChat()) {
+        this.store.setActiveWorkspaceTab('tasks');
+      }
+    });
   }
 
   setTab(tab: WorkspaceTab): void {
+    if (tab === 'calendar' && !this.canUserSeeGroupCalendar()) return;
+    if (tab === 'chat' && !this.canUserSeeChat()) return;
     this.store.activeWorkspaceTab.set(tab);
     if (tab === 'chat') {
       this.store.unreadChatCount.set(0);
@@ -348,11 +363,15 @@ export class GroupWorkspaceModal {
   async saveGroup(): Promise<void> {
     const group = this.store.activeGroup();
     const name = this.editName().trim();
-    if (!group || this.savingGroup()) return;
+    if (!group || this.savingGroup() || !this.isLeader()) return;
     if (!name) {
       this.groupError.set(this.i18n.t('group.nameRequired'));
       return;
     }
+
+    const oldColor = group.color;
+    const newColor = this.editColor();
+    const colorChanged = oldColor !== newColor;
 
     this.savingGroup.set(true);
     this.groupError.set(null);
@@ -360,9 +379,20 @@ export class GroupWorkspaceModal {
       await this.store.updateGroup(group.id, {
         name,
         description: this.editDescription().trim(),
-        color: this.editColor(),
+        color: newColor,
       });
       this.editingGroup.set(false);
+
+      if (colorChanged) {
+        try {
+          await this.store.sendMessage(
+            group.id,
+            this.i18n.t('group.colorChangedAnnouncement'),
+          );
+        } catch {
+          // Announcement failure shouldn't block group save
+        }
+      }
     } catch (err: any) {
       this.groupError.set(err?.error?.message || this.i18n.t('group.updateGroupError'));
     } finally {

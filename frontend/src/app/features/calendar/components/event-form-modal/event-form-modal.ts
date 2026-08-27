@@ -720,10 +720,10 @@ export class EventFormModal {
       this.form.markAllAsTouched();
       if (this.calendarsLoading()) {
         this.saveError.set(this.i18n.t('event.autoCreatingCalendar'));
-      } else if (this.form.controls.title.invalid) {
-        this.saveError.set(this.i18n.t('event.titleRequired'));
-      } else {
+      } else if (!this.form.controls.title.invalid) {
         this.saveError.set(this.i18n.t('event.genericError'));
+      } else {
+        this.saveError.set(null);
       }
       return;
     }
