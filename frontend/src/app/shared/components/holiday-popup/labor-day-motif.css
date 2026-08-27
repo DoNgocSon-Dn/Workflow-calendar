@@ -34,6 +34,10 @@
   transform: translate(calc(var(--holiday-px, 0) * 6px), calc(var(--holiday-py, 0) * 6px));
 }
 
+.ldm-professions-group {
+  filter: drop-shadow(0 4px 14px rgba(245, 158, 11, 0.45));
+}
+
 /* Hào quang nhịp thở */
 .ldm-halo-glow {
   animation: ldmGlowPulse 4s ease-in-out infinite alternate;
@@ -41,40 +45,40 @@
 
 /* Tia hào quang xoay liên tục */
 .ldm-halo-spin {
-  animation: ldmHaloRotate 30s linear infinite;
-  transform-origin: 120px 88px;
+  animation: ldmHaloRotate 26s linear infinite;
+  transform-origin: 100px 80px;
 }
 
 /* Ngôi sao trung tâm đập nhẹ */
 .ldm-center-star {
   animation: ldmStarPulse 3.5s ease-in-out infinite alternate;
-  transform-origin: 120px 92px;
+  transform-origin: 100px 80px;
 }
 
 /* Các mũ ngành nghề nảy nhẹ bồng bềnh */
 .ldm-hat--construction {
-  animation: ldmHatFloat1 5s ease-in-out infinite alternate;
-  transform-origin: 120px 40px;
+  animation: ldmHatFloat1 4.8s ease-in-out infinite alternate;
+  transform-origin: 100px 32px;
 }
 
 .ldm-hat--farmer {
-  animation: ldmHatFloat2 6s ease-in-out 0.5s infinite alternate;
-  transform-origin: 60px 68px;
+  animation: ldmHatFloat2 5.5s ease-in-out 0.4s infinite alternate;
+  transform-origin: 48px 58px;
 }
 
 .ldm-hat--doctor {
-  animation: ldmHatFloat1 5.5s ease-in-out 1s infinite alternate;
-  transform-origin: 180px 68px;
+  animation: ldmHatFloat1 5.2s ease-in-out 0.8s infinite alternate;
+  transform-origin: 152px 58px;
 }
 
 .ldm-hat--academic {
-  animation: ldmHatFloat2 6.5s ease-in-out 1.5s infinite alternate;
-  transform-origin: 72px 126px;
+  animation: ldmHatFloat2 6s ease-in-out 1.2s infinite alternate;
+  transform-origin: 58px 114px;
 }
 
 .ldm-hat--tech {
-  animation: ldmHatFloat1 5.2s ease-in-out 0.8s infinite alternate;
-  transform-origin: 168px 126px;
+  animation: ldmHatFloat1 5s ease-in-out 0.6s infinite alternate;
+  transform-origin: 142px 114px;
 }
 
 /* Hạt lấp lánh */
@@ -95,21 +99,21 @@
 
 @keyframes ldmGlowPulse {
   0% {
-    opacity: 0.6;
-    transform: scale(0.95);
+    opacity: 0.7;
+    transform: scale(0.96);
   }
   100% {
     opacity: 1;
-    transform: scale(1.06);
+    transform: scale(1.08);
   }
 }
 
 @keyframes ldmStarPulse {
   0% {
-    transform: translate(120px, 92px) scale(0.96);
+    transform: translate(100px, 80px) scale(0.96);
   }
   100% {
-    transform: translate(120px, 92px) scale(1.08);
+    transform: translate(100px, 80px) scale(1.08);
   }
 }
 
@@ -140,6 +144,10 @@
     opacity: 0.8;
     transform: scale(1.2);
   }
+}
+
+:host-context(.dark) .ldm-professions-group {
+  filter: drop-shadow(0 4px 18px rgba(245, 158, 11, 0.65));
 }
 
 @media (prefers-reduced-motion: reduce) {

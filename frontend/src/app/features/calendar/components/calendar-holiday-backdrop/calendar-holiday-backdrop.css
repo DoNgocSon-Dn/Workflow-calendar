@@ -37,32 +37,36 @@
   }
 }
 
-/* Nón công nhân + Hào quang xoay 1/5 & 30/4 — đặt CHÍNH GIỮA màn hình mờ dịu sang trọng */
+/* Cụm 5 Mũ Ngành Nghề Việt Nam 1/5 & 30/4 — đặt CHÍNH GIỮA màn hình rực rỡ, sắc nét */
 .holiday-backdrop--labor-day .holiday-backdrop__motif {
   top: 50%;
   left: 50%;
   right: auto;
   transform: translate(-50%, -50%);
-  width: min(48vw, 520px);
-  height: min(60%, 450px);
-  opacity: 0.55;
-  mask-image: radial-gradient(65% 65% at 50% 50%, #000 55%, transparent 100%);
-  -webkit-mask-image: radial-gradient(65% 65% at 50% 50%, #000 55%, transparent 100%);
+  width: min(56vw, 580px);
+  height: min(65%, 480px);
+  opacity: 0.85;
+  mask-image: radial-gradient(70% 70% at 50% 50%, #000 65%, transparent 100%);
+  -webkit-mask-image: radial-gradient(70% 70% at 50% 50%, #000 65%, transparent 100%);
+}
+
+:host-context(.dark) .holiday-backdrop--labor-day .holiday-backdrop__motif {
+  opacity: 0.92;
 }
 
 @media (max-width: 1200px) {
   .holiday-backdrop--labor-day .holiday-backdrop__motif {
-    width: min(54vw, 400px);
-    height: min(46%, 340px);
-    opacity: 0.45;
+    width: min(62vw, 440px);
+    height: min(52%, 380px);
+    opacity: 0.8;
   }
 }
 
 @media (max-width: 900px) {
   .holiday-backdrop--labor-day .holiday-backdrop__motif {
-    width: min(68vw, 290px);
-    height: min(34%, 220px);
-    opacity: 0.38;
+    width: min(76vw, 320px);
+    height: min(38%, 240px);
+    opacity: 0.75;
   }
 }
 
