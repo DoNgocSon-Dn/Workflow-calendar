@@ -1822,6 +1822,13 @@ export class GroupsService {
       task: taskDto,
     });
 
+    if (taskDto.assignedTo) {
+      this.realtimeGateway.emitToUser(taskDto.assignedTo, 'task:assigned', {
+        groupId,
+        task: taskDto,
+      });
+    }
+
     return taskDto;
   }
 
@@ -1872,6 +1879,13 @@ export class GroupsService {
       groupId,
       task: taskDto,
     });
+
+    if (taskDto.assignedTo) {
+      this.realtimeGateway.emitToUser(taskDto.assignedTo, 'task:assigned', {
+        groupId,
+        task: taskDto,
+      });
+    }
 
     return taskDto;
   }

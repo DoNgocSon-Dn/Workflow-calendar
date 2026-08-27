@@ -1,6 +1,7 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { CalendarStore } from './calendar-store';
-import { resolveTopHolidayForDate } from '../utils/holiday-resolver';
+import { findHolidayById, resolveTopHolidayForDate } from '../utils/holiday-resolver';
+import { Holiday } from '../../../models/holiday-theme.model';
 
 /**
  * Layers a "holiday theme" on top of the existing light/dark + brand-accent
@@ -41,11 +42,23 @@ export class HolidayThemeService {
    *  without navigating the calendar to the right date. `null` = no override. */
   readonly debugOverrideId = signal<string | null>(null);
 
-  readonly activeHolidayId = computed<string | null>(() => {
+  readonly activeHoliday = computed<Holiday | null>(() => {
     if (this.mode() === 'off') return null;
-    const override = this.debugOverrideId();
-    if (override) return override;
-    return resolveTopHolidayForDate(this.store.focusedDate())?.id ?? null;
+    const overrideId = this.debugOverrideId();
+    if (overrideId) return findHolidayById(overrideId);
+
+    // 1. Ưu tiên HÔM NAY THỰC TẾ (real today): Nếu hôm nay thực tế rơi vào ngày lễ,
+    //    giữ nguyên theme & animation ngày lễ đó suốt cả ngày cho đến khi qua ngày mới (midnight tick).
+    //    Không bị mất hay đổi theme chỉ vì người dùng nhấp chọn ô ngày khác trên lịch.
+    const todayHoliday = resolveTopHolidayForDate(this.store.today());
+    if (todayHoliday) return todayHoliday;
+
+    // 2. Nếu hôm nay thực tế không phải ngày lễ, nhưng người dùng xem/chọn một ngày lễ trên lịch -> preview theme đó
+    return resolveTopHolidayForDate(this.store.focusedDate());
+  });
+
+  readonly activeHolidayId = computed<string | null>(() => {
+    return this.activeHoliday()?.id ?? null;
   });
 
   constructor() {

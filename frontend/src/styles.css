@@ -481,4 +481,69 @@ h1, h2, h3, h4, .font-heading {
     height: auto !important;
     overflow: visible !important;
   }
+
+  /* ---- Nền cảnh lễ (holiday scene) khi IN ----
+     Mặc định trình duyệt bỏ ảnh nền + hạ tông màu khi in; và vì `.view-area`
+     bị ép `height: auto` ở trên nên nền cũ (`inset: 0` + chiều cao theo `%`,
+     bề rộng theo `vw`) co lại gần như mất hút trên giấy.
+
+     Ghim nền vào TRANG GIẤY bằng `position: fixed` (tự lặp lại trên mọi trang
+     in) và khoá kích thước bằng `px` cố định = đúng cỡ tối đa vẫn thấy trên
+     màn hình rộng, nên tỉ lệ không đổi. SVG motif dùng
+     `preserveAspectRatio="…meet"` nên luôn vừa khít khung, không méo. */
+  app-calendar-holiday-backdrop {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    z-index: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  app-calendar-holiday-backdrop .holiday-backdrop {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    /* Bỏ dịch chuyển do mouse-parallax để bản in luôn ở tư thế "nghỉ" */
+    transform: none !important;
+    --holiday-px: 0 !important;
+    --holiday-py: 0 !important;
+  }
+
+  /* Cỡ mặc định (góc trên-phải): Tết + Tết Dương Lịch */
+  app-calendar-holiday-backdrop .holiday-backdrop__motif {
+    position: absolute !important;
+    width: 500px !important;
+    height: 440px !important;
+  }
+  app-calendar-holiday-backdrop .holiday-backdrop--new-year .holiday-backdrop__motif {
+    width: 420px !important;
+    height: 380px !important;
+  }
+
+  /* Các cảnh đặt CHÍNH GIỮA: 1/5, 2/9, 30/4, Giỗ Tổ */
+  app-calendar-holiday-backdrop .holiday-backdrop--labor-day .holiday-backdrop__motif,
+  app-calendar-holiday-backdrop .holiday-backdrop--national-day .holiday-backdrop__motif,
+  app-calendar-holiday-backdrop .holiday-backdrop--flag .holiday-backdrop__motif,
+  app-calendar-holiday-backdrop .holiday-backdrop--dong-son .holiday-backdrop__motif {
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    width: 480px !important;
+    height: 420px !important;
+  }
+
+  /* Lưới lịch phải nằm TRÊN nền và luôn đọc rõ khi in */
+  .view-area > app-month-view,
+  .view-area > app-time-grid-view,
+  .view-area > app-agenda-view {
+    position: relative !important;
+    z-index: 1 !important;
+  }
 }

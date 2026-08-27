@@ -22,6 +22,7 @@ import { TranslationService } from '../../../core/i18n/translation.service';
 import {
   DeadlinePhase,
   GroupMessageDraftInput,
+  GroupTaskDraftInput,
   groupInvitationDraft,
   groupJoinRequestDraft,
   groupJoinRequestResolvedDraft,
@@ -343,6 +344,17 @@ export class GroupStore {
       if (this.isActiveGroup(payload.groupId, payload.task.groupId)) {
         this.tasks.update((list) => {
           if (list.some((t) => t.id === payload.task.id)) return list;
+          return [payload.task, ...list];
+        });
+      }
+      this.notifyTaskEvent(payload.groupId, payload.task, 'created');
+    });
+
+    this.realtime.on<{ groupId: string; task: GroupTask }>('task:assigned', (payload) => {
+      if (!payload?.task) return;
+      if (this.isActiveGroup(payload.groupId, payload.task.groupId)) {
+        this.tasks.update((list) => {
+          if (list.some((t) => t.id === payload.task.id)) return list.map((t) => (t.id === payload.task.id ? payload.task : t));
           return [payload.task, ...list];
         });
       }
@@ -687,45 +699,59 @@ export class GroupStore {
   private notifyTaskEvent(groupId: string, task: GroupTask, kind: 'created' | 'updated'): void {
     const currentUserId = this.authStore.user()?.id;
     if (!currentUserId) return;
-    // Chỉ báo việc liên quan trực tiếp tới mình
-    if (task.assignedTo !== currentUserId) return;
 
     const group = this.groups().find((g) => g.id === groupId || g.id === task.groupId);
     const groupName = group?.name ?? 'nhóm của bạn';
-    const input = {
+    const input: GroupTaskDraftInput = {
       taskId: task.id,
       groupId: group?.id ?? task.groupId,
       groupName,
       title: task.title,
       status: task.status,
-      assignedTo: task.assignedTo,
+      assignedTo: task.assignedTo ?? undefined,
       createdAt: task.createdAt,
     };
 
-    this.notifications.ingest(
-      kind === 'created' ? groupTaskAssignedDraft(this.nt, input) : groupTaskUpdatedDraft(this.nt, input),
-    );
+    // 1. Người dùng hiện tại được giao task này (kể cả khi tự giao việc cho chính mình hoặc người khác giao cho)
+    if (task.assignedTo === currentUserId) {
+      this.notifications.ingest(
+        kind === 'created' ? groupTaskAssignedDraft(this.nt, input) : groupTaskUpdatedDraft(this.nt, input),
+      );
 
-    this.notificationQueue.push({
-      id: `task-${kind}-${task.id}`,
-      title: kind === 'created' ? 'Nhiệm vụ mới' : 'Cập nhật nhiệm vụ',
-      body: `Bạn được phân công nhiệm vụ "${task.title}" trong ${groupName}`,
-      kind: 'created',
-    });
+      this.notificationQueue.push({
+        id: `task-${kind}-${task.id}`,
+        title: kind === 'created' ? 'Nhiệm vụ mới' : 'Cập nhật nhiệm vụ',
+        body: `Bạn được phân công nhiệm vụ "${task.title}" trong ${groupName}`,
+        kind: 'created',
+      });
+    } else if (kind === 'updated' && task.createdBy === currentUserId) {
+      // 2. Người tạo task nhận được thông báo khi thành viên được phân công cập nhật tiến độ
+      this.notifications.ingest(groupTaskUpdatedDraft(this.nt, input));
+      this.notificationQueue.push({
+        id: `task-updated-${task.id}`,
+        title: 'Cập nhật nhiệm vụ',
+        body: `Nhiệm vụ "${task.title}" trong ${groupName} đã được cập nhật`,
+        kind: 'updated',
+      });
+    }
   }
 
   /** Cùng bộ lọc với notifyTaskEvent() (chỉ báo nếu đang được giao việc đó) */
   private notifyTaskDeleted(groupId: string, taskId: string, title: string, assignedTo?: string): void {
     const currentUserId = this.authStore.user()?.id;
-    if (!currentUserId || assignedTo !== currentUserId) return;
+    if (!currentUserId) return;
 
-    this.notifications.ingest(groupTaskDeletedDraft(this.nt, taskId, title, groupId));
-    this.notificationQueue.push({
-      id: `task-deleted-${taskId}`,
-      title: 'Xóa nhiệm vụ',
-      body: `Nhiệm vụ "${title}" bạn được phân công đã bị xóa`,
-      kind: 'deleted',
-    });
+    if (assignedTo === currentUserId) {
+      const group = this.groups().find((g) => g.id === groupId);
+      const groupName = group?.name ?? 'nhóm của bạn';
+      this.notifications.ingest(groupTaskDeletedDraft(this.nt, taskId, title ?? 'Công việc', groupName));
+      this.notificationQueue.push({
+        id: `task-deleted-${taskId}`,
+        title: 'Xóa nhiệm vụ',
+        body: `Nhiệm vụ "${title}" bạn được phân công đã bị xóa`,
+        kind: 'deleted',
+      });
+    }
   }
 
   /** Đánh dấu task vừa được chính người dùng này sửa, để bỏ qua tiếng vọng
