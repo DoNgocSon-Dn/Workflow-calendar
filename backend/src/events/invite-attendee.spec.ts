@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, ForbiddenException } from '@nestjs/common';
 import { EventsService } from './events.service';
 
 /**
@@ -112,6 +112,19 @@ describe('EventsService.invite — chặn tự mời + đủ nội dung email', 
         meetLink: 'https://meet.jit.si/abc',
       }),
     );
+  });
+
+  it('RLS chặn insert (người gọi chỉ là attendee, không phải chủ/thành viên lịch) → thông báo rõ nghĩa thay vì lỗi Postgres thô', async () => {
+    const { service, supabase } = makeService({
+      eventRow: baseEvent,
+      creatorEmail: 'owner@test.com',
+      lookupUserId: 'user-guest',
+      insertError: { code: '42501', message: 'new row violates row-level security policy for table "event_attendees"' },
+    });
+
+    await expect(
+      service.invite(supabase as never, 'evt-1', { email: 'guest@test.com' }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('sự kiện không có created_by (dữ liệu cũ) thì không chặn, vẫn mời bình thường', async () => {

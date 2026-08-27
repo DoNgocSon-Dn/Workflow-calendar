@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -581,6 +582,15 @@ export class EventsService {
     if (error) {
       if (error.code === '23505') {
         throw new ConflictException('Người này đã được mời tham gia sự kiện');
+      }
+      // 42501 = RLS chặn insert (vd người gọi chỉ là khách được mời, không phải
+      // chủ/thành viên lịch chứa sự kiện) — trả thẳng message thô của Postgres
+      // ("new row violates row-level security policy...") cho người dùng thì
+      // không ai hiểu được, nên đổi qua câu rõ nghĩa bằng tiếng Việt.
+      if (error.code === '42501') {
+        throw new ForbiddenException(
+          'Bạn không có quyền mời khách cho sự kiện này — chỉ chủ hoặc thành viên của lịch chứa sự kiện mới mời được',
+        );
       }
       throw new InternalServerErrorException(error.message);
     }
