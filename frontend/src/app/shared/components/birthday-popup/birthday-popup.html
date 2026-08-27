@@ -21,235 +21,55 @@
       }
     </div>
 
-    <!-- Birthday Glass Card Container -->
-    <div class="birthday-card" [style.background]="currentMeme().bgGradient">
+    <!-- Birthday Card Container -->
+    <div class="birthday-card">
       <div class="birthday-card__header">
-        <span class="birthday-badge" [style.color]="currentMeme().accentColor" [style.borderColor]="currentMeme().accentColor">
-          {{ currentMeme().emojiBadge }}
+        <span class="birthday-badge">
+          {{ currentGif().badge }}
         </span>
         @if (data()?.isPreview) {
           <span class="birthday-preview-badge">Chế độ xem thử</span>
         }
       </div>
 
-      <!-- Mode Selector Tabs -->
-      <div class="birthday-tabs">
-        <button
-          type="button"
-          class="birthday-tab-btn"
-          [class.active]="activeTab() === 'gif'"
-          (click)="setTab('gif')"
-        >
-          🎬 GIF Sinh Nhật
-        </button>
-        <button
-          type="button"
-          class="birthday-tab-btn"
-          [class.active]="activeTab() === 'meme'"
-          (click)="setTab('meme')"
-        >
-          🎭 Meme Hài Hước
-        </button>
-        <button
-          type="button"
-          class="birthday-tab-btn"
-          [class.active]="activeTab() === 'cake'"
-          (click)="setTab('cake')"
-        >
-          🎂 Bánh Kem
-        </button>
+      <!-- GIF Display Container -->
+      <div class="birthday-gif-container" [class]="stageAnimClass()">
+        <div class="gif-stage">
+          <img [src]="currentGif().url" [alt]="currentGif().title" class="birthday-main-gif" />
+        </div>
+
+        <div class="birthday-content">
+          <h1 class="birthday-title">
+            Chúc mừng sinh nhật, <span class="user-highlight">{{ data()?.userName }}</span>! 🎉✨
+          </h1>
+
+          <p class="birthday-wish">
+            {{ currentWish() }}
+          </p>
+
+          @if (wishMade()) {
+            <div class="birthday-sparkle-box">
+              ✨ <strong>Điều ước sinh nhật của bạn đã được ghi lại!</strong> Chúc tuổi mới bứt phá mọi mục tiêu! ✨
+            </div>
+          }
+
+          <div class="birthday-actions">
+            <button type="button" class="btn-next-meme" (click)="nextRandomGifAndWish()">
+              🔀 Đổi GIF & Lời Chúc Khác ({{ currentGifIndex() + 1 }}/{{ gifs.length }})
+            </button>
+
+            @if (!wishMade()) {
+              <button type="button" class="btn-blow-candle" (click)="makeWish()">
+                🕯️ Ước một điều & Quẩy thôi!
+              </button>
+            }
+
+            <button type="button" class="btn-start-app" (click)="close()">
+              🚀 Cảm ơn! Bắt đầu ngày mới
+            </button>
+          </div>
+        </div>
       </div>
-
-      <!-- FEATURED GIF MODE DISPLAY -->
-      @if (activeTab() === 'gif') {
-        <div class="birthday-gif-container">
-          <div class="gif-stage">
-            <img src="assets/birthday-gif.gif" alt="Chúc mừng sinh nhật GIF" class="birthday-main-gif" />
-          </div>
-
-          <div class="birthday-content">
-            <h1 class="birthday-title">
-              Chúc mừng sinh nhật, <span class="user-highlight">{{ data()?.userName }}</span>! 🎉✨
-            </h1>
-
-            <p class="birthday-wish">
-              Workflow Calendar chúc bạn một tuổi mới tràn đầy năng lượng, sức khỏe dồi dào, ngập tràn niềm vui, hạnh phúc và gặt hái thật nhiều thành công rực rỡ! 🚀💖
-            </p>
-
-            @if (wishMade()) {
-              <div class="birthday-sparkle-box">
-                ✨ <strong>Điều ước sinh nhật của bạn đã được ghi lại!</strong> Chúc ước mơ sớm thành hiện thực! ✨
-              </div>
-            }
-
-            <div class="birthday-actions">
-              @if (!candleBlownOut()) {
-                <button type="button" class="btn-blow-candle" (click)="blowCandle()">
-                  🕯️ Ước một điều & Quẩy thôi!
-                </button>
-              }
-
-              <button type="button" class="btn-next-meme" (click)="setTab('meme')">
-                🎭 Dạo xem Meme Sinh Nhật Hài Hước ➔
-              </button>
-
-              <button type="button" class="btn-start-app" (click)="close()">
-                🚀 Cảm ơn! Bắt đầu ngày mới
-              </button>
-            </div>
-          </div>
-        </div>
-      }
-
-      <!-- MEME MODE DISPLAY -->
-      @if (activeTab() === 'meme') {
-        <div class="birthday-meme-container" [class]="memeAnimClass()">
-          <!-- Meme Graphic Display -->
-          <div class="meme-stage">
-            @if (currentMeme().id === 'cat-vibing') {
-              <div class="meme-graphic meme-cat-stage">
-                <div class="disco-light"></div>
-                <div class="cat-body">
-                  <div class="cat-head">
-                    <span class="party-hat">🥳</span>
-                    <span class="cat-face">🐱</span>
-                    <span class="cat-shades">🕶️</span>
-                  </div>
-                  <div class="cat-paws">🐾</div>
-                </div>
-                <div class="music-notes">🎵 🎶 🎸</div>
-              </div>
-            } @else if (currentMeme().id === 'doggo-party') {
-              <div class="meme-graphic meme-doggo-stage">
-                <div class="golden-sparkles">✨ 💰 ✨</div>
-                <div class="doggo-body">
-                  <span class="crown">👑</span>
-                  <span class="doggo-face">🐶</span>
-                  <span class="gold-chain">🪙</span>
-                </div>
-                <div class="party-blower">🎉 🎺</div>
-              </div>
-            } @else if (currentMeme().id === 'money-rain') {
-              <div class="meme-graphic meme-money-stage">
-                <div class="falling-dollars">💵 💸 💵 💸 💵</div>
-                <div class="wealth-pot">
-                  <span class="pot-emoji">🏺</span>
-                  <span class="money-bag">💰</span>
-                </div>
-                <div class="coin-burst">🪙 ✨ 🪙</div>
-              </div>
-            } @else if (currentMeme().id === 'capybara-chill') {
-              <div class="meme-graphic meme-capy-stage">
-                <div class="hotspring-steam">♨️ 🛁 ♨️</div>
-                <div class="capy-body">
-                  <span class="orange">🍊</span>
-                  <span class="capy-face">🦦</span>
-                </div>
-                <div class="bubbles">🫧 🫧 🫧</div>
-              </div>
-            } @else {
-              <div class="meme-graphic meme-cake-stage">
-                <div class="fireworks">🎆 🎇 🎆</div>
-                <div class="big-cake">🎂</div>
-                <div class="sparklers">✨ 🌟 ✨</div>
-              </div>
-            }
-          </div>
-
-          <!-- Meme Quote & Punchline -->
-          <div class="birthday-content">
-            <h1 class="birthday-title">
-              Chúc mừng sinh nhật, <span class="user-highlight" [style.color]="currentMeme().accentColor">{{ data()?.userName }}</span>! 🎉
-            </h1>
-
-            <div class="birthday-meme-quote-box">
-              <p class="birthday-meme-quote">"{{ currentMeme().quote }}"</p>
-              <p class="birthday-meme-subquote">{{ currentMeme().subQuote }}</p>
-            </div>
-
-            @if (wishMade()) {
-              <div class="birthday-sparkle-box">
-                ✨ <strong>Điều ước sinh nhật của bạn đã được ghi lại!</strong> Chúc tuổi mới bứt phá mọi mục tiêu! ✨
-              </div>
-            }
-
-            <div class="birthday-actions">
-              <button type="button" class="btn-next-meme" (click)="nextMeme()">
-                🔀 Đổi Meme Sinh Nhật Khác ({{ currentMemeIndex() + 1 }}/{{ memes.length }})
-              </button>
-
-              @if (!candleBlownOut()) {
-                <button type="button" class="btn-blow-candle" (click)="blowCandle()">
-                  🕯️ Ước một điều & Quẩy thôi!
-                </button>
-              }
-
-              <button type="button" class="btn-start-app" (click)="close()">
-                🚀 Cảm ơn! Bắt đầu ngày mới
-              </button>
-            </div>
-          </div>
-        </div>
-      }
-
-      <!-- CLASSIC CAKE MODE DISPLAY -->
-      @if (activeTab() === 'cake') {
-        <div class="birthday-cake-container">
-          <!-- Animated Cake Container -->
-          <div class="birthday-cake-wrap">
-            <div class="birthday-cake" [class.candle-off]="candleBlownOut()">
-              <!-- Candles & Flame -->
-              <div class="cake-candle">
-                <div class="candle-flame" [class.flame-extinguished]="candleBlownOut()"></div>
-                <div class="candle-wick"></div>
-                <div class="candle-wax"></div>
-              </div>
-              <!-- Cake Layers -->
-              <div class="cake-layer cake-layer--top">
-                <div class="icing"></div>
-                <div class="cherry">🍒</div>
-              </div>
-              <div class="cake-layer cake-layer--middle">
-                <div class="drip-decoration"></div>
-              </div>
-              <div class="cake-layer cake-layer--bottom">
-                <div class="cream-dots">
-                  <span></span><span></span><span></span><span></span><span></span>
-                </div>
-              </div>
-              <div class="cake-plate"></div>
-            </div>
-          </div>
-
-          <!-- Birthday Wishes Content -->
-          <div class="birthday-content">
-            <h1 class="birthday-title">
-              Chúc mừng sinh nhật, <span class="user-highlight">{{ data()?.userName }}</span>! 🎂
-            </h1>
-
-            <p class="birthday-wish">
-              Workflow Calendar chúc bạn một tuổi mới tràn đầy năng lượng, sức khỏe dồi dào, hạnh phúc và gặt hái thật nhiều thành công rực rỡ!
-            </p>
-
-            @if (wishMade()) {
-              <div class="birthday-sparkle-box">
-                ✨ <strong>Điều ước của bạn đã được ghi lại!</strong> Chúc ước mơ sớm thành hiện thực! ✨
-              </div>
-            }
-
-            <div class="birthday-actions">
-              @if (!candleBlownOut()) {
-                <button type="button" class="btn-blow-candle" (click)="blowCandle()">
-                  🕯️ Ước một điều & Thổi nến!
-                </button>
-              }
-              <button type="button" class="btn-start-app" (click)="close()">
-                🚀 Cảm ơn! Bắt đầu ngày mới
-              </button>
-            </div>
-          </div>
-        </div>
-      }
     </div>
   </div>
 }

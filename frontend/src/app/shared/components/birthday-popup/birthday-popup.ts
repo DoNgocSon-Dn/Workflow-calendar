@@ -16,70 +16,35 @@ interface BirthdayParticle {
   readonly sizePx: number;
 }
 
-export interface BirthdayMeme {
+export interface BirthdayGifItem {
   readonly id: string;
+  readonly url: string;
   readonly title: string;
-  readonly category: string;
-  readonly emojiBadge: string;
-  readonly quote: string;
-  readonly subQuote: string;
-  readonly bgGradient: string;
-  readonly accentColor: string;
+  readonly badge: string;
 }
 
-const PARTICLE_EMOJIS = ['🎉', '🎂', '🎈', '✨', '🎁', '⭐', '🎊', '💖', '💸', '🐱', '🕶️', '👑'];
+const PARTICLE_EMOJIS = ['🎉', '🎂', '🎈', '✨', '🎁', '⭐', '🎊', '💖', '💸', '🌟', '🥳', '👑'];
 
-export const BIRTHDAY_MEMES: readonly BirthdayMeme[] = [
-  {
-    id: 'cat-vibing',
-    title: 'Mèo Quẩy Disco 🐱🎧',
-    category: 'Sếp Nhỏ Quẩy Banh Nóc',
-    emojiBadge: '🕶️ TỔNG TÀI BẬT NHẠC',
-    quote: 'Thêm 1 tuổi, bớt 1 phần thơ dại... nhưng tăng 1000% độ ngầu & độ giàu! 🕶️✨',
-    subQuote: 'Hôm nay sinh nhật tui, bật nhạc quẩy banh nhà luôn chứ chờ gì nữa! 💃🕺',
-    bgGradient: 'linear-gradient(135deg, #18122B 0%, #393053 50%, #635985 100%)',
-    accentColor: '#d8b4fe',
-  },
-  {
-    id: 'doggo-party',
-    title: 'Chó Bố Đời Party 🐶👑',
-    category: 'Vạn Sự Như Ý',
-    emojiBadge: '👑 HUYỀN THOẠI TRỞ LẠI',
-    quote: 'Chúc mừng sinh nhật Legend! Năm nay KPI x3, Lương x10, Tình duyên x100! 🚀💰',
-    subQuote: 'Không cần chúc may mắn nữa, vì bạn chính là may mắn của vũ trụ này rồi!',
-    bgGradient: 'linear-gradient(135deg, #2b1055 0%, #7597de 100%)',
-    accentColor: '#fde047',
-  },
-  {
-    id: 'money-rain',
-    title: 'Mưa Tiền Vô Tận 💸💵',
-    category: 'Thần Tài Gõ Cửa',
-    emojiBadge: '💸 TIỀN VÀO NHƯ NƯỚC',
-    quote: 'Tuổi mới Tiền vào như nước Sông Đà, Tiền ra nhỏ giọt như cà phê phin! ☕💵',
-    subQuote: 'Mong bạn tiêu tiền không cần nhìn giá, sống thong dong như tỷ phú!',
-    bgGradient: 'linear-gradient(135deg, #051923 0%, #006494 50%, #00a6fb 100%)',
-    accentColor: '#4ade80',
-  },
-  {
-    id: 'capybara-chill',
-    title: 'Capybara Chill 🍊🦦',
-    category: 'An Nhiên Tự Tại',
-    emojiBadge: '🍊 CHILL CÙNG CAPYBARA',
-    quote: 'Tuổi mới luôn Chill như Capybara - Không drama, chỉ có vui vẻ & giàu sang! 🧘‍♂️🍊',
-    subQuote: 'Bình tĩnh đón nhận thành công và tận hưởng từng khoảnh khắc tuyệt đẹp!',
-    bgGradient: 'linear-gradient(135deg, #1c1917 0%, #44403c 50%, #78716c 100%)',
-    accentColor: '#fb923c',
-  },
-  {
-    id: 'cake-blast',
-    title: 'Bánh Kem Siêu Cấp 🎂💥',
-    category: 'Tiệc Tùng Rực Rỡ',
-    emojiBadge: '🎂 SIÊU TIỆC BIRTHDAY',
-    quote: 'Happy Birthday! Sinh nhật này ước gì được nấy, cầu gì được nấy nha! 🎂✨',
-    subQuote: 'Ăn hết cái bánh kem này để nhận lại gấp đôi ngọt ngào trong cuộc sống!',
-    bgGradient: 'linear-gradient(135deg, #4c0519 0%, #881337 50%, #be123c 100%)',
-    accentColor: '#f43f5e',
-  },
+export const BIRTHDAY_GIFS: readonly BirthdayGifItem[] = [
+  { id: 'gif-36', url: 'assets/birthday-gifs/gif-36.gif', title: 'Bánh Kem Pháo Hoa 🎂✨', badge: '🎂 HAPPY BIRTHDAY' },
+  { id: 'gif-3', url: 'assets/birthday-gifs/gif-3.gif', title: 'Bữa Tiệc Rực Rỡ 🎉🌟', badge: '🎉 PARTY TIME' },
+  { id: 'gif-5', url: 'assets/birthday-gifs/gif-5.gif', title: 'Khung Cảnh Tràn Năng Lượng ⚡💖', badge: '💖 WISH YOU ALL THE BEST' },
+  { id: 'gif-7', url: 'assets/birthday-gifs/gif-7.gif', title: 'Hào Quang Tuổi Mới ✨👑', badge: '👑 SHINE LIKE A STAR' },
+  { id: 'gif-31', url: 'assets/birthday-gifs/gif-31.gif', title: 'Sinh Nhật Ngọt Ngào 🍓🎁', badge: '🎁 SPECIAL DAY' },
+  { id: 'gif-40', url: 'assets/birthday-gifs/gif-40.gif', title: 'Quẩy Banh Nóc 🎈🥳', badge: '🥳 CELEBRATE TODAY' },
+];
+
+export const BIRTHDAY_WISHES: readonly string[] = [
+  'Workflow Calendar chúc bạn một tuổi mới tràn đầy năng lượng, sức khỏe dồi dào, hạnh phúc và gặt hái thật nhiều thành công rực rỡ!',
+  'Chúc mừng sinh nhật bạn! Mong rằng tuổi mới sẽ mang đến cho bạn vô vàn cơ hội mới, niềm vui mới và những bước tiến vượt bậc trong công việc & cuộc sống.',
+  'Chúc bạn một sinh nhật thật ấm áp, ý nghĩa và một tuổi mới bứt phá mọi giới hạn, chinh phục mọi mục tiêu đã đề ra!',
+  'Chúc mừng sinh nhật! Cảm ơn bạn đã đồng hành cùng Workflow Calendar. Chúc bạn luôn giữ vững ngọn lửa đam mê và gặt hái nhiều thắng lợi mới!',
+  'Tuổi mới - Hành trình mới! Chúc bạn luôn bình an, may mắn, giàu sức khỏe và gặt hái thành công trên mọi chặng đường sắp tới.',
+  'Chúc mừng sinh nhật bạn! Chúc mỗi ngày trong tuổi mới của bạn đều là một ngày tràn ngập niềm vui, cảm hứng làm việc và năng lượng tích cực!',
+  'Chúc bạn tuổi mới rạng rỡ, làm chủ thời gian, dẫn đầu mục tiêu và đón nhận thật nhiều điều tuyệt vời nhất!',
+  'Chúc mừng sinh nhật! Chúc bạn thêm một tuổi mới tài lộc vượng tiến, công danh rộng mở và cuộc sống luôn trọn vẹn niềm vui!',
+  'Thêm 1 tuổi mới, bớt 1 phần âu lo! Chúc bạn luôn trẻ trung, nhiều tiền và tràn ngập tiếng cười mỗi ngày!',
+  'Happy Birthday! Chúc ước mơ của bạn hôm nay sẽ biến thành hiện thực trong tuổi mới!',
 ];
 
 function buildParticles(): readonly BirthdayParticle[] {
@@ -108,33 +73,37 @@ export class BirthdayPopup {
   protected readonly visible = this.popupService.visible;
   protected readonly data = this.popupService.data;
   protected readonly closing = signal(false);
-  protected readonly candleBlownOut = signal(false);
   protected readonly wishMade = signal(false);
 
-  protected readonly activeTab = signal<'gif' | 'meme' | 'cake'>('gif');
-  protected readonly currentMemeIndex = signal<number>(0);
-  protected readonly memeAnimClass = signal<string>('pop-in');
+  protected readonly currentGifIndex = signal<number>(Math.floor(Math.random() * BIRTHDAY_GIFS.length));
+  protected readonly currentWishIndex = signal<number>(Math.floor(Math.random() * BIRTHDAY_WISHES.length));
+  protected readonly stageAnimClass = signal<string>('pop-in');
 
-  protected readonly memes = BIRTHDAY_MEMES;
-  protected readonly currentMeme = computed(() => this.memes[this.currentMemeIndex()]);
+  protected readonly gifs = BIRTHDAY_GIFS;
+  protected readonly currentGif = computed(() => this.gifs[this.currentGifIndex()]);
+  protected readonly currentWish = computed(() => BIRTHDAY_WISHES[this.currentWishIndex()]);
 
   protected readonly particles = computed<readonly BirthdayParticle[]>(() => buildParticles());
 
-  nextMeme(): void {
-    this.memeAnimClass.set('pop-out');
+  nextRandomGifAndWish(): void {
+    this.stageAnimClass.set('pop-out');
     setTimeout(() => {
-      this.currentMemeIndex.update((i) => (i + 1) % this.memes.length);
-      this.memeAnimClass.set('pop-in');
+      let nextGifIdx = Math.floor(Math.random() * BIRTHDAY_GIFS.length);
+      if (nextGifIdx === this.currentGifIndex() && BIRTHDAY_GIFS.length > 1) {
+        nextGifIdx = (nextGifIdx + 1) % BIRTHDAY_GIFS.length;
+      }
+      let nextWishIdx = Math.floor(Math.random() * BIRTHDAY_WISHES.length);
+      if (nextWishIdx === this.currentWishIndex() && BIRTHDAY_WISHES.length > 1) {
+        nextWishIdx = (nextWishIdx + 1) % BIRTHDAY_WISHES.length;
+      }
+
+      this.currentGifIndex.set(nextGifIdx);
+      this.currentWishIndex.set(nextWishIdx);
+      this.stageAnimClass.set('pop-in');
     }, 150);
   }
 
-  setTab(tab: 'gif' | 'meme' | 'cake'): void {
-    this.activeTab.set(tab);
-  }
-
-  blowCandle(): void {
-    if (this.candleBlownOut()) return;
-    this.candleBlownOut.set(true);
+  makeWish(): void {
     this.wishMade.set(true);
   }
 
@@ -144,7 +113,6 @@ export class BirthdayPopup {
     setTimeout(() => {
       this.popupService.dismiss();
       this.closing.set(false);
-      this.candleBlownOut.set(false);
       this.wishMade.set(false);
     }, 280);
   }
