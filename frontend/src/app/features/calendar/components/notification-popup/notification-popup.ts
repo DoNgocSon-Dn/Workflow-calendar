@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
-import { NotificationQueue } from '../../../../core/realtime/notification-queue';
+import { NotificationItem, NotificationQueue } from '../../../../core/realtime/notification-queue';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 
 const SNOOZE_MINUTES: readonly number[] = [5, 10, 30, 60];

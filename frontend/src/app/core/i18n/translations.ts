@@ -401,6 +401,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'tasks.deleteListConfirm': 'Xoá danh sách "{name}" và toàn bộ việc cần làm trong đó?',
     'tasks.cannotDeleteLast': 'Không thể xoá danh sách cuối cùng.',
     'tasks.deleteListError': 'Không thể xoá danh sách.',
+    'tasks.defaultListName': 'Việc cần làm của tôi',
 
     // --- cài đặt: ngày sinh + hồ sơ (bổ sung) --------------------------
     'settings.dobDay': 'Ngày',
@@ -1112,6 +1113,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'tasks.deleteListConfirm': 'Delete the list "{name}" and all of its tasks?',
     'tasks.cannotDeleteLast': "You can't delete the last list.",
     'tasks.deleteListError': "Couldn't delete the list.",
+    'tasks.defaultListName': 'My tasks',
 
     // --- settings: date of birth + profile (extra) ------------------
     'settings.dobDay': 'Day',

@@ -1857,7 +1857,7 @@ export class CalendarStore {
       if (this.todoLists().length === 0) {
         // Người dùng chưa từng tạo todo nào nên migration chưa backfill được
         // danh sách nào cho họ — tạo sẵn một cái để không nơi nào trống trơn.
-        await this.createTodoList('Việc cần làm của tôi');
+        await this.createTodoList(this.nt('tasks.defaultListName'));
       }
     } catch (err) {
       console.error('Lỗi khi tải việc cần làm:', err);
@@ -2017,7 +2017,7 @@ export class CalendarStore {
   ensureDefaultTodoList(): Promise<TodoList> {
     const existing = this.todoLists()[0];
     if (existing) return Promise.resolve(existing);
-    this.defaultTodoListInFlight ??= this.createTodoList('Việc cần làm của tôi').finally(() => {
+    this.defaultTodoListInFlight ??= this.createTodoList(this.nt('tasks.defaultListName')).finally(() => {
       this.defaultTodoListInFlight = null;
     });
     return this.defaultTodoListInFlight;
