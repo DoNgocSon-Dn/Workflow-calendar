@@ -949,7 +949,7 @@ export class CalendarStore {
       return;
     }
 
-    if (!this.notifyIfNotSelfOrigin(event.id, 'created', `Sự kiện mới: ${event.title}`, timeLabel)) {
+    if (!this.notifyIfNotSelfOrigin(event.id, 'created', this.nt('nq.remoteCreated', { title: event.title }), timeLabel)) {
       return;
     }
     this.notifications.ingest(
@@ -990,15 +990,17 @@ export class CalendarStore {
     if (this.isCreatedByCurrentUser(events[0])) return;
 
     const calendarName = this.calendars().find((c) => c.id === payload.calendarId)?.name ?? null;
-    const message = `Đã nhập ${events.length} sự kiện vào lịch${calendarName ? ` "${calendarName}"` : ''}.`;
+    const message = calendarName
+      ? this.nt('nq.importDoneBodyTo', { count: events.length, name: calendarName })
+      : this.nt('nq.importDoneBody', { count: events.length });
 
     // Khoá chống trùng là batchId chứ không phải id sự kiện: cả lô chỉ có
     // đúng một gói tin nên xoá-khi-trúng vẫn đúng.
-    if (payload.batchId && !this.notifyIfNotSelfOrigin(payload.batchId, 'created', 'Import lịch hoàn tất', message)) {
+    if (payload.batchId && !this.notifyIfNotSelfOrigin(payload.batchId, 'created', this.nt('nq.importDone'), message)) {
       return;
     }
     if (!payload.batchId) {
-      this.notificationQueue.push({ title: 'Import lịch hoàn tất', body: message, kind: 'created' });
+      this.notificationQueue.push({ title: this.nt('nq.importDone'), body: message, kind: 'created' });
     }
 
     this.notifications.ingest(
@@ -1016,7 +1018,7 @@ export class CalendarStore {
     const event = toCalendarEvent(dto);
     this.upsertEvent(event);
     const timeLabel = eventTimeLabel(event, this.timeFormatService.format());
-    if (!this.notifyIfNotSelfOrigin(event.id, 'updated', `Đã cập nhật: ${event.title}`, timeLabel)) {
+    if (!this.notifyIfNotSelfOrigin(event.id, 'updated', this.nt('nq.remoteUpdated', { title: event.title }), timeLabel)) {
       return;
     }
     this.notifications.ingest(
@@ -1033,7 +1035,7 @@ export class CalendarStore {
   private handleRemoteDeleted(id: string): void {
     const title = this.events().find((e) => e.id === id)?.title ?? null;
     this.events.update((list) => list.filter((e) => e.id !== id));
-    if (!this.notifyIfNotSelfOrigin(id, 'deleted', 'Sự kiện đã bị xoá', '')) return;
+    if (!this.notifyIfNotSelfOrigin(id, 'deleted', this.nt('nq.remoteDeleted'), '')) return;
     this.notifications.ingest(eventDeletedDraft(this.nt, id, title));
   }
 
@@ -1054,8 +1056,8 @@ export class CalendarStore {
       return;
     }
     this.notificationQueue.push({
-      title: 'Sự kiện lặp lại đã được cập nhật',
-      body: `${events.length} lần lặp đã được cập nhật.`,
+      title: this.nt('nq.seriesUpdated'),
+      body: this.nt('nq.seriesUpdatedBody', { count: events.length }),
       kind: 'updated',
     });
   }
@@ -1071,8 +1073,8 @@ export class CalendarStore {
       return;
     }
     this.notificationQueue.push({
-      title: 'Sự kiện lặp lại đã bị xoá',
-      body: `${ids.length} lần lặp đã bị xoá.`,
+      title: this.nt('nq.seriesDeleted'),
+      body: this.nt('nq.seriesDeletedBody', { count: ids.length }),
       kind: 'deleted',
     });
   }
@@ -1086,7 +1088,7 @@ export class CalendarStore {
     // phải chờ refreshEvents(). Chỉ phần TẢI LẠI DANH SÁCH mới gộp lại.
     this.notificationQueue.push({
       eventId: payload.eventId,
-      title: 'Bạn được mời tham gia một sự kiện',
+      title: this.nt('nq.eventInvited'),
       body: '',
       kind: 'created',
     });
@@ -1114,10 +1116,12 @@ export class CalendarStore {
   }
 
   private handleAttendeeStatusChanged(payload: { eventId: string; attendee: AttendeeApiDto }): void {
-    const label = payload.attendee.status === 'accepted' ? 'đã đồng ý tham gia' : 'đã từ chối tham gia';
+    const verb = this.nt(
+      payload.attendee.status === 'accepted' ? 'nd.attendeeStatus.accepted' : 'nd.attendeeStatus.declined',
+    );
     this.notificationQueue.push({
       eventId: payload.eventId,
-      title: `Một người tham gia ${label}`,
+      title: this.nt('nq.attendeeResponded', { verb }),
       body: '',
       kind: 'updated',
     });
@@ -1137,10 +1141,10 @@ export class CalendarStore {
     const invite = toCalendarInvite(payload.invite);
     this.pendingInvites.update((list) => [invite, ...list.filter((i) => i.id !== invite.id)]);
     this.notificationQueue.push({
-      title: 'Bạn được mời tham gia một lịch',
+      title: this.nt('nq.calendarInvited'),
       body: invite.inviterEmail
-        ? `${invite.inviterEmail} mời bạn vào "${invite.calendarName}"`
-        : `Mời bạn vào "${invite.calendarName}"`,
+        ? this.nt('nq.calendarInvitedFrom', { email: invite.inviterEmail, name: invite.calendarName })
+        : this.nt('nq.calendarInvitedPlain', { name: invite.calendarName }),
       kind: 'invite',
     });
     this.notifications.ingest(
@@ -1162,8 +1166,8 @@ export class CalendarStore {
     const calendar = this.calendars().find((c) => c.id === payload.calendarId);
     if (!calendar) return;
     this.notificationQueue.push({
-      title: 'Có thành viên mới',
-      body: `Một người vừa tham gia lịch "${calendar.name}"`,
+      title: this.nt('nq.memberJoined'),
+      body: this.nt('nq.memberJoinedBody', { name: calendar.name }),
       kind: 'invite',
     });
     this.notifications.ingest(
@@ -1177,10 +1181,12 @@ export class CalendarStore {
     if (payload.conflicts.length === 0) return;
     const [first, ...rest] = payload.conflicts;
     const body =
-      rest.length > 0 ? `Trùng giờ với "${first.title}" và ${rest.length} sự kiện khác.` : `Trùng giờ với "${first.title}".`;
+      rest.length > 0
+        ? this.nt('nq.conflictBodyMany', { first: first.title, count: rest.length })
+        : this.nt('nq.conflictBodyOne', { first: first.title });
     this.notificationQueue.push({
       eventId: payload.event.id,
-      title: `Trùng lịch: ${payload.event.title}`,
+      title: this.nt('nq.conflict', { title: payload.event.title }),
       body,
       kind: 'conflict',
     });
@@ -1203,8 +1209,12 @@ export class CalendarStore {
     this.notificationQueue.push({
       eventId: payload.eventId,
       reminderId: payload.reminderId,
-      title: payload.meetLink ? `Tới giờ họp: ${payload.title}` : `Nhắc lịch: ${payload.title}`,
-      body: payload.startAt ? formatTimeLabel(new Date(payload.startAt), 'vi', this.timeFormatService.format()) : '',
+      title: payload.meetLink
+        ? this.nt('nq.meetingNow', { title: payload.title })
+        : this.nt('nq.reminder', { title: payload.title }),
+      body: payload.startAt
+        ? formatTimeLabel(new Date(payload.startAt), this.i18n.locale(), this.timeFormatService.format())
+        : '',
       kind: 'reminder',
       meetLink: payload.meetLink ?? undefined,
     });

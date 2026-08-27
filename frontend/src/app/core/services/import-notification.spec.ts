@@ -1,4 +1,4 @@
-import { eventsImportedDraft, EventsImportedDraftInput, NotificationT } from './notification-drafts';
+import { eventsImportedDraft, NotificationT } from './notification-drafts';
 import { NotificationDraft } from './notification.model';
 
 /** Dịch giả lập — trả về chuỗi tiếng Việt để test đọc được nội dung. */
@@ -12,8 +12,6 @@ const t: NotificationT = (key, vars) => {
   for (const [k, v] of Object.entries(vars ?? {})) text = text.replace(`{${k}}`, String(v));
   return text;
 };
-
-const draft = (input: EventsImportedDraftInput) => eventsImportedDraft(t, input);
 
 /**
  * Thông báo chuông cho một lần import file.

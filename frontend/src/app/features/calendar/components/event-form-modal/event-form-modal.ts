@@ -52,13 +52,13 @@ import {
   describeRecurrence,
 } from '../../utils/recurrence';
 
-function extractErrorMessage(err: unknown, fallback: string): string {
+function extractErrorMessage(err: unknown, fallback: string, netFallback = fallback): string {
   // status 0 = request không tới được server (mất mạng, backend chưa chạy,
   // CORS). Body lúc này là một ProgressEvent, không có `message` nào để đọc,
   // nên nếu không tách riêng thì người dùng chỉ nhận được câu báo lỗi chung
   // chung trong khi nguyên nhân thật lại rất cụ thể và tự sửa được.
   if (err instanceof HttpErrorResponse && err.status === 0) {
-    return 'Không kết nối được tới server. Sự kiện CHƯA được lưu — kiểm tra kết nối rồi thử lại.';
+    return netFallback;
   }
   if (err && typeof err === 'object' && 'error' in err) {
     const inner = (err as { error?: { message?: string | string[] } }).error;
@@ -805,7 +805,9 @@ export class EventFormModal {
     } catch (err) {
       // Form KHÔNG đóng: lỗi hiện ngay dưới nút Lưu, nội dung người dùng vừa
       // nhập còn nguyên để bấm lưu lại.
-      this.saveError.set(extractErrorMessage(err, this.i18n.t('event.genericError')));
+      this.saveError.set(
+        extractErrorMessage(err, this.i18n.t('event.genericError'), this.i18n.t('event.networkError')),
+      );
     } finally {
       this.saving.set(false);
     }
@@ -818,8 +820,8 @@ export class EventFormModal {
   private notifySaved(title: string): void {
     this.notificationQueue.push({
       kind: 'success',
-      title: 'Đã tạo sự kiện',
-      body: `"${title}" đã được lưu vào lịch của bạn.`,
+      title: this.i18n.t('event.createdToast'),
+      body: this.i18n.t('event.createdToastBody', { title }),
     });
     // notifySaved() chỉ chạy ĐÚNG MỘT LẦN, ngay trong save() lúc backend vừa
     // xác nhận tạo xong — không phải một effect() chạy lại theo state, nên
@@ -859,7 +861,7 @@ export class EventFormModal {
       this.todoListId.set(select.value);
       return;
     }
-    const name = (await this.dialog.prompt('Tên danh sách mới:'))?.trim();
+    const name = (await this.dialog.prompt(this.i18n.t('event.newListPrompt')))?.trim();
     if (!name) {
       // Angular bỏ qua việc ghi lại [value] nếu todoListId() không đổi (dù
       // DOM <select> vừa bị người dùng tự đổi qua tay) — reset thẳng DOM để
@@ -931,7 +933,9 @@ export class EventFormModal {
       try {
         await this.store.deleteEventSeries(current.id, scope);
       } catch (err) {
-        await this.dialog.alert(extractErrorMessage(err, 'Không thể xoá chuỗi sự kiện lặp lại này.'));
+        await this.dialog.alert(
+          extractErrorMessage(err, this.i18n.t('event.deleteSeriesError'), this.i18n.t('event.networkError')),
+        );
         return;
       }
     } else {
