@@ -37,10 +37,18 @@
         <button
           type="button"
           class="birthday-tab-btn"
+          [class.active]="activeTab() === 'gif'"
+          (click)="setTab('gif')"
+        >
+          🎬 GIF Sinh Nhật
+        </button>
+        <button
+          type="button"
+          class="birthday-tab-btn"
           [class.active]="activeTab() === 'meme'"
           (click)="setTab('meme')"
         >
-          🎭 Meme Sinh Nhật
+          🎭 Meme Hài Hước
         </button>
         <button
           type="button"
@@ -48,11 +56,52 @@
           [class.active]="activeTab() === 'cake'"
           (click)="setTab('cake')"
         >
-          🎂 Bánh Kem Thổi Nến
+          🎂 Bánh Kem
         </button>
       </div>
 
-      <!-- MEME / GIF MODE DISPLAY -->
+      <!-- FEATURED GIF MODE DISPLAY -->
+      @if (activeTab() === 'gif') {
+        <div class="birthday-gif-container">
+          <div class="gif-stage">
+            <img src="assets/birthday-gif.gif" alt="Chúc mừng sinh nhật GIF" class="birthday-main-gif" />
+          </div>
+
+          <div class="birthday-content">
+            <h1 class="birthday-title">
+              Chúc mừng sinh nhật, <span class="user-highlight">{{ data()?.userName }}</span>! 🎉✨
+            </h1>
+
+            <p class="birthday-wish">
+              Workflow Calendar chúc bạn một tuổi mới tràn đầy năng lượng, sức khỏe dồi dào, ngập tràn niềm vui, hạnh phúc và gặt hái thật nhiều thành công rực rỡ! 🚀💖
+            </p>
+
+            @if (wishMade()) {
+              <div class="birthday-sparkle-box">
+                ✨ <strong>Điều ước sinh nhật của bạn đã được ghi lại!</strong> Chúc ước mơ sớm thành hiện thực! ✨
+              </div>
+            }
+
+            <div class="birthday-actions">
+              @if (!candleBlownOut()) {
+                <button type="button" class="btn-blow-candle" (click)="blowCandle()">
+                  🕯️ Ước một điều & Quẩy thôi!
+                </button>
+              }
+
+              <button type="button" class="btn-next-meme" (click)="setTab('meme')">
+                🎭 Dạo xem Meme Sinh Nhật Hài Hước ➔
+              </button>
+
+              <button type="button" class="btn-start-app" (click)="close()">
+                🚀 Cảm ơn! Bắt đầu ngày mới
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- MEME MODE DISPLAY -->
       @if (activeTab() === 'meme') {
         <div class="birthday-meme-container" [class]="memeAnimClass()">
           <!-- Meme Graphic Display -->

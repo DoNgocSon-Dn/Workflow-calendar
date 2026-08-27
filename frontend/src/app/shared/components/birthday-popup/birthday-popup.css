@@ -776,3 +776,34 @@
   border-color: rgba(255, 255, 255, 0.4);
   transform: translateY(-1px);
 }
+
+/* GIF Mode Styling */
+.birthday-gif-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  width: 100%;
+}
+
+.gif-stage {
+  position: relative;
+  width: 100%;
+  max-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.birthday-main-gif {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 14px;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+}

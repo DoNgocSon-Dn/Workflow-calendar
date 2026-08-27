@@ -111,7 +111,7 @@ export class BirthdayPopup {
   protected readonly candleBlownOut = signal(false);
   protected readonly wishMade = signal(false);
 
-  protected readonly activeTab = signal<'meme' | 'cake'>('meme');
+  protected readonly activeTab = signal<'gif' | 'meme' | 'cake'>('gif');
   protected readonly currentMemeIndex = signal<number>(0);
   protected readonly memeAnimClass = signal<string>('pop-in');
 
@@ -128,7 +128,7 @@ export class BirthdayPopup {
     }, 150);
   }
 
-  setTab(tab: 'meme' | 'cake'): void {
+  setTab(tab: 'gif' | 'meme' | 'cake'): void {
     this.activeTab.set(tab);
   }
 
