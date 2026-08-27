@@ -144,81 +144,83 @@
         <!-- TAB 1: TASKS -->
         @if (activeTab() === 'tasks') {
           <div class="tasks-section">
-            <div class="create-task-card">
-              <h3>{{ i18n.t('group.createTaskTitle') }}</h3>
-              <div class="task-form-grid">
-                <input
-                  type="text"
-                  class="text-input"
-                  [placeholder]="i18n.t('group.taskTitlePlaceholder')"
-                  maxlength="200"
-                  [value]="taskTitle()"
-                  (input)="taskTitle.set($any($event.target).value)"
-                />
-                <app-char-counter class="field-counter" [current]="taskTitle().length" [max]="200" />
-                <input
-                  type="text"
-                  class="text-input"
-                  [placeholder]="i18n.t('group.taskDescPlaceholder')"
-                  maxlength="2000"
-                  [value]="taskDescription()"
-                  (input)="taskDescription.set($any($event.target).value)"
-                />
-                <app-char-counter class="field-counter" [current]="taskDescription().length" [max]="2000" />
-                <div class="form-row">
-                  <div class="assignee-picker">
-                    <button type="button" class="assignee-picker-btn" aria-haspopup="listbox" [attr.aria-expanded]="assigneeMenuOpen()" (click)="toggleAssigneeMenu()">
-                      <span class="assignee-picker-label">{{ assigneeLabel() }}</span>
-                      <svg viewBox="0 0 24 24" width="16" height="16">
-                        <path fill="currentColor" d="M7 10l5 5 5-5z" />
-                      </svg>
-                    </button>
-                    @if (assigneeMenuOpen()) {
-                      <div class="menu-backdrop" (click)="closeAssigneeMenu()"></div>
-                      <div class="assignee-dropdown" role="listbox">
-                        <button
-                          type="button"
-                          class="assignee-dropdown-item"
-                          role="option"
-                          [class.active]="!taskAssignedTo()"
-                          [attr.aria-selected]="!taskAssignedTo()"
-                          (click)="selectAssignee('')"
-                        >
-                          {{ i18n.t('group.selectAssignee') }}
-                        </button>
-                        @for (m of store.members(); track m.id) {
+            @if (canManageAnyone()) {
+              <div class="create-task-card">
+                <h3>{{ i18n.t('group.createTaskTitle') }}</h3>
+                <div class="task-form-grid">
+                  <input
+                    type="text"
+                    class="text-input"
+                    [placeholder]="i18n.t('group.taskTitlePlaceholder')"
+                    maxlength="200"
+                    [value]="taskTitle()"
+                    (input)="taskTitle.set($any($event.target).value)"
+                  />
+                  <app-char-counter class="field-counter" [current]="taskTitle().length" [max]="200" />
+                  <input
+                    type="text"
+                    class="text-input"
+                    [placeholder]="i18n.t('group.taskDescPlaceholder')"
+                    maxlength="2000"
+                    [value]="taskDescription()"
+                    (input)="taskDescription.set($any($event.target).value)"
+                  />
+                  <app-char-counter class="field-counter" [current]="taskDescription().length" [max]="2000" />
+                  <div class="form-row">
+                    <div class="assignee-picker">
+                      <button type="button" class="assignee-picker-btn" aria-haspopup="listbox" [attr.aria-expanded]="assigneeMenuOpen()" (click)="toggleAssigneeMenu()">
+                        <span class="assignee-picker-label">{{ assigneeLabel() }}</span>
+                        <svg viewBox="0 0 24 24" width="16" height="16">
+                          <path fill="currentColor" d="M7 10l5 5 5-5z" />
+                        </svg>
+                      </button>
+                      @if (assigneeMenuOpen()) {
+                        <div class="menu-backdrop" (click)="closeAssigneeMenu()"></div>
+                        <div class="assignee-dropdown" role="listbox">
                           <button
                             type="button"
                             class="assignee-dropdown-item"
                             role="option"
-                            [class.active]="taskAssignedTo() === m.userId"
-                            [attr.aria-selected]="taskAssignedTo() === m.userId"
-                            (click)="selectAssignee(m.userId)"
+                            [class.active]="!taskAssignedTo()"
+                            [attr.aria-selected]="!taskAssignedTo()"
+                            (click)="selectAssignee('')"
                           >
-                            {{ memberDisplayName(m, m.userId) }}
+                            {{ i18n.t('group.selectAssignee') }}
                           </button>
-                        }
-                      </div>
-                    }
+                          @for (m of store.members(); track m.id) {
+                            <button
+                              type="button"
+                              class="assignee-dropdown-item"
+                              role="option"
+                              [class.active]="taskAssignedTo() === m.userId"
+                              [attr.aria-selected]="taskAssignedTo() === m.userId"
+                              (click)="selectAssignee(m.userId)"
+                            >
+                              {{ memberDisplayName(m, m.userId) }}
+                            </button>
+                          }
+                        </div>
+                      }
+                    </div>
+                    <input
+                      type="date"
+                      lang="vi"
+                      class="text-input"
+                      [value]="taskDueDate()"
+                      (input)="taskDueDate.set($any($event.target).value)"
+                    />
                   </div>
-                  <input
-                    type="date"
-                    lang="vi"
-                    class="text-input"
-                    [value]="taskDueDate()"
-                    (input)="taskDueDate.set($any($event.target).value)"
-                  />
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    [disabled]="!canCreateTask()"
+                    (click)="createTask()"
+                  >
+                    {{ i18n.t('group.addTask') }}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  class="btn btn-primary"
-                  [disabled]="!canCreateTask()"
-                  (click)="createTask()"
-                >
-                  {{ i18n.t('group.addTask') }}
-                </button>
               </div>
-            </div>
+            }
 
             <div class="kanban-board">
               <!-- Todo Column -->
@@ -247,7 +249,7 @@
                       }
                       <select
                         class="assignee-select"
-                        [disabled]="reassigningTaskId() === t.id"
+                        [disabled]="!canManageAnyone() || reassigningTaskId() === t.id"
                         (change)="reassignTask(t, $any($event.target).value)"
                       >
                         <!-- store.members() tải bất đồng bộ nên có thể render SAU select. [value] đặt
@@ -323,7 +325,7 @@
                       }
                       <select
                         class="assignee-select"
-                        [disabled]="reassigningTaskId() === t.id"
+                        [disabled]="!canManageAnyone() || reassigningTaskId() === t.id"
                         (change)="reassignTask(t, $any($event.target).value)"
                       >
                         <!-- store.members() tải bất đồng bộ nên có thể render SAU select. [value] đặt
@@ -454,7 +456,6 @@
                         @switch (inviteRole()) {
                           @case ('LEADER') { ★ }
                           @case ('ADMIN') { ◆ }
-                          @case ('GUEST') { ◌ }
                           @default { ● }
                         }
                       </span>
@@ -481,7 +482,6 @@
                               @switch (r) {
                                 @case ('LEADER') { ★ }
                                 @case ('ADMIN') { ◆ }
-                                @case ('GUEST') { ◌ }
                                 @default { ● }
                               }
                             </span>
@@ -600,7 +600,6 @@
                             @switch (m.role) {
                               @case ('LEADER') { ★ }
                               @case ('ADMIN') { ◆ }
-                              @case ('GUEST') { ◌ }
                               @default { ● }
                             }
                           </span>
@@ -627,7 +626,6 @@
                                   @switch (r) {
                                     @case ('LEADER') { ★ }
                                     @case ('ADMIN') { ◆ }
-                                    @case ('GUEST') { ◌ }
                                     @default { ● }
                                   }
                                 </span>
@@ -650,7 +648,6 @@
                           @switch (m.role) {
                             @case ('LEADER') { ★ }
                             @case ('ADMIN') { ◆ }
-                            @case ('GUEST') { ◌ }
                             @default { • }
                           }
                         </span>

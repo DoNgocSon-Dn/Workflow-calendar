@@ -633,7 +633,7 @@ export class GroupWorkspaceModal {
   /** Người tạo task hoặc chủ nhóm/quản trị viên mới xoá được — cùng quy tắc
    *  với `canDeleteMessage` bên khung chat, KHÔNG phải "chỉ chủ nhóm". */
   canDeleteTask(task: GroupTask): boolean {
-    return task.createdBy === this.currentUserId() || this.canModerateChat();
+    return this.canManageAnyone();
   }
 
   async deleteTask(task: GroupTask): Promise<void> {

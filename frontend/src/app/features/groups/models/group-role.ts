@@ -11,7 +11,6 @@ export const GroupRole = {
   LEADER: 'LEADER',
   ADMIN: 'ADMIN',
   MEMBER: 'MEMBER',
-  GUEST: 'GUEST',
 } as const;
 
 export type GroupRole = (typeof GroupRole)[keyof typeof GroupRole];
@@ -21,16 +20,14 @@ export type GroupRole = (typeof GroupRole)[keyof typeof GroupRole];
 export const ASSIGNABLE_GROUP_ROLES: readonly GroupRole[] = [
   GroupRole.ADMIN,
   GroupRole.MEMBER,
-  GroupRole.GUEST,
 ];
 
 export const DEFAULT_GROUP_ROLE: GroupRole = GroupRole.MEMBER;
 
 const RANK: Readonly<Record<GroupRole, number>> = {
-  [GroupRole.LEADER]: 4,
-  [GroupRole.ADMIN]: 3,
-  [GroupRole.MEMBER]: 2,
-  [GroupRole.GUEST]: 1,
+  [GroupRole.LEADER]: 3,
+  [GroupRole.ADMIN]: 2,
+  [GroupRole.MEMBER]: 1,
 };
 
 /**
@@ -47,8 +44,6 @@ export function normalizeGroupRole(raw: string | null | undefined): GroupRole {
       return GroupRole.LEADER;
     case 'admin':
       return GroupRole.ADMIN;
-    case 'guest':
-      return GroupRole.GUEST;
     default:
       return GroupRole.MEMBER;
   }
@@ -83,9 +78,8 @@ export function canTransferLeadership(actor: GroupRole | null): boolean {
   return actor === GroupRole.LEADER;
 }
 
-/** GUEST chỉ được xem — không nhắn tin, không tạo/sửa task. Phải khớp canChat ở backend. */
 export function canChat(actor: GroupRole | null): boolean {
-  return !!actor && actor !== GroupRole.GUEST;
+  return !!actor;
 }
 
 /** Chỉ Trưởng nhóm (LEADER) và Phó nhóm (ADMIN) mới được xem/quản lý Lịch Nhóm. */
@@ -93,17 +87,17 @@ export function canSeeGroupCalendar(actor: GroupRole | null): boolean {
   return !!actor && (actor === GroupRole.LEADER || actor === GroupRole.ADMIN);
 }
 
-/** Chỉ Trưởng nhóm (LEADER) và Phó nhóm (ADMIN) mới được xem/quản lý Task nhóm. */
+/** Tất cả thành viên nhóm đều được xem Quản lý Task. */
 export function canSeeGroupTasks(actor: GroupRole | null): boolean {
-  return !!actor && (actor === GroupRole.LEADER || actor === GroupRole.ADMIN);
+  return !!actor;
 }
 
-/** Chỉ Trưởng nhóm (LEADER) và Phó nhóm (ADMIN) mới được xem/quản lý danh sách Thành viên. */
+/** Tất cả thành viên nhóm đều được xem danh sách Thành viên. */
 export function canSeeGroupMembers(actor: GroupRole | null): boolean {
-  return !!actor && (actor === GroupRole.LEADER || actor === GroupRole.ADMIN);
+  return !!actor;
 }
 
-/** Khách (GUEST) không được xem cuộc trò chuyện nhóm. Thành viên (MEMBER), Phó nhóm (ADMIN), Trưởng nhóm (LEADER) được chat. */
+/** Tất cả thành viên nhóm đều được tham gia Trò chuyện. */
 export function canSeeGroupChat(actor: GroupRole | null): boolean {
-  return !!actor && actor !== GroupRole.GUEST;
+  return !!actor;
 }
