@@ -16,6 +16,7 @@ import { environment } from '../../../../../environments/environment';
 import { CalendarStore, localizedCalendarName } from '../../data/calendar-store';
 import { FormsModule } from '@angular/forms';
 import { OverflowTooltip } from '../../../../shared/directives/overflow-tooltip';
+import { CharCounter } from '../../../../shared/components/char-counter/char-counter';
 import {
   hasMeaningfulText,
   pickSingleFile,
@@ -116,7 +117,7 @@ function fromDatetimeLocal(dtLocalStr: string): string {
   templateUrl: './import-modal.html',
   styleUrl: './import-modal.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, OverflowTooltip],
+  imports: [FormsModule, OverflowTooltip, CharCounter],
   // Nghe ở cấp document vì vùng thả file là một <label>, không nhận được
   // focus nên sự kiện paste không bao giờ bay tới nó. Trang này chỉ tồn tại
   // lúc route đang active, nên phạm vi này là đúng.

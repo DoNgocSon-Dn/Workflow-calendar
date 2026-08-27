@@ -90,7 +90,7 @@
                 <input type="checkbox" [checked]="!isListHidden(list.id)" (change)="toggleListVisibility(list.id)" />
                 <span>{{ list.name }}</span>
               </label>
-              <button type="button" class="list-nav-delete" aria-label="Xoá danh sách" (click)="removeList(list)">
+              <button type="button" class="list-nav-delete" [attr.aria-label]="i18n.t('tasks.deleteList')" (click)="removeList(list)">
                 <app-icon name="trash" />
               </button>
             </li>
@@ -100,7 +100,7 @@
           <input
             type="text"
             class="new-list-input"
-            placeholder="+ Tạo danh sách mới"
+            [placeholder]="i18n.t('tasks.newListPlaceholder')"
             maxlength="80"
             [value]="newListName()"
             (input)="newListName.set($any($event.target).value)"
@@ -113,11 +113,11 @@
 
     <main class="board">
       @if (loading()) {
-        <p class="hint-text">Đang tải...</p>
+        <p class="hint-text">{{ i18n.t('tasks.loading') }}</p>
       } @else if (viewFilter() === 'starred') {
         <section class="column">
           <header class="column-header">
-            <h3 class="column-title">Có gắn dấu sao</h3>
+            <h3 class="column-title">{{ i18n.t('tasks.starred') }}</h3>
           </header>
           <ul class="todo-list">
             @for (todo of starredPending(); track todo.id) {
@@ -127,7 +127,7 @@
                   <span class="todo-content">{{ todo.content }}</span>
                   <span class="todo-due">{{ listNameFor(todo.listId) }}</span>
                 </div>
-                <button type="button" class="todo-star active" aria-label="Bỏ dấu sao" (click)="toggleStar(todo)">
+                <button type="button" class="todo-star active" [attr.aria-label]="i18n.t('tasks.unstar')" (click)="toggleStar(todo)">
                   <app-icon name="star" [filled]="true" />
                 </button>
                 <button type="button" class="todo-delete" aria-label="Xoá" (click)="removeTodo(todo.id)">
@@ -144,7 +144,7 @@
                 <li class="todo-item todo-item-done">
                   <input type="checkbox" [checked]="todo.done" (change)="toggleTodo(todo)" />
                   <span class="todo-content">{{ todo.content }}</span>
-                  <button type="button" class="todo-star active" aria-label="Bỏ dấu sao" (click)="toggleStar(todo)">
+                  <button type="button" class="todo-star active" [attr.aria-label]="i18n.t('tasks.unstar')" (click)="toggleStar(todo)">
                     <app-icon name="star" [filled]="true" />
                   </button>
                   <button type="button" class="todo-delete" aria-label="Xoá" (click)="removeTodo(todo.id)">

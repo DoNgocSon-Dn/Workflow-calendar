@@ -103,14 +103,17 @@
                 <div class="preview-card" [class.warning-row]="item.needsReview">
                   <div class="preview-card__title-row">
                     <span class="preview-card__index">{{ $index + 1 }}</span>
-                    <input
-                      type="text"
-                      maxlength="200"
-                      [(ngModel)]="item.title"
-                      class="table-input title-input"
-                      [placeholder]="i18n.t('import.fieldTitle')"
-                      appOverflowTooltip
-                    />
+                    <div class="field-with-counter title-field">
+                      <input
+                        type="text"
+                        maxlength="200"
+                        [(ngModel)]="item.title"
+                        class="table-input title-input"
+                        [placeholder]="i18n.t('import.fieldTitle')"
+                        appOverflowTooltip
+                      />
+                      <app-char-counter class="field-counter" [current]="item.title.length" [max]="200" />
+                    </div>
                     <button type="button" class="danger-btn" (click)="removeEvent($index)">{{ i18n.t('common.delete') }}</button>
                   </div>
                   <div class="preview-card__fields">
@@ -132,6 +135,7 @@
                         [placeholder]="i18n.t('import.fieldLocationPlaceholder')"
                         appOverflowTooltip
                       />
+                      <app-char-counter class="field-counter" [current]="item.location.length" [max]="200" />
                     </div>
                   </div>
                 </div>
