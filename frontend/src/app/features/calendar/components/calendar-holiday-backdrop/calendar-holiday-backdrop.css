@@ -37,32 +37,32 @@
   }
 }
 
-/* Bánh răng vector kỹ nghệ 1/5 & 30/4 — đặt CHÍNH GIỮA màn hình mờ nhẹ tinh tế */
+/* Tranh Cổ Động 1/5 & 30/4 — đặt CHÍNH GIỮA màn hình, mask mờ hòa vào nền */
 .holiday-backdrop--labor-day .holiday-backdrop__motif {
   top: 50%;
   left: 50%;
   right: auto;
   transform: translate(-50%, -50%);
-  width: min(44vw, 480px);
-  height: min(55%, 400px);
-  opacity: 0.25;
-  mask-image: radial-gradient(60% 60% at 50% 50%, #000 45%, transparent 100%);
-  -webkit-mask-image: radial-gradient(60% 60% at 50% 50%, #000 45%, transparent 100%);
+  width: min(52vw, 560px);
+  height: min(65%, 500px);
+  opacity: 0.65;
+  mask-image: radial-gradient(65% 65% at 50% 50%, #000 58%, transparent 100%);
+  -webkit-mask-image: radial-gradient(65% 65% at 50% 50%, #000 58%, transparent 100%);
 }
 
 @media (max-width: 1200px) {
   .holiday-backdrop--labor-day .holiday-backdrop__motif {
-    width: min(50vw, 380px);
-    height: min(42%, 300px);
-    opacity: 0.2;
+    width: min(58vw, 440px);
+    height: min(50%, 380px);
+    opacity: 0.55;
   }
 }
 
 @media (max-width: 900px) {
   .holiday-backdrop--labor-day .holiday-backdrop__motif {
-    width: min(65vw, 270px);
-    height: min(32%, 190px);
-    opacity: 0.16;
+    width: min(72vw, 320px);
+    height: min(38%, 240px);
+    opacity: 0.45;
   }
 }
 

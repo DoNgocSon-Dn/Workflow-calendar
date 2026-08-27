@@ -19,102 +19,33 @@
   pointer-events: none;
 }
 
-.ldm-layer--bg {
-  z-index: 1;
-  transform: translate(calc(var(--holiday-px, 0) * 1.5px), calc(var(--holiday-py, 0) * 1.5px));
-}
-
 .ldm-layer--mid {
   z-index: 2;
-  transform: translate(calc(var(--holiday-px, 0) * 3.5px), calc(var(--holiday-py, 0) * 3.5px));
+  transform: translate(calc(var(--holiday-px, 0) * 3px), calc(var(--holiday-py, 0) * 3px));
 }
 
-.ldm-layer--fg {
-  z-index: 3;
-  transform: translate(calc(var(--holiday-px, 0) * 6px), calc(var(--holiday-py, 0) * 6px));
+.ldm-poster-img {
+  opacity: 0.88;
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.35));
+  animation: ldmPosterFloat 7s ease-in-out infinite alternate;
 }
 
-/* Tia nắng sunburst nhịp thở mờ ảo */
-.ldm-sunburst {
-  animation: ldmSunburstPulse 6s ease-in-out infinite alternate;
-  transform-origin: 120px 110px;
-}
-
-/* Cần cẩu xây dựng lướt nhẹ */
-.ldm-crane {
-  animation: ldmCraneSway 12s ease-in-out infinite alternate;
-  transform-origin: 185px 150px;
-}
-
-/* Nắm đấm & Cờ lê + Búa giơ cao vững chắc */
-.ldm-hero-fists {
-  animation: ldmFistsRise 8s ease-in-out infinite alternate;
-  transform-origin: 120px 140px;
-}
-
-/* Đám mây trôi nhẹ */
-.ldm-cloud {
-  animation: ldmCloudFloat 14s ease-in-out infinite alternate;
-}
-
-.ldm-cloud--slow {
-  animation: ldmCloudFloatSlow 18s ease-in-out infinite alternate;
-}
-
-/* ================= Keyframes ================= */
-
-@keyframes ldmSunburstPulse {
+@keyframes ldmPosterFloat {
   0% {
-    opacity: 0.22;
-    transform: scale(0.98);
+    transform: translateY(0);
   }
   100% {
-    opacity: 0.35;
-    transform: scale(1.03);
+    transform: translateY(-4px);
   }
 }
 
-@keyframes ldmCraneSway {
-  0% {
-    transform: translate(145px, 15px) rotate(0deg);
-  }
-  100% {
-    transform: translate(145px, 15px) rotate(1.5deg);
-  }
-}
-
-@keyframes ldmFistsRise {
-  0% {
-    transform: translate(62px, 38px) translateY(0);
-  }
-  100% {
-    transform: translate(62px, 38px) translateY(-4px);
-  }
-}
-
-@keyframes ldmCloudFloat {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(8px);
-  }
-}
-
-@keyframes ldmCloudFloatSlow {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-6px);
-  }
+:host-context(.dark) .ldm-poster-img {
+  opacity: 0.82;
+  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.5));
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ldm-sunburst,
-  .ldm-crane,
-  .ldm-hero-fists,
-  .ldm-cloud {
+  .ldm-poster-img {
     animation: none !important;
   }
 }

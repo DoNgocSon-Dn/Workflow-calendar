@@ -115,9 +115,13 @@ try {
     # --- 3. backend ---
     Write-Step '3/6  Backend NestJS (cong 3000)'
     if (Test-Port 'localhost' $backendPort) {
-        Write-Ok 'Da chay san'
+        Write-Ok 'Da chay san (khong bat them - CHI duoc 1 backend)'
     } else {
-        Start-Server $backendDir 'CALENDAR backend 3000' 'run start:dev'
+        # 'start' (nest start, KHONG watch) chu khong phai 'run start:dev':
+        # chay start:dev nhieu lan -> nhieu tien trinh watch cung gianh cong
+        # 3000, moi lan luu file chung tu giet nhau -> backend chet ngau nhien
+        # -> sidebar trong ("mat data hoai"). Watch chi can khi DANG SUA backend.
+        Start-Server $backendDir 'CALENDAR backend 3000' 'start'
         Write-Ok 'Da mo cua so backend'
     }
 
