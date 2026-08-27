@@ -42,23 +42,23 @@ describe('Thông báo import — "Đã nhập N sự kiện vào lịch"', () =>
   }
 
   it('nội dung đúng câu người dùng cần đọc', () => {
-    const d = eventsImportedDraft({ batchId: 'b1', count: 20, calendarName: 'Cá nhân' });
+    const d = eventsImportedDraft(t, { batchId: 'b1', count: 20, calendarName: 'Cá nhân' });
     expect(d.message).toBe('Đã nhập 20 sự kiện vào lịch "Cá nhân".');
     expect(d.title).toBe('Import lịch hoàn tất');
   });
 
   it('không biết tên lịch thì vẫn thành câu, không lòi ra dấu ngoặc rỗng', () => {
-    expect(eventsImportedDraft({ batchId: 'b1', count: 3 }).message).toBe(
+    expect(eventsImportedDraft(t, { batchId: 'b1', count: 3 }).message).toBe(
       'Đã nhập 3 sự kiện vào lịch.',
     );
-    expect(eventsImportedDraft({ batchId: 'b1', count: 3, calendarName: null }).message).toBe(
+    expect(eventsImportedDraft(t, { batchId: 'b1', count: 3, calendarName: null }).message).toBe(
       'Đã nhập 3 sự kiện vào lịch.',
     );
   });
 
   it('socket về TRƯỚC phản hồi HTTP: vẫn chỉ một thông báo', () => {
     const c = makeCenter();
-    const draft = () => eventsImportedDraft({ batchId: 'batch-1', count: 20, calendarName: 'Cá nhân' });
+    const draft = () => eventsImportedDraft(t, { batchId: 'batch-1', count: 20, calendarName: 'Cá nhân' });
 
     expect(c.ingest(draft())).toBe(true);   // gói socket tới trước
     expect(c.ingest(draft())).toBe(false);  // phản hồi HTTP tới sau
@@ -67,7 +67,7 @@ describe('Thông báo import — "Đã nhập N sự kiện vào lịch"', () =>
 
   it('phản hồi HTTP về TRƯỚC socket: vẫn chỉ một thông báo', () => {
     const c = makeCenter();
-    const draft = () => eventsImportedDraft({ batchId: 'batch-1', count: 20, calendarName: 'Cá nhân' });
+    const draft = () => eventsImportedDraft(t, { batchId: 'batch-1', count: 20, calendarName: 'Cá nhân' });
 
     expect(c.ingest(draft())).toBe(true);
     expect(c.ingest(draft())).toBe(false);
@@ -76,15 +76,15 @@ describe('Thông báo import — "Đã nhập N sự kiện vào lịch"', () =>
 
   it('hai lần import khác nhau là hai thông báo khác nhau', () => {
     const c = makeCenter();
-    c.ingest(eventsImportedDraft({ batchId: 'batch-1', count: 20 }));
-    c.ingest(eventsImportedDraft({ batchId: 'batch-2', count: 5 }));
+    c.ingest(eventsImportedDraft(t, { batchId: 'batch-1', count: 20 }));
+    c.ingest(eventsImportedDraft(t, { batchId: 'batch-2', count: 5 }));
     expect(c.list.length).toBe(2);
   });
 
   it('cùng số lượng nhưng khác lần import thì KHÔNG bị gộp nhầm', () => {
     const c = makeCenter();
-    c.ingest(eventsImportedDraft({ batchId: 'batch-1', count: 20, calendarName: 'Cá nhân' }));
-    c.ingest(eventsImportedDraft({ batchId: 'batch-2', count: 20, calendarName: 'Cá nhân' }));
+    c.ingest(eventsImportedDraft(t, { batchId: 'batch-1', count: 20, calendarName: 'Cá nhân' }));
+    c.ingest(eventsImportedDraft(t, { batchId: 'batch-2', count: 20, calendarName: 'Cá nhân' }));
     // Nội dung giống hệt nhau — chỉ batchId phân biệt được. Nếu id dựng từ nội
     // dung thay vì batchId thì lần import thứ hai sẽ biến mất trong im lặng.
     expect(c.list.length).toBe(2);
@@ -93,12 +93,12 @@ describe('Thông báo import — "Đã nhập N sự kiện vào lịch"', () =>
   it('KHÔNG đặt relatedId — một lô không trỏ về sự kiện đơn lẻ nào', () => {
     // Panel coi `event_update` là loại bấm vào thì mở sự kiện. Có relatedId ở
     // đây nghĩa là bấm vào sẽ đi tìm một sự kiện không tồn tại.
-    const d = eventsImportedDraft({ batchId: 'b1', count: 20 });
+    const d = eventsImportedDraft(t, { batchId: 'b1', count: 20 });
     expect(d.type).toBe('event_update');
     expect(d.relatedId).toBeUndefined();
   });
 
   it('giữ lại số lượng trong metadata để dùng về sau', () => {
-    expect(eventsImportedDraft({ batchId: 'b1', count: 20 }).metadata).toEqual({ count: '20' });
+    expect(eventsImportedDraft(t, { batchId: 'b1', count: 20 }).metadata).toEqual({ count: '20' });
   });
 });

@@ -1262,29 +1262,20 @@ export class CalendarStore {
     return event;
   }
 
+  /**
+   * Không được nuốt lỗi rồi tự vá cục bộ (như từng làm trước đây): một lỗi ở
+   * đây thường là RLS từ chối (vd chỉ viewer trên lịch nhóm) — vá cục bộ sẽ
+   * khiến người dùng tưởng đã lưu trong khi backend chưa hề ghi, rồi thay đổi
+   * biến mất ngay khi tải lại trang. Để lỗi văng ra cho save() ở
+   * event-form-modal hiển thị thật, y hệt cách createEvent() đã sửa.
+   */
   async updateEvent(id: string, changes: Partial<CalendarEventDraft>): Promise<void> {
     this.markSelfOrigin(id);
-    try {
-      const updated = await firstValueFrom(
-        this.http.patch<EventApiDto>(`${this.apiUrl}/events/${id}`, toEventApiPayload(changes)),
-      );
-      const event = toCalendarEvent(updated);
-      this.events.update((list) => list.map((e) => (e.id === id ? event : e)));
-    } catch (err) {
-      console.warn('Cập nhật sự kiện lên backend thất bại, tự động sửa cục bộ:', err);
-      this.events.update((list) =>
-        list.map((e) => {
-          if (e.id !== id) return e;
-          return {
-            ...e,
-            ...changes,
-            start: changes.start ?? e.start,
-            end: changes.end ?? e.end,
-            allDay: changes.allDay ?? e.allDay,
-          };
-        }),
-      );
-    }
+    const updated = await firstValueFrom(
+      this.http.patch<EventApiDto>(`${this.apiUrl}/events/${id}`, toEventApiPayload(changes)),
+    );
+    const event = toCalendarEvent(updated);
+    this.events.update((list) => list.map((e) => (e.id === id ? event : e)));
   }
 
   /** scope 'this' chỉ chuyển thẳng sang updateEvent() hiện có — sự kiện
@@ -1296,17 +1287,16 @@ export class CalendarStore {
   ): Promise<void> {
     if (scope === 'this') return this.updateEvent(id, changes);
     this.markSelfOrigin(id);
-    try {
-      const updated = await firstValueFrom(
-        this.http.patch<EventApiDto[]>(
-          `${this.apiUrl}/events/${id}/series?scope=${scope}`,
-          toEventApiPayload(changes),
-        ),
-      );
-      for (const dto of updated) this.upsertEvent(toCalendarEvent(dto));
-    } catch (err) {
-      console.warn('Cập nhật chuỗi sự kiện lặp lại thất bại:', err);
-    }
+    // Không nuốt lỗi — cùng lý do với deleteEventSeries(): chuỗi có thể có
+    // hàng chục hàng, caller cần biết chắc backend đã ghi thật trước khi báo
+    // thành công, chứ không phải im lặng bỏ qua rồi lịch vẫn còn dữ liệu cũ.
+    const updated = await firstValueFrom(
+      this.http.patch<EventApiDto[]>(
+        `${this.apiUrl}/events/${id}/series?scope=${scope}`,
+        toEventApiPayload(changes),
+      ),
+    );
+    for (const dto of updated) this.upsertEvent(toCalendarEvent(dto));
   }
 
   /** scope 'this' chỉ chuyển thẳng sang deleteEvent() hiện có.
