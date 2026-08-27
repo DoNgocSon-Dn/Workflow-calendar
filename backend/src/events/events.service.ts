@@ -536,11 +536,21 @@ export class EventsService {
 
     // Không mời chính người đã tạo sự kiện — họ mặc nhiên đã có mặt, mời thêm
     // chỉ tạo ra một dòng attendee vô nghĩa và một email thừa gửi cho chính họ.
+    // Đây chỉ là một lớp bảo vệ PHỤ — lỗi ở bước tra cứu này (mạng, admin API
+    // chập chờn...) không được phép làm hỏng cả thao tác mời chính, nên nuốt
+    // lỗi và coi như "không phải tự mời" thay vì để nó văng lên 500.
     if (eventRow.created_by) {
-      const admin = this.supabaseService.getServiceRoleClient();
-      const { data: creator } = await admin.auth.admin.getUserById(eventRow.created_by);
-      if (creator?.user?.email?.toLowerCase() === dto.email.toLowerCase()) {
-        throw new ConflictException('Không thể mời chính người tổ chức sự kiện');
+      try {
+        const admin = this.supabaseService.getServiceRoleClient();
+        const { data: creator } = await admin.auth.admin.getUserById(eventRow.created_by);
+        if (creator?.user?.email?.toLowerCase() === dto.email.toLowerCase()) {
+          throw new ConflictException('Không thể mời chính người tổ chức sự kiện');
+        }
+      } catch (err) {
+        if (err instanceof ConflictException) throw err;
+        this.logger.warn(
+          `Failed to check event creator email for self-invite guard (event ${eventId}): ${(err as Error).message}`,
+        );
       }
     }
 
