@@ -486,7 +486,21 @@ export class EventFormModal {
         end,
         excludeEventId: this.event()?.id,
       });
-      this.conflicts.set(found);
+      const valid = found.filter((c) => {
+        const durationMs = c.end.getTime() - c.start.getTime();
+        if (durationMs >= 23 * 3600 * 1000 + 50 * 60 * 1000) return false;
+        const titleLower = c.title.toLowerCase();
+        if (
+          titleLower.includes('quốc khánh') ||
+          titleLower.includes('nghỉ lễ') ||
+          titleLower.includes('tết') ||
+          titleLower.includes('giỗ tổ')
+        ) {
+          return false;
+        }
+        return true;
+      });
+      this.conflicts.set(valid.length > 0 ? valid : null);
     } catch {
       // Chỉ là cảnh báo phụ — không hiện gì nếu kiểm tra được, không chặn lưu.
       this.conflicts.set(null);

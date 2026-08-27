@@ -528,7 +528,27 @@ export class EventsService {
 
     const { data, error } = await query;
     if (error) throw new InternalServerErrorException(error.message);
-    return (data as EventRow[]).map(toConflictEventDto);
+
+    const rows = (data as EventRow[]).filter((row) => {
+      if (row.all_day) return false;
+      if (row.calendar_id === 'holiday' || row.calendar_id === 'vn_holidays') {
+        return false;
+      }
+      const durationMs = new Date(row.end_at).getTime() - new Date(row.start_at).getTime();
+      if (durationMs >= 23 * 3600 * 1000 + 50 * 60 * 1000) return false;
+      const titleLower = (row.title ?? '').toLowerCase();
+      if (
+        titleLower.includes('quốc khánh') ||
+        titleLower.includes('nghỉ lễ') ||
+        titleLower.includes('tết') ||
+        titleLower.includes('giỗ tổ')
+      ) {
+        return false;
+      }
+      return true;
+    });
+
+    return rows.map(toConflictEventDto);
   }
 
   /**

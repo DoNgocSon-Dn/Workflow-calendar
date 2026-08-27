@@ -710,6 +710,8 @@ export class GroupsService {
 
     // Lịch nhóm được đặt tên theo nhóm lúc tạo, nên đổi tên/màu nhóm phải kéo
     // theo lịch — nếu không, sidebar sẽ hiện tên nhóm mới cạnh lịch tên cũ.
+    // Dùng service-role: sau khi chuyển quyền, trưởng nhóm mới có thể không
+    // còn quyền ghi bảng calendars theo RLS.
     if (
       existing.calendar_id &&
       (dto.name !== undefined || dto.color !== undefined)
@@ -718,10 +720,16 @@ export class GroupsService {
       if (dto.name !== undefined)
         calendarUpdate.name = `${data.name} (Lịch nhóm)`;
       if (dto.color !== undefined) calendarUpdate.color = dto.color;
-      await supabase
+      const { error: calErr } = await this.supabaseService
+        .getServiceRoleClient()
         .from('calendars')
         .update(calendarUpdate)
         .eq('id', existing.calendar_id);
+      if (calErr) {
+        this.logger.error(
+          `updateGroup: đồng bộ tên/màu lịch nhóm ${existing.calendar_id} thất bại: ${calErr.message}`,
+        );
+      }
     }
 
     const groupDto = this.mapGroupRow(data);
@@ -753,8 +761,21 @@ export class GroupsService {
     // group_tasks/group_messages/group_members đi theo cascade của groups; lịch
     // nhóm thì không (calendar_id là "on delete set null") nên phải xoá tay,
     // kéo theo events + calendar_members của lịch đó qua cascade của calendars.
+    //
+    // Service-role: RLS calendars_delete_owner chỉ cho CHỦ lịch xoá. Sau khi
+    // chuyển quyền, trưởng nhóm mới (người gọi deleteGroup) không phải chủ
+    // lịch nữa -> lệnh xoá bị chặn IM LẶNG, để lại lịch + toàn bộ sự kiện mồ côi.
     if (group.calendar_id) {
-      await supabase.from('calendars').delete().eq('id', group.calendar_id);
+      const { error: calErr } = await this.supabaseService
+        .getServiceRoleClient()
+        .from('calendars')
+        .delete()
+        .eq('id', group.calendar_id);
+      if (calErr) {
+        this.logger.error(
+          `deleteGroup: xoá lịch nhóm ${group.calendar_id} thất bại: ${calErr.message}`,
+        );
+      }
     }
 
     await this.emitToGroupMembers(
@@ -1085,6 +1106,16 @@ export class GroupsService {
     }
 
     const invite = toGroupInviteDto({ ...data, inviter_email: null });
+
+    // RPC respond_group_invite chèn calendar_members với role 'viewer' cho mọi
+    // vai trò khác 'admin'. Nâng lên 'editor' để thành viên thường cũng tạo
+    // được sự kiện chung — đúng như mô tả trong tab Lịch Nhóm.
+    if (dto.status === 'accepted') {
+      await this.upsertCalendarMember(
+        await this.groupCalendarId(invite.groupId),
+        userId,
+      );
+    }
 
     // Báo cho cả nhóm biết kết quả, để danh sách thành viên của họ tự cập nhật.
     await this.emitToGroupMembers(
@@ -1479,13 +1510,10 @@ export class GroupsService {
       );
     }
 
-    if (group.calendar_id) {
-      await supabase
-        .from('calendar_members')
-        .update({ role: nextRole === GroupRole.ADMIN ? 'editor' : 'viewer' })
-        .eq('calendar_id', group.calendar_id)
-        .eq('user_id', targetUserId);
-    }
+    // Đồng bộ quyền trên lịch nhóm. Không map admin->editor / còn lại->viewer
+    // nữa: mọi thành viên đều được tạo sự kiện chung (khách 'guest' đã bị
+    // backend gộp về 'member'), nên chỉ cần bảo đảm họ là 'editor'.
+    await this.upsertCalendarMember(group.calendar_id, targetUserId);
 
     const members = await this.getMembers(supabase, groupId);
     const memberDto: GroupMemberDto = members.find((m) => m.userId === targetUserId) || {
@@ -1554,19 +1582,22 @@ export class GroupsService {
     // truy vấn lại danh sách) sẽ bỏ sót đúng người cần biết nhất.
     const targetUserIds = await this.listMemberUserIds(supabase, groupId);
 
-    await supabase
+    const { error: delErr } = await supabase
       .from('group_members')
       .delete()
       .eq('group_id', groupId)
       .eq('user_id', userId);
-
-    if (group.calendar_id) {
-      await supabase
-        .from('calendar_members')
-        .delete()
-        .eq('calendar_id', group.calendar_id)
-        .eq('user_id', userId);
+    if (delErr) {
+      throw new InternalServerErrorException(
+        delErr.message || 'Không thể xoá thành viên khỏi nhóm',
+      );
     }
+
+    // Gỡ khỏi lịch nhóm bằng service-role: RLS calendar_members chỉ cho CHỦ
+    // lịch xoá, nên nếu người thực hiện là quản trị viên (hoặc trưởng nhóm mới
+    // sau chuyển quyền) thì lệnh xoá qua client thường bị chặn im lặng và
+    // người vừa bị đá KHỎI NHÓM vẫn xem/sửa được lịch nhóm.
+    await this.removeCalendarMember(group.calendar_id, userId);
 
     if (group.calendar_id) {
       this.realtimeGateway.emitToCalendar(group.calendar_id, 'group:memberRemoved', {
@@ -1657,12 +1688,40 @@ export class GroupsService {
       );
     }
 
+    // Chuyển quyền sở hữu LỊCH nhóm theo ghế trưởng nhóm. RPC
+    // transfer_group_leadership chỉ đổi groups.owner_id + hàng group_members;
+    // không đụng tới calendars/calendar_members. Bỏ bước này thì "chủ lịch"
+    // kẹt vĩnh viễn ở người tạo nhóm đầu tiên: trưởng nhóm mới không quản lý
+    // được thành viên lịch, không xoá được lịch khi xoá nhóm, và người tạo cũ
+    // vẫn là chủ lịch kể cả sau khi rời nhóm. Service-role vì RLS
+    // calendars/calendar_members chỉ cho chủ lịch hiện tại ghi.
     if (group.calendar_id) {
-      await supabase
+      const admin = this.supabaseService.getServiceRoleClient();
+      const calId = group.calendar_id;
+
+      // Người nhận -> chủ lịch TRƯỚC (tránh khoảnh khắc lịch không có chủ nào).
+      const { error: e1 } = await admin
+        .from('calendar_members')
+        .update({ role: 'owner' })
+        .eq('calendar_id', calId)
+        .eq('user_id', targetUserId);
+      // Người giao -> editor (vẫn ở trong nhóm, chỉ mất ghế chủ).
+      const { error: e2 } = await admin
         .from('calendar_members')
         .update({ role: 'editor' })
-        .eq('calendar_id', group.calendar_id)
-        .eq('user_id', targetUserId);
+        .eq('calendar_id', calId)
+        .eq('user_id', actor.id);
+      // calendars.owner_id là cột thật, dùng ở canEdit và RLS xoá lịch.
+      const { error: e3 } = await admin
+        .from('calendars')
+        .update({ owner_id: targetUserId })
+        .eq('id', calId);
+      const err = e1 || e2 || e3;
+      if (err) {
+        this.logger.error(
+          `transferLeadership: chuyển chủ lịch nhóm ${calId} thất bại: ${err.message}`,
+        );
+      }
     }
     const members = await this.getMembers(supabase, groupId);
     if (group.calendar_id) {
