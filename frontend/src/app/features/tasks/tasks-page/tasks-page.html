@@ -71,18 +71,18 @@
           <li>
             <button type="button" class="filter-nav-item" [class.active]="viewFilter() === 'all'" (click)="viewFilter.set('all')">
               <app-icon name="check-square" />
-              Tất cả việc cần làm
+              {{ i18n.t('tasks.allTodos') }}
             </button>
           </li>
           <li>
             <button type="button" class="filter-nav-item" [class.active]="viewFilter() === 'starred'" (click)="viewFilter.set('starred')">
               <app-icon name="star" [filled]="viewFilter() === 'starred'" />
-              Có gắn dấu sao
+              {{ i18n.t('tasks.starred') }}
             </button>
           </li>
         </ul>
 
-        <h2 class="sidebar-title">Danh sách</h2>
+        <h2 class="sidebar-title">{{ i18n.t('tasks.lists') }}</h2>
         <ul class="list-nav">
           @for (list of lists(); track list.id) {
             <li class="list-nav-item">
