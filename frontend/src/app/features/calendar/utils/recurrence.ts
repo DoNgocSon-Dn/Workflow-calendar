@@ -65,7 +65,6 @@ function monthDayLabel(date: Date, locale: Locale): string {
 /** Danh sách tuỳ chọn cho dropdown "Lặp lại", tính động theo ngày bắt đầu — khớp Google Calendar. */
 export function buildPresetOptions(startDate: Date, locale: Locale): RecurrenceOption[] {
   const weekday = weekdayName(startDate, locale);
-  const dayOfMonth = startDate.getDate();
   const options: RecurrenceOption[] = [
     { rule: null, label: locale === 'en' ? 'Does not repeat' : 'Không lặp lại' },
     { rule: { freq: 'daily' }, label: locale === 'en' ? 'Daily' : 'Hàng ngày' },
@@ -74,32 +73,8 @@ export function buildPresetOptions(startDate: Date, locale: Locale): RecurrenceO
       label:
         locale === 'en' ? `Weekly on ${weekday}` : `Hàng tuần vào ${weekday.toLowerCase()}`,
     },
-    {
-      rule: { freq: 'monthly' },
-      label:
-        locale === 'en'
-          ? `Monthly on day ${dayOfMonth}`
-          : `Hàng tháng vào ngày ${dayOfMonth}`,
-    },
+    { rule: { freq: 'custom' }, label: locale === 'en' ? 'Custom…' : 'Tuỳ chỉnh…' },
   ];
-
-  options.push({
-    rule: { freq: 'yearly' },
-    label:
-      locale === 'en'
-        ? `Annually on ${monthDayLabel(startDate, locale)}`
-        : `Hàng năm vào ${monthDayLabel(startDate, locale)}`,
-  });
-
-  const dow = startDate.getDay();
-  if (dow >= 1 && dow <= 5) {
-    options.push({
-      rule: { freq: 'weekdays' },
-      label: locale === 'en' ? 'Every weekday (Monday to Friday)' : 'Mọi ngày trong tuần (từ Thứ Hai tới Thứ Sáu)',
-    });
-  }
-
-  options.push({ rule: { freq: 'custom' }, label: locale === 'en' ? 'Custom…' : 'Tuỳ chỉnh…' });
 
   return options;
 }
