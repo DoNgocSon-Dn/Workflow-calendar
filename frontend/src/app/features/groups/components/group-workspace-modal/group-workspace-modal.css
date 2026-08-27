@@ -1076,6 +1076,9 @@
 /* Calendar Tab */
 .calendar-section {
   justify-content: flex-start;
+  height: auto;
+  min-height: 100%;
+  gap: 16px;
 }
 
 .info-card {
@@ -1493,4 +1496,175 @@
 
 :root:not(.dark) .chat-mention--all.chat-mention--me {
   color: #92400e;
+}
+
+/* Tab Lịch Nhóm — thẻ tạo phòng họp Google Meet */
+.meet-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.meet-card h3 {
+  margin-bottom: 4px;
+}
+
+.meet-card > p {
+  margin: 0;
+}
+
+.meet-new-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  align-self: flex-start;
+  margin: 2px 0 4px;
+}
+
+.meet-label {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.meet-input-invalid {
+  border-color: var(--color-danger);
+}
+
+.meet-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -4px 0 0;
+  font-size: 0.82rem;
+  color: var(--color-text-tertiary);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.meet-hint code {
+  background: var(--color-surface-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  padding: 1px 5px;
+}
+
+.meet-hint-error {
+  color: var(--color-danger);
+}
+
+.meet-hint-ok {
+  color: var(--color-success);
+}
+
+.meet-schedule {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.meet-durations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.duration-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-strong);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.duration-chip:hover {
+  color: var(--color-text);
+  background: var(--color-surface-hover-strong);
+}
+
+.duration-chip.active {
+  border-color: var(--holiday-accent);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
+}
+
+.meet-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.86rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.meet-check input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--holiday-accent);
+  cursor: pointer;
+}
+
+.meet-save-btn {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.saved-meet {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-input);
+}
+
+.saved-meet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.saved-meet-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.saved-meet-link {
+  font-size: 0.86rem;
+  color: var(--holiday-accent);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.saved-meet-link:hover {
+  text-decoration: underline;
+}
+
+.saved-meet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.saved-meet-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+@media (max-width: 600px) {
+  .meet-schedule {
+    grid-template-columns: 1fr;
+  }
 }

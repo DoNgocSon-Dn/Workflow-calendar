@@ -12,9 +12,18 @@ import {
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { AuthStore } from '../../../../core/auth/auth-store';
+import { Clock } from '../../../../core/clock';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { DialogService } from '../../../../core/services/dialog.service';
 import { Icon } from '../../../../shared/components/icon/icon';
+import { CalendarStore } from '../../../calendar/data/calendar-store';
+import {
+  addMinutes,
+  formatTime24,
+  fromDateInputValue,
+  parseTime24,
+  toDateInputValue,
+} from '../../../calendar/utils/date-utils';
 import { GroupStore } from '../../data/group-store';
 import {
   ASSIGNABLE_GROUP_ROLES,
@@ -38,6 +47,7 @@ import {
   GroupTask,
 } from '../../models/group.models';
 import { MentionOption, MentionPopup } from '../mention-popup/mention-popup';
+import { normalizeMeetLink } from '../../utils/meet-link.util';
 import {
   ActiveMentionQuery,
   MENTION_ALL_LABEL,
@@ -49,6 +59,36 @@ import {
 } from '../../utils/mention.util';
 
 type WorkspaceTab = 'members' | 'calendar' | 'tasks' | 'chat';
+
+/** Làm tròn lên mốc 15 phút gần nhất — giờ gợi ý cho một cuộc họp nên là mốc
+ *  tròn, không phải "14:37". */
+function nextQuarterHour(now: Date): Date {
+  const rounded = new Date(now);
+  rounded.setSeconds(0, 0);
+  rounded.setMinutes(Math.ceil(rounded.getMinutes() / 15) * 15);
+  return rounded;
+}
+
+/**
+ * Nội dung tin nhắn báo phòng họp vào chat nhóm.
+ *
+ * Gộp thành MỘT tin nhắn thay vì ba tin rời (tiêu đề / giờ / link): mỗi tin
+ * nhắn là một lượt thông báo tới mọi thành viên, ba tin liên tiếp cho cùng
+ * một cuộc họp là ba lần rung máy vô cớ.
+ */
+function meetAnnouncement(title: string, start: Date, end: Date, link: string): string {
+  const day = start.toLocaleDateString('vi-VN', {
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+  return [
+    title,
+    `Thời gian: ${day}, ${formatTime24(start)} - ${formatTime24(end)}`,
+    `Tham gia Google Meet: ${link}`,
+  ].join('\n');
+}
 
 @Component({
   selector: 'app-group-workspace-modal',
@@ -62,6 +102,8 @@ export class GroupWorkspaceModal {
   private readonly authStore = inject(AuthStore);
   protected readonly i18n = inject(TranslationService);
   private readonly dialog = inject(DialogService);
+  private readonly calendarStore = inject(CalendarStore);
+  private readonly clock = inject(Clock);
 
   readonly closed = output<void>();
 
@@ -250,6 +292,16 @@ export class GroupWorkspaceModal {
       const groupId = untracked(() => group.id);
       void this.store.loadInviteLink(groupId);
       void this.store.loadPendingJoinRequests(groupId);
+    });
+
+    // Mồi ngày/giờ cho form phòng họp lúc mở tab Lịch Nhóm chứ không phải
+    // trong constructor: modal có thể mở sẵn hàng giờ, mồi sớm thì giờ gợi ý
+    // đã thành quá khứ khi người dùng bấm sang tab này.
+    effect(() => {
+      if (this.activeTab() !== 'calendar') return;
+      untracked(() => {
+        if (!this.meetDate()) this.seedMeetSchedule();
+      });
     });
   }
 
@@ -1042,6 +1094,174 @@ export class GroupWorkspaceModal {
     if (!mention) return false;
     if (mention.type === 'all') return true;
     return mention.userId === this.currentUserId();
+  }
+
+  // ---------------------------------------------------------------------
+  // Phòng họp Google Meet (tab Lịch Nhóm)
+  // ---------------------------------------------------------------------
+
+  /**
+   * App chỉ xin scope đăng nhập của Google, KHÔNG có quyền Calendar API, nên
+   * không thể tự sinh một link Meet thật. Đường duy nhất ra link thật là để
+   * chính Google tạo phòng: mở `meet.google.com/new` ở tab mới, người dùng dán
+   * link về đây, rồi mình gắn nó vào lịch nhóm và khung chat.
+   */
+  private static readonly MEET_NEW_ROOM_URL = 'https://meet.google.com/new';
+
+  /** Trùng `MaxLength(200)` của CreateEventDto.title — cắt ở client để một tên
+   *  nhóm quá dài không biến thành lỗi 400 khó hiểu. */
+  private static readonly MAX_EVENT_TITLE_LENGTH = 200;
+
+  /** Các mốc thời lượng hay dùng cho một buổi họp nhóm. */
+  protected readonly meetDurations = [30, 45, 60, 90] as const;
+
+  protected readonly meetLinkInput = signal('');
+  protected readonly meetTitle = signal('');
+  protected readonly meetDate = signal('');
+  protected readonly meetTime = signal('');
+  protected readonly meetDuration = signal<number>(60);
+  protected readonly meetAddToCalendar = signal(true);
+  protected readonly meetAnnounceInChat = signal(true);
+  protected readonly meetSaving = signal(false);
+  protected readonly meetError = signal<string | null>(null);
+  protected readonly meetCopied = signal(false);
+
+  /** Phòng vừa lưu — giữ lại ngay trong tab để còn chỗ bấm Tham gia / Sao chép
+   *  mà không phải đi tìm lại trong lịch hay lật ngược khung chat. Ghi kèm
+   *  nhóm sở hữu vì modal dùng chung cho mọi nhóm. */
+  private readonly savedMeet = signal<{ groupId: string; link: string } | null>(null);
+
+  /** Chỉ hiện phòng của ĐÚNG nhóm đang mở: đổi nhóm mà thẻ cũ còn nằm đó thì
+   *  người dùng sẽ bấm "Tham gia" nhầm sang phòng họp của nhóm khác. */
+  protected readonly savedMeetLink = computed(() => {
+    const saved = this.savedMeet();
+    if (!saved) return null;
+    return saved.groupId === this.store.activeGroup()?.id ? saved.link : null;
+  });
+
+  protected readonly normalizedMeetLink = computed(() => normalizeMeetLink(this.meetLinkInput()));
+
+  /** Chỉ báo sai khi người dùng ĐÃ gõ gì đó — ô trống là chưa nhập, không phải
+   *  nhập sai. */
+  protected readonly meetLinkInvalid = computed(
+    () => !!this.meetLinkInput().trim() && !this.normalizedMeetLink(),
+  );
+
+  /**
+   * Thành viên thường được gắn vai 'viewer' trên `calendar_members` của lịch
+   * nhóm nên RLS chặn họ ghi sự kiện. Ẩn hẳn ô "tạo sự kiện" thay vì để họ tích
+   * vào rồi nhận lỗi sau khi bấm lưu.
+   */
+  protected readonly canAddGroupEvent = computed(() => {
+    const calendarId = this.store.activeGroup()?.calendarId;
+    if (!calendarId) return false;
+    return this.calendarStore.calendars().find((c) => c.id === calendarId)?.canEdit ?? false;
+  });
+
+  protected readonly canSaveMeet = computed(() => !!this.normalizedMeetLink() && !this.meetSaving());
+
+  /** Mở phòng mới do Google cấp. `noopener` là bắt buộc: thiếu nó, tab Meet giữ
+   *  tham chiếu `window.opener` trỏ ngược về app. */
+  openNewMeetRoom(): void {
+    window.open(GroupWorkspaceModal.MEET_NEW_ROOM_URL, '_blank', 'noopener,noreferrer');
+  }
+
+  selectMeetDuration(minutes: number): void {
+    this.meetDuration.set(minutes);
+  }
+
+  async saveMeetRoom(): Promise<void> {
+    const group = this.store.activeGroup();
+    const link = this.normalizedMeetLink();
+    if (!group || !link || this.meetSaving()) return;
+
+    const title = this.meetRoomTitle(group.name);
+    const start = this.meetStartAt();
+    const end = addMinutes(start, this.meetDuration());
+    const announce = this.meetAnnounceInChat();
+
+    this.meetSaving.set(true);
+    this.meetError.set(null);
+    try {
+      if (this.meetAddToCalendar() && this.canAddGroupEvent()) {
+        await this.calendarStore.createEvent({
+          calendarId: group.calendarId,
+          title,
+          start,
+          end,
+          allDay: false,
+          meetLink: link,
+        });
+      }
+
+      // Từ đây phòng họp coi như đã lưu. Lỗi ở bước báo chat KHÔNG được nuốt
+      // mất link: sự kiện có thể đã nằm trên lịch rồi, và thẻ bên dưới là chỗ
+      // duy nhất người dùng còn lấy lại được link vừa dán.
+      this.savedMeet.set({ groupId: group.id, link });
+      this.resetMeetForm();
+
+      if (announce) {
+        try {
+          await this.store.sendMessage(group.id, meetAnnouncement(title, start, end, link));
+        } catch {
+          this.meetError.set('Đã lưu phòng họp, nhưng chưa gửi được thông báo vào chat nhóm.');
+        }
+      }
+    } catch (err: any) {
+      this.meetError.set(
+        err?.error?.message || err?.message || 'Không lưu được phòng họp. Vui lòng thử lại.',
+      );
+    } finally {
+      this.meetSaving.set(false);
+    }
+  }
+
+  async copyMeetLink(): Promise<void> {
+    const link = this.savedMeetLink();
+    if (!link) return;
+    try {
+      await navigator.clipboard.writeText(link);
+      this.meetCopied.set(true);
+      setTimeout(() => this.meetCopied.set(false), 2000);
+    } catch {
+      this.meetError.set(
+        'Trình duyệt không cho sao chép tự động — hãy tự bôi đen và sao chép link.',
+      );
+    }
+  }
+
+  dismissSavedMeet(): void {
+    this.savedMeet.set(null);
+    this.meetCopied.set(false);
+  }
+
+  /** Tiêu đề bỏ trống thì đặt theo tên nhóm — một sự kiện trên lịch chung mà
+   *  không có tên thì không ai đoán được đó là buổi họp gì. */
+  private meetRoomTitle(groupName: string): string {
+    const typed = this.meetTitle().trim();
+    return (typed || `Họp nhóm ${groupName}`).slice(
+      0,
+      GroupWorkspaceModal.MAX_EVENT_TITLE_LENGTH,
+    );
+  }
+
+  private meetStartAt(): Date {
+    const date = this.meetDate();
+    if (!date) return this.clock.now();
+    return parseTime24(this.meetTime() || '00:00', fromDateInputValue(date));
+  }
+
+  private seedMeetSchedule(): void {
+    const start = nextQuarterHour(this.clock.now());
+    this.meetDate.set(toDateInputValue(start));
+    this.meetTime.set(formatTime24(start));
+  }
+
+  private resetMeetForm(): void {
+    this.meetLinkInput.set('');
+    this.meetTitle.set('');
+    this.meetError.set(null);
+    this.seedMeetSchedule();
   }
 
   close(): void {

@@ -178,6 +178,34 @@
   color: var(--color-text);
 }
 
+/* Dòng dưới ô tên: lời nhắc bên trái, bộ đếm bên phải. */
+.name-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.4rem 0.15rem 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--color-text-tertiary);
+  transition: color 0.15s ease;
+}
+
+/* Bộ đếm dùng chữ đều bề ngang: không có nó, mỗi lần số đổi từ 9 sang 10 là cả
+   dòng nhích ngang một chút, nhìn như đang giật. */
+.name-count {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* Đầy thì chuyển sang màu cảnh báo — CẢ hai vế, để bộ đếm và lời nhắc nói
+   cùng một chuyện. */
+.name-hint.is-limit {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
 .name-field {
   display: flex;
   flex-direction: column;

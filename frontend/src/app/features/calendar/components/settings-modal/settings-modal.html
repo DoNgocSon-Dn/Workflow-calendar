@@ -55,7 +55,7 @@
                       id="display-name-input"
                       type="text"
                       class="name-input"
-                      maxlength="100"
+                      maxlength="16"
                       [placeholder]="i18n.t('settings.displayNamePlaceholder')"
                       [value]="nameDraft()"
                       (input)="onNameInput($any($event.target).value)"
@@ -69,6 +69,18 @@
                       {{ savingName() ? i18n.t('common.saving') : i18n.t('common.save') }}
                     </button>
                   </div>
+                  <!-- Dòng phụ trợ LUÔN hiện, không đợi tới lúc chạm giới hạn
+                       mới bật ra: người dùng cần biết mức trần TRƯỚC khi gõ
+                       hụt, chứ không phải bị chặn rồi mới hiểu vì sao. Chỉ đổi
+                       màu và đổi chữ khi đã đầy. -->
+                  <p class="name-hint" [class.is-limit]="nameAtLimit()" aria-live="polite">
+                    <span>
+                      {{ nameAtLimit()
+                          ? i18n.t('settings.nameAtLimit', { max: nameMax })
+                          : i18n.t('settings.nameHint', { max: nameMax }) }}
+                    </span>
+                    <span class="name-count">{{ nameLength() }}/{{ nameMax }}</span>
+                  </p>
                   @if (nameSaved()) {
                     <span class="profile-success">{{ i18n.t('settings.nameSaved') }}</span>
                   }
