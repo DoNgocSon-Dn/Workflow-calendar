@@ -44,6 +44,25 @@
          diện, không co theo cỡ chữ, và trình đọc màn hình đọc luôn tên emoji. -->
     <div class="panel-tabs">
       <div class="tab-group" role="tablist" aria-label="Khu vực làm việc">
+        <!-- AI đứng đầu và mang icon riêng — segmented control vẫn công bằng
+             về diện tích cho ba tab, nhưng icon lấp lánh là tín hiệu thị giác
+             đầu tiên nói "đây là tính năng chính", kể cả lúc tab chưa active. -->
+        <button
+          type="button"
+          class="tab-btn tab-btn--ai"
+          role="tab"
+          [class.active]="activeTab() === 'ai'"
+          [attr.aria-selected]="activeTab() === 'ai'"
+          (click)="setTab('ai')"
+        >
+          <svg class="tab-btn__spark" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M12 2l1.9 5.6L19.5 9.5 13.9 11.4 12 17l-1.9-5.6L4.5 9.5l5.6-1.9zM18 15l.9 2.6 2.6.9-2.6.9L18 22l-.9-2.6-2.6-.9 2.6-.9z"
+            />
+          </svg>
+          Trợ lý AI
+        </button>
         <button
           type="button"
           class="tab-btn"
@@ -63,16 +82,6 @@
           (click)="setTab('todos')"
         >
           Việc cần làm
-        </button>
-        <button
-          type="button"
-          class="tab-btn"
-          role="tab"
-          [class.active]="activeTab() === 'ai'"
-          [attr.aria-selected]="activeTab() === 'ai'"
-          (click)="setTab('ai')"
-        >
-          Trợ lý AI
         </button>
       </div>
       <button type="button" class="icon-btn" aria-label="Đóng" (click)="toggle()">
@@ -208,9 +217,10 @@
         @if (messages().length === 0) {
           <div class="ai-welcome">
             <span class="ai-welcome__aura" aria-hidden="true"></span>
+            <span class="ai-welcome__ring" aria-hidden="true"></span>
 
             <span class="ai-welcome__mark" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="20" height="20">
+              <svg viewBox="0 0 24 24" width="24" height="24">
                 <path
                   fill="currentColor"
                   d="M12 2l1.9 5.6L19.5 9.5 13.9 11.4 12 17l-1.9-5.6L4.5 9.5l5.6-1.9zM18 15l.9 2.6 2.6.9-2.6.9L18 22l-.9-2.6-2.6-.9 2.6-.9z"
@@ -218,29 +228,50 @@
               </svg>
             </span>
 
-            <h3 class="ai-welcome__title">Hôm nay bạn muốn sắp xếp gì?</h3>
+            <h3 class="ai-welcome__title">Hôm nay tôi có thể giúp gì cho bạn?</h3>
             <!-- Rút từ 5 dòng xuống 2. Bản cũ vừa dài vừa canh giữa nên lề hai
                  bên đều răng cưa, rất khó đọc; phần hướng dẫn đính kèm file đã
                  nằm sẵn ở tooltip của nút kẹp giấy nên không cần nhắc lại đây. -->
             <p class="ai-welcome__sub">
-              Cứ viết bằng câu tiếng Việt bình thường. Mình tạo sự kiện vào lịch,
+              Cứ nói bằng câu tiếng Việt bình thường — mình xếp lịch, tạo sự kiện,
               hoặc chia một mục tiêu thành danh sách việc để bạn duyệt.
             </p>
 
             <div class="ai-suggestions">
-              @for (s of suggestions; track s) {
+              @for (s of suggestions; track s.text) {
                 <button
                   type="button"
                   class="ai-suggestion"
                   [disabled]="sending()"
-                  (click)="sendSuggestion(s)"
+                  (click)="sendSuggestion(s.text)"
                 >
                   <span class="ai-suggestion__icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="13" height="13">
-                      <path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V9h14z" />
-                    </svg>
+                    @switch (s.icon) {
+                      @case ('meeting') {
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                          <rect x="3" y="5" width="18" height="16" rx="2" />
+                          <path d="M3 10h18M8 3v4M16 3v4" />
+                        </svg>
+                      }
+                      @case ('time') {
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="12" r="9" />
+                          <path d="M12 7v5l3 2" />
+                        </svg>
+                      }
+                      @case ('goal') {
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M5 21V4M5 4h13l-2 4 2 4H5" />
+                        </svg>
+                      }
+                      @case ('split') {
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+                        </svg>
+                      }
+                    }
                   </span>
-                  <span class="ai-suggestion__text">{{ s }}</span>
+                  <span class="ai-suggestion__text">{{ s.text }}</span>
                 </button>
               }
             </div>
@@ -620,17 +651,27 @@
             <!-- Nút tròn có icon thay cho nút chữ "Gửi". Panel hẹp nên nhãn
                  chữ ăn mất chiều ngang của ô nhập, mà mũi tên lên là quy ước
                  ai cũng đọc được ở ô chat. Nhãn cho trình đọc màn hình giữ
-                 nguyên trong aria-label. -->
+                 nguyên trong aria-label. Đang gửi thì mũi tên nhường chỗ cho
+                 một vòng xoay — trạng thái "đang xử lý" phải thấy được ngay
+                 trên nút, không chỉ suy ra từ việc ô nhập bị khoá. -->
             <button
               type="button"
               class="send-btn"
+              [class.send-btn--loading]="sending()"
               aria-label="Gửi"
               [disabled]="sending() || (!draft().trim() && !pendingFile())"
               (click)="send()"
             >
-              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 19V5M5 12l7-7 7 7" />
-              </svg>
+              @if (sending()) {
+                <svg class="send-btn__spinner" viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.2" opacity="0.25" />
+                  <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+                </svg>
+              } @else {
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 19V5M5 12l7-7 7 7" />
+                </svg>
+              }
             </button>
           </div>
         </div>

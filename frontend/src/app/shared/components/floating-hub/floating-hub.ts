@@ -47,7 +47,16 @@ const CHAT_HISTORY_TURNS = 10;
 const NOTE_COLORS = ['yellow', 'blue', 'green', 'pink', 'purple'] as const;
 type NoteColor = (typeof NOTE_COLORS)[number];
 
-type HubTab = 'notes' | 'todos' | 'ai';
+// AI đứng đầu union — phản ánh đúng thứ tự ưu tiên mới: Trợ lý AI là tính
+// năng chính, Ghi chú/Việc cần làm là công cụ phụ.
+type HubTab = 'ai' | 'notes' | 'todos';
+
+/** Một gợi ý nhanh trong màn hình chào của AI — `icon` chỉ để chọn SVG hiển
+ *  thị trong template, không ảnh hưởng gì tới nội dung gửi đi. */
+interface AiSuggestion {
+  readonly text: string;
+  readonly icon: 'meeting' | 'time' | 'goal' | 'split';
+}
 
 /** Sự kiện AI vừa tạo, đã tách sẵn từng trường để template dựng thành thẻ. */
 interface ChatEventCard {
@@ -391,7 +400,9 @@ export class FloatingHub {
 
   // --- Bubble open state + drag-anywhere position ------------------------
   protected readonly open = signal(false);
-  protected readonly activeTab = signal<HubTab>('notes');
+  // Mặc định là 'ai' NGAY TỪ ĐẦU, và toggle() còn ép lại về 'ai' mỗi lần mở —
+  // AI là điểm vào chính, người dùng không nên phải tự bấm sang tab đó.
+  protected readonly activeTab = signal<HubTab>('ai');
   protected readonly pos = signal<HubPos>(readStoredPos());
   protected readonly dragging = signal(false);
 
@@ -487,6 +498,10 @@ export class FloatingHub {
     this.open.update((v) => !v);
 
     if (willOpen) {
+      // Mỗi lần MỞ đều quay về tab AI, kể cả khi lượt trước người dùng đã
+      // chuyển sang Ghi chú/Việc cần làm — AI là điểm vào mặc định, không
+      // phải "tab được nhớ lần cuối".
+      this.activeTab.set('ai');
       if (this.rippleTimer) clearTimeout(this.rippleTimer);
       this.rippleActive.set(true);
       // Khớp thời lượng animation trong CSS; hết là gỡ luôn.
@@ -662,11 +677,13 @@ export class FloatingHub {
   protected readonly aiError = signal<string | null>(null);
   private readonly lastCreatedEventId = signal<string | null>(null);
 
-  readonly suggestions = [
-    'Họp team 9h sáng mai',
-    'Ăn tối 19:30 ngày mai',
-    'Lập kế hoạch hoàn thành bài thuyết trình thứ Sáu',
-    'Chia nhỏ việc ôn thi Java trong 7 ngày',
+  /** Icon riêng cho từng gợi ý — template switch sang đúng SVG tương ứng.
+   *  `sendSuggestion()` vẫn chỉ nhận text như cũ, hành vi click không đổi. */
+  readonly suggestions: readonly AiSuggestion[] = [
+    { text: 'Họp team 9h sáng mai', icon: 'meeting' },
+    { text: 'Ăn tối 19:30 ngày mai', icon: 'time' },
+    { text: 'Lập kế hoạch hoàn thành bài thuyết trình thứ Sáu', icon: 'goal' },
+    { text: 'Chia nhỏ việc ôn thi Java trong 7 ngày', icon: 'split' },
   ];
 
   async send(): Promise<void> {

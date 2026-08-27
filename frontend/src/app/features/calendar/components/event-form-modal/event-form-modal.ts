@@ -917,16 +917,12 @@ export class EventFormModal {
     } else {
       await this.store.deleteEvent(current.id);
     }
-    // Xác nhận cục bộ cho chính người vừa bấm xoá — khác các toast khác trong
-    // store vốn chỉ báo hành động của NGƯỜI KHÁC (self-origin bị lọc bỏ có
-    // chủ đích). Việc xoá đã lưu thật xuống DB (soft-delete) và khôi phục
-    // được qua Thùng rác, nên không cần dựng thêm nút "Hoàn tác" riêng ở đây.
-    this.notificationQueue.push({
-      eventId: current.id,
-      title: this.i18n.t('event.deletedToast'),
-      body: current.title,
-      kind: 'deleted',
-    });
+    // Không toast xác nhận ở đây: modal đóng lại và sự kiện biến mất khỏi
+    // lịch ngay trước mắt người vừa bấm xoá — đã đủ rõ ràng, thêm một thẻ nổi
+    // kèm nút "Xem chi tiết/Hoãn" (vốn không có tác dụng gì với một sự kiện
+    // vừa bị xoá) chỉ khiến người dùng thấy phiền. Thông báo trong
+    // calendar-store.ts vẫn giữ nguyên — nó chỉ báo khi NGƯỜI KHÁC xoá một sự
+    // kiện trên lịch chia sẻ/nhóm, việc bạn chưa hề biết.
     this.closed.emit();
   }
 
