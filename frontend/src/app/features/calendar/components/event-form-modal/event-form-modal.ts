@@ -140,19 +140,25 @@ export class EventFormModal {
    */
   readonly selectableCalendars = computed<CalendarDef[]>(() => {
     const currentId = this.event()?.calendarId;
-    const userId = this.authStore.user()?.id;
-    return this.store.calendars().filter((c) => {
-      if (c.id === currentId) return true;
-      if (!c.canEdit) return false;
-      const group = this.groupStore.groups().find((g) => g.calendarId === c.id);
-      if (group) {
-        if (group.ownerId === userId) return true;
-        if (this.groupStore.activeGroup()?.id === group.id) {
-          const role = this.groupStore.members().find((m) => m.userId === userId)?.role;
-          return role === GroupRole.LEADER || role === GroupRole.ADMIN;
-        }
-        return false;
+    const personal = this.store.calendars();
+
+    const groupDefs: CalendarDef[] = this.groupStore.groups().map((g) => ({
+      id: g.calendarId,
+      name: `${g.name} (${this.i18n.t('sidebar.workspaces')})`,
+      color: g.color as CalendarColor,
+      canEdit: true,
+    }));
+
+    const allDefs = [...personal];
+    for (const gd of groupDefs) {
+      if (gd.id && !allDefs.some((c) => c.id === gd.id)) {
+        allDefs.push(gd);
       }
+    }
+
+    return allDefs.filter((c) => {
+      if (c.id === currentId) return true;
+      if (c.canEdit === false) return false;
       return true;
     });
   });
@@ -165,16 +171,6 @@ export class EventFormModal {
     const cal = this.store.calendars().find((c) => c.id === calId);
     if (cal && cal.canEdit === false) return false;
 
-    const group = this.groupStore.groups().find((g) => g.calendarId === calId);
-    if (group) {
-      const userId = this.authStore.user()?.id;
-      if (group.ownerId === userId) return true;
-      if (this.groupStore.activeGroup()?.id === group.id) {
-        const role = this.groupStore.members().find((m) => m.userId === userId)?.role;
-        return role === GroupRole.LEADER || role === GroupRole.ADMIN;
-      }
-      return false;
-    }
     return true;
   });
 

@@ -490,29 +490,32 @@ export class CalendarStore {
         .filter((id): id is string => !!id),
     );
 
-    // Map all own calendar IDs listed in user's sidebar
-    const ownCalendarIds = new Set([
+    // Map active (non-hidden) group calendar IDs
+    const activeGroupCalIds = new Set(
+      this.groupStore
+        .groups()
+        .map((g) => g.calendarId)
+        .filter((id): id is string => !!id && !hiddenGroupCalIds.has(id)),
+    );
+
+    // Map own personal sidebar calendars
+    const personalCalendarIds = new Set([
       ...this.calendars().map((c) => c.id),
       ...this.otherCalendars().map((c) => c.id),
-      ...this.groupStore.groups().map((g) => g.calendarId).filter((id): id is string => !!id),
-    ]);
-
-    // Known active calendar IDs listed in sidebar plus calendar IDs of all loaded events (including invited guest events)
-    const eventCalIds = new Set(this.events().map((e) => e.calendarId));
-    const knownCalendarIds = new Set([
-      ...ownCalendarIds,
-      ...eventCalIds,
     ]);
 
     return [...this.events(), ...this.holidayEvents()].filter((e) => {
       // 1. If calendar belongs to a hidden group workspace, hide event
       if (hiddenGroupCalIds.has(e.calendarId)) return false;
 
-      // 2. If calendar is one of the user's own sidebar calendars, check if checked in visibleCalendarIds
-      if (ownCalendarIds.has(e.calendarId) && !visible.has(e.calendarId)) return false;
+      // 2. If calendar belongs to an active (non-hidden) group, show event by default
+      if (activeGroupCalIds.has(e.calendarId)) {
+        if (!query) return true;
+        return matchScore(e, query) !== null;
+      }
 
-      // 3. If calendar is not listed in any active sidebar section and not loaded as an event, hide event
-      if (ownCalendarIds.has(e.calendarId) && !knownCalendarIds.has(e.calendarId)) return false;
+      // 3. If calendar is one of the user's personal sidebar calendars, check if checked in visibleCalendarIds
+      if (personalCalendarIds.has(e.calendarId) && !visible.has(e.calendarId)) return false;
 
       if (!query) return true;
       return matchScore(e, query) !== null;
@@ -608,6 +611,9 @@ export class CalendarStore {
     // của Socket.IO cũng bỏ qua phòng đã ở trong.
     effect(() => {
       for (const cal of this.calendars()) this.realtime.joinCalendar(cal.id);
+      for (const g of this.groupStore.groups()) {
+        if (g.calendarId) this.realtime.joinCalendar(g.calendarId);
+      }
     });
 
     // debounceTime tự huỷ giá trị trước mỗi khi có phím mới, nên không bao
@@ -1067,6 +1073,9 @@ export class CalendarStore {
 
   private joinAllCalendarRooms(): void {
     for (const cal of this.calendars()) this.realtime.joinCalendar(cal.id);
+    for (const g of this.groupStore.groups()) {
+      if (g.calendarId) this.realtime.joinCalendar(g.calendarId);
+    }
   }
 
   private markSelfOrigin(id: string): void {
