@@ -1,7 +1,7 @@
 <div class="tasks-page">
   <header class="topbar">
     <div class="left">
-      <button type="button" class="icon-btn" aria-label="Ẩn/hiện thanh bên" (click)="toggleSidebar()">
+      <button type="button" class="icon-btn" [attr.aria-label]="i18n.t('tasks.toggleSidebar')" (click)="toggleSidebar()">
         <svg viewBox="0 0 24 24" width="22" height="22">
           <path fill="currentColor" d="M3 18h18v-2H3zm0-5h18v-2H3zm0-7v2h18V6z" />
         </svg>
@@ -9,17 +9,17 @@
       <!-- Thẻ <a> thật, KHÔNG phải span + (click): giữ được chuột phải "mở tab
            mới", Ctrl+Click, và Tab tới được bằng bàn phím — những thứ mà một
            span gắn sự kiện đều mất. -->
-      <a class="brand" routerLink="/calendar" aria-label="Về trang lịch">
+      <a class="brand" routerLink="/calendar" [attr.aria-label]="i18n.t('tasks.backToCalendar')">
         <app-brand-logo [dayNumber]="store.today().getDate()" />
       </a>
     </div>
 
     <div class="right">
-      <div class="view-toggle" role="group" aria-label="Chuyển đổi Lịch / Việc cần làm">
-        <a routerLink="/calendar" class="view-toggle-btn" aria-label="Lịch">
+      <div class="view-toggle" role="group" [attr.aria-label]="i18n.t('tasks.viewToggle')">
+        <a routerLink="/calendar" class="view-toggle-btn" [attr.aria-label]="i18n.t('tasks.calendar')">
           <app-icon name="calendar" />
         </a>
-        <span class="view-toggle-btn active" aria-current="page" aria-label="Việc cần làm">
+        <span class="view-toggle-btn active" aria-current="page" [attr.aria-label]="i18n.t('tasks.title')">
           <app-icon name="check-square" />
         </span>
       </div>
@@ -48,10 +48,10 @@
                 <p class="user-dropdown-email">{{ userEmail() }}</p>
               }
               <button type="button" class="dropdown-item" role="menuitem" (click)="openSettingsFromMenu()">
-                Cài đặt
+                {{ i18n.t('header.settings') }}
               </button>
               <button type="button" class="dropdown-item" role="menuitem" (click)="logout()">
-                Đăng xuất
+                {{ i18n.t('header.logout') }}
               </button>
             </div>
           }
