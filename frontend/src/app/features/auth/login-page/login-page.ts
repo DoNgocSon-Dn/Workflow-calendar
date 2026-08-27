@@ -79,6 +79,20 @@ export class LoginPage implements OnInit, AfterViewInit {
   // authInterceptor đá về đây kèm ?sessionExpired=1 khi refresh token cũng đã
   // chết — dùng khung "danger" (đỏ) chứ không phải successMessage (xanh),
   // đúng bản chất "phiên đã hết hạn" chứ không phải một tin vui.
+  /**
+   * Thông báo hết phiên ở lại 5 phút.
+   *
+   * Nó khác mọi lỗi khác trên trang này: các lỗi kia là phản hồi cho một thao
+   * tác người dùng vừa làm nên họ đang nhìn sẵn, còn cái này xuất hiện sau một
+   * cú chuyển trang do hệ thống tự quyết — người dùng có thể còn chưa kịp nhìn
+   * màn hình. Cho nó ở lại đủ lâu để họ hiểu vì sao mình bị đá ra.
+   */
+  private static readonly SESSION_NOTICE_MS = 5 * 60_000;
+
+  /** Lỗi đang hiện có phải là thông báo hết phiên không. Phân biệt để các
+   *  đường dọn dẹp cảnh (restoreAfterBack) không xoá nhầm nó. */
+  private sessionNoticeShown = false;
+
   readonly errorMessage = signal<string | null>(
     this.route.snapshot.queryParamMap.get('sessionExpired')
       ? this.i18n.t('login.sessionExpired')
@@ -99,6 +113,8 @@ export class LoginPage implements OnInit, AfterViewInit {
     // chuyển qua lại.
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) ?? 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
+
+    this.startSessionNoticeTimer();
   }
 
   ngAfterViewInit(): void {
@@ -168,11 +184,28 @@ export class LoginPage implements OnInit, AfterViewInit {
     }
   }
 
+  /** Bật đồng hồ tự tắt cho thông báo hết phiên. Gọi một lần lúc dựng trang. */
+  private startSessionNoticeTimer(): void {
+    if (!this.errorMessage()) return;
+    this.sessionNoticeShown = true;
+    this.timers.push(
+      setTimeout(() => {
+        // Chỉ tắt nếu vẫn đúng thông báo cũ — trong 5 phút đó người dùng có thể
+        // đã bấm đăng nhập và gặp một lỗi KHÁC, xoá đè lên là mất lỗi mới.
+        if (this.sessionNoticeShown) {
+          this.sessionNoticeShown = false;
+          this.errorMessage.set(null);
+        }
+      }, LoginPage.SESSION_NOTICE_MS),
+    );
+  }
+
   async signInWithGoogle(): Promise<void> {
     // Chặn bấm nhiều lần: mỗi lần bấm là một request OAuth, và giữa animation
     // thì nút vẫn nằm đó cho tới lúc trang bị thay thế.
     if (this.submitting()) return;
 
+    this.sessionNoticeShown = false;
     this.errorMessage.set(null);
     this.submitting.set(true);
 
@@ -420,7 +453,10 @@ export class LoginPage implements OnInit, AfterViewInit {
     // Cho bấm đăng nhập lại được — không reset thì nút kẹt vĩnh viễn ở trạng
     // thái "đang xử lý" của lần trước.
     this.submitting.set(false);
-    this.errorMessage.set(null);
+    // Giữ nguyên thông báo hết phiên: người dùng bấm đăng nhập rồi bấm quay
+    // lại từ Google thì lý do họ bị đá ra vẫn còn nguyên giá trị. Chỉ dọn các
+    // lỗi nhất thời khác.
+    if (!this.sessionNoticeShown) this.errorMessage.set(null);
     this.revealed.set(true);
 
     this.playEntrance();

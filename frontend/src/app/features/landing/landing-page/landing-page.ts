@@ -10,7 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Locale, TranslationService } from '../../../core/i18n/translation.service';
+import { TranslationService } from '../../../core/i18n/translation.service';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -40,11 +40,6 @@ export class LandingPage implements OnInit, AfterViewInit {
    *  khác trong app đang dùng. */
   readonly i18n = inject(TranslationService);
 
-  /** Đổi ngôn ngữ ngay trên landing. Không có nút này thì khách chưa đăng nhập
-   *  không có đường nào tới bộ chuyển trong Cài đặt. */
-  setLocale(locale: Locale): void {
-    this.i18n.setLocale(locale);
-  }
 
   readonly currentYear = new Date().getFullYear();
 

@@ -68,15 +68,6 @@
     </div>
 
     <div class="nav-right">
-      <!-- Bộ đổi ngôn ngữ. Bản trước chỉ có trong Cài đặt — tức là sau khi đăng
-           nhập — nên khách vào landing không có cách nào đổi. -->
-      <div class="lang-switch" role="group" [attr.aria-label]="i18n.t('landing.a11y.lang')">
-        <button type="button" [class.on]="i18n.locale() === 'vi'"
-          [attr.aria-pressed]="i18n.locale() === 'vi'" (click)="setLocale('vi')">VI</button>
-        <button type="button" [class.on]="i18n.locale() === 'en'"
-          [attr.aria-pressed]="i18n.locale() === 'en'" (click)="setLocale('en')">EN</button>
-      </div>
-
       <button class="theme-toggle" id="themeToggle" [attr.aria-label]="i18n.t('landing.a11y.theme')"
         (click)="toggleTheme($event)">
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -217,7 +208,7 @@
        biết đây là sản phẩm gì, cho ai, thay thế cái gì. -->
   <section class="section-pad" id="about">
     <div class="kicker reveal">{{ i18n.t('landing.about.kicker') }}</div>
-    <h2 class="section-title reveal">{{ i18n.t('landing.about.t1') }}<span class="dim">{{ i18n.t('landing.about.t2') }}</span></h2>
+    <h2 class="section-title reveal">{{ i18n.t('landing.about.t1') }} <span class="dim">{{ i18n.t('landing.about.t2') }}</span></h2>
     <p class="section-desc reveal">{{ i18n.t('landing.about.desc') }}</p>
 
     <div class="about-grid">
@@ -246,7 +237,7 @@
        vào phần scrollytelling thay vì để trống nguyên một màn hình. -->
   <section class="section-pad section-pad--lead" id="features">
     <div class="kicker reveal">{{ i18n.t('landing.feat.kicker') }}</div>
-    <h2 class="section-title reveal">{{ i18n.t('landing.about.t1') }}<span class="dim">{{ i18n.t('landing.feat.t2') }}</span>{{ i18n.t('landing.feat.t3') }}</h2>
+    <h2 class="section-title reveal">{{ i18n.t('landing.feat.t1') }} <span class="dim">{{ i18n.t('landing.feat.t2') }}</span> {{ i18n.t('landing.feat.t3') }}</h2>
     <p class="section-desc reveal">{{ i18n.t('landing.feat.desc') }}</p>
 
     <!-- Mục lục của phần trình diễn ngay bên dưới. Trước đây section này chỉ
@@ -282,7 +273,7 @@
       <!-- ── CỘT CHỮ: đổi nội dung theo từng stage ── -->
       <div class="scrolly-copy">
         <article class="copy-step" data-step="0">
-          <h3>{{ i18n.t('landing.sc.s0t1') }}<em>{{ i18n.t('landing.sc.s0t2') }}</em></h3>
+          <h3>{{ i18n.t('landing.sc.s0t1') }} <em>{{ i18n.t('landing.sc.s0t2') }}</em></h3>
           <p>{{ i18n.t('landing.sc.s0d') }}</p>
         </article>
 
@@ -386,7 +377,7 @@
 
         <article class="copy-step" data-step="4">
           <div class="feature-index">{{ i18n.t('landing.sc.s4i') }}</div>
-          <h3>{{ i18n.t('landing.sc.s4t1') }}<em>{{ i18n.t('landing.sc.s4t2') }}</em></h3>
+          <h3>{{ i18n.t('landing.sc.s4t1') }} <em>{{ i18n.t('landing.sc.s4t2') }}</em></h3>
           <p>{{ i18n.t('landing.sc.s4d') }}</p>
           <div class="chip-row">
             <span class="chip">{{ i18n.t('landing.sc.s4c1') }}</span>
@@ -567,7 +558,7 @@
     </div>
 
     <div class="kicker reveal">{{ i18n.t('landing.nav.showcase') }}</div>
-    <h2 class="section-title reveal">{{ i18n.t('landing.show.t1') }}<span class="dim">{{ i18n.t('landing.show.t2') }}</span></h2>
+    <h2 class="section-title reveal">{{ i18n.t('landing.show.t1') }} <span class="dim">{{ i18n.t('landing.show.t2') }}</span></h2>
 
     <div class="gallery">
       <div class="gallery-row">
@@ -616,24 +607,12 @@
           <p>{{ i18n.t('landing.show.c7d') }}</p>
         </div>
         <div class="gallery-card reveal">
-          <span class="tag">{{ i18n.t('landing.show.c8l') }}</span>
-          <h5>{{ i18n.t('landing.show.c8t') }}</h5>
-          <p>{{ i18n.t('landing.show.c8d') }}</p>
-        </div>
-      </div>
-
-      <div class="gallery-row">
-        <div class="gallery-card reveal">
           <span class="tag">{{ i18n.t('landing.show.c9l') }}</span>
           <h5>{{ i18n.t('landing.show.c9t') }}</h5>
           <p>{{ i18n.t('landing.show.c9d') }}</p>
         </div>
-        <div class="gallery-card gallery-card--wide reveal">
-          <span class="tag">{{ i18n.t('landing.show.c10l') }}</span>
-          <h5>{{ i18n.t('landing.show.c10t') }}</h5>
-          <p>{{ i18n.t('landing.show.c10d') }}</p>
-        </div>
       </div>
+
     </div>
   </section>
 
@@ -648,7 +627,7 @@
     </div>
 
     <div class="kicker reveal">{{ i18n.t('landing.nav.process') }}</div>
-    <h2 class="section-title reveal">{{ i18n.t('landing.proc.t1') }}<span class="dim">{{ i18n.t('landing.proc.t2') }}</span></h2>
+    <h2 class="section-title reveal">{{ i18n.t('landing.proc.t1') }} <span class="dim">{{ i18n.t('landing.proc.t2') }}</span></h2>
     <p class="section-desc reveal">{{ i18n.t('landing.proc.desc') }}</p>
 
     <div class="process-grid">
@@ -695,7 +674,7 @@
     <div class="cta-inner">
       <span class="cta-badge reveal">
         <span class="cta-badge-dot"></span>{{ i18n.t('landing.story.badge') }}</span>
-      <h2 class="reveal">{{ i18n.t('landing.story.t1') }}<span class="dim">{{ i18n.t('landing.story.t2') }}</span>{{ i18n.t('landing.story.t3') }}</h2>
+      <h2 class="reveal">{{ i18n.t('landing.story.t1') }} <span class="dim">{{ i18n.t('landing.story.t2') }}</span> {{ i18n.t('landing.story.t3') }}</h2>
       <p class="sub reveal">{{ i18n.t('landing.story.sub') }}</p>
       <div class="hero-cta reveal">
         <a class="btn-primary" routerLink="/login">{{ i18n.t('landing.cta.start') }}</a>
