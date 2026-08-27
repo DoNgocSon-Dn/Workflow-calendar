@@ -531,7 +531,7 @@
   padding: 0.25rem 1rem 0.5rem;
   display: flex;
   flex-direction: column;
-  max-height: 60vh;
+  max-height: 60dvh;
   overflow-y: auto;
 }
 
@@ -724,3 +724,60 @@
   background: var(--holiday-accent-hover);
 }
 
+/* ============================================================
+   MOBILE — modal chuyển thành bottom sheet
+
+   Không phải để cho đẹp. Ở khổ này modal căn trên đẩy hàng nút Lưu/Huỷ lên
+   quá nửa trên màn hình, tức ra ngoài tầm ngón cái khi cầm một tay. Dán vào
+   đáy thì hàng nút nằm đúng chỗ ngón tay vốn đã ở đó.
+
+   dvh chứ không phải vh: thanh địa chỉ của trình duyệt di động co vào giãn ra
+   khi cuộn, còn vh thì luôn tính theo lúc thanh đó ẨN. Đặt 92vh nghĩa là tấm
+   sheet cao hơn phần thực sự nhìn thấy, và thứ bị đẩy khuất dưới mép màn hình
+   luôn là hàng nút ở đáy. dvh đo phần đang thực sự thấy nên tự co theo.
+
+   Backdrop thôi cuộn, .modal-body nhận việc cuộn: có vậy header và hàng nút
+   mới đứng yên tại chỗ, thay vì trôi mất khi người dùng cuộn nội dung dài.
+   ============================================================ */
+@media (max-width: 599.98px) {
+  .backdrop {
+    padding: 0;
+    align-items: flex-end;
+    overflow-y: hidden;
+  }
+
+  .modal {
+    max-width: none;
+    max-height: 92dvh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  .modal-header {
+    flex-shrink: 0;
+  }
+
+  .modal-body {
+    max-height: none;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .modal-footer {
+    flex-shrink: 0;
+  }
+}
+
+/* Hàng nút đáy: gãy dòng khi hết chỗ. Trước đó là một hàng flex không cho
+   wrap, nên ở máy hẹp nút "Lưu" bị đẩy lấn ra ngoài mép modal. */
+@media (max-width: 479.98px) {
+  .modal-footer {
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+  }
+
+  .modal-footer .spacer {
+    display: none;
+  }
+}

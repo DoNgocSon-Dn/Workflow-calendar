@@ -413,7 +413,7 @@
   color: var(--color-text);
 }
 
-@media (max-width: 520px) {
+@media (max-width: 599.98px) {
   .toast-stack {
     right: 0.6rem;
     left: 0.6rem;

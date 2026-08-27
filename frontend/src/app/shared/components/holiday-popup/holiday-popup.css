@@ -283,7 +283,7 @@
   opacity: 0.85;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 599.98px) {
   .holiday-backdrop {
     padding: 1rem;
   }

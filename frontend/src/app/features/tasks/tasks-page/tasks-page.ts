@@ -10,6 +10,7 @@ import { BrandLogo } from '../../../shared/components/brand-logo/brand-logo';
 import { Icon } from '../../../shared/components/icon/icon';
 import { SettingsModal } from '../../calendar/components/settings-modal/settings-modal';
 import { CharCounter } from '../../../shared/components/char-counter/char-counter';
+import { isSidebarDrawerViewport } from '../../calendar/data/calendar-store';
 
 const HIDDEN_LISTS_STORAGE_KEY = 'tasks-hidden-lists';
 
@@ -49,7 +50,9 @@ export class TasksPage {
   protected readonly userMenuOpen = signal(false);
   protected readonly settingsModalOpen = signal(false);
 
-  protected readonly sidebarOpen = signal(true);
+  /** Đóng sẵn ở khổ drawer — cùng lý do và cùng mốc với sidebar bên trang
+   *  Lịch, xem `isSidebarDrawerViewport`. */
+  protected readonly sidebarOpen = signal(!isSidebarDrawerViewport());
   // Đọc thẳng từ CalendarStore — KHÔNG giữ bản sao riêng — để trang này luôn
   // khớp với bong bóng nổi (FloatingHub) và modal tạo sự kiện, không cần tải lại.
   protected readonly loading = computed(() => !this.store.todosLoaded());

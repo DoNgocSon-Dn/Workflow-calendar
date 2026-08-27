@@ -206,6 +206,12 @@
   flex: 1;
   min-height: 0;
   display: flex;
+  /* Mốc neo cho sidebar dạng drawer. */
+  position: relative;
+}
+
+.sidebar-backdrop {
+  display: none;
 }
 
 .sidebar {
@@ -581,13 +587,48 @@
   padding: 0.2rem;
 }
 
-@media (max-width: 720px) {
+/* Tablet dọc trở xuống: sidebar rời khỏi luồng và phủ lên danh sách việc.
+
+   Neo theo .body chứ không phải theo viewport với `top: 3.5rem`. Con số đó
+   là chiều cao header đo ở desktop; header co giãn theo khổ màn hình nên nó
+   sai ngay khi header đổi chiều cao, và sai theo kiểu drawer trèo lên che
+   mất một phần header.
+
+   Kèm nền mờ để chạm ra ngoài là đóng — trước đó drawer phủ kín danh sách
+   mà lối ra duy nhất là tìm đúng nút menu trên header. */
+@media (max-width: 767.98px) {
   .sidebar {
-    position: fixed;
-    top: 3.5rem;
+    position: absolute;
+    top: 0;
     left: 0;
     bottom: 0;
     z-index: 40;
     box-shadow: var(--shadow-modal);
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 35;
+    background: var(--overlay-backdrop);
+  }
+}
+
+/* Mobile: sidebar chiếm gần trọn bề ngang thì không còn là "thanh bên" nữa —
+   giới hạn lại để vẫn thấy được một mảng nội dung phía sau, nhờ đó người dùng
+   biết mình đang ở đâu và chạm vào đó để đóng. */
+@media (max-width: 599.98px) {
+  .sidebar {
+    width: min(16rem, 82vw);
+  }
+
+  /* Tiêu đề cột và nút "Xoá tất cả" chung một hàng: tên danh sách do người
+     dùng tự đặt nên có thể rất dài, và .clear-all-btn có flex-shrink: 0 —
+     không cho tiêu đề cắt bớt thì chính cái nút bị đẩy ra ngoài mép. */
+  .column-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }

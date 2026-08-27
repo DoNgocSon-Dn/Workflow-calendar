@@ -400,7 +400,7 @@
 /* Icon-rail mode is a desktop affordance — the mobile drawer (see
    calendar-page.css's max-width:720px override) always shows the full
    sidebar, so the collapse control has no effect there. */
-@media (max-width: 720px) {
+@media (max-width: 767.98px) {
   .sidebar.collapsed {
     width: 256px;
   }

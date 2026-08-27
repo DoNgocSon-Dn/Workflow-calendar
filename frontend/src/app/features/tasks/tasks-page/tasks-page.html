@@ -66,6 +66,8 @@
 
   <div class="body">
     @if (sidebarOpen()) {
+      <!-- Nền mờ chỉ tồn tại ở khổ drawer; CSS ẩn nó từ 768px trở lên. -->
+      <div class="sidebar-backdrop" (click)="toggleSidebar()"></div>
       <aside class="sidebar">
         <ul class="filter-nav">
           <li>

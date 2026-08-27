@@ -35,8 +35,8 @@
   position: fixed;
   z-index: 150;
   width: min(350px, calc(100vw - 2.5rem));
-  height: min(520px, calc(100vh - 4rem));
-  max-height: 70vh;
+  height: min(520px, calc(100dvh - 4rem));
+  max-height: 70dvh;
   background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-xl);
@@ -1869,5 +1869,95 @@
 @media (prefers-reduced-motion: reduce) {
   .drop-overlay {
     animation: none;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE
+
+   Trước đợt rà soát này cả file 1800 dòng không có lấy một media query theo
+   chiều rộng — panel giữ nguyên tấm thẻ nổi 350px ở mọi khổ màn hình.
+   ============================================================ */
+
+/* Tablet dọc: panel còn là thẻ nổi, chỉ nới trần chiều cao vì màn hình tablet
+   dựng đứng thừa chiều dọc mà 70dvh thì bỏ phí. */
+@media (max-width: 767.98px) {
+  .panel {
+    max-height: 78dvh;
+  }
+}
+
+/* Mobile: panel thành tấm trượt dán đáy màn hình.
+   ------------------------------------------------------------
+   Bốn cạnh của .panel do TS gán INLINE (panelLeft/Right/Top/Bottom) để tấm
+   panel bám theo góc mà người dùng đã kéo bong bóng tới. Ở khổ này không còn
+   "góc" nào đáng bám: panel chiếm gần trọn bề ngang, nên vị trí phải do CSS
+   quyết.
+
+   `!important` ở đây là bắt buộc, không phải để đi đường tắt: inline style
+   thắng mọi selector, không có cách nào khác để CSS giành lại quyền định vị.
+   Đường còn lại là bắt TS tự đo bề rộng cửa sổ rồi thôi gán style — tức thêm
+   một phép đo layout bằng JS, đúng thứ nên tránh. Dùng shorthand `inset` để
+   gói cả bốn cạnh vào MỘT khai báo thay vì rải !important ra bốn dòng. */
+@media (max-width: 599.98px) {
+  .panel {
+    inset: auto 0 0 0 !important;
+    width: auto;
+    height: 88dvh;
+    max-height: none;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    border-bottom: none;
+  }
+
+  /* dvh làm phần việc chính khi bàn phím bật lên: nó đo phần viewport ĐANG
+     thấy, nên panel tự co lại và composer trượt lên trên bàn phím thay vì bị
+     đẩy khuất xuống dưới. Với vh thì panel giữ nguyên chiều cao cũ và ô gõ
+     nằm đâu đó phía sau bàn phím. */
+  .messages {
+    padding: 0.75rem 0.85rem;
+  }
+
+  .composer-area .input-row {
+    margin: 0 0.85rem 0.75rem;
+  }
+
+  /* Hàng nút của thẻ sự kiện AI đề xuất: "Thêm vào lịch" + "Sửa" + "Bỏ" chen
+     một hàng ở bề ngang này thì chữ trong nút bị bóp vỡ. Cho xuống dòng. */
+  .event-proposal__actions {
+    flex-wrap: wrap;
+    row-gap: 0.4rem;
+  }
+
+  .event-proposal__actions .primary-btn {
+    flex: 1 1 100%;
+  }
+
+  /* Nhãn tab ("Trợ lý AI" / "Ghi chú" / "Việc cần làm") cộng lại vượt bề ngang
+     panel. Cho cụm tab cuộn ngang trong chính nó thay vì để chữ tràn ra ngoài
+     hoặc gãy dòng làm cao gấp đôi thanh tab. */
+  .panel-tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+
+  .panel-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab-btn {
+    flex: 0 0 auto;
+  }
+}
+
+/* Mobile nhỏ: bong bóng FAB và tấm panel không được chiếm chỗ của nhau. */
+@media (max-width: 479.98px) {
+  .panel {
+    height: 90dvh;
+  }
+
+  .attachment-chip {
+    margin-left: 0.85rem;
+    margin-right: 0.85rem;
   }
 }

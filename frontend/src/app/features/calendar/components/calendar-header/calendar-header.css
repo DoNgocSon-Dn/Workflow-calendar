@@ -412,7 +412,7 @@
   font-weight: 700;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 767.98px) {
   .brand span,
   .brand {
     font-size: 1.15rem;
@@ -465,7 +465,7 @@
 /* Điện thoại rất hẹp (~360px): view-dropdown ghi chữ dài ("Lịch biểu") cộng
    nút thông báo + avatar vẫn có thể chật hàng .right — bỏ chữ, giữ icon +
    mũi tên, đỡ tốn ngang mà bấm vẫn ra đúng menu chọn view. */
-@media (max-width: 380px) {
+@media (max-width: 479.98px) {
   .view-dropdown-btn {
     padding: 0.45rem 0.5rem;
   }
