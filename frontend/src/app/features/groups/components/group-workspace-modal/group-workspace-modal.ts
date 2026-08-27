@@ -599,6 +599,7 @@ export class GroupWorkspaceModal {
   async createTask(): Promise<void> {
     const group = this.store.activeGroup();
     const title = this.taskTitle().trim();
+    const assignedTo = this.taskAssignedTo();
     if (!group || !this.canCreateTask()) return;
 
     this.creatingTask.set(true);
@@ -608,13 +609,13 @@ export class GroupWorkspaceModal {
         title,
         this.taskDescription().trim(),
         'todo',
-        this.taskAssignedTo(),
-        this.taskDueDate() || undefined,
+        assignedTo,
       );
       this.taskTitle.set('');
       this.taskDescription.set('');
       this.taskAssignedTo.set('');
       this.taskDueDate.set('');
+
     } finally {
       this.creatingTask.set(false);
     }
@@ -698,11 +699,12 @@ export class GroupWorkspaceModal {
 
   async reassignTask(task: GroupTask, userId: string): Promise<void> {
     const group = this.store.activeGroup();
-    if (!group || this.reassigningTaskId()) return;
+    if (!group || !this.canManageAnyone() || this.reassigningTaskId()) return;
 
     this.reassigningTaskId.set(task.id);
     try {
       await this.store.updateTask(group.id, task.id, { assignedTo: userId || undefined });
+
     } catch (err: any) {
       await this.dialog.alert(err?.error?.message || this.i18n.t('group.reassignError'));
     } finally {
