@@ -101,3 +101,8 @@ export function canSeeGroupMembers(actor: GroupRole | null): boolean {
 export function canSeeGroupChat(actor: GroupRole | null): boolean {
   return !!actor;
 }
+
+/** Chỉ Trưởng nhóm (LEADER) mới có quyền xem & duyệt yêu cầu/lời mời tham gia nhóm. */
+export function canApproveJoinRequests(actor: GroupRole | null): boolean {
+  return actor === GroupRole.LEADER;
+}

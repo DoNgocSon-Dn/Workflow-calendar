@@ -83,27 +83,6 @@ export function buildPresetOptions(startDate: Date, locale: Locale): RecurrenceO
     },
   ];
 
-  const nth = weekOfMonth(startDate);
-  if (nth <= 4) {
-    const nthLabel = locale === 'en' ? NTH_LABEL_EN[nth] : NTH_LABEL_VI[nth];
-    options.push({
-      rule: { freq: 'monthly_nth_weekday' },
-      label:
-        locale === 'en'
-          ? `Monthly on the ${nthLabel} ${weekday}`
-          : `Hàng tháng vào ${weekday.toLowerCase()} ${nthLabel}`,
-    });
-  }
-  if (isLastWeekdayOfMonth(startDate)) {
-    options.push({
-      rule: { freq: 'monthly_last_weekday' },
-      label:
-        locale === 'en'
-          ? `Monthly on the last ${weekday}`
-          : `Hàng tháng vào ${weekday.toLowerCase()} cuối cùng`,
-    });
-  }
-
   options.push({
     rule: { freq: 'yearly' },
     label:

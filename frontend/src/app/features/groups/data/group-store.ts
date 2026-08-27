@@ -815,6 +815,11 @@ export class GroupStore {
 
   async selectGroup(group: Group): Promise<void> {
     this.activeGroup.set(group);
+    // Xoá danh sách thành viên của nhóm TRƯỚC đó ngay lập tức: nếu để nguyên,
+    // trong lúc loadMembers() chưa xong, currentRole() lại tìm thấy người dùng
+    // trong danh sách CŨ và suy ra vai trò của nhóm khác — hiện nhầm nút quản
+    // lý, hoặc (với người không thuộc nhóm cũ) trả null gây điều hướng tab lặp.
+    this.members.set([]);
     this.activeWorkspaceModalOpen.set(true);
     this.clearGroupUnread(group.id);
     // Đọc rồi xoá ngay trong cùng chỗ — chỉ MỘT nơi tiêu thụ cờ này, tránh

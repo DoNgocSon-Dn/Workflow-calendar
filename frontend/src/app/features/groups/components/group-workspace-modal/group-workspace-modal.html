@@ -543,27 +543,29 @@
                 }
               </div>
 
-              <div class="invite-card join-requests-card">
-                <h3>{{ i18n.t('group.joinRequestsTitle') }} ({{ store.pendingJoinRequests().length }})</h3>
-                @for (r of store.pendingJoinRequests(); track r.id) {
-                  <div class="member-row">
-                    <div class="member-info">
-                      <span class="user-avatar"><app-icon name="user" /></span>
-                      <strong class="member-email">{{ r.requesterName || r.requesterEmail || r.userId }}</strong>
+              @if (canUserApproveJoinRequests()) {
+                <div class="invite-card join-requests-card">
+                  <h3>{{ i18n.t('group.joinRequestsTitle') }} ({{ store.pendingJoinRequests().length }})</h3>
+                  @for (r of store.pendingJoinRequests(); track r.id) {
+                    <div class="member-row">
+                      <div class="member-info">
+                        <span class="user-avatar"><app-icon name="user" /></span>
+                        <strong class="member-email">{{ r.requesterName || r.requesterEmail || r.userId }}</strong>
+                      </div>
+                      <div class="member-right">
+                        <button type="button" class="btn-mini" (click)="approveJoinRequest(r)">
+                          {{ i18n.t('group.joinRequestApprove') }}
+                        </button>
+                        <button type="button" class="btn-mini btn-mini-ghost" (click)="declineJoinRequest(r)">
+                          {{ i18n.t('group.joinRequestDecline') }}
+                        </button>
+                      </div>
                     </div>
-                    <div class="member-right">
-                      <button type="button" class="btn-mini" (click)="approveJoinRequest(r)">
-                        {{ i18n.t('group.joinRequestApprove') }}
-                      </button>
-                      <button type="button" class="btn-mini btn-mini-ghost" (click)="declineJoinRequest(r)">
-                        {{ i18n.t('group.joinRequestDecline') }}
-                      </button>
-                    </div>
-                  </div>
-                } @empty {
-                  <p class="empty-text">{{ i18n.t('group.joinRequestsEmpty') }}</p>
-                }
-              </div>
+                  } @empty {
+                    <p class="empty-text">{{ i18n.t('group.joinRequestsEmpty') }}</p>
+                  }
+                </div>
+              }
             }
 
             <h3 class="section-subtitle">{{ i18n.t('group.memberListTitle', { count: store.members().length }) }}</h3>

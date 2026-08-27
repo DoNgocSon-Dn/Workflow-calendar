@@ -1340,9 +1340,9 @@ export class GroupsService {
     groupId: string,
   ): Promise<GroupJoinRequestDto[]> {
     const actorRole = await this.requireRole(supabase, actor, groupId);
-    if (!canInvite(actorRole)) {
+    if (actorRole !== GroupRole.LEADER) {
       throw new ForbiddenException(
-        'Chỉ trưởng nhóm và quản trị viên mới xem được yêu cầu tham gia',
+        'Chỉ trưởng nhóm mới xem được yêu cầu tham gia',
       );
     }
 
@@ -1361,9 +1361,9 @@ export class GroupsService {
     dto: DecideJoinRequestDto,
   ): Promise<GroupJoinRequestDto> {
     const actorRole = await this.requireRole(supabase, actor, groupId);
-    if (!canInvite(actorRole)) {
+    if (actorRole !== GroupRole.LEADER) {
       throw new ForbiddenException(
-        'Chỉ trưởng nhóm và quản trị viên mới được duyệt yêu cầu tham gia',
+        'Chỉ trưởng nhóm mới được duyệt yêu cầu tham gia',
       );
     }
 

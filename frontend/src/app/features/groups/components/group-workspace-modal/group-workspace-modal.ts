@@ -32,6 +32,7 @@ import {
   DEFAULT_GROUP_ROLE,
   GroupRole,
   canAssignRole,
+  canApproveJoinRequests,
   canChat,
   canInvite,
   canManage,
@@ -160,6 +161,7 @@ export class GroupWorkspaceModal {
   protected readonly canUserSeeTasks = computed(() => canSeeGroupTasks(this.currentRole()));
   protected readonly canUserSeeMembers = computed(() => canSeeGroupMembers(this.currentRole()));
   protected readonly canUserSeeChat = computed(() => canSeeGroupChat(this.currentRole()));
+  protected readonly canUserApproveJoinRequests = computed(() => canApproveJoinRequests(this.currentRole()));
 
   /** Có hiện cột thao tác trong danh sách thành viên không. Thành viên thường
    *  không quản lý được ai nên cả cột bị ẩn. */
@@ -318,22 +320,29 @@ export class GroupWorkspaceModal {
 
       const groupId = untracked(() => group.id);
       void this.store.loadInviteLink(groupId);
-      void this.store.loadPendingJoinRequests(groupId);
+      if (this.canUserApproveJoinRequests()) {
+        void this.store.loadPendingJoinRequests(groupId);
+      }
     });
 
-    // Mồi ngày/giờ cho form phòng họp lúc mở tab Lịch Nhóm chứ không phải
-    // trong constructor: modal có thể mở sẵn hàng giờ, mồi sớm thì giờ gợi ý
-    // đã thành quá khứ khi người dùng bấm sang tab này.
+    // Đá người dùng khỏi tab họ không có quyền xem, về tab an toàn nhất.
     effect(() => {
+      // CHỜ tới khi biết chắc vai trò. Ngay sau khi mở workspace, danh sách
+      // thành viên chưa tải xong nên currentRole() = null với người KHÔNG phải
+      // trưởng nhóm; lúc đó mọi canUserSee*() đều false và hai nhánh
+      // calendar <-> chat set qua set lại nhau thành VÒNG LẶP VÔ TẬN, treo cả
+      // tab (chỉ trưởng nhóm thoát vì role của họ suy được từ ownerId ngay).
+      if (!this.currentRole()) return;
+
       const tab = this.activeTab();
       if (tab === 'calendar' && !this.canUserSeeGroupCalendar()) {
-        this.store.activeWorkspaceTab.set(this.canUserSeeTasks() ? 'tasks' : 'chat');
+        this.store.activeWorkspaceTab.set('tasks');
       } else if (tab === 'tasks' && !this.canUserSeeTasks()) {
         this.store.activeWorkspaceTab.set('chat');
       } else if (tab === 'members' && !this.canUserSeeMembers()) {
         this.store.activeWorkspaceTab.set('chat');
       } else if (tab === 'chat' && !this.canUserSeeChat()) {
-        this.store.activeWorkspaceTab.set(this.canUserSeeTasks() ? 'tasks' : 'calendar');
+        this.store.activeWorkspaceTab.set('tasks');
       }
     });
   }
@@ -492,13 +501,13 @@ export class GroupWorkspaceModal {
 
   protected async approveJoinRequest(r: GroupJoinRequest): Promise<void> {
     const group = this.store.activeGroup();
-    if (!group) return;
+    if (!group || !this.canUserApproveJoinRequests()) return;
     await this.store.approveJoinRequest(group.id, r.id);
   }
 
   protected async declineJoinRequest(r: GroupJoinRequest): Promise<void> {
     const group = this.store.activeGroup();
-    if (!group) return;
+    if (!group || !this.canUserApproveJoinRequests()) return;
     await this.store.declineJoinRequest(group.id, r.id);
   }
 
