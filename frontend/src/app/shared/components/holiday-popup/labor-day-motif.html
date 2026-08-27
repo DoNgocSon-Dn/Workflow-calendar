@@ -1,91 +1,94 @@
 <div class="ldm-scene">
-  <!-- Lớp 1: Hào quang tỏa sáng & các tia nắng xoay đằng sau nón công nhân -->
+  <!-- Lớp 1: Hào quang phát sáng & Các tia nắng xoay tròn -->
   <svg class="ldm-layer ldm-layer--bg" viewBox="0 0 240 180" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
     <defs>
-      <!-- Gradient hào quang tỏa sáng -->
-      <radialGradient id="ldmHaloGlow" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.45" />
-        <stop offset="60%" stop-color="#f59e0b" stop-opacity="0.2" />
+      <radialGradient id="ldmProfGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.4" />
+        <stop offset="60%" stop-color="#f59e0b" stop-opacity="0.18" />
         <stop offset="100%" stop-color="#ef4444" stop-opacity="0" />
       </radialGradient>
-      
-      <!-- Gradient nón công nhân -->
-      <linearGradient id="ldmHelmetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <linearGradient id="ldmGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" stop-color="#fef08a" />
-        <stop offset="35%" stop-color="#f59e0b" />
-        <stop offset="85%" stop-color="#d97706" />
-        <stop offset="100%" stop-color="#b45309" />
+        <stop offset="50%" stop-color="#f59e0b" />
+        <stop offset="100%" stop-color="#d97706" />
       </linearGradient>
-
-      <!-- Gradient ánh sáng bóng nón -->
-      <linearGradient id="ldmHelmetHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.6" />
-        <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+      <linearGradient id="ldmNonLaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#fef3c7" />
+        <stop offset="50%" stop-color="#fde047" />
+        <stop offset="100%" stop-color="#ca8a04" />
       </linearGradient>
     </defs>
 
-    <!-- Vòng hào quang tỏa sáng nhịp thở đằng sau nón -->
-    <circle class="ldm-halo-glow" cx="120" cy="85" r="72" fill="url(#ldmHaloGlow)" />
+    <!-- Hào quang phát sáng tỏa rộng -->
+    <circle class="ldm-halo-glow" cx="120" cy="88" r="78" fill="url(#ldmProfGlow)" />
 
-    <!-- Tia hào quang xoay tròn đằng sau nón công nhân -->
-    <g class="ldm-halo-spin" transform="translate(120, 85)">
-      <g opacity="0.35" fill="#f59e0b">
-        <polygon points="0,0 -8,-90 8,-90" />
-        <polygon points="0,0 -8,90 8,90" />
-        <polygon points="0,0 -90,-8 -90,8" />
-        <polygon points="0,0 90,-8 90,8" />
-        <polygon points="0,0 -65,-65 -53,-75" />
-        <polygon points="0,0 65,65 53,75" />
-        <polygon points="0,0 -65,65 -75,53" />
-        <polygon points="0,0 65,-65 75,-53" />
+    <!-- Tia hào quang xoay đằng sau -->
+    <g class="ldm-halo-spin" transform="translate(120, 88)">
+      <g opacity="0.3" fill="#f59e0b">
+        <polygon points="0,0 -7,-92 7,-92" />
+        <polygon points="0,0 -7,92 7,92" />
+        <polygon points="0,0 -92,-7 -92,7" />
+        <polygon points="0,0 92,-7 92,7" />
+        <polygon points="0,0 -65,-65 -54,-74" />
+        <polygon points="0,0 65,65 54,74" />
+        <polygon points="0,0 -65,65 -74,54" />
+        <polygon points="0,0 65,-65 74,-54" />
       </g>
     </g>
   </svg>
 
-  <!-- Lớp 2: Mũ / Nón Công Nhân Lao Động chính giữa -->
+  <!-- Lớp 2: Cụm các Mũ Ngành Nghề Việt Nam tôn vinh Ngày 1/5 -->
   <svg class="ldm-layer ldm-layer--mid" viewBox="0 0 240 180" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-    <g class="ldm-helmet-group" transform="translate(120, 85)">
-      <!-- Bóng đổ dưới nón -->
-      <ellipse cx="0" cy="36" rx="48" ry="10" fill="#000000" opacity="0.25" filter="blur(4px)" />
+    <g class="ldm-professions-group">
 
-      <!-- Vòm nón công nhân -->
-      <path
-        d="M -42,12 C -42,-22 -26,-36 0,-36 C 26,-36 42,-12 42,12 Z"
-        fill="url(#ldmHelmetGrad)"
-        stroke="#78350f"
-        stroke-width="1.5"
-      />
+      <!-- 1. MŨ BẢO HỘ CÔNG NHÂN / XÂY DỰNG (ĐỈNH CHÍNH GIỮA) -->
+      <g class="ldm-hat ldm-hat--construction" transform="translate(120, 40)">
+        <path d="M -26,8 C -26,-15 -16,-24 0,-24 C 16,-24 26,-15 26,8 Z" fill="url(#ldmGoldGrad)" stroke="#78350f" stroke-width="1.2" />
+        <path d="M -32,10 C -18,15 18,15 32,10 C 34,14 28,18 0,18 C -28,18 -34,14 -32,10 Z" fill="url(#ldmGoldGrad)" stroke="#78350f" stroke-width="1.2" />
+        <path d="M -3,-23 C -1,-24 1,-24 3,-23 L 2,12 C 1,13 -1,13 -2,12 Z" fill="#ffffff" opacity="0.6" />
+        <polygon points="0,-4 1.5,-0.5 5,-0.5 2.2,1.2 3.2,4.8 0,2.5 -3.2,4.8 -2.2,1.2 -5,-0.5 -1.5,-0.5" fill="#ef4444" />
+      </g>
 
-      <!-- Vành nón rộng phía trước -->
-      <path
-        d="M -50,14 C -30,22 30,22 50,14 C 54,20 46,26 0,26 C -46,26 -54,20 -50,14 Z"
-        fill="url(#ldmHelmetGrad)"
-        stroke="#78350f"
-        stroke-width="1.5"
-      />
+      <!-- 2. NÓN LÁ VIỆT NAM / NÔNG DÂN (TRÁI TRÊN) -->
+      <g class="ldm-hat ldm-hat--farmer" transform="translate(60, 68)">
+        <polygon points="0,-24 32,12 -32,12" fill="url(#ldmNonLaGrad)" stroke="#854d0e" stroke-width="1.2" />
+        <path d="M -32,12 C -18,17 18,17 32,12 C 24,8 -24,8 -32,12 Z" fill="#fef08a" stroke="#854d0e" stroke-width="1" />
+        <path d="M -20,3 Q 0,8 20,3" stroke="#a16207" stroke-width="0.8" fill="none" />
+        <path d="M -12,-8 Q 0,-4 12,-8" stroke="#a16207" stroke-width="0.8" fill="none" />
+        <path d="M -14,13 Q 0,28 14,13" stroke="#ef4444" stroke-width="1.5" fill="none" />
+      </g>
 
-      <!-- Gờ dọc sống nón -->
-      <path
-        d="M -5,-35 C -1,-36 1,-36 5,-35 L 4,18 C 1,20 -1,20 -4,18 Z"
-        fill="url(#ldmHelmetHighlight)"
-        opacity="0.7"
-      />
+      <!-- 3. MŨ BÁC SĨ / Y TẾ (PHẢI TRÊN) -->
+      <g class="ldm-hat ldm-hat--doctor" transform="translate(180, 68)">
+        <path d="M -24,10 L -24,-10 C -12,-16 12,-16 24,-10 L 24,10 Z" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2" />
+        <ellipse cx="0" cy="10" rx="24" ry="4" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.2" />
+        <rect x="-3" y="-8" width="6" height="14" fill="#ef4444" rx="1" />
+        <rect x="-7" y="-4" width="14" height="6" fill="#ef4444" rx="1" />
+      </g>
 
-      <!-- Vệt phản chiếu ánh sáng -->
-      <path
-        d="M -32,-8 C -22,-26 -10,-32 -4,-33 C -14,-28 -24,-18 -28,-4 Z"
-        fill="#ffffff"
-        opacity="0.45"
-      />
+      <!-- 4. MŨ CỬ NHÂN / TRI THỨC GIÁO DỤC (TRÁI DƯỚI) -->
+      <g class="ldm-hat ldm-hat--academic" transform="translate(72, 126)">
+        <path d="M -16,2 L -16,12 C -8,16 8,16 16,12 L 16,2 Z" fill="#1e293b" stroke="#0f172a" stroke-width="1" />
+        <polygon points="0,-12 30,-2 0,8 -30,-2" fill="#090d16" stroke="#334155" stroke-width="1.2" />
+        <path d="M 0,-2 L 18,3 L 18,14" stroke="#fbbf24" stroke-width="1.2" fill="none" />
+        <circle cx="18" cy="15" r="2.5" fill="#f59e0b" />
+      </g>
 
-      <!-- Ngôi sao vàng trên trán nón công nhân -->
-      <polygon
-        points="0,-8 2.5,-2 8.5,-2 3.8,1.8 5.5,7.5 0,3.8 -5.5,7.5 -3.8,1.8 -8.5,-2 -2.5,-2"
-        fill="#fef08a"
-        stroke="#b45309"
-        stroke-width="0.8"
-        filter="drop-shadow(0 1px 3px rgba(0,0,0,0.3))"
-      />
+      <!-- 5. MŨ KĨ THUẬT / CÔNG NGHỆ (PHẢI DƯỚI) -->
+      <g class="ldm-hat ldm-hat--tech" transform="translate(168, 126)">
+        <path d="M -24,8 C -24,-14 -14,-22 0,-22 C 14,-22 24,-14 24,8 Z" fill="#0284c7" stroke="#0369a1" stroke-width="1.2" />
+        <path d="M -28,9 C -16,14 16,14 28,9 C 30,12 24,16 0,16 C -24,16 -30,12 -28,9 Z" fill="#38bdf8" stroke="#0369a1" stroke-width="1.2" />
+        <path d="M -24,2 C -30,-10 30,-10 24,2" fill="none" stroke="#64748b" stroke-width="2" />
+        <rect x="-27" y="-2" width="6" height="10" rx="2" fill="#334155" />
+        <rect x="21" y="-2" width="6" height="10" rx="2" fill="#334155" />
+      </g>
+
+      <!-- TÂM BIỂU TƯỢNG: NGÔI SAO VÀNG TỔ QUỐC CHÍNH GIỮA -->
+      <g class="ldm-center-star" transform="translate(120, 92)">
+        <circle cx="0" cy="0" r="23" fill="#ef4444" stroke="#f59e0b" stroke-width="1.5" filter="drop-shadow(0 4px 10px rgba(0,0,0,0.3))" />
+        <polygon points="0,-14 4,-4 14,-4 6,2 9,11 0,5 -9,11 -6,2 -14,-4 -4,-4" fill="#fef08a" stroke="#b45309" stroke-width="0.8" />
+      </g>
+
     </g>
   </svg>
 

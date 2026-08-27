@@ -34,24 +34,50 @@
   transform: translate(calc(var(--holiday-px, 0) * 6px), calc(var(--holiday-py, 0) * 6px));
 }
 
-/* Vòng hào quang tỏa sáng nhịp thở đằng sau nón */
+/* Hào quang nhịp thở */
 .ldm-halo-glow {
   animation: ldmGlowPulse 4s ease-in-out infinite alternate;
 }
 
-/* Các tia hào quang xoay tròn liên tục đằng sau nón */
+/* Tia hào quang xoay liên tục */
 .ldm-halo-spin {
-  animation: ldmHaloRotate 28s linear infinite;
-  transform-origin: 120px 85px;
+  animation: ldmHaloRotate 30s linear infinite;
+  transform-origin: 120px 88px;
 }
 
-/* Nón bảo hộ công nhân nảy nhẹ bồng bềnh */
-.ldm-helmet-group {
-  animation: ldmHelmetFloat 6s ease-in-out infinite alternate;
-  transform-origin: 120px 85px;
+/* Ngôi sao trung tâm đập nhẹ */
+.ldm-center-star {
+  animation: ldmStarPulse 3.5s ease-in-out infinite alternate;
+  transform-origin: 120px 92px;
 }
 
-/* Hạt sáng lấp lánh */
+/* Các mũ ngành nghề nảy nhẹ bồng bềnh */
+.ldm-hat--construction {
+  animation: ldmHatFloat1 5s ease-in-out infinite alternate;
+  transform-origin: 120px 40px;
+}
+
+.ldm-hat--farmer {
+  animation: ldmHatFloat2 6s ease-in-out 0.5s infinite alternate;
+  transform-origin: 60px 68px;
+}
+
+.ldm-hat--doctor {
+  animation: ldmHatFloat1 5.5s ease-in-out 1s infinite alternate;
+  transform-origin: 180px 68px;
+}
+
+.ldm-hat--academic {
+  animation: ldmHatFloat2 6.5s ease-in-out 1.5s infinite alternate;
+  transform-origin: 72px 126px;
+}
+
+.ldm-hat--tech {
+  animation: ldmHatFloat1 5.2s ease-in-out 0.8s infinite alternate;
+  transform-origin: 168px 126px;
+}
+
+/* Hạt lấp lánh */
 .ldm-sparkle {
   animation: ldmSparkleFade 3s ease-in-out infinite alternate;
 }
@@ -74,16 +100,34 @@
   }
   100% {
     opacity: 1;
-    transform: scale(1.08);
+    transform: scale(1.06);
   }
 }
 
-@keyframes ldmHelmetFloat {
+@keyframes ldmStarPulse {
   0% {
-    transform: translate(120px, 85px) translateY(0);
+    transform: translate(120px, 92px) scale(0.96);
   }
   100% {
-    transform: translate(120px, 85px) translateY(-5px);
+    transform: translate(120px, 92px) scale(1.08);
+  }
+}
+
+@keyframes ldmHatFloat1 {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes ldmHatFloat2 {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-3px);
   }
 }
 
@@ -101,7 +145,8 @@
 @media (prefers-reduced-motion: reduce) {
   .ldm-halo-glow,
   .ldm-halo-spin,
-  .ldm-helmet-group,
+  .ldm-center-star,
+  .ldm-hat,
   .ldm-sparkle {
     animation: none !important;
   }
