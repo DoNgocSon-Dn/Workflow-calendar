@@ -327,9 +327,9 @@ export class GroupWorkspaceModal {
     effect(() => {
       const tab = this.activeTab();
       if (tab === 'calendar' && !this.canUserSeeGroupCalendar()) {
-        this.store.setActiveWorkspaceTab('tasks');
+        this.store.activeWorkspaceTab.set('tasks');
       } else if (tab === 'chat' && !this.canUserSeeChat()) {
-        this.store.setActiveWorkspaceTab('tasks');
+        this.store.activeWorkspaceTab.set('tasks');
       }
     });
   }
