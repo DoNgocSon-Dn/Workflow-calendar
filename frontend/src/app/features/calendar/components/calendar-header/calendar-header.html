@@ -93,7 +93,7 @@
         [attr.aria-expanded]="viewMenuOpen()"
         (click)="toggleViewMenu()"
       >
-        {{ currentViewLabel() }}
+        <span class="view-label">{{ currentViewLabel() }}</span>
         <svg viewBox="0 0 24 24" width="18" height="18">
           <path fill="currentColor" d="M7 10l5 5 5-5z" />
         </svg>
