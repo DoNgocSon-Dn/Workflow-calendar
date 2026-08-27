@@ -37,26 +37,32 @@
   }
 }
 
-/* Bánh răng vector kỹ nghệ 1/5 & 30/4 — mờ nhẹ tinh tế */
+/* Bánh răng vector kỹ nghệ 1/5 & 30/4 — đặt CHÍNH GIỮA màn hình mờ nhẹ tinh tế */
 .holiday-backdrop--labor-day .holiday-backdrop__motif {
-  width: min(38vw, 420px);
-  height: min(52%, 380px);
-  opacity: 0.28;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, -50%);
+  width: min(44vw, 480px);
+  height: min(55%, 400px);
+  opacity: 0.25;
+  mask-image: radial-gradient(60% 60% at 50% 50%, #000 45%, transparent 100%);
+  -webkit-mask-image: radial-gradient(60% 60% at 50% 50%, #000 45%, transparent 100%);
 }
 
 @media (max-width: 1200px) {
   .holiday-backdrop--labor-day .holiday-backdrop__motif {
-    width: min(44vw, 340px);
-    height: min(40%, 280px);
-    opacity: 0.22;
+    width: min(50vw, 380px);
+    height: min(42%, 300px);
+    opacity: 0.2;
   }
 }
 
 @media (max-width: 900px) {
   .holiday-backdrop--labor-day .holiday-backdrop__motif {
-    width: min(55vw, 260px);
-    height: min(30%, 190px);
-    opacity: 0.18;
+    width: min(65vw, 270px);
+    height: min(32%, 190px);
+    opacity: 0.16;
   }
 }
 
