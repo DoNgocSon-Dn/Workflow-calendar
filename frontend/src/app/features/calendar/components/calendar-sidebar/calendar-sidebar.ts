@@ -35,6 +35,9 @@ function dedupeByName(groups: Group[]): Group[] {
   styleUrl: './calendar-sidebar.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MiniCalendar, Icon],
+  host: {
+    '(document:click)': 'activeColorPickerId.set(null)',
+  },
 })
 export class CalendarSidebar implements OnInit {
   protected readonly store = inject(CalendarStore);
@@ -42,6 +45,33 @@ export class CalendarSidebar implements OnInit {
   protected readonly i18n = inject(TranslationService);
   private readonly dialog = inject(DialogService);
   protected readonly colorHex = CALENDAR_COLOR_HEX;
+
+  protected readonly activeColorPickerId = signal<string | null>(null);
+  protected readonly availableColors: CalendarColor[] = [
+    'blue',
+    'green',
+    'orange',
+    'red',
+    'purple',
+    'teal',
+  ];
+
+  toggleColorPicker(event: Event, calendarId: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.activeColorPickerId.update((curr) => (curr === calendarId ? null : calendarId));
+  }
+
+  async selectColor(event: Event, calendarId: string, color: CalendarColor): Promise<void> {
+    event.preventDefault();
+    event.stopPropagation();
+    this.activeColorPickerId.set(null);
+    try {
+      await this.store.updateCalendarColor(calendarId, color);
+    } catch {
+      // Ignore
+    }
+  }
 
   readonly createClicked = output<void>();
   readonly createCalendarClicked = output<void>();

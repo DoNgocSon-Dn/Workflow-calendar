@@ -28,7 +28,8 @@ const SNOOZE_MS = 5 * 60 * 1000;
  *  đang xếp hàng chờ (7s/toast thì vài chục sự kiện phải đợi rất lâu mới thấy
  *  hết). Nâng lên 4 để một đợt import vẫn thấy rõ nhiều toast xếp chồng ngay,
  *  không phải chờ toast trước tự tắt mới thấy cái tiếp theo. */
-const MAX_VISIBLE = 4;
+/** Chỉ hiển thị duy nhất 1 popup thông báo tại một thời điểm theo yêu cầu giao diện. */
+const MAX_VISIBLE = 1;
 
 @Injectable({ providedIn: 'root' })
 export class NotificationQueue {
@@ -43,7 +44,17 @@ export class NotificationQueue {
   push(item: Omit<NotificationItem, 'id'> & { id?: string }): void {
     const full: NotificationItem = { ...item, id: item.id ?? crypto.randomUUID() };
     this.queue.update((list) => {
+      // 1. Khai trùng ID
       if (list.some((n) => n.id === full.id)) return list;
+
+      // 2. Khai trùng nội dung (tiêu đề + thông điệp y hệt)
+      if (list.some((n) => n.title === full.title && n.body === full.body)) return list;
+
+      // 3. Khai trùng loại thông báo theo cùng một sự kiện (trùng lịch, nhắc lịch...)
+      if (full.eventId && full.kind && list.some((n) => n.eventId === full.eventId && n.kind === full.kind)) {
+        return list;
+      }
+
       return [...list, full];
     });
     this.notifyBrowserIfHidden(full);
