@@ -10,7 +10,7 @@ interface DueReminderRow {
   event_id: string;
   user_id: string;
   remind_type: 'popup' | 'email';
-  events: { title: string; start_at: string } | null;
+  events: { title: string; start_at: string; meet_link: string | null } | null;
 }
 
 @Injectable()
@@ -30,7 +30,7 @@ export class RemindersCronService {
 
     const { data, error } = await supabase
       .from('reminders')
-      .select('id, event_id, user_id, remind_type, events(title, start_at)')
+      .select('id, event_id, user_id, remind_type, events(title, start_at, meet_link)')
       .lte('remind_at', nowIso)
       .eq('is_sent', false)
       .returns<DueReminderRow[]>();
@@ -66,6 +66,9 @@ export class RemindersCronService {
         eventId: reminder.event_id,
         title,
         startAt,
+        // Nhắc một buổi họp mà không kèm link thì người dùng vẫn phải đi mở
+        // lịch tìm lại — đúng vào lúc buổi họp đã bắt đầu.
+        meetLink: reminder.events?.meet_link ?? null,
       });
       return;
     }

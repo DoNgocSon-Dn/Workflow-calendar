@@ -32,7 +32,7 @@ export interface MissedReminderRow {
   id: string;
   event_id: string;
   remind_at: string;
-  events: { title: string; start_at: string } | null;
+  events: { title: string; start_at: string; meet_link: string | null } | null;
 }
 
 export interface MissedReminderDto {
@@ -40,6 +40,7 @@ export interface MissedReminderDto {
   eventId: string;
   title: string;
   startAt: string;
+  meetLink: string | null;
 }
 
 export function toMissedReminderDto(row: MissedReminderRow): MissedReminderDto {
@@ -48,5 +49,6 @@ export function toMissedReminderDto(row: MissedReminderRow): MissedReminderDto {
     eventId: row.event_id,
     title: row.events?.title ?? 'Sự kiện',
     startAt: row.events?.start_at ?? row.remind_at,
+    meetLink: row.events?.meet_link ?? null,
   };
 }

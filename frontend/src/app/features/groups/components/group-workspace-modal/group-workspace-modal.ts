@@ -1112,7 +1112,17 @@ export class GroupWorkspaceModal {
   protected readonly meetTime = signal('');
   protected readonly meetDuration = signal<number>(60);
   protected readonly meetAddToCalendar = signal(true);
-  protected readonly meetAnnounceInChat = signal(true);
+
+  /**
+   * Bật sẵn, còn "đăng vào chat" thì không.
+   *
+   * Một tin nhắn chat báo trước vài tiếng sẽ trôi mất giữa dòng tin nhắn đúng
+   * lúc cần nhớ nhất. Lời nhắc thì nổ đúng giờ họp, kèm luôn nút Tham gia,
+   * nên nó mới là thứ đưa người ta vào phòng họp.
+   */
+  protected readonly meetRemindEveryone = signal(true);
+
+  protected readonly meetAnnounceInChat = signal(false);
   protected readonly meetSaving = signal(false);
   protected readonly meetError = signal<string | null>(null);
   protected readonly meetCopied = signal(false);
@@ -1143,6 +1153,12 @@ export class GroupWorkspaceModal {
 
   protected readonly canCreateMeet = computed(() => !this.meetSaving());
 
+  /** Lời nhắc là hàng trong bảng `reminders`, trỏ tới `event_id` — không tạo
+   *  sự kiện thì không có gì để trỏ vào. */
+  protected readonly canRemindEveryone = computed(
+    () => this.meetAddToCalendar() && this.canAddGroupEvent(),
+  );
+
   selectMeetDuration(minutes: number): void {
     this.meetDuration.set(minutes);
   }
@@ -1169,7 +1185,7 @@ export class GroupWorkspaceModal {
     this.meetError.set(null);
     try {
       if (this.meetAddToCalendar() && this.canAddGroupEvent()) {
-        await this.calendarStore.createEvent({
+        const event = await this.calendarStore.createEvent({
           calendarId: group.calendarId,
           title,
           start,
@@ -1177,6 +1193,24 @@ export class GroupWorkspaceModal {
           allDay: false,
           meetLink: link,
         });
+
+        if (this.meetRemindEveryone()) {
+          // offsetMinutes 0 = nổ ĐÚNG giờ bắt đầu. Cron quét mỗi phút nên popup
+          // hiện chậm nhất là một phút sau mốc đó.
+          //
+          // Lỗi ở đây không được huỷ cả thao tác: phòng họp đã có link, sự kiện
+          // đã nằm trên lịch — chỉ riêng phần chuông là hỏng, và người dùng cần
+          // biết đúng chừng đó.
+          try {
+            await this.calendarStore.setRemindersForAllMembers(event.id, [
+              { offsetMinutes: 0, type: 'popup' },
+            ]);
+          } catch {
+            this.meetError.set(
+              'Đã tạo phòng họp và sự kiện, nhưng chưa đặt được lời nhắc cho cả nhóm.',
+            );
+          }
+        }
       }
 
       // Từ đây phòng họp coi như đã lưu. Lỗi ở bước báo chat KHÔNG được nuốt

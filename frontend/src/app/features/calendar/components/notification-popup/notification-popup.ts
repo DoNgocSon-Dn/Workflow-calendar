@@ -64,6 +64,12 @@ export class NotificationPopup {
     this.beginExit(id, () => this.notificationQueue.dismiss(id));
   }
 
+  /** Link tự mở ở tab mới (thẻ <a> lo), việc ở đây chỉ là dọn toast đi — đã
+   *  vào họp rồi thì lời nhắc không còn gì để nhắc. */
+  onJoinMeeting(notificationId: string): void {
+    this.beginExit(notificationId, () => this.notificationQueue.dismiss(notificationId));
+  }
+
   onViewDetail(eventId: string, notificationId: string): void {
     // Điều hướng chạy ngay, còn card rời đi theo nhịp của nó.
     this.viewDetail.emit(eventId);
