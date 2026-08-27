@@ -794,7 +794,7 @@ export class CalendarStore {
       // dữ liệu mới hơn bằng dữ liệu cũ hơn.
       if (this.pollInFlight || document.hidden) return;
       this.pollInFlight = true;
-      this.refreshEvents()
+      this.pollSync()
         .catch(() => {
           // Im lặng có chủ đích: đây là việc chạy ngầm người dùng không yêu
           // cầu, hiện lỗi mạng ở đây chỉ làm phiền. Nhịp sau sẽ thử lại.
@@ -836,6 +836,69 @@ export class CalendarStore {
       document.removeEventListener('visibilitychange', onVisibility);
     });
   }
+
+  /**
+   * Một nhịp đồng bộ ngầm: kéo dữ liệu mới rồi SO SÁNH để sinh thông báo.
+   *
+   * refreshEvents() chỉ gọi events.set(...) — nó thay nguyên mảng, không hề
+   * biết cái nào vừa xuất hiện. Nên khi socket không tới được (proxy cắt, máy
+   * vừa ngủ dậy, đổi mạng), người dùng thấy sự kiện tự hiện lên lưới mà KHÔNG
+   * có thông báo nào. Đúng triệu chứng "đối phương không thấy thông báo".
+   *
+   * Ở đây chụp lại tập id trước khi tải, so với tập sau khi tải, và báo cho
+   * những id mới xuất hiện.
+   */
+  private async pollSync(): Promise<void> {
+    const before = new Set(this.events().map((e) => e.id));
+    await this.refreshEvents();
+
+    // Lần đầu chưa có gì để so — nếu không chặn thì toàn bộ lịch sẽ đổ ra
+    // thành một tràng thông báo ngay lúc mở app.
+    if (before.size === 0) return;
+
+    const me = this.authStore.user()?.id;
+
+    for (const event of this.events()) {
+      if (before.has(event.id)) continue;
+
+      // Đã báo qua socket rồi thì thôi — tránh báo hai lần cho cùng một sự
+      // kiện khi cả hai đường cùng tới.
+      if (this.notifiedEventIds.has(event.id)) continue;
+      this.notifiedEventIds.add(event.id);
+
+      const mine = !!me && !!event.createdBy && event.createdBy === me;
+
+      // Của mình trên lịch cá nhân thì im lặng, đúng quy ước ở
+      // handleRemoteCreated(). Của mình trên lịch nhóm vẫn báo, vì đó là bằng
+      // chứng nhóm đã nhận được.
+      if (mine && !this.isGroupCalendar(event.calendarId)) continue;
+
+      const timeLabel = eventTimeLabel(event, this.timeFormatService.format());
+
+      // Người khác tạo thì bật cả popup; của mình thì chỉ ghi vào chuông.
+      if (!mine) {
+        this.notificationQueue.push({
+          eventId: event.id,
+          title: `Sự kiện mới: ${event.title}`,
+          body: timeLabel,
+          kind: 'created',
+        });
+      }
+
+      this.notifications.ingest(
+        eventCreatedDraft(this.nt, {
+          eventId: event.id,
+          title: event.title,
+          timeLabel,
+          start: event.start.toISOString(),
+          end: event.end.toISOString(),
+        }),
+      );
+    }
+  }
+
+  /** Id đã sinh thông báo rồi — chặn báo trùng giữa socket và đồng bộ ngầm. */
+  private readonly notifiedEventIds = new Set<string>();
 
   private joinAllCalendarRooms(): void {
     for (const cal of this.calendars()) this.realtime.joinCalendar(cal.id);
@@ -925,6 +988,11 @@ export class CalendarStore {
     // tạo không có cách nào biết nó đã đi tới nhóm hay chỉ nằm ở máy mình.
     const timeLabel = eventTimeLabel(event, this.timeFormatService.format());
     const isMine = this.isCreatedByCurrentUser(dto);
+
+    // Đánh dấu ngay để nhịp đồng bộ ngầm không báo lại lần nữa cho cùng sự
+    // kiện này. Hai đường (socket + polling) cùng dẫn tới một đích nên phải có
+    // một sổ chung, nếu không mỗi sự kiện sẽ hiện hai dòng thông báo.
+    this.notifiedEventIds.add(event.id);
 
     if (isMine) {
       this.selfOriginIds.delete(event.id);
