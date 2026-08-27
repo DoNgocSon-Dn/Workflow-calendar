@@ -519,6 +519,7 @@ export class EventsService {
       .from('events')
       .select('*')
       .is('deleted_at', null)
+      .eq('all_day', false)
       .lt('start_at', dto.end)
       .gt('end_at', dto.start);
     if (dto.excludeEventId) {

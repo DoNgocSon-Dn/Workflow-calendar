@@ -4,10 +4,12 @@ import {
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseClient, User } from '@supabase/supabase-js';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { SupabaseService } from '../supabase/supabase.service';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { SetGroupHiddenDto } from './dto/set-group-hidden.dto';
@@ -184,7 +186,91 @@ export interface GroupMessageDto {
 
 @Injectable()
 export class GroupsService {
-  constructor(private readonly realtimeGateway: RealtimeGateway) {}
+  private readonly logger = new Logger(GroupsService.name);
+
+  constructor(
+    private readonly realtimeGateway: RealtimeGateway,
+    private readonly supabaseService: SupabaseService,
+  ) {}
+
+  // ============================================================
+  // Đồng bộ calendar_members theo vai trò trong nhóm.
+  //
+  // BẮT BUỘC chạy bằng service-role: RLS calendar_members chỉ cho CHỦ lịch
+  // (người tạo nhóm ban đầu, role = 'owner') sửa/xoá. Khi một quản trị viên —
+  // hoặc trưởng nhóm MỚI sau khi chuyển quyền — đổi quyền / đá thành viên,
+  // client theo JWT của họ bị RLS chặn IM LẶNG, làm quyền trên lịch nhóm trôi
+  // khỏi vai trò trong nhóm (người bị đá vẫn xem được lịch; người vừa lên
+  // admin vẫn không tạo được sự kiện). Ở đây kiểm lỗi và ghi log thay vì nuốt.
+  // ============================================================
+
+  /** Mọi thành viên nhóm (trưởng nhóm / quản trị / thành viên) đều tạo-sửa
+   *  được sự kiện chung trên lịch nhóm — đúng như mô tả trong tab "Lịch Nhóm"
+   *  ("Tất cả thành viên đều có quyền theo dõi và tạo sự kiện chung"). Trước
+   *  đây RPC gán 'admin' -> editor, còn lại -> viewer, nên thành viên thường
+   *  không thêm được sự kiện dù giao diện nói ngược lại. */
+  private readonly GROUP_CALENDAR_ROLE = 'editor' as const;
+
+  /** Bảo đảm user có mặt trên lịch nhóm với vai trò 'editor' (dùng sau khi
+   *  chấp nhận lời mời / duyệt yêu cầu — RPC đã chèn hàng nhưng có thể gán
+   *  'viewer', ở đây nâng lên đúng mức). Không bao giờ hạ 'owner'. */
+  private async upsertCalendarMember(
+    calendarId: string | null,
+    userId: string,
+  ): Promise<void> {
+    if (!calendarId) return;
+    const admin = this.supabaseService.getServiceRoleClient();
+
+    const { data: existing } = await admin
+      .from('calendar_members')
+      .select('role')
+      .eq('calendar_id', calendarId)
+      .eq('user_id', userId)
+      .maybeSingle<{ role: string }>();
+    if (existing?.role === 'owner') return;
+
+    const { error } = await admin.from('calendar_members').upsert(
+      { calendar_id: calendarId, user_id: userId, role: this.GROUP_CALENDAR_ROLE },
+      { onConflict: 'calendar_id,user_id' },
+    );
+    if (error) {
+      this.logger.error(
+        `upsertCalendarMember(cal=${calendarId} user=${userId}) thất bại: ${error.message}`,
+      );
+    }
+  }
+
+  private async removeCalendarMember(
+    calendarId: string | null,
+    userId: string,
+  ): Promise<void> {
+    if (!calendarId) return;
+    const { error } = await this.supabaseService
+      .getServiceRoleClient()
+      .from('calendar_members')
+      .delete()
+      .eq('calendar_id', calendarId)
+      .eq('user_id', userId)
+      // Đừng xoá chủ lịch khỏi chính lịch của họ.
+      .neq('role', 'owner');
+    if (error) {
+      this.logger.error(
+        `removeCalendarMember(cal=${calendarId} user=${userId}) thất bại: ${error.message}`,
+      );
+    }
+  }
+
+  /** calendar_id của lịch nhóm (đọc bằng service-role để không phụ thuộc RLS
+   *  của người gọi). */
+  private async groupCalendarId(groupId: string): Promise<string | null> {
+    const { data } = await this.supabaseService
+      .getServiceRoleClient()
+      .from('groups')
+      .select('calendar_id')
+      .eq('id', groupId)
+      .maybeSingle<{ calendar_id: string | null }>();
+    return data?.calendar_id ?? null;
+  }
 
   // Phát realtime cho cả room theo groupId lẫn room theo lịch nhóm
   // (group_workspace_modal join cả 2, còn view lịch chỉ join theo calendar).
@@ -483,12 +569,19 @@ export class GroupsService {
       );
     }
 
-    // Add owner to calendar_members
-    await supabase.from('calendar_members').insert({
-      calendar_id: calendarId,
-      user_id: user.id,
-      role: 'owner',
-    });
+    // Add owner to calendar_members. Kiểm lỗi: nếu hàng này không được ghi thì
+    // is_calendar_member() = false, người tạo không thấy được LỊCH của chính
+    // nhóm mình và không quản lý được thành viên lịch.
+    const { error: calMemberError } = await supabase
+      .from('calendar_members')
+      .insert({ calendar_id: calendarId, user_id: user.id, role: 'owner' });
+
+    if (calMemberError) {
+      await supabase.from('calendars').delete().eq('id', calendarId);
+      throw new InternalServerErrorException(
+        calMemberError.message || 'Không thể tạo lịch nhóm',
+      );
+    }
 
     // 2. Insert into groups table
     const { error: groupError } = await supabase.from('groups').insert({
@@ -501,6 +594,10 @@ export class GroupsService {
     });
 
     if (groupError) {
+      // Dọn lịch vừa tạo — groups.calendar_id là "on delete set null" nên lịch
+      // không tự biến mất theo nhóm; không dọn ở đây thì mỗi lần tạo nhóm hỏng
+      // để lại một lịch mồ côi kèm calendar_members của nó.
+      await supabase.from('calendars').delete().eq('id', calendarId);
       throw new InternalServerErrorException(
         groupError.message || 'Không thể tạo nhóm mới',
       );
@@ -529,6 +626,7 @@ export class GroupsService {
     // quản lý được — không xoá được, không mời được, không đổi quyền được.
     if (memberError) {
       await supabase.from('groups').delete().eq('id', groupId);
+      await supabase.from('calendars').delete().eq('id', calendarId);
       throw new InternalServerErrorException(
         memberError.message || 'Không thể thêm người tạo vào nhóm',
       );
