@@ -1,14 +1,14 @@
-import { NotificationDraft } from './notification.model';
+import { NotifKeyRef, NotifParams, NotificationDraft } from './notification.model';
 
 /**
  * Lớp ADAPTER giữa dữ liệu domain (event, task, tin nhắn...) và Notification
  * Center. Toàn bộ là hàm thuần; store nào nhận được sự kiện realtime thì gọi
  * hàm ở đây rồi đẩy sang `NotificationService.ingest()`.
  *
- * Mỗi hàm nhận `t` (hàm dịch của `TranslationService`) để tiêu đề/nội dung
- * hiển thị theo đúng ngôn ngữ đang chọn tại thời điểm thông báo được tạo. Chuỗi
- * được "đóng băng" vào thông báo lúc tạo — đổi ngôn ngữ sau đó không dịch lại
- * các thông báo cũ (đánh đổi có chủ đích để không phải đổi mô hình lưu trữ).
+ * Mỗi hàm nhận `t` (hàm dịch của `TranslationService`). Chuỗi hiển thị vừa
+ * được "đóng băng" (`title`/`message` — làm fallback + dùng cho toast tức
+ * thời), vừa kèm `titleKey`/`messageKey` + params để `notification-item` DỊCH
+ * LẠI mỗi lần render — nên đổi ngôn ngữ sẽ cập nhật cả thông báo nhận từ trước.
  *
  * Mỗi hàm phải sinh ra `id` ỔN ĐỊNH từ chính dữ liệu nguồn: cùng một sự kiện
  * đến lại (socket gửi trùng, reconnect phát lại) sẽ cho ra cùng `id` và bị
@@ -38,6 +38,42 @@ function shortHash(...parts: readonly string[]): string {
   return (hash >>> 0).toString(36);
 }
 
+interface Text {
+  readonly text: string;
+  readonly key: string;
+  readonly params?: NotifParams;
+}
+
+/** Bake chuỗi ngay bây giờ (fallback) + giữ key/params để dịch lại sau. */
+function tr(t: NotificationT, key: string, params?: NotifParams): Text {
+  const flat: Record<string, string | number> = {};
+  for (const [k, v] of Object.entries(params ?? {})) {
+    flat[k] = v !== null && typeof v === 'object' ? t((v as NotifKeyRef).key, (v as NotifKeyRef).params) : v;
+  }
+  return { text: t(key, flat).trim(), key, params };
+}
+
+/** Tiêu đề không dịch (tên người gửi...) — chỉ có `text`, không có key. */
+function raw(text: string): Text {
+  return { text, key: '' };
+}
+
+type TextFields = Pick<
+  NotificationDraft,
+  'title' | 'titleKey' | 'titleParams' | 'message' | 'messageKey' | 'messageParams'
+>;
+
+function texts(title: Text, message: Text): TextFields {
+  return {
+    title: title.text,
+    titleKey: title.key || undefined,
+    titleParams: title.params,
+    message: message.text,
+    messageKey: message.key || undefined,
+    messageParams: message.params,
+  };
+}
+
 export interface GroupMessageDraftInput {
   readonly senderId: string;
   readonly senderName: string;
@@ -53,8 +89,7 @@ export function groupMessageDraft(t: NotificationT, input: GroupMessageDraftInpu
   return {
     id: `message-${input.messageId}`,
     type: 'message',
-    title: input.senderName,
-    message: t('nd.message.body', { group: input.groupName }),
+    ...texts(raw(input.senderName), tr(t, 'nd.message.body', { group: input.groupName })),
     createdAt: input.createdAt,
     sender: { name: input.senderName, avatarUrl: input.senderAvatar },
     relatedId: input.groupId,
@@ -75,8 +110,10 @@ export function groupMentionDraft(t: NotificationT, input: GroupMessageDraftInpu
   return {
     id: `mention-${input.messageId}`,
     type: 'mention',
-    title: t('nd.mention.title', { sender: input.senderName }),
-    message: t('nd.mention.body', { group: input.groupName }),
+    ...texts(
+      tr(t, 'nd.mention.title', { sender: input.senderName }),
+      tr(t, 'nd.mention.body', { group: input.groupName }),
+    ),
     createdAt: input.createdAt,
     sender: { name: input.senderName, avatarUrl: input.senderAvatar },
     relatedId: input.groupId,
@@ -112,8 +149,10 @@ export function groupTaskAssignedDraft(t: NotificationT, input: GroupTaskDraftIn
   return {
     id: `task-assigned-${input.taskId}`,
     type: 'task',
-    title: t('nd.taskAssigned.title'),
-    message: t('nd.taskAssigned.body', { title: input.title, group: input.groupName }),
+    ...texts(
+      tr(t, 'nd.taskAssigned.title'),
+      tr(t, 'nd.taskAssigned.body', { title: input.title, group: input.groupName }),
+    ),
     createdAt: input.createdAt,
     relatedId: input.taskId,
     metadata: { groupId: input.groupId, taskTitle: input.title },
@@ -124,11 +163,13 @@ export function groupTaskUpdatedDraft(t: NotificationT, input: GroupTaskDraftInp
   return {
     id: `task-updated-${input.taskId}-${shortHash(input.status, input.assignedTo ?? '')}`,
     type: 'task',
-    title: t('nd.taskUpdated.title'),
-    message: t('nd.taskUpdated.body', {
-      title: input.title,
-      status: t(TASK_STATUS_KEY[input.status]),
-    }),
+    ...texts(
+      tr(t, 'nd.taskUpdated.title'),
+      tr(t, 'nd.taskUpdated.body', {
+        title: input.title,
+        status: { key: TASK_STATUS_KEY[input.status] },
+      }),
+    ),
     createdAt: input.createdAt,
     relatedId: input.taskId,
     metadata: { groupId: input.groupId, status: input.status },
@@ -144,8 +185,7 @@ export function groupTaskDeletedDraft(
   return {
     id: `task-deleted-${taskId}`,
     type: 'task',
-    title: t('nd.taskDeleted.title'),
-    message: t('nd.taskDeleted.body', { title }),
+    ...texts(tr(t, 'nd.taskDeleted.title'), tr(t, 'nd.taskDeleted.body', { title })),
     createdAt: new Date().toISOString(),
     metadata: { groupId },
   };
@@ -172,14 +212,16 @@ const DEADLINE_KEY: Readonly<Record<DeadlinePhase, { title: string; verb: string
 
 export function taskDeadlineDraft(t: NotificationT, input: TaskDeadlineDraftInput): NotificationDraft {
   const keys = DEADLINE_KEY[input.phase];
-  const verb = t(keys.verb);
+  const verb: NotifKeyRef = { key: keys.verb };
   return {
     id: `deadline-${input.taskId}-${input.phase}`,
     type: 'deadline',
-    title: t(keys.title),
-    message: input.groupName
-      ? t('nd.deadline.bodyInGroup', { title: input.title, group: input.groupName, verb })
-      : t('nd.deadline.body', { title: input.title, verb }),
+    ...texts(
+      tr(t, keys.title),
+      input.groupName
+        ? tr(t, 'nd.deadline.bodyInGroup', { title: input.title, group: input.groupName, verb })
+        : tr(t, 'nd.deadline.body', { title: input.title, verb }),
+    ),
     createdAt: input.createdAt ?? new Date().toISOString(),
     relatedId: input.taskId,
     metadata: {
@@ -205,10 +247,12 @@ export function groupInvitationDraft(t: NotificationT, input: GroupInvitationDra
   return {
     id: `group-invitation-${input.inviteId}`,
     type: 'group_invitation',
-    title: t('nd.groupInvite.title'),
-    message: input.inviterEmail
-      ? t('nd.groupInvite.bodyFrom', { email: input.inviterEmail, group: input.groupName })
-      : t('nd.groupInvite.body', { group: input.groupName }),
+    ...texts(
+      tr(t, 'nd.groupInvite.title'),
+      input.inviterEmail
+        ? tr(t, 'nd.groupInvite.bodyFrom', { email: input.inviterEmail, group: input.groupName })
+        : tr(t, 'nd.groupInvite.body', { group: input.groupName }),
+    ),
     createdAt: input.createdAt,
     sender: input.inviterEmail ? { name: input.inviterEmail, email: input.inviterEmail } : undefined,
     relatedId: input.groupId,
@@ -231,11 +275,13 @@ export function groupMemberRoleChangedDraft(
   return {
     id: `group-role-changed-${groupId}-${userId}-${role.toLowerCase()}`,
     type: 'group_invitation',
-    title: t('nd.groupRoleChanged.title'),
-    message: t('nd.groupRoleChanged.body', {
-      group: groupName,
-      role: t(`groupRole.${role.toLowerCase()}`),
-    }),
+    ...texts(
+      tr(t, 'nd.groupRoleChanged.title'),
+      tr(t, 'nd.groupRoleChanged.body', {
+        group: groupName,
+        role: { key: `groupRole.${role.toLowerCase()}` },
+      }),
+    ),
     createdAt: new Date().toISOString(),
     relatedId: groupId,
   };
@@ -251,10 +297,12 @@ export function groupMemberRemovedDraft(
   return {
     id: `group-member-removed-${groupId}`,
     type: 'group_invitation',
-    title: t('nd.groupMemberRemoved.title'),
-    message: groupName
-      ? t('nd.groupMemberRemoved.body', { group: groupName })
-      : t('nd.groupMemberRemoved.bodyNoName'),
+    ...texts(
+      tr(t, 'nd.groupMemberRemoved.title'),
+      groupName
+        ? tr(t, 'nd.groupMemberRemoved.body', { group: groupName })
+        : tr(t, 'nd.groupMemberRemoved.bodyNoName'),
+    ),
     createdAt: new Date().toISOString(),
   };
 }
@@ -270,17 +318,20 @@ export interface GroupJoinRequestDraftInput {
 
 /** Hiện cho LEADER/ADMIN khi có người gửi yêu cầu tham gia nhóm qua link mời. */
 export function groupJoinRequestDraft(t: NotificationT, input: GroupJoinRequestDraftInput): NotificationDraft {
-  const requester = input.requesterName || input.requesterEmail || t('nd.joinRequest.someone');
+  const requester: string | NotifKeyRef =
+    input.requesterName || input.requesterEmail || { key: 'nd.joinRequest.someone' };
+  const group: string | NotifKeyRef = input.groupName ?? { key: 'nd.joinRequest.yourGroup' };
+  const requesterText =
+    input.requesterName || input.requesterEmail || t('nd.joinRequest.someone');
   return {
     id: `group-join-request-${input.requestId}`,
     type: 'group_join_request',
-    title: t('nd.joinRequest.title'),
-    message: t('nd.joinRequest.body', {
-      requester,
-      group: input.groupName ?? t('nd.joinRequest.yourGroup'),
-    }),
+    ...texts(
+      tr(t, 'nd.joinRequest.title'),
+      tr(t, 'nd.joinRequest.body', { requester, group }),
+    ),
     createdAt: input.createdAt,
-    sender: input.requesterEmail ? { name: requester, email: input.requesterEmail } : undefined,
+    sender: input.requesterEmail ? { name: requesterText, email: input.requesterEmail } : undefined,
     relatedId: input.groupId,
     actionStatus: 'pending',
     metadata: { requestId: input.requestId, groupId: input.groupId },
@@ -301,17 +352,17 @@ export function groupJoinRequestResolvedDraft(
   input: GroupJoinRequestResolvedDraftInput,
 ): NotificationDraft {
   const group = input.groupName ?? '';
+  const approved = input.status === 'approved';
   return {
     id: `group-join-request-resolved-${input.requestId}`,
     type: 'group_join_request',
-    title: input.status === 'approved' ? t('nd.joinResolved.approvedTitle') : t('nd.joinResolved.declinedTitle'),
-    message:
-      input.status === 'approved'
-        ? t('nd.joinResolved.approvedBody', { group })
-        : t('nd.joinResolved.declinedBody', { group }),
+    ...texts(
+      tr(t, approved ? 'nd.joinResolved.approvedTitle' : 'nd.joinResolved.declinedTitle'),
+      tr(t, approved ? 'nd.joinResolved.approvedBody' : 'nd.joinResolved.declinedBody', { group }),
+    ),
     createdAt: input.createdAt,
     relatedId: input.groupId,
-    actionStatus: input.status === 'approved' ? 'accepted' : 'declined',
+    actionStatus: approved ? 'accepted' : 'declined',
     metadata: { requestId: input.requestId, groupId: input.groupId },
   };
 }
@@ -324,7 +375,8 @@ export interface SystemNoticeDraftInput {
   readonly createdAt: string;
 }
 
-/** Nội dung do backend soạn sẵn (đã theo ngôn ngữ hệ thống) — không dịch lại. */
+/** Nội dung do backend soạn sẵn (đã theo ngôn ngữ hệ thống) — không có key,
+ *  giữ nguyên chuỗi backend gửi. */
 export function systemNoticeDraft(input: SystemNoticeDraftInput): NotificationDraft {
   return {
     id: `system-${input.id}`,
@@ -348,8 +400,10 @@ export function eventCreatedDraft(t: NotificationT, input: CalendarEventDraftInp
   return {
     id: `event-created-${input.eventId}`,
     type: 'event_update',
-    title: t('nd.eventCreated.title'),
-    message: t('nd.eventCreated.body', { title: input.title, time: input.timeLabel }).trim(),
+    ...texts(
+      tr(t, 'nd.eventCreated.title'),
+      tr(t, 'nd.eventCreated.body', { title: input.title, time: input.timeLabel }),
+    ),
     createdAt: new Date().toISOString(),
     relatedId: input.eventId,
   };
@@ -365,10 +419,12 @@ export function eventsImportedDraft(t: NotificationT, input: EventsImportedDraft
   return {
     id: `events-imported-${input.batchId}`,
     type: 'event_update',
-    title: t('nd.eventsImported.title'),
-    message: input.calendarName
-      ? t('nd.eventsImported.bodyToCalendar', { count: input.count, name: input.calendarName })
-      : t('nd.eventsImported.body', { count: input.count }),
+    ...texts(
+      tr(t, 'nd.eventsImported.title'),
+      input.calendarName
+        ? tr(t, 'nd.eventsImported.bodyToCalendar', { count: input.count, name: input.calendarName })
+        : tr(t, 'nd.eventsImported.body', { count: input.count }),
+    ),
     createdAt: new Date().toISOString(),
     metadata: { count: String(input.count) },
   };
@@ -388,8 +444,10 @@ export function eventsBulkUpdatedDraft(t: NotificationT, input: EventsBulkDraftI
   return {
     id: `events-bulk-updated-${shortHash(input.calendarId, ...sortedIds)}`,
     type: 'event_update',
-    title: t('nd.eventsBulkUpdated.title'),
-    message: t('nd.eventsBulkUpdated.body', { count: input.eventIds.length }),
+    ...texts(
+      tr(t, 'nd.eventsBulkUpdated.title'),
+      tr(t, 'nd.eventsBulkUpdated.body', { count: input.eventIds.length }),
+    ),
     createdAt: new Date().toISOString(),
   };
 }
@@ -399,8 +457,10 @@ export function eventsBulkDeletedDraft(t: NotificationT, input: EventsBulkDraftI
   return {
     id: `events-bulk-deleted-${shortHash(input.calendarId, ...sortedIds)}`,
     type: 'event_update',
-    title: t('nd.eventsBulkDeleted.title'),
-    message: t('nd.eventsBulkDeleted.body', { count: input.eventIds.length }),
+    ...texts(
+      tr(t, 'nd.eventsBulkDeleted.title'),
+      tr(t, 'nd.eventsBulkDeleted.body', { count: input.eventIds.length }),
+    ),
     createdAt: new Date().toISOString(),
   };
 }
@@ -409,8 +469,10 @@ export function eventUpdatedDraft(t: NotificationT, input: CalendarEventDraftInp
   return {
     id: `event-updated-${input.eventId}-${shortHash(input.start, input.end, input.title)}`,
     type: 'event_update',
-    title: t('nd.eventUpdated.title'),
-    message: t('nd.eventUpdated.body', { title: input.title, time: input.timeLabel }).trim(),
+    ...texts(
+      tr(t, 'nd.eventUpdated.title'),
+      tr(t, 'nd.eventUpdated.body', { title: input.title, time: input.timeLabel }),
+    ),
     createdAt: new Date().toISOString(),
     relatedId: input.eventId,
   };
@@ -429,15 +491,17 @@ export interface EventConflictDraftInput {
 
 export function eventConflictDraft(t: NotificationT, input: EventConflictDraftInput): NotificationDraft {
   const [first, ...rest] = input.conflicts;
-  const withWhom =
+  const withWhom: NotifKeyRef =
     rest.length > 0
-      ? t('nd.eventConflict.withOthers', { first: first.title, count: rest.length })
-      : t('nd.eventConflict.withOne', { first: first.title });
+      ? { key: 'nd.eventConflict.withOthers', params: { first: first.title, count: rest.length } }
+      : { key: 'nd.eventConflict.withOne', params: { first: first.title } };
   return {
     id: `event-conflict-${input.eventId}-${shortHash([...input.conflicts].map((c) => c.id).sort().join(','))}`,
     type: 'conflict',
-    title: t('nd.eventConflict.title'),
-    message: t('nd.eventConflict.body', { title: input.eventTitle, with: withWhom }),
+    ...texts(
+      tr(t, 'nd.eventConflict.title'),
+      tr(t, 'nd.eventConflict.body', { title: input.eventTitle, with: withWhom }),
+    ),
     createdAt: new Date().toISOString(),
     relatedId: input.eventId,
   };
@@ -447,8 +511,10 @@ export function eventDeletedDraft(t: NotificationT, eventId: string, title: stri
   return {
     id: `event-deleted-${eventId}`,
     type: 'event_update',
-    title: t('nd.eventDeleted.title'),
-    message: title ? t('nd.eventDeleted.body', { title }) : t('nd.eventDeleted.bodyNoTitle'),
+    ...texts(
+      tr(t, 'nd.eventDeleted.title'),
+      title ? tr(t, 'nd.eventDeleted.body', { title }) : tr(t, 'nd.eventDeleted.bodyNoTitle'),
+    ),
     createdAt: new Date().toISOString(),
     relatedId: eventId,
   };
@@ -463,15 +529,19 @@ export interface AttendeeStatusDraftInput {
 }
 
 export function attendeeStatusDraft(t: NotificationT, input: AttendeeStatusDraftInput): NotificationDraft {
-  const verb = input.status === 'accepted' ? t('nd.attendeeStatus.accepted') : t('nd.attendeeStatus.declined');
-  const eventPart = input.eventTitle
-    ? t('nd.attendeeStatus.eventPart', { title: input.eventTitle })
-    : t('nd.attendeeStatus.yourEvent');
+  const verb: NotifKeyRef = {
+    key: input.status === 'accepted' ? 'nd.attendeeStatus.accepted' : 'nd.attendeeStatus.declined',
+  };
+  const event: NotifKeyRef = input.eventTitle
+    ? { key: 'nd.attendeeStatus.eventPart', params: { title: input.eventTitle } }
+    : { key: 'nd.attendeeStatus.yourEvent' };
   return {
     id: `attendee-status-${input.eventId}-${input.attendeeId}-${input.status}`,
     type: 'event_update',
-    title: t('nd.attendeeStatus.title'),
-    message: t('nd.attendeeStatus.body', { email: input.attendeeEmail, verb, event: eventPart }),
+    ...texts(
+      tr(t, 'nd.attendeeStatus.title'),
+      tr(t, 'nd.attendeeStatus.body', { email: input.attendeeEmail, verb, event }),
+    ),
     createdAt: new Date().toISOString(),
     relatedId: input.eventId,
   };
@@ -485,10 +555,12 @@ export function eventInvitationDraft(
   return {
     id: `event-invite-${eventId}`,
     type: 'event_invitation',
-    title: t('nd.eventInvite.title'),
-    message: eventTitle
-      ? t('nd.eventInvite.body', { title: eventTitle })
-      : t('nd.eventInvite.bodyNoTitle'),
+    ...texts(
+      tr(t, 'nd.eventInvite.title'),
+      eventTitle
+        ? tr(t, 'nd.eventInvite.body', { title: eventTitle })
+        : tr(t, 'nd.eventInvite.bodyNoTitle'),
+    ),
     createdAt: new Date().toISOString(),
     relatedId: eventId,
     actionStatus: 'pending',
@@ -507,10 +579,12 @@ export function calendarInvitationDraft(t: NotificationT, input: CalendarInviteD
   return {
     id: `calendar-invite-${input.inviteId}`,
     type: 'event_invitation',
-    title: t('nd.calendarInvite.title'),
-    message: input.inviterEmail
-      ? t('nd.calendarInvite.bodyFrom', { email: input.inviterEmail, name: input.calendarName })
-      : t('nd.calendarInvite.body', { name: input.calendarName }),
+    ...texts(
+      tr(t, 'nd.calendarInvite.title'),
+      input.inviterEmail
+        ? tr(t, 'nd.calendarInvite.bodyFrom', { email: input.inviterEmail, name: input.calendarName })
+        : tr(t, 'nd.calendarInvite.body', { name: input.calendarName }),
+    ),
     createdAt: input.createdAt,
     sender: input.inviterEmail ? { name: input.inviterEmail, email: input.inviterEmail } : undefined,
     relatedId: input.calendarId,
@@ -528,8 +602,10 @@ export function calendarMemberJoinedDraft(
   return {
     id: `calendar-member-${calendarId}-${memberUserId}`,
     type: 'group_invitation',
-    title: t('nd.calendarMemberJoined.title'),
-    message: t('nd.calendarMemberJoined.body', { name: calendarName }),
+    ...texts(
+      tr(t, 'nd.calendarMemberJoined.title'),
+      tr(t, 'nd.calendarMemberJoined.body', { name: calendarName }),
+    ),
     createdAt: new Date().toISOString(),
     relatedId: calendarId,
   };
@@ -545,10 +621,12 @@ export function calendarDeletedDraft(
   return {
     id: `calendar-deleted-${calendarId}`,
     type: 'event_update',
-    title: t('nd.calendarDeleted.title'),
-    message: calendarName
-      ? t('nd.calendarDeleted.body', { name: calendarName })
-      : t('nd.calendarDeleted.bodyNoName'),
+    ...texts(
+      tr(t, 'nd.calendarDeleted.title'),
+      calendarName
+        ? tr(t, 'nd.calendarDeleted.body', { name: calendarName })
+        : tr(t, 'nd.calendarDeleted.bodyNoName'),
+    ),
     createdAt: new Date().toISOString(),
   };
 }
@@ -564,8 +642,7 @@ export function reminderDraft(t: NotificationT, input: ReminderDraftInput): Noti
   return {
     id: `reminder-${input.reminderId}`,
     type: 'reminder',
-    title: t('nd.reminder.title'),
-    message: t('nd.reminder.body', { title: input.title }),
+    ...texts(tr(t, 'nd.reminder.title'), tr(t, 'nd.reminder.body', { title: input.title })),
     createdAt: new Date().toISOString(),
     relatedId: input.eventId,
     metadata: { startAt: input.startAt },

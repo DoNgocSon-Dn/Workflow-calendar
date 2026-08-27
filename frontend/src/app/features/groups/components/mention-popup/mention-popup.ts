@@ -7,6 +7,7 @@ import {
   input,
   output,
 } from '@angular/core';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 
 /** Một dòng trong danh sách gợi ý mention. */
 export interface MentionOption {
@@ -34,6 +35,8 @@ export interface MentionOption {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MentionPopup {
+  protected readonly i18n = inject(TranslationService);
+
   /** Cố định (không sinh động) vì mỗi lúc chỉ có đúng một khung chat mở —
    *  ô nhập trỏ tới id này qua aria-controls/aria-activedescendant. */
   readonly listboxId = 'chat-mention-listbox';

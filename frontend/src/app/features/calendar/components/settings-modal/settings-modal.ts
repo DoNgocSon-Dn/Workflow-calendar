@@ -11,6 +11,7 @@ import { BrandTheme, BrandThemeService } from '../../../../core/theme/brand-them
 import { Theme, ThemeService } from '../../../../core/theme/theme-service';
 import { HolidayThemeMode, HolidayThemeService } from '../../data/holiday-theme.service';
 import { HOLIDAYS } from '../../../../data/holidays.data';
+import { DevUnlockService } from '../../../../core/services/dev-unlock.service';
 
 interface BrandThemeOption {
   readonly value: BrandTheme;
@@ -55,6 +56,7 @@ export class SettingsModal {
   protected readonly holidayThemeService = inject(HolidayThemeService);
   protected readonly soundService = inject(NotificationSoundService);
   protected readonly birthdayPopupService = inject(BirthdayPopupService);
+  protected readonly devUnlock = inject(DevUnlockService);
   protected readonly authStore = inject(AuthStore);
   protected readonly i18n = inject(TranslationService);
 

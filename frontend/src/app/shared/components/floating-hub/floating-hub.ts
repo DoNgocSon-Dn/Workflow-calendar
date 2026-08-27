@@ -13,6 +13,7 @@ import { FormsModule } from '@angular/forms';
 import { OverflowTooltip } from '../../directives/overflow-tooltip';
 import { CharCounter } from '../char-counter/char-counter';
 import { AuthStore } from '../../../core/auth/auth-store';
+import { TranslationService } from '../../../core/i18n/translation.service';
 import { NotificationQueue } from '../../../core/realtime/notification-queue';
 import { NotificationSoundService } from '../../../core/services/notification-sound.service';
 import {
@@ -210,17 +211,20 @@ function readStoredPos(): HubPos {
   return defaultPos();
 }
 
-function extractErrorMessage(err: unknown): string {
+function extractErrorMessage(
+  err: unknown,
+  t: (key: string) => string,
+): string {
   if (err instanceof HttpErrorResponse) {
     if (err.status === 0) {
-      return 'Không kết nối được tới server, vui lòng kiểm tra lại và thử lại.';
+      return t('hub.errNetwork');
     }
     const inner = err.error as { message?: string | string[] } | undefined;
     const msg = inner?.message;
     if (Array.isArray(msg)) return msg.join(', ');
     if (typeof msg === 'string') return msg;
   }
-  return 'Đã xảy ra lỗi, vui lòng thử lại.';
+  return t('hub.errGeneric');
 }
 
 function isDeleteIntent(text: string): boolean {
@@ -318,12 +322,18 @@ function mentionsAttachedFile(text: string): boolean {
   );
 }
 
-function formatDateLabel(date: Date): string {
+type T = (key: string, vars?: Record<string, string | number>) => string;
+
+function formatDateLabel(date: Date, t: T): string {
   const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const diffDays = Math.round((startOfDay(date) - startOfDay(new Date())) / 86_400_000);
-  const absolute = new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
-  if (diffDays === 0) return `Hôm nay (${absolute})`;
-  if (diffDays === 1) return `Ngày mai (${absolute})`;
+  const absolute = new Intl.DateTimeFormat(t('common.dateLocale'), {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date);
+  if (diffDays === 0) return t('hub.dateToday', { date: absolute });
+  if (diffDays === 1) return t('hub.dateTomorrow', { date: absolute });
   return absolute;
 }
 
@@ -336,20 +346,23 @@ function formatDateLabel(date: Date): string {
  * rồi để template lo phần nhìn thì cả ba biến mất, và tiêu đề sự kiện được
  * nhấn mạnh đúng mức thay vì nằm lẫn trong một khối chữ đều tăm tắp.
  */
-function buildEventCard(event: {
-  title: string;
-  start: string;
-  end: string;
-  location?: string;
-}): ChatEventCard {
+function buildEventCard(
+  event: {
+    title: string;
+    start: string;
+    end: string;
+    location?: string;
+  },
+  t: T,
+): ChatEventCard {
   const start = new Date(event.start);
   const end = new Date(event.end);
   const invalid = Number.isNaN(start.getTime()) || Number.isNaN(end.getTime());
-  const timeFmt = new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  const timeFmt = new Intl.DateTimeFormat(t('common.dateLocale'), { hour: '2-digit', minute: '2-digit' });
 
   return {
     title: event.title,
-    dateLabel: invalid ? event.start : formatDateLabel(start),
+    dateLabel: invalid ? event.start : formatDateLabel(start, t),
     timeLabel: invalid
       ? `${event.start} – ${event.end}`
       : `${timeFmt.format(start)} – ${timeFmt.format(end)}`,
@@ -366,11 +379,11 @@ function buildEventCard(event: {
  * từ recurrence rule gửi kèm) — đây là những gì đã thật sự được ghi vào lịch,
  * nên không thể lệch với những gì người dùng sắp thấy trên lưới lịch.
  */
-function buildRecurringConfirmation(events: readonly { start: string }[]): string {
+function buildRecurringConfirmation(events: readonly { start: string }[], t: T): string {
   const weekdays = [...new Set(events.map((e) => new Date(e.start).getDay()))].sort(
     (a, b) => ((a + 6) % 7) - ((b + 6) % 7),
   );
-  const weekdayFmt = new Intl.DateTimeFormat('vi-VN', { weekday: 'long' });
+  const weekdayFmt = new Intl.DateTimeFormat(t('common.dateLocale'), { weekday: 'long' });
   // 2024-01-07 là Chủ nhật — mốc tham chiếu bất kỳ, chỉ cần đúng thứ.
   const names = weekdays
     .map((wd) => {
@@ -378,7 +391,7 @@ function buildRecurringConfirmation(events: readonly { start: string }[]): strin
       return label.charAt(0).toUpperCase() + label.slice(1);
     })
     .join(', ');
-  return `Đã tạo ${events.length} sự kiện lặp lại vào ${names}.`;
+  return t('hub.recurringCreated', { count: events.length, days: names });
 }
 
 @Component({
@@ -391,6 +404,8 @@ function buildRecurringConfirmation(events: readonly { start: string }[]): strin
 export class FloatingHub {
   private readonly store = inject(CalendarStore);
   private readonly authStore = inject(AuthStore);
+  protected readonly i18n = inject(TranslationService);
+  private readonly t: T = (key, vars) => this.i18n.t(key, vars);
   private readonly notificationQueue = inject(NotificationQueue);
   private readonly notificationSound = inject(NotificationSoundService);
 
@@ -649,12 +664,16 @@ export class FloatingHub {
    * bước backend không hề thực hiện. Nói "đang kiểm tra lịch trống" trong khi
    * server không làm việc đó là nói dối người dùng.
    */
-  private static readonly THINKING_LINES: Readonly<Record<'create' | 'delete' | 'plan' | 'file' | 'generic', readonly string[]>> = {
-    create: ['Đang đọc yêu cầu của bạn…', 'Đang xác định thời gian…', 'Đang chuẩn bị phản hồi…'],
-    delete: ['Đang xem lại sự kiện vừa tạo…', 'Đang chuẩn bị phản hồi…'],
-    plan: ['Đang đọc mục tiêu của bạn…', 'Đang chia nhỏ thành các bước…', 'Đang chuẩn bị danh sách…'],
-    file: ['Đang mở file…', 'Đang đọc nội dung…', 'Đang tìm lịch và công việc…', 'Đang chuẩn bị danh sách…'],
-    generic: ['Đang hiểu yêu cầu…', 'Đang xử lý thông tin…', 'Đang chuẩn bị phản hồi…'],
+  /** i18n keys per thinking phase — resolved in `thinkingLine()` so the lines
+   *  follow the current language. */
+  private static readonly THINKING_KEYS: Readonly<
+    Record<'create' | 'delete' | 'plan' | 'file' | 'generic', readonly string[]>
+  > = {
+    create: ['hub.think.create1', 'hub.think.create2', 'hub.think.reply'],
+    delete: ['hub.think.delete1', 'hub.think.reply'],
+    plan: ['hub.think.plan1', 'hub.think.plan2', 'hub.think.plan3'],
+    file: ['hub.think.file1', 'hub.think.file2', 'hub.think.file3', 'hub.think.plan3'],
+    generic: ['hub.think.generic1', 'hub.think.generic2', 'hub.think.reply'],
   };
 
   /** Đổi câu sau mỗi nhịp này. Đủ chậm để đọc kịp, đủ nhanh để không thấy đứng. */
@@ -669,8 +688,8 @@ export class FloatingHub {
   /** Câu đang hiển thị; dừng lại ở câu cuối thay vì quay vòng, vì quay vòng
    *  làm người dùng tưởng nó bị kẹt. */
   protected readonly thinkingLine = computed(() => {
-    const lines = FloatingHub.THINKING_LINES[this.thinkingKind()];
-    return lines[Math.min(this.thinkingStep(), lines.length - 1)];
+    const keys = FloatingHub.THINKING_KEYS[this.thinkingKind()];
+    return this.i18n.t(keys[Math.min(this.thinkingStep(), keys.length - 1)]);
   });
   protected readonly messages = signal<ChatMessage[]>([]);
   protected readonly draft = signal('');
@@ -680,12 +699,18 @@ export class FloatingHub {
 
   /** Icon riêng cho từng gợi ý — template switch sang đúng SVG tương ứng.
    *  `sendSuggestion()` vẫn chỉ nhận text như cũ, hành vi click không đổi. */
-  readonly suggestions: readonly AiSuggestion[] = [
-    { text: 'Họp team 9h sáng mai', icon: 'meeting' },
-    { text: 'Ăn tối 19:30 ngày mai', icon: 'time' },
-    { text: 'Lập kế hoạch hoàn thành bài thuyết trình thứ Sáu', icon: 'goal' },
-    { text: 'Chia nhỏ việc ôn thi Java trong 7 ngày', icon: 'split' },
+  private static readonly SUGGESTION_KEYS: readonly AiSuggestion['icon'][] = [
+    'meeting',
+    'time',
+    'goal',
+    'split',
   ];
+  readonly suggestions = computed<readonly AiSuggestion[]>(() =>
+    FloatingHub.SUGGESTION_KEYS.map((icon, i) => ({
+      icon,
+      text: this.i18n.t(`hub.suggest${i + 1}`),
+    })),
+  );
 
   async send(): Promise<void> {
     const text = this.draft().trim();
@@ -703,7 +728,7 @@ export class FloatingHub {
 
     const calendarId = this.store.defaultWritableCalendar()?.id;
     if (!calendarId) {
-      this.aiError.set('Bạn chưa có lịch nào để tạo sự kiện.');
+      this.aiError.set(this.i18n.t('hub.errNoCalendar'));
       return;
     }
 
@@ -746,9 +771,9 @@ export class FloatingHub {
         // thay vì dựng thẻ cho MỘT sự kiện rồi im lặng bỏ qua các lần lặp còn
         // lại (người dùng sẽ tưởng chỉ có một buổi được tạo).
         if (createdCount > 1) {
-          this.pushMessage('assistant', buildRecurringConfirmation(result.events!));
+          this.pushMessage('assistant', buildRecurringConfirmation(result.events!, this.t));
         } else {
-          this.pushEventMessage('Đã thêm vào lịch của bạn.', buildEventCard(result.event));
+          this.pushEventMessage(this.i18n.t('hub.addedToCalendar'), buildEventCard(result.event, this.t));
         }
 
         // Toast + âm thanh xác nhận: MỘT bộ duy nhất cho CẢ YÊU CẦU, dù AI vừa
@@ -760,11 +785,11 @@ export class FloatingHub {
         // lại UI không thể kích hoạt lại nó.
         this.notificationQueue.push({
           kind: 'success',
-          title: createdCount > 1 ? 'Đã tạo lịch thành công' : 'Đã tạo sự kiện',
+          title: createdCount > 1 ? this.i18n.t('hub.toastScheduleCreated') : this.i18n.t('hub.toastEventCreated'),
           body:
             createdCount > 1
-              ? `Đã thêm ${createdCount} sự kiện vào lịch của bạn.`
-              : `"${result.event.title}" đã được lưu vào lịch của bạn.`,
+              ? this.i18n.t('hub.toastEventsAdded', { count: createdCount })
+              : this.i18n.t('hub.toastEventSaved', { title: result.event.title }),
         });
         this.notificationSound.notifyKind('default');
       } else if (result.intent === 'create_todos') {
@@ -772,12 +797,9 @@ export class FloatingHub {
         if (proposal.rows.length) {
           this.todoProposal.set(proposal);
           this.proposalError.set(null);
-          this.pushMessage(
-            'assistant',
-            'Mình đã chia nhỏ thành các việc dưới đây. Xem lại rồi bấm thêm — mình chưa lưu gì cả.',
-          );
+          this.pushMessage('assistant', this.i18n.t('hub.msgTodosSplit'));
         } else {
-          this.pushMessage('assistant', 'Mình chưa tách được việc nào từ yêu cầu này.');
+          this.pushMessage('assistant', this.i18n.t('hub.msgNoTodos'));
         }
       } else if (result.intent === 'chat') {
         this.pushMessage('assistant', result.reply);
@@ -787,15 +809,11 @@ export class FloatingHub {
         // tay lúc này là bắt gõ lại toàn bộ thứ vừa nói.
         const missing = result.missingFields ?? [];
         if (missing.includes('date') && !missing.includes('title')) {
-          const what = result.title ? `"${result.title}"` : 'việc này';
+          const what = result.title ? `"${result.title}"` : this.i18n.t('hub.thisItem');
           const when = result.startTime
             ? ` (${result.startTime}${result.endTime ? ' – ' + result.endTime : ''})`
             : '';
-          this.pushMessage(
-            'assistant',
-            `Bạn muốn xếp ${what}${when} vào ngày nào? Nhắn giúp mình ngày cụ thể ` +
-              '(vd "ngày mai", "thứ 2 tuần sau", "30/8") nhé.',
-          );
+          this.pushMessage('assistant', this.i18n.t('hub.msgMissingDate', { what, when }));
         } else if (missing.includes('time') && !missing.includes('date') && !missing.includes('title')) {
           // Thiếu GIỜ là tình huống RIÊNG với "thiếu ngày" ở trên, không phải
           // cùng một nhánh "chưa chắc chắn chung chung": ngày/thứ trong tuần
@@ -803,28 +821,22 @@ export class FloatingHub {
           // "357 từ 13/07 tới 29/08") đã hiểu xong, chỉ còn thiếu khung giờ.
           // Hỏi lại ngày ở đây sẽ bắt người dùng gõ lại thứ/khoảng ngày vừa
           // nói — đúng điều yêu cầu này cấm.
-          const what = result.title ? `Lịch ${result.title.toLowerCase()}` : 'Lịch này';
-          this.pushMessage('assistant', `${what} vào khung giờ nào? (vd "9h đến 11h")`);
+          const what = result.title
+            ? this.i18n.t('hub.scheduleNamed', { name: result.title.toLowerCase() })
+            : this.i18n.t('hub.scheduleThis');
+          this.pushMessage('assistant', this.i18n.t('hub.msgMissingTime', { what }));
         } else {
-          this.pushMessage(
-            'assistant',
-            'Mình chưa chắc chắn về thời gian trong câu này — hãy mở form để nhập tay nhé.',
-            true,
-            result.title,
-          );
+          this.pushMessage('assistant', this.i18n.t('hub.msgUnsureTime'), true, result.title);
         }
       }
     } catch (err) {
-      this.aiError.set(extractErrorMessage(err));
+      this.aiError.set(extractErrorMessage(err, (k) => this.i18n.t(k)));
     } finally {
       this.stopThinking();
       this.sending.set(false);
       // Không im lặng bỏ qua file: nói rõ là chưa đụng tới nó.
       if (file) {
-        this.pushMessage(
-          'assistant',
-          `Mình chưa đọc "${file.name}" vì câu vừa rồi không nhắc tới nó. File vẫn còn đính kèm — muốn mình đọc thì nhắn "đọc file này" nhé.`,
-        );
+        this.pushMessage('assistant', this.i18n.t('hub.msgFileUntouched', { name: file.name }));
       }
     }
   }
@@ -842,7 +854,7 @@ export class FloatingHub {
     this.eventProposal.set(null);
     this.eventProposalError.set(null);
 
-    this.pushMessage('user', text || 'Đọc giúp mình file này.', undefined, undefined, file.name);
+    this.pushMessage('user', text || this.i18n.t('hub.readThisFile'), undefined, undefined, file.name);
     this.draft.set('');
     this.cancelChipExit();
     this.pendingFile.set(null);
@@ -858,7 +870,7 @@ export class FloatingHub {
       const analysis = await this.store.analyzeAiFile(file, text);
       this.applyFileAnalysis(analysis);
     } catch (err) {
-      this.aiError.set(extractErrorMessage(err));
+      this.aiError.set(extractErrorMessage(err, (k) => this.i18n.t(k)));
     } finally {
       this.stopThinking();
       this.sending.set(false);
@@ -886,15 +898,12 @@ export class FloatingHub {
   private async handleDeleteIntent(): Promise<void> {
     const id = this.lastCreatedEventId();
     if (!id) {
-      this.pushMessage(
-        'assistant',
-        'Mình chưa tạo sự kiện nào trong phiên chat này để xóa cả — bạn có thể xóa trực tiếp trên lịch nhé.',
-      );
+      this.pushMessage('assistant', this.i18n.t('hub.msgNothingToDelete'));
       return;
     }
     await this.store.deleteEvent(id);
     this.lastCreatedEventId.set(null);
-    this.pushMessage('assistant', 'Đã xóa sự kiện vừa tạo.');
+this.pushMessage('assistant', this.i18n.t('hub.msgEventDeleted'));
   }
 
   sendSuggestion(suggestion: string): void {
@@ -995,7 +1004,7 @@ export class FloatingHub {
   dismissTodoProposal(): void {
     this.todoProposal.set(null);
     this.proposalError.set(null);
-    this.pushMessage('assistant', 'Đã bỏ qua danh sách đề xuất. Không có việc nào được thêm.');
+this.pushMessage('assistant', this.i18n.t('hub.msgTodoProposalDismissed'));
   }
 
   /** Chỉ ở ĐÂY mới thực sự ghi vào danh sách — sau khi người dùng bấm nút. */
@@ -1007,7 +1016,7 @@ export class FloatingHub {
       .filter((r) => r.selected && r.content.trim().length > 0)
       .map((r) => ({ ...r, content: r.content.trim() }));
     if (!picked.length) {
-      this.proposalError.set('Hãy chọn ít nhất một việc để thêm.');
+this.proposalError.set(this.i18n.t('hub.errPickTodo'));
       return;
     }
 
@@ -1026,12 +1035,9 @@ export class FloatingHub {
         });
       }
       this.todoProposal.set(null);
-      this.pushMessage(
-        'assistant',
-        `Đã thêm ${picked.length} việc vào "Việc cần làm". Mở tab Việc cần làm để xem nhé.`,
-      );
+      this.pushMessage('assistant', this.i18n.t('hub.msgTodosAdded', { count: picked.length }));
     } catch (err) {
-      this.proposalError.set(extractErrorMessage(err));
+      this.proposalError.set(extractErrorMessage(err, (k) => this.i18n.t(k)));
     } finally {
       this.savingProposal.set(false);
     }
@@ -1099,13 +1105,11 @@ export class FloatingHub {
 
     const name = file.name.toLowerCase();
     if (!ACCEPTED_FILE_EXT.some((ext) => name.endsWith(ext))) {
-      this.aiError.set(
-        'Chỉ đọc được file .ics, .csv hoặc .pdf.',
-      );
+      this.aiError.set(this.i18n.t('hub.errFileType'));
       return;
     }
     if (file.size > MAX_FILE_BYTES) {
-      this.aiError.set('File vượt quá giới hạn 10 MB, vui lòng chọn file nhỏ hơn.');
+  this.aiError.set(this.i18n.t('hub.errFileSize'));
       return;
     }
 
@@ -1287,7 +1291,7 @@ export class FloatingHub {
   dismissEventProposal(): void {
     this.eventProposal.set(null);
     this.eventProposalError.set(null);
-    this.pushMessage('assistant', 'Đã bỏ qua danh sách sự kiện. Không có sự kiện nào được thêm vào lịch.');
+this.pushMessage('assistant', this.i18n.t('hub.msgEventProposalDismissed'));
   }
 
   /** Chỉ ở ĐÂY mới thực sự ghi vào lịch — sau khi người dùng bấm nút. */
@@ -1297,7 +1301,7 @@ export class FloatingHub {
 
     const picked = proposal.rows.filter((r) => r.selected && r.title.trim() && r.startLocal);
     if (!picked.length) {
-      this.eventProposalError.set('Hãy chọn ít nhất một sự kiện đã có đủ ngày giờ.');
+this.eventProposalError.set(this.i18n.t('hub.errPickEvent'));
       return;
     }
 
@@ -1327,12 +1331,9 @@ export class FloatingHub {
       // đúng một dòng thông báo, giống hệt màn hình Import.
       await this.store.importEvents(calendar.id, drafts);
       this.eventProposal.set(null);
-      this.pushMessage(
-        'assistant',
-        `Đã thêm ${picked.length} sự kiện vào lịch của bạn.`,
-      );
+      this.pushMessage('assistant', this.i18n.t('hub.msgEventsAdded', { count: picked.length }));
     } catch (err) {
-      this.eventProposalError.set(extractErrorMessage(err));
+      this.eventProposalError.set(extractErrorMessage(err, (k) => this.i18n.t(k)));
     } finally {
       this.savingEvents.set(false);
     }
@@ -1359,9 +1360,9 @@ export class FloatingHub {
     }
 
     if (analysis.kind === 'none') {
-      lines.push('Bạn có thể mô tả rõ hơn muốn lấy gì từ file này nhé.');
+      lines.push(this.i18n.t('hub.msgFileDescribeMore'));
     } else {
-      lines.push('Xem lại rồi bấm thêm — mình chưa lưu gì cả.');
+      lines.push(this.i18n.t('hub.msgReviewThenAdd'));
     }
     this.pushMessage('assistant', lines.join('\n'));
   }

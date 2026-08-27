@@ -984,6 +984,19 @@
   border: 1px solid var(--color-border);
 }
 
+.chat-link {
+  color: var(--holiday-accent, #3b82f6);
+  text-decoration: underline;
+  word-break: break-all;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.chat-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
 .chat-attachment-file {
   display: inline-flex;
   align-items: center;
@@ -1027,6 +1040,19 @@
   gap: 10px;
   margin-top: 12px;
   flex: 0 0 auto;
+}
+
+.chat-disabled-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--color-surface-input);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--color-text-muted);
 }
 
 .chat-input-bar .text-input {

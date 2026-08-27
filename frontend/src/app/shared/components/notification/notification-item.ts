@@ -5,6 +5,7 @@ import {
   NotificationRespondPayload,
   NotificationType,
   formatNotificationTime,
+  resolveNotifText,
 } from '../../../core/services/notification.model';
 
 /** Nhóm màu nhấn — mỗi loại thông báo mang một "chất" riêng để liếc qua là
@@ -90,6 +91,19 @@ export class NotificationItem {
   protected readonly timeLabel = computed(() =>
     formatNotificationTime(this.notification().createdAt, new Date(nowTick()), (k, v) => this.i18n.t(k, v)),
   );
+
+  /** Tiêu đề/nội dung dịch LẠI mỗi lần render: có `titleKey`/`messageKey` thì
+   *  dịch từ đó (đổi ngôn ngữ là đổi theo), không thì dùng chuỗi đã đóng băng
+   *  (thông báo hệ thống từ backend, hoặc bản ghi cũ lưu trước khi có key). */
+  protected readonly displayTitle = computed(() => {
+    const n = this.notification();
+    return resolveNotifText(n.title, n.titleKey, n.titleParams, (k, v) => this.i18n.t(k, v));
+  });
+
+  protected readonly displayMessage = computed(() => {
+    const n = this.notification();
+    return resolveNotifText(n.message, n.messageKey, n.messageParams, (k, v) => this.i18n.t(k, v));
+  });
 
   protected readonly visual = computed<NotificationVisual>(() => VISUAL_BY_TYPE[this.notification().type]);
 

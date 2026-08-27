@@ -48,7 +48,7 @@
             @if (item.meetLink; as meetLink) {
               <a
                 class="toast__btn toast__btn--join"
-                [href]="meetLink"
+                [href]="formatExternalUrl(meetLink)"
                 target="_blank"
                 rel="noopener noreferrer"
                 (click)="onJoinMeeting(item.id)"

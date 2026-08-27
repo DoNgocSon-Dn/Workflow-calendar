@@ -40,9 +40,12 @@ export class NotificationQueue {
    * vòng (store phụ thuộc queue, không phải ngược lại). */
   onSnoozeReminder: ((reminderId: string, minutes: number) => void) | null = null;
 
-  push(item: Omit<NotificationItem, 'id'>): void {
-    const full: NotificationItem = { ...item, id: crypto.randomUUID() };
-    this.queue.update((list) => [...list, full]);
+  push(item: Omit<NotificationItem, 'id'> & { id?: string }): void {
+    const full: NotificationItem = { ...item, id: item.id ?? crypto.randomUUID() };
+    this.queue.update((list) => {
+      if (list.some((n) => n.id === full.id)) return list;
+      return [...list, full];
+    });
     this.notifyBrowserIfHidden(full);
   }
 

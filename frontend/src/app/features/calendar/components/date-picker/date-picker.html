@@ -18,11 +18,11 @@
 @if (open()) {
   <div class="panel" role="dialog" [attr.aria-label]="ariaLabel()">
     <div class="panel-header">
-      <button type="button" class="nav-btn" aria-label="Tháng trước" (click)="prevMonth()">
+      <button type="button" class="nav-btn" [attr.aria-label]="i18n.t('calendar.prevMonth')" (click)="prevMonth()">
         <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
       </button>
       <span class="month-label">{{ monthLabel() }}</span>
-      <button type="button" class="nav-btn" aria-label="Tháng sau" (click)="nextMonth()">
+      <button type="button" class="nav-btn" [attr.aria-label]="i18n.t('calendar.nextMonth')" (click)="nextMonth()">
         <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8.59 16.59 10 18l6-6-6-6-1.41 1.41L13.17 12z"/></svg>
       </button>
     </div>

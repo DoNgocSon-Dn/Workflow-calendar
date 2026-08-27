@@ -183,7 +183,7 @@ export class CalendarPage {
   }
 
   onOpenGroupFromNotification(request: OpenGroupChatRequest): void {
-    void this.groupStore.openGroupChat(request.groupId, request.messageId);
+    void this.groupStore.openGroupChat(request.groupId, request.messageId, request.tab ?? 'chat');
   }
 
   openImportPage(): void {

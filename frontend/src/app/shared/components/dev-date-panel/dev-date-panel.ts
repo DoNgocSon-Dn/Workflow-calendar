@@ -1,10 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { Clock } from '../../../core/clock';
-
-/** Gõ liền dãy này ở BẤT KỲ đâu (ngoài ô nhập chữ) thì mở khoá panel trong
- *  PHIÊN NÀY — không nhớ qua lần tải trang sau, không tự hiện theo tài khoản
- *  hay theo bản dev nữa. Mặc định ẩn tuyệt đối, gõ lại từ đầu mỗi lần cần. */
-const UNLOCK_SEQUENCE = '@@@@';
+import { DevUnlockService } from '../../../core/services/dev-unlock.service';
 
 function toDateInputValue(date: Date): string {
   const y = date.getFullYear();
@@ -29,19 +25,12 @@ function toDateInputValue(date: Date): string {
   templateUrl: './dev-date-panel.html',
   styleUrl: './dev-date-panel.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: {
-    '(document:keydown)': 'onGlobalKeydown($event)',
-  },
 })
 export class DevDatePanel {
   private readonly clock = inject(Clock);
+  private readonly devUnlock = inject(DevUnlockService);
 
-  private readonly secretUnlocked = signal(false);
-  /** Vài ký tự gõ gần nhất — so khớp đuôi với UNLOCK_SEQUENCE mỗi lần gõ,
-   *  không cần biết trước lúc nào người dùng "bắt đầu" gõ mã. */
-  private keyBuffer = '';
-
-  protected readonly canUse = computed(() => this.secretUnlocked());
+  protected readonly canUse = computed(() => this.devUnlock.unlocked());
   protected readonly open = signal(false);
   protected readonly draftDate = signal(toDateInputValue(this.clock.now()));
 
@@ -49,6 +38,14 @@ export class DevDatePanel {
     const override = this.clock.devOverride();
     return override ? toDateInputValue(override) : null;
   });
+
+  constructor() {
+    // Vừa gõ mã mở khoá xong thì bật panel luôn cho thấy ngay, đỡ phải bấm
+    // thêm nút 🛠 một lần nữa.
+    effect(() => {
+      if (this.devUnlock.unlocked()) this.open.set(true);
+    });
+  }
 
   toggleOpen(): void {
     this.open.update((v) => !v);
@@ -67,23 +64,5 @@ export class DevDatePanel {
 
   reset(): void {
     this.clock.setDevOverride(null);
-  }
-
-  /** Gõ "@@@@" ở BẤT KỲ đâu trên trang (kể cả không focus vào panel) thì mở
-   *  khoá panel. Bỏ qua khi đang gõ trong ô nhập chữ thật — người dùng có thể
-   *  vô tình gõ liền mấy dấu @ khi đang soạn email/ghi chú, không nên bị hiểu
-   *  nhầm thành mã bí mật. */
-  protected onGlobalKeydown(event: KeyboardEvent): void {
-    if (this.secretUnlocked()) return;
-
-    const target = event.target as HTMLElement | null;
-    const tag = target?.tagName;
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return;
-
-    this.keyBuffer = (this.keyBuffer + event.key).slice(-UNLOCK_SEQUENCE.length);
-    if (this.keyBuffer !== UNLOCK_SEQUENCE) return;
-
-    this.secretUnlocked.set(true);
-    this.open.set(true);
   }
 }

@@ -803,12 +803,12 @@ export class GroupStore {
     });
   }
 
-  /** Mở workspace của nhóm và nhảy thẳng vào tab Trò chuyện — dùng cho luồng
-   *  click thông báo tin nhắn. `messageId` (nếu có) sẽ được cuộn tới. */
-  async openGroupChat(groupId: string, messageId?: string): Promise<void> {
+  /** Mở workspace của nhóm và nhảy thẳng vào tab Trò chuyện hoặc Công việc — dùng cho luồng
+   *  click thông báo tin nhắn hoặc nhiệm vụ. `messageId` (nếu có) sẽ được cuộn tới. */
+  async openGroupChat(groupId: string, messageId?: string, tab: 'chat' | 'tasks' = 'chat'): Promise<void> {
     const group = this.groups().find((g) => g.id === groupId);
     if (!group) return;
-    this.requestedWorkspaceTab.set('chat');
+    this.requestedWorkspaceTab.set(tab);
     this.pendingChatMessageId.set(messageId ?? null);
     await this.selectGroup(group);
   }

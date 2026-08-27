@@ -303,7 +303,7 @@
         @if (form.controls.meetLink.value) {
         <div class="field-content">
           <div class="row meet-link-row">
-            <a class="text-input meet-link-value" [href]="form.controls.meetLink.value" target="_blank" rel="noopener noreferrer">
+            <a class="text-input meet-link-value" [href]="formatExternalUrl(form.controls.meetLink.value)" target="_blank" rel="noopener noreferrer">
               {{ form.controls.meetLink.value }}
             </a>
             <button type="button" class="text-btn compact" (click)="removeMeetLink()">

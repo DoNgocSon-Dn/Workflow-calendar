@@ -413,33 +413,39 @@
 }
 
 @media (max-width: 767.98px) {
-  .brand span,
+  .topbar {
+    padding: 0.4rem 0.75rem;
+    gap: 0.5rem;
+  }
   .brand {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
   }
   .period-label {
     font-size: 1rem;
+    margin: 0 0.25rem;
   }
 }
 
-/* Điện thoại: .right gộp 5 phần tử (ô tìm kiếm + 4 nút tiện ích) trên MỘT
-   hàng không cho wrap (`nowrap` mặc định) — cộng dồn thừa bề ngang ở màn hẹp,
-   ô tìm kiếm bị ép co gần về 0 hoặc cả cụm tràn ra ngoài viewport. Cho .right
-   tự xuống dòng NỘI BỘ: ô tìm kiếm chiếm trọn một hàng riêng (order: -1 đưa
-   nó lên trước), cụm nút tiện ích rơi xuống hàng dưới — không đụng tới
-   .left/.center nên không ảnh hưởng độ cao header mà app-calendar-sidebar
-   (breakpoint 720px ở trên) đang giả định. */
 @media (max-width: 640px) {
   .topbar {
-    padding: 0.5rem 0.75rem;
-    gap: 0.5rem 0.5rem;
-    row-gap: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    gap: 0.4rem;
+    row-gap: 0.4rem;
+  }
+
+  .left {
+    gap: 0.35rem;
+  }
+
+  .center {
+    gap: 0.25rem;
   }
 
   .right {
     flex-wrap: wrap;
-    row-gap: 0.5rem;
+    row-gap: 0.4rem;
     justify-content: flex-end;
+    gap: 0.4rem;
   }
 
   .search-box {
@@ -449,27 +455,34 @@
 
   .search-input {
     max-width: none;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
   }
 
   .today-btn {
-    padding: 0.4rem 0.7rem;
+    padding: 0.35rem 0.6rem;
     font-size: 0.78rem;
   }
 
   .period-label {
-    margin: 0 0.35rem;
-    font-size: 1rem;
+    margin: 0 0.2rem;
+    font-size: 0.95rem;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
-/* Điện thoại rất hẹp (~360px): view-dropdown ghi chữ dài ("Lịch biểu") cộng
-   nút thông báo + avatar vẫn có thể chật hàng .right — bỏ chữ, giữ icon +
-   mũi tên, đỡ tốn ngang mà bấm vẫn ra đúng menu chọn view. */
 @media (max-width: 479.98px) {
   .view-dropdown-btn {
-    padding: 0.45rem 0.5rem;
+    padding: 0.4rem 0.5rem;
   }
   .view-dropdown-btn .view-label {
     display: none;
+  }
+  .period-label {
+    font-size: 0.875rem;
+    max-width: 110px;
   }
 }

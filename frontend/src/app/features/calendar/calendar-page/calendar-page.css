@@ -141,27 +141,48 @@
   }
 }
 
-/* Nền mờ của drawer. Mặc định KHÔNG tồn tại — desktop không có drawer. */
+/* Sidebar smooth transition on Desktop */
+app-calendar-sidebar {
+  display: block;
+  width: 256px;
+  flex-shrink: 0;
+  overflow: hidden;
+  position: relative;
+  z-index: 10;
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.2s ease;
+}
+
+app-calendar-sidebar:not(.active) {
+  width: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .sidebar-backdrop {
   display: none;
 }
 
-/* Tablet dọc trở xuống: sidebar rời khỏi luồng, phủ lên vùng nội dung.
-
-   Neo theo .body (position: absolute) chứ không phải theo viewport với
-   `top: 3.2rem` như trước. Con số 3.2rem đó là chiều cao header ĐO Ở DESKTOP,
-   trong khi từ 600px xuống header tự gãy thành hai hàng và cao gần gấp đôi —
-   drawer khi ấy trèo lên che mất nửa dưới của header, đúng chỗ có ô tìm kiếm
-   và cụm điều hướng ngày. Bám .body thì nó tự khớp mọi chiều cao header mà
-   không cần ai đi đồng bộ lại con số. */
+/* Tablet dọc trở xuống: sidebar rời khỏi luồng, phủ dạng drawer lướt mượt. */
 @media (max-width: 767.98px) {
   app-calendar-sidebar {
     position: absolute;
     top: 0;
     left: 0;
     bottom: 0;
+    width: 280px !important;
+    max-width: 85vw;
     z-index: 60;
     box-shadow: var(--shadow-drawer);
+    transform: translateX(-100%);
+    opacity: 1 !important;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  app-calendar-sidebar.active {
+    width: 280px !important;
+    transform: translateX(0);
+    pointer-events: auto;
   }
 
   .sidebar-backdrop {
@@ -170,7 +191,14 @@
     inset: 0;
     z-index: 55;
     background: var(--overlay-backdrop);
-    animation: sidebarBackdropIn 0.18s ease-out both;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  .sidebar-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
   }
 }
 

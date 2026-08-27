@@ -181,16 +181,21 @@
                   }
                 </div>
 
-                <div style="margin-top: 0.85rem;">
-                  <button
-                    type="button"
-                    class="save-name-btn"
-                    style="background: #f59e0b; color: #181924; width: 100%; border: none; padding: 0.65rem 1rem; border-radius: var(--radius-md); font-weight: 700; cursor: pointer;"
-                    (click)="testBirthdayPopup()"
-                  >
-                    🎂 {{ i18n.t('settings.dobTestPopup') }}
-                  </button>
-                </div>
+                <!-- Nút test nội bộ, không phải ai cũng cần thấy — ẩn mặc định
+                     giống panel giả lập "hôm nay", gõ "@@@@" ở đâu đó trên
+                     trang thì cả hai cùng hiện ra. -->
+                @if (devUnlock.unlocked()) {
+                  <div style="margin-top: 0.85rem;">
+                    <button
+                      type="button"
+                      class="save-name-btn"
+                      style="background: #f59e0b; color: #181924; width: 100%; border: none; padding: 0.65rem 1rem; border-radius: var(--radius-md); font-weight: 700; cursor: pointer;"
+                      (click)="testBirthdayPopup()"
+                    >
+                      🎂 {{ i18n.t('settings.dobTestPopup') }}
+                    </button>
+                  </div>
+                }
 
                 @if (profileError(); as err) {
                   <span class="profile-error">{{ err }}</span>

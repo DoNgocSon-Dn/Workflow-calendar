@@ -1,2 +1,5 @@
 # Ignore raw assets directory
 hinh/
+
+# Log cua start-dev.ps1
+logs/

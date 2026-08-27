@@ -6,20 +6,19 @@
     (openGroupFromNotification)="onOpenGroupFromNotification($event)"
   />
 
-  <div class="body">
-    @if (store.sidebarOpen()) {
-      <!-- Nền mờ CHỈ tồn tại ở khổ drawer (CSS ẩn nó từ 768px trở lên): trên
-           desktop sidebar nằm trong luồng, không che gì để mà cần phủ nền.
-           Cố ý chỉ phủ vùng nội dung chứ không phủ cả header — người dùng vẫn
-           bấm được nút menu để đóng, thay vì chỉ còn đúng một chỗ chạm. -->
-      <div class="sidebar-backdrop" (click)="store.toggleSidebar()"></div>
-      <app-calendar-sidebar
-        (createClicked)="openCreateBlank()"
-        (inviteClicked)="openInvite($event)"
-        (createCalendarClicked)="createCalendarModalOpen.set(true)"
-        (createGroupClicked)="createGroupModalOpen.set(true)"
-      />
-    }
+  <div class="body" [class.sidebar-active]="store.sidebarOpen()">
+    <div
+      class="sidebar-backdrop"
+      [class.active]="store.sidebarOpen()"
+      (click)="store.toggleSidebar()"
+    ></div>
+    <app-calendar-sidebar
+      [class.active]="store.sidebarOpen()"
+      (createClicked)="openCreateBlank()"
+      (inviteClicked)="openInvite($event)"
+      (createCalendarClicked)="createCalendarModalOpen.set(true)"
+      (createGroupClicked)="createGroupModalOpen.set(true)"
+    />
 
     <main
       class="view-area"

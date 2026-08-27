@@ -393,15 +393,15 @@
    hidden rồi kéo scrollLeft bằng tay theo lưới giờ (xem onGridScroll trong
    .ts), nếu không ba hàng lệch cột ngay khi vuốt. */
 @media (max-width: 820px) {
-  .day-header-cell,
-  .all-day-cell,
-  .day-col {
+  .time-grid:not(.single-day) .day-header-cell,
+  .time-grid:not(.single-day) .all-day-cell,
+  .time-grid:not(.single-day) .day-col {
     flex: 0 0 5.5rem;
     min-width: 5.5rem;
   }
 
-  .day-header-row,
-  .all-day-row {
+  .time-grid:not(.single-day) .day-header-row,
+  .time-grid:not(.single-day) .all-day-row {
     overflow-x: hidden;
   }
 }

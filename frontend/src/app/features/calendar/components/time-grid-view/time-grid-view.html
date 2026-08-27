@@ -1,4 +1,4 @@
-<div class="time-grid">
+<div class="time-grid" [class.single-day]="days().length === 1" [class.multi-day]="days().length > 1">
   <div class="day-header-row" #dayHeaderRow [style.padding-right.px]="scrollbarWidth()">
     <div class="gutter-spacer gutter-spacer--lunar">{{ i18n.t('calendar.lunarShort') }}</div>
     @for (day of days(); track day.getTime()) {

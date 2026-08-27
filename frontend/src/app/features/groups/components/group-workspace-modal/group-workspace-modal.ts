@@ -15,6 +15,7 @@ import { AuthStore } from '../../../../core/auth/auth-store';
 import { Clock } from '../../../../core/clock';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { DialogService } from '../../../../core/services/dialog.service';
+import { NotificationQueue } from '../../../../core/realtime/notification-queue';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { CharCounter } from '../../../../shared/components/char-counter/char-counter';
 import { CalendarStore } from '../../../calendar/data/calendar-store';
@@ -31,6 +32,7 @@ import {
   DEFAULT_GROUP_ROLE,
   GroupRole,
   canAssignRole,
+  canChat,
   canInvite,
   canManage,
   canTransferLeadership,
@@ -54,8 +56,10 @@ import {
   MENTION_ALL_LABEL,
   MessageSegment,
   findActiveMention,
+  formatExternalUrl,
   insertMention,
   normalizeForMentionSearch,
+  parseTextUrls,
   splitMessageSegments,
 } from '../../utils/mention.util';
 
@@ -77,8 +81,14 @@ function nextQuarterHour(now: Date): Date {
  * nhắn là một lượt thông báo tới mọi thành viên, ba tin liên tiếp cho cùng
  * một cuộc họp là ba lần rung máy vô cớ.
  */
-function meetAnnouncement(title: string, start: Date, end: Date, link: string): string {
-  const day = start.toLocaleDateString('vi-VN', {
+function meetAnnouncement(
+  title: string,
+  start: Date,
+  end: Date,
+  link: string,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): string {
+  const day = start.toLocaleDateString(t('common.dateLocale'), {
     weekday: 'long',
     day: '2-digit',
     month: '2-digit',
@@ -86,8 +96,8 @@ function meetAnnouncement(title: string, start: Date, end: Date, link: string): 
   });
   return [
     title,
-    `Thời gian: ${day}, ${formatTime24(start)} - ${formatTime24(end)}`,
-    `Tham gia phòng họp: ${link}`,
+    t('meet.announceTime', { time: `${day}, ${formatTime24(start)} - ${formatTime24(end)}` }),
+    t('meet.announceJoin', { link }),
   ].join('\n');
 }
 
@@ -105,6 +115,7 @@ export class GroupWorkspaceModal {
   private readonly dialog = inject(DialogService);
   private readonly calendarStore = inject(CalendarStore);
   private readonly clock = inject(Clock);
+  private readonly notificationQueue = inject(NotificationQueue);
 
   readonly closed = output<void>();
 
@@ -137,6 +148,7 @@ export class GroupWorkspaceModal {
   protected readonly isLeader = computed(() => this.currentRole() === GroupRole.LEADER);
   protected readonly canInviteMembers = computed(() => canInvite(this.currentRole()));
   protected readonly canTransfer = computed(() => canTransferLeadership(this.currentRole()));
+  protected readonly canUserChat = computed(() => canChat(this.currentRole()));
 
   /** Có hiện cột thao tác trong danh sách thành viên không. Thành viên thường
    *  không quản lý được ai nên cả cột bị ẩn. */
@@ -174,7 +186,10 @@ export class GroupWorkspaceModal {
    *  trước "@" của email (KHÔNG BAO GIỜ email đầy đủ: lộ cả @gmail.com trong
    *  danh sách chọn người phụ trách thì vừa dài dòng vừa không phải là tên).
    *  Cùng thứ tự ưu tiên với `senderDisplayName` bên khung chat. */
-  protected memberDisplayName(member: Pick<GroupMember, 'name' | 'email'> | undefined, fallback = 'Thành viên'): string {
+  protected memberDisplayName(
+    member: Pick<GroupMember, 'name' | 'email'> | undefined,
+    fallback = this.i18n.t('group.memberFallback'),
+  ): string {
     return member?.name || member?.email?.split('@')[0] || fallback;
   }
 
@@ -210,7 +225,7 @@ export class GroupWorkspaceModal {
   protected readonly assigneeMenuOpen = signal(false);
   protected readonly assigneeLabel = computed(() => {
     const id = this.taskAssignedTo();
-    if (!id) return '-- Chọn thành viên phụ trách --';
+    if (!id) return this.i18n.t('group.selectAssignee');
     const member = this.store.members().find((m) => m.userId === id);
     return this.memberDisplayName(member, id);
   });
@@ -363,8 +378,12 @@ export class GroupWorkspaceModal {
     if (!group || this.deletingGroup()) return;
 
     const ok = await this.dialog.confirm(
-      `Toàn bộ task, tin nhắn và lịch nhóm sẽ bị xóa và KHÔNG thể khôi phục.`,
-      { title: `Xóa vĩnh viễn nhóm "${group.name}"?`, confirmLabel: 'Đồng ý xóa', danger: true },
+      this.i18n.t('group.deleteGroupConfirmBody'),
+      {
+        title: this.i18n.t('group.deleteGroupConfirmTitle', { name: group.name }),
+        confirmLabel: this.i18n.t('group.deleteGroupConfirmYes'),
+        danger: true,
+      },
     );
     if (!ok) return;
 
@@ -403,7 +422,7 @@ export class GroupWorkspaceModal {
     this.inviteError.set(null);
     this.inviteSuccess.set(null);
     if (!this.inviteEmailValid()) {
-      this.inviteError.set('Vui lòng nhập một địa chỉ email hợp lệ');
+      this.inviteError.set(this.i18n.t('group.inviteInvalidEmail'));
       return;
     }
 
@@ -411,7 +430,7 @@ export class GroupWorkspaceModal {
     try {
       await this.store.inviteMember(group.id, email, this.inviteRole());
       this.inviteEmail.set('');
-      this.inviteSuccess.set(`Đã gửi lời mời tới ${email}`);
+      this.inviteSuccess.set(this.i18n.t('group.inviteSent', { email }));
     } catch (err: any) {
       this.inviteError.set(err?.error?.message || this.i18n.t('group.inviteError'));
     } finally {
@@ -538,7 +557,7 @@ export class GroupWorkspaceModal {
   /** Bắt buộc chọn người phụ trách — task không giao cho ai thì trôi nổi,
    *  không ai theo dõi trách nhiệm. */
   protected readonly canCreateTask = computed(
-    () => !!this.taskTitle().trim() && !!this.taskAssignedTo() && !this.creatingTask(),
+    () => this.canUserChat() && !!this.taskTitle().trim() && !!this.taskAssignedTo() && !this.creatingTask(),
   );
 
   async createTask(): Promise<void> {
@@ -684,7 +703,7 @@ export class GroupWorkspaceModal {
   /** Tên hiển thị chưa chắc có (chưa từng đặt ở Cài đặt tài khoản) — rơi về
    *  phần trước @ của email, rồi mới tới placeholder chung. */
   senderDisplayName(msg: GroupMessage): string {
-    return msg.senderName || msg.senderEmail?.split('@')[0] || 'Thành viên';
+    return msg.senderName || msg.senderEmail?.split('@')[0] || this.i18n.t('group.memberFallback');
   }
 
   senderAvatarInitial(msg: GroupMessage): string {
@@ -1018,7 +1037,7 @@ export class GroupWorkspaceModal {
     const group = this.store.activeGroup();
     const text = this.chatMessage().trim();
     const file = this.attachmentFile();
-    if (!group || (!text && !file)) return;
+    if (!group || (!text && !file) || !this.canUserChat()) return;
     // Chỉ chặn khi đang tải tệp lên — gửi chữ thì bấm Enter liên tục bao nhiêu
     // lần cũng được, mỗi lần là một tin nhắn riêng.
     if (file && this.sendingChat()) return;
@@ -1087,6 +1106,9 @@ export class GroupWorkspaceModal {
     this.segmentCache.set(msg, segments);
     return segments;
   }
+
+  protected readonly formatExternalUrl = formatExternalUrl;
+  protected readonly parseTextUrls = parseTextUrls;
 
   /** Mention trỏ vào chính người đang đọc (kể cả qua @All) được tô đậm hơn —
    *  đó là thứ họ cần thấy ngay khi lướt qua một khung chat dài. */
@@ -1207,9 +1229,7 @@ export class GroupWorkspaceModal {
               { offsetMinutes: 0, type: 'popup' },
             ]);
           } catch {
-            this.meetError.set(
-              'Đã tạo phòng họp và sự kiện, nhưng chưa đặt được lời nhắc cho cả nhóm.',
-            );
+            this.meetError.set(this.i18n.t('meet.errRemind'));
           }
         }
       }
@@ -1220,16 +1240,26 @@ export class GroupWorkspaceModal {
       this.savedMeet.set({ groupId: group.id, link });
       this.resetMeetForm();
 
+      this.notificationQueue.push({
+        title: this.i18n.t('meet.ready'),
+        body: title,
+        kind: 'created',
+        meetLink: link,
+      });
+
       if (announce) {
         try {
-          await this.store.sendMessage(group.id, meetAnnouncement(title, start, end, link));
+          await this.store.sendMessage(
+            group.id,
+            meetAnnouncement(title, start, end, link, (k, v) => this.i18n.t(k, v)),
+          );
         } catch {
-          this.meetError.set('Đã lưu phòng họp, nhưng chưa gửi được thông báo vào chat nhóm.');
+          this.meetError.set(this.i18n.t('meet.errAnnounce'));
         }
       }
     } catch (err: any) {
       this.meetError.set(
-        err?.error?.message || err?.message || 'Không lưu được phòng họp. Vui lòng thử lại.',
+        err?.error?.message || err?.message || this.i18n.t('meet.errSave'),
       );
     } finally {
       this.meetSaving.set(false);
@@ -1244,9 +1274,7 @@ export class GroupWorkspaceModal {
       this.meetCopied.set(true);
       setTimeout(() => this.meetCopied.set(false), 2000);
     } catch {
-      this.meetError.set(
-        'Trình duyệt không cho sao chép tự động — hãy tự bôi đen và sao chép link.',
-      );
+      this.meetError.set(this.i18n.t('meet.errCopy'));
     }
   }
 

@@ -30,11 +30,11 @@
 
   <div class="notif-card__body">
     <div class="notif-card__head">
-      <p class="notif-card__title">{{ n.title }}</p>
+      <p class="notif-card__title">{{ displayTitle() }}</p>
       <time class="notif-card__time">{{ timeLabel() }}</time>
     </div>
 
-    <p class="notif-card__message">{{ n.message }}</p>
+    <p class="notif-card__message">{{ displayMessage() }}</p>
 
     @if (messageMeta(); as meta) {
       @if (meta.messagePreview) {

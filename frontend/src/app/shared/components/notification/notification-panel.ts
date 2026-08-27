@@ -24,12 +24,13 @@ import { TranslationService } from '../../../core/i18n/translation.service';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { CalendarStore } from '../../../features/calendar/data/calendar-store';
 
-type NotificationTabId = 'all' | 'unread' | 'message' | 'task' | 'event';
+type NotificationTabId = 'all' | 'unread' | 'message' | 'group' | 'task' | 'event';
 
 const TABS: readonly { id: NotificationTabId; labelKey: string }[] = [
   { id: 'all', labelKey: 'notif.tabAll' },
   { id: 'unread', labelKey: 'notif.tabUnread' },
   { id: 'message', labelKey: 'notif.tabMessage' },
+  { id: 'group', labelKey: 'notif.tabGroup' },
   { id: 'task', labelKey: 'notif.tabTask' },
   { id: 'event', labelKey: 'notif.tabEvent' },
 ];
@@ -46,10 +47,11 @@ interface NotificationSection {
 const SCROLL_TOP_THRESHOLD_PX = 24;
 
 /** Yêu cầu mở workspace nhóm; có `messageId` nghĩa là mở thẳng tab Trò chuyện
- *  và cuộn tới đúng tin nhắn đó. */
+ *  và cuộn tới đúng tin nhắn đó. `tab` chỉ định chuyển tab 'chat' hoặc 'tasks'. */
 export interface OpenGroupChatRequest {
   readonly groupId: string;
   readonly messageId?: string;
+  readonly tab?: 'chat' | 'tasks';
 }
 
 @Component({
@@ -107,7 +109,6 @@ export class NotificationPanel {
     const all = this.service.notifications().filter((n) => !n.id.startsWith('calendar-invite-'));
     if (tab === 'all') return all;
     if (tab === 'unread') return all.filter((n) => !n.isRead);
-    if (tab === 'task') return all.filter((n) => notificationCategory(n.type) === 'task' || n.type === 'group_invitation' || notificationCategory(n.type) === 'group');
     return all.filter((n) => notificationCategory(n.type) === tab);
   });
 
@@ -244,12 +245,13 @@ export class NotificationPanel {
       return;
     }
 
-    if (notification.type === 'message') {
+    if (notification.type === 'message' || notification.type === 'mention') {
       const meta = notification.messageMeta;
-      if (!meta) return;
-      this.openGroup.emit({ groupId: meta.groupId, messageId: meta.messageId });
-      this.close.emit();
-      return;
+      if (meta) {
+        this.openGroup.emit({ groupId: meta.groupId, messageId: meta.messageId, tab: 'chat' });
+        this.close.emit();
+        return;
+      }
     }
 
     if (
@@ -259,8 +261,16 @@ export class NotificationPanel {
       // Còn "pending" đã có nút Chấp nhận/Từ chối riêng — click vào thân
       // thông báo lúc đó chỉ nên đánh dấu đã đọc, không điều hướng.
       if (notification.actionStatus === 'pending') return;
-      this.openGroup.emit({ groupId: notification.relatedId });
+      this.openGroup.emit({ groupId: notification.relatedId, tab: 'chat' });
       this.close.emit();
+      return;
+    }
+
+    const groupId = notification.metadata?.['groupId'];
+    if ((notification.type === 'task' || notification.type === 'deadline') && groupId) {
+      this.openGroup.emit({ groupId, tab: 'tasks' });
+      this.close.emit();
+      return;
     }
   }
 

@@ -196,3 +196,56 @@ export function normalizeMentions(
 
   return list.length > 0 ? list : undefined;
 }
+
+/** Đảm bảo URL có tiền tố http:// hoặc https:// để trình duyệt mở trang ngoại thay vì mở route tương đối. */
+export function formatExternalUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
+export interface TextToken {
+  readonly text: string;
+  readonly isUrl: boolean;
+  readonly href: string;
+}
+
+const URL_REGEX = /(https?:\/\/[^\s<]+|www\.[^\s<]+|[a-zA-Z0-9-]+\.(?:jit\.si|google\.com|zoom\.us|teams\.microsoft\.com|me|com|net|org|io|dev|app)\/[^\s<]*)/gi;
+
+/** Cắt chuỗi văn bản thông thường để tìm các liên kết/URL và đánh dấu để giao diện chèn thẻ <a>. */
+export function parseTextUrls(text: string): TextToken[] {
+  if (!text) return [];
+  const tokens: TextToken[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  URL_REGEX.lastIndex = 0;
+
+  while ((match = URL_REGEX.exec(text)) !== null) {
+    const matchIndex = match.index;
+    if (matchIndex > lastIndex) {
+      tokens.push({ text: text.slice(lastIndex, matchIndex), isUrl: false, href: '' });
+    }
+
+    const rawUrl = match[0];
+    const cleanUrl = rawUrl.replace(/[.,!?;:]+$/, '');
+    const trailingPunctuation = rawUrl.slice(cleanUrl.length);
+    const href = formatExternalUrl(cleanUrl);
+
+    tokens.push({ text: cleanUrl, isUrl: true, href });
+
+    if (trailingPunctuation) {
+      tokens.push({ text: trailingPunctuation, isUrl: false, href: '' });
+    }
+
+    lastIndex = matchIndex + rawUrl.length;
+  }
+
+  if (lastIndex < text.length) {
+    tokens.push({ text: text.slice(lastIndex), isUrl: false, href: '' });
+  }
+
+  return tokens;
+}
