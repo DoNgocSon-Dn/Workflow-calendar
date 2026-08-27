@@ -779,6 +779,23 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện tạo sự k
 
     targetDate.setUTCHours(hour, minute, 0, 0);
 
+    // Lịch LẶP theo nhóm thứ ("246"/"357"...), KHÔNG kèm khoảng ngày tường
+    // minh: nếu lần xuất hiện gần nhất khớp thứ lại rơi đúng HÔM NAY và giờ
+    // đã trôi qua (vd hỏi "357 từ 13h đến 17h" lúc đã hơn 13h của một ngày
+    // Thứ 5), đây KHÔNG phải một mốc giờ duy nhất đã lỡ như "8h sáng nay" —
+    // đó là một chuỗi LẶP LẠI, nên chuyển sang lần xuất hiện kế tiếp (bỏ qua
+    // hôm nay) thay vì để rào chắn "không tạo sự kiện quá khứ" bên dưới từ
+    // chối oan cả yêu cầu. Làm ở ĐÂY (trước khi endDate được tính từ
+    // targetDate) để endDate tự động ăn theo ngày mới, không bị lệch lại
+    // đúng hôm nay.
+    if (weekdayGroup && !dateRange && targetDate.getTime() < now.getTime()) {
+      const tomorrow = new Date(targetDate);
+      tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+      tomorrow.setUTCHours(0, 0, 0, 0);
+      targetDate = this.nearestDateForWeekdays(tomorrow, weekdayGroup.weekdays);
+      targetDate.setUTCHours(hour, minute, 0, 0);
+    }
+
     // Thời lượng (ví dụ: "trong 2 tiếng", "kéo dài 30 phút", "khoảng 1 giờ")
     let durationMinutes = 60;
     const durationMatch = lower.match(/(?:trong|khoảng|kéo dài)\s+(\d+)\s*(tiếng|giờ|phút|p)/i);
