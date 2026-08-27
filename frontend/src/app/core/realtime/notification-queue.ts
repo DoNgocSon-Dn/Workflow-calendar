@@ -16,6 +16,10 @@ export interface NotificationItem {
   body: string;
   kind: NotificationKind;
   reminderId?: string;
+  /** Có giá trị khi sự kiện được nhắc là một buổi họp trực tuyến — toast sẽ
+   *  mọc thêm nút Tham gia. Nhắc tới giờ họp mà bắt người dùng đi mở lịch tìm
+   *  lại link thì buổi họp đã bắt đầu mất rồi. */
+  meetLink?: string;
 }
 
 const SNOOZE_MS = 5 * 60 * 1000;
@@ -61,7 +65,13 @@ export class NotificationQueue {
     }
 
     setTimeout(() => {
-      this.push({ eventId: item.eventId, title: item.title, body: item.body, kind: item.kind });
+      this.push({
+        eventId: item.eventId,
+        title: item.title,
+        body: item.body,
+        kind: item.kind,
+        meetLink: item.meetLink,
+      });
     }, delayMs);
   }
 

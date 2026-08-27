@@ -141,6 +141,13 @@
 
 /* Grid, không flex-math: icon ở cột cố định, nội dung ở cột 1fr — mọi hàng căn
    trên cùng một trục, không còn magic-number margin lệch nhau. */
+/* Chiều cao chuẩn của MỘT dòng điều khiển trong form.
+   Tính từ .text-input: padding 0.5rem x 2 + 0.875rem x line-height 1.5.
+   Khai một lần ở đây rồi mọi chỗ khác suy ra, thay vì rải số ma khắp file. */
+:host {
+  --field-line: 2.3125rem;
+}
+
 .field-row {
   display: grid;
   grid-template-columns: 1.4rem 1fr;
@@ -158,8 +165,7 @@
 .field-icon {
   width: 1.25rem;
   height: 1.25rem;
-  margin-top: 0.25rem;
-  flex-shrink: 0;
+  margin-top: calc((var(--field-line) - 1.25rem) / 2);
   color: var(--color-text-tertiary);
 }
 
@@ -187,6 +193,12 @@
   font-family: inherit;
   color: var(--color-text-tertiary);
   cursor: pointer;
+  /* Cao BẰNG ô nhập (--field-line) dù padding nhỏ hơn, để icon bên trái canh
+     theo cùng một mốc ở cả hàng đang gấp gọn lẫn hàng đã mở ra. Không có dòng
+     này thì bấm mở một trường là icon nhích xuống một chút. */
+  min-height: var(--field-line);
+  display: flex;
+  align-items: center;
 }
 
 .field-toggle:hover {

@@ -844,8 +844,8 @@
               <h3><app-icon name="video" /> Phòng họp trực tuyến</h3>
               <p>
                 Bấm <strong>Tạo phòng họp</strong> là có link ngay — không phải đi lấy rồi dán
-                về. Link hiện ở dưới để sao chép, đồng thời được gắn vào lịch nhóm và báo cho
-                cả nhóm.
+                về. Link hiện ở dưới để sao chép, và tới giờ họp thì cả nhóm cùng thấy một
+                popup kèm nút Tham gia.
               </p>
 
               <label class="meet-label" for="meet-title-input">Tiêu đề buổi họp</label>
@@ -893,15 +893,6 @@
                 }
               </div>
 
-              <label class="meet-check">
-                <input
-                  type="checkbox"
-                  [checked]="meetAnnounceInChat()"
-                  (change)="meetAnnounceInChat.set($any($event.target).checked)"
-                />
-                Đăng link vào chat nhóm
-              </label>
-
               @if (canAddGroupEvent()) {
                 <label class="meet-check">
                   <input
@@ -911,11 +902,30 @@
                   />
                   Tạo sự kiện trên lịch nhóm
                 </label>
+
+                <label class="meet-check" [class.meet-check-disabled]="!canRemindEveryone()">
+                  <input
+                    type="checkbox"
+                    [checked]="meetRemindEveryone()"
+                    [disabled]="!canRemindEveryone()"
+                    (change)="meetRemindEveryone.set($any($event.target).checked)"
+                  />
+                  Tới giờ họp thì hiện popup cho cả nhóm
+                </label>
               } @else {
                 <p class="meet-hint">
                   Chỉ Trưởng nhóm và Quản trị viên mới thêm được sự kiện vào lịch nhóm.
                 </p>
               }
+
+              <label class="meet-check">
+                <input
+                  type="checkbox"
+                  [checked]="meetAnnounceInChat()"
+                  (change)="meetAnnounceInChat.set($any($event.target).checked)"
+                />
+                Đăng thêm link vào chat nhóm
+              </label>
 
               @if (meetError()) {
                 <p class="meet-hint meet-hint-error">{{ meetError() }}</p>

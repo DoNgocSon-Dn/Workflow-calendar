@@ -1591,6 +1591,17 @@
   cursor: pointer;
 }
 
+/* Ô nhắc bị khoá khi chưa bật "tạo sự kiện" — lời nhắc phải bám vào một sự
+   kiện có thật. Làm mờ để thấy nó vẫn ở đó và biết cần bật gì trước. */
+.meet-check-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.meet-check-disabled input {
+  cursor: not-allowed;
+}
+
 .meet-save-btn {
   align-self: flex-start;
   margin-top: 4px;

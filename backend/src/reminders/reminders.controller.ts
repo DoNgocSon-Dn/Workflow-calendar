@@ -39,6 +39,23 @@ export class RemindersController {
     return this.remindersService.setForEvent(supabase, eventId, user.id, dto.reminders);
   }
 
+  /** Nhắc cả lịch — dùng cho buổi họp nhóm, xem RemindersService. Route dài
+   *  hơn 'events/:eventId/reminders' nên không giành mất route đó. */
+  @Put('events/:eventId/reminders/all-members')
+  setForAllMembers(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('eventId') eventId: string,
+    @Body() dto: SetRemindersDto,
+  ) {
+    return this.remindersService.setForCalendarMembers(
+      supabase,
+      eventId,
+      user.id,
+      dto.reminders,
+    );
+  }
+
   @Post('reminders/:id/snooze')
   snooze(
     @CurrentSupabase() supabase: SupabaseClient,

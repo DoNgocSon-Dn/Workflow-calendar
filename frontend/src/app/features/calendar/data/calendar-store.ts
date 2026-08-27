@@ -1167,13 +1167,15 @@ export class CalendarStore {
     eventId: string;
     title: string;
     startAt: string;
+    meetLink?: string | null;
   }): void {
     this.notificationQueue.push({
       eventId: payload.eventId,
       reminderId: payload.reminderId,
-      title: `Nhắc lịch: ${payload.title}`,
+      title: payload.meetLink ? `Tới giờ họp: ${payload.title}` : `Nhắc lịch: ${payload.title}`,
       body: payload.startAt ? formatTimeLabel(new Date(payload.startAt), 'vi', this.timeFormatService.format()) : '',
       kind: 'reminder',
+      meetLink: payload.meetLink ?? undefined,
     });
     this.notifications.ingest(reminderDraft(this.nt, payload));
   }
@@ -1189,7 +1191,13 @@ export class CalendarStore {
     try {
       const missed = await firstValueFrom(
         this.http.get<
-          { reminderId: string; eventId: string; title: string; startAt: string }[]
+          {
+            reminderId: string;
+            eventId: string;
+            title: string;
+            startAt: string;
+            meetLink: string | null;
+          }[]
         >(`${this.apiUrl}/reminders/missed`),
       );
       for (const reminder of missed) this.handleReminderFire(reminder);
@@ -1593,6 +1601,24 @@ export class CalendarStore {
       }),
     );
     return result.map(toReminder);
+  }
+
+  /**
+   * Đặt lời nhắc cho MỌI thành viên của lịch chứa sự kiện — dùng cho buổi họp
+   * nhóm, để tới giờ thì cả nhóm cùng thấy popup kèm nút Tham gia.
+   *
+   * Tách khỏi setReminders() chứ không thêm cờ: setReminders() đặt lời nhắc
+   * RIÊNG của người đang đăng nhập (ai muốn nhắc sớm bao lâu là việc của họ),
+   * còn hàm này ghi đè lời nhắc của người khác — hai việc khác hẳn nhau về
+   * quyền, nên backend cũng là hai route riêng.
+   */
+  async setRemindersForAllMembers(
+    eventId: string,
+    reminders: ReminderDraft[],
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.put(`${this.apiUrl}/events/${eventId}/reminders/all-members`, { reminders }),
+    );
   }
 
   async snoozeReminder(reminderId: string, minutes: number): Promise<void> {

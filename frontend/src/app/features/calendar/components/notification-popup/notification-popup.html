@@ -41,6 +41,28 @@
              .toast__actions vẫn để lại một khoảng trống trơ dưới nội dung. -->
         @if (item.kind !== 'success') {
           <div class="toast__actions">
+            <!-- Nút đầu tiên vì đây là việc cần làm NGAY: nhắc tới giờ họp mà
+                 phải bấm "Xem chi tiết" rồi mới tìm được link thì buổi họp đã
+                 bắt đầu. Là <a href> chứ không phải <button>: người dùng còn
+                 mở tab mới / sao chép địa chỉ được. -->
+            @if (item.meetLink; as meetLink) {
+              <a
+                class="toast__btn toast__btn--join"
+                [href]="meetLink"
+                target="_blank"
+                rel="noopener noreferrer"
+                (click)="onJoinMeeting(item.id)"
+              >
+                <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+                  <path
+                    fill="currentColor"
+                    d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11z"
+                  />
+                </svg>
+                Tham gia
+              </a>
+            }
+
             @if (item.eventId; as eventId) {
               <button type="button" class="toast__btn toast__btn--primary" (click)="onViewDetail(eventId, item.id)">
                 Xem chi tiết

@@ -293,6 +293,21 @@
     box-shadow 0.15s ease;
 }
 
+/* Nút hành động của lời nhắc buổi họp. Nổi hơn "Xem chi tiết" vì nó là việc
+   người dùng thực sự cần làm khi chuông kêu. */
+.toast__btn--join {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--color-success);
+  color: #fff;
+  text-decoration: none;
+}
+
+.toast__btn--join:hover {
+  filter: brightness(1.08);
+}
+
 .toast__btn--primary {
   background: var(--holiday-accent);
   color: var(--holiday-accent-contrast);
