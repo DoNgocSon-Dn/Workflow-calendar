@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, Injector, computed, inject, signal } from '@angular/core';
 import {
   Group,
   GroupInvite,
@@ -60,7 +60,17 @@ export class GroupStore {
   private readonly notifications = inject(NotificationService);
   private readonly notificationQueue = inject(NotificationQueue);
   private readonly i18n = inject(TranslationService);
-  private readonly calendarStore = inject(CalendarStore);
+  /**
+   * CalendarStore ↔ GroupStore phụ thuộc lẫn nhau (CalendarStore inject
+   * GroupStore để đọc lịch nhóm). Inject thẳng ở đây tạo VÒNG DI → NG0200,
+   * app không khởi động nổi. Lấy LƯỜI qua Injector, chỉ resolve khi thật sự
+   * cần (lúc đó cả hai store đều đã dựng xong).
+   */
+  private readonly injector = inject(Injector);
+  private _calendarStore?: CalendarStore;
+  private get calendarStore(): CalendarStore {
+    return (this._calendarStore ??= this.injector.get(CalendarStore));
+  }
   /** Hàm dịch truyền cho các notification-draft (xem notification-drafts.ts). */
   private readonly nt = (key: string, vars?: Readonly<Record<string, string | number>>) =>
     this.i18n.t(key, vars);
