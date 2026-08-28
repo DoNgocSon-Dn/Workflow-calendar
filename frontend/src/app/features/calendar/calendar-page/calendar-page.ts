@@ -28,7 +28,6 @@ import { GroupStore } from '../../groups/data/group-store';
 import { OpenGroupChatRequest } from '../../../shared/components/notification/notification-panel';
 import { HolidayPopup } from '../../../shared/components/holiday-popup/holiday-popup';
 import { FloatingHub } from '../../../shared/components/floating-hub/floating-hub';
-import { ScreenNotes } from '../components/screen-notes/screen-notes';
 import { LoginSuccessTransition } from '../../auth/login-success-transition/login-success-transition';
 import { BirthdayPopup } from '../../../shared/components/birthday-popup/birthday-popup';
 import { BirthdayPopupService } from '../../../core/services/birthday-popup.service';
@@ -64,7 +63,6 @@ interface ModalState {
     GroupWorkspaceModal,
     NotificationPopup,
     FloatingHub,
-    ScreenNotes,
     HolidayPopup,
     BirthdayPopup,
     HolidayInfoModal,

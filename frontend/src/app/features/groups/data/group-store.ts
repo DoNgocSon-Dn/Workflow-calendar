@@ -833,8 +833,12 @@ export class GroupStore {
   private notifyTaskEvent(groupId: string, task: GroupTask, kind: 'created' | 'updated'): void {
     const currentUserId = this.authStore.user()?.id;
     if (!currentUserId) return;
+    // Chính người dùng này vừa gây ra thay đổi (kéo-thả, đổi trạng thái...) —
+    // đây là tiếng vọng realtime của thao tác của họ, không phải ai khác báo,
+    // nên không tự thông báo cho họ.
+    if (this.selfOriginTaskIds.has(task.id)) return;
 
-    const dedupeKey = `task-${task.id}-${kind}-${task.assignedTo || 'none'}`;
+    const dedupeKey = `task-${task.id}-${kind}-${task.assignedTo || 'none'}-${task.status}`;
     if (this.notifiedTaskEventIds.has(dedupeKey)) return;
 
     const group = this.groups().find((g) => g.id === groupId || g.id === task.groupId);
@@ -879,6 +883,7 @@ export class GroupStore {
   private notifyTaskDeleted(groupId: string, taskId: string, title: string, assignedTo?: string): void {
     const currentUserId = this.authStore.user()?.id;
     if (!currentUserId) return;
+    if (this.selfOriginTaskIds.has(taskId)) return;
 
     if (assignedTo === currentUserId) {
       const group = this.groups().find((g) => g.id === groupId);
