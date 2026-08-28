@@ -65,6 +65,11 @@ interface PipReturn {
   host: {
     // Cửa sổ co lại thì kéo mọi tờ về trong tầm với, đừng để tờ nào kẹt ngoài mép.
     '(window:resize)': 'screen.rescueAll()',
+    // Kéo một ghi chú từ sidebar rồi thả ra VÙNG TRỐNG bất kỳ trên màn hình →
+    // dán thành tờ giấy nổi ngay tại chỗ thả. (Thả trúng ô ngày trên lịch thì
+    // ô đó đã tự xử lý + stopPropagation nên không tới được đây.)
+    '(document:dragover)': 'onDocDragOver($event)',
+    '(document:drop)': 'onDocDrop($event)',
   },
 })
 export class ScreenNotes {
@@ -126,7 +131,35 @@ export class ScreenNotes {
     return this.screen.positionOf(noteId)?.y ?? 0;
   }
 
-  // --- Kéo-thả ----------------------------------------------------------
+  // --- Kéo từ sidebar ra màn hình (HTML5 drag) -------------------------
+
+  private isNoteDrag(event: DragEvent): boolean {
+    return !!event.dataTransfer?.types.includes('application/x-note-id');
+  }
+
+  /** Thả lại vào thanh bên = không dán ra màn hình (ghi chú vốn từ đó kéo ra). */
+  private overSidebar(event: DragEvent): boolean {
+    return !!(event.target as HTMLElement | null)?.closest('app-calendar-sidebar');
+  }
+
+  onDocDragOver(event: DragEvent): void {
+    if (!this.isNoteDrag(event) || this.overSidebar(event)) return;
+    // Mặc định trình duyệt CẤM thả — phải chặn ở dragover thì `drop` mới bắn.
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+  }
+
+  onDocDrop(event: DragEvent): void {
+    if (!this.isNoteDrag(event) || this.overSidebar(event)) return;
+    const noteId = event.dataTransfer?.getData('application/x-note-id');
+    if (!noteId) return;
+    event.preventDefault();
+    // Đặt mép trên–trái tờ giấy sao cho con trỏ rơi vào gần góc trên của nó
+    // (giống cầm một tờ giấy ở mép rồi dán xuống).
+    this.screen.pin(noteId, { x: event.clientX - 24, y: event.clientY - 12 });
+  }
+
+  // --- Kéo tờ giấy nổi trên màn hình (pointer) -------------------------
 
   onDragStart(event: PointerEvent, noteId: string): void {
     if (this.poppedOutId() === noteId) return;
@@ -145,10 +178,27 @@ export class ScreenNotes {
     });
   }
 
-  onDragEnd(): void {
+  onDragEnd(event: PointerEvent): void {
     if (!this.drag) return;
+    const id = this.drag.id;
     this.drag = null;
     this.draggingId.set(null);
+
+    // Thả tờ giấy TRỞ LẠI thanh bên → cất nó đi (gỡ khỏi màn hình), ghi chú
+    // hiện lại trong danh sách. Kiểm bằng toạ độ vùng thanh bên chứ không
+    // dùng elementFromPoint — chỗ đó chính tờ giấy đang che nên sẽ trả về nó.
+    const rect = document.querySelector('app-calendar-sidebar')?.getBoundingClientRect();
+    const overSidebar =
+      !!rect &&
+      rect.width > 0 &&
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom;
+    if (overSidebar) {
+      this.screen.unpin(id);
+      return;
+    }
     this.screen.commit();
   }
 

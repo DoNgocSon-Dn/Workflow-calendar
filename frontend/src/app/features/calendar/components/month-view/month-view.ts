@@ -397,6 +397,9 @@ export class MonthView {
 
   onDrop(event: DragEvent, day: Date): void {
     event.preventDefault();
+    // Thả TRÚNG một ô ngày → dán vào ngày, KHÔNG để nổi trên màn hình. Chặn nổi
+    // bọt để handler `document:drop` của <app-screen-notes> không dán chồng.
+    event.stopPropagation();
     this.dragOverDayKey.set(null);
 
     // Ghi chú kéo từ sidebar mang một kiểu dữ liệu RIÊNG (application/x-note-id)

@@ -334,6 +334,9 @@ export class TimeGridView {
 
   onNoteDropZoneDrop(event: DragEvent, day: Date): void {
     event.preventDefault();
+    // Thả trúng cột ngày → dán vào ngày; chặn nổi bọt để handler `document:drop`
+    // của <app-screen-notes> không dán chồng lên màn hình.
+    event.stopPropagation();
     this.dragOverDayKey.set(null);
     const noteId = event.dataTransfer?.getData('application/x-note-id');
     if (noteId) void this.store.pinNoteToDay(noteId, day);

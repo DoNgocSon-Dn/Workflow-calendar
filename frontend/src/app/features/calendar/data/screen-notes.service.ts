@@ -69,11 +69,13 @@ export class ScreenNotesService {
     return this.positions()[noteId];
   }
 
-  /** Dán một ghi chú lên màn hình. Thẻ mới xếp bậc thang từ góc trên-phải để
-   *  không chồng khít lên thẻ đã có — sau đó kéo đi đâu tuỳ ý. */
-  pin(noteId: string): void {
+  /** Dán một ghi chú lên màn hình. Có `pos` (kéo-thả) thì đặt ngay tại chỗ
+   *  thả; không thì xếp bậc thang từ góc trên-phải cho khỏi chồng khít. Sau
+   *  đó kéo đi đâu tuỳ ý. */
+  pin(noteId: string, pos?: ScreenNotePos): void {
     if (this.isPinned(noteId)) return;
-    this.positions.update((map) => ({ ...map, [noteId]: this.nextSlot(Object.keys(map).length) }));
+    const place = pos ? keepReachable(pos) : this.nextSlot(Object.keys(this.positions()).length);
+    this.positions.update((map) => ({ ...map, [noteId]: place }));
     this.persist();
   }
 

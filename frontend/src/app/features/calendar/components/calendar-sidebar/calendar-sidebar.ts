@@ -185,6 +185,13 @@ export class CalendarSidebar implements OnInit {
   protected readonly deletingNoteId = signal<string | null>(null);
   protected readonly creatingNote = signal(false);
 
+  /** Ghi chú hiện trong danh sách = những tờ CHƯA "xé" ra màn hình. Tờ nào
+   *  đang dán nổi trên màn hình thì biến khỏi đây (kéo trở lại thanh bên là
+   *  nó hiện lại) — một tờ giấy chỉ ở một chỗ. */
+  protected readonly visibleNotes = computed(() =>
+    this.store.notes().filter((n) => !this.screenNotes.pinnedIds().has(n.id)),
+  );
+
   /** Tạo nhanh một ghi chú thủ công — không cần đi qua Trợ lý AI. Chỉ hỏi
    *  nội dung (màu ngẫu nhiên trong bảng giấy), rồi "xé" luôn ra dán nổi lên
    *  màn hình để kéo đi đâu tuỳ ý; không muốn tờ giấy thì bấm × trên đó, ghi

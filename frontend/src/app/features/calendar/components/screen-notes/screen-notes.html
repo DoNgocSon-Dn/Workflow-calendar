@@ -15,8 +15,8 @@
       class="sticky-head"
       (pointerdown)="onDragStart($event, note.id)"
       (pointermove)="onDragMove($event)"
-      (pointerup)="onDragEnd()"
-      (pointercancel)="onDragEnd()"
+      (pointerup)="onDragEnd($event)"
+      (pointercancel)="onDragEnd($event)"
     >
       <span class="grip" aria-hidden="true"></span>
 

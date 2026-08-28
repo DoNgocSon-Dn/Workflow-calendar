@@ -239,7 +239,7 @@
           </div>
         </div>
         <div class="calendar-items-wrapper">
-          @for (note of store.notes(); track note.id) {
+          @for (note of visibleNotes(); track note.id) {
             <div
               class="calendar-item note-item"
               [class.is-pinned]="!!note.pinnedDate"
