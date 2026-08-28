@@ -246,14 +246,48 @@ export class GroupStore {
     // at right now.
     this.realtime.onConnect(() => this.joinAllGroupRooms());
 
-    // Mất mạng rồi nối lại: Socket.IO KHÔNG phát lại event đã lỡ, nên phải tự
+    // Mất mạng rồi nối lại hoặc chuyển tab: Socket.IO KHÔNG phát lại event đã lỡ, nên phải tự
     // kéo về phần bỏ sót. Dedupe theo id ổn định lo chuyện trùng lặp.
     this.realtime.onReconnect(() => {
       void this.loadPendingInvites();
       void this.scanMyTaskDeadlines();
       const activeId = this.activeGroupId();
-      if (activeId) void this.loadMessages(activeId);
+      if (activeId) {
+        void this.loadMessages(activeId);
+        void this.loadTasks(activeId);
+        void this.loadMembers(activeId);
+      }
     });
+
+    // Tự động làm mới dữ liệu khi người dùng chuyển lại tab trình duyệt
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', () => {
+        const activeId = this.activeGroupId();
+        if (activeId && this.activeWorkspaceModalOpen()) {
+          void this.loadMessages(activeId);
+          void this.loadTasks(activeId);
+          void this.loadMembers(activeId);
+        }
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          const activeId = this.activeGroupId();
+          if (activeId && this.activeWorkspaceModalOpen()) {
+            void this.loadMessages(activeId);
+            void this.loadTasks(activeId);
+            void this.loadMembers(activeId);
+          }
+        }
+      });
+
+      // Polling ngầm nhẹ nhàng mỗi 12s khi đang mở bảng nhóm (đảm bảo task/chat luôn tươi 100%)
+      setInterval(() => {
+        const activeId = this.activeGroupId();
+        if (activeId && this.activeWorkspaceModalOpen()) {
+          void this.loadTasks(activeId);
+        }
+      }, 12000);
+    }
 
     this.realtime.on<{ groupId: string; message: GroupMessage }>('group:messageSent', (payload) => {
       if (!payload?.message) return;
@@ -262,9 +296,6 @@ export class GroupStore {
 
       const targetGroupId = payload.groupId || payload.message.groupId;
       if (this.isActiveGroup(targetGroupId, payload.message.groupId)) {
-        // Tin này có thể đã tới qua kênh Supabase dự phòng ở dưới (cùng một
-        // tin nhắn, hai đường truyền) — chỉ cộng đếm chưa đọc lần ĐẦU TIÊN
-        // thấy id này, nếu không một tin nhắn thật sẽ bị đếm thành hai.
         const alreadySeen = this.messages().some((m) => m.id === payload.message.id);
         this.upsertMessage(payload.message);
         if (
@@ -278,51 +309,132 @@ export class GroupStore {
       this.notifyIncomingMessage(targetGroupId, payload.message);
     });
 
-    // Supabase Realtime làm kênh dự phòng trực tiếp từ Cloud CSDL cho môi trường chạy nhiều backend local:
-    // Vì CSDL Supabase là duy nhất, khi bất kỳ máy nào INSERT tin nhắn vào CSDL Supabase,
-    // Supabase Cloud sẽ đẩy sự kiện trực tiếp về cho các client đang mở ở mọi máy.
+    // Supabase Realtime làm kênh dự phòng trực tiếp từ CSDL Supabase:
+    // Đăng ký nghe toàn bộ biến động (INSERT / UPDATE / DELETE) trên group_messages, group_tasks, group_members và groups
     this.supabase
-      .channel('supabase-realtime:group_messages')
+      .channel('supabase-realtime:group_workspace_all')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'group_messages' },
+        { event: '*', schema: 'public', table: 'group_messages' },
         (payload) => {
-          const row = payload.new as any;
-          if (!row || !row.id || !row.group_id) return;
-          const member = this.members().find((m) => m.userId === row.sender_id);
-          const msg: GroupMessage = {
-            id: row.id,
-            groupId: row.group_id,
-            senderId: row.sender_id,
-            message: row.message ?? undefined,
-            mentions: normalizeMentions(row.mentions),
-            createdAt: row.created_at,
-            editedAt: row.edited_at ?? undefined,
-            deletedAt: row.deleted_at ?? undefined,
-            attachmentUrl: row.attachment_url ?? undefined,
-            attachmentName: row.attachment_name ?? undefined,
-            attachmentType: row.attachment_type ?? undefined,
-            attachmentSize: row.attachment_size ?? undefined,
-            senderEmail: member?.email,
-            senderName: member?.email ? member.email.split('@')[0] : undefined,
-          };
-          const currentUser = this.authStore.user();
-          const isFromOther = currentUser && msg.senderId !== currentUser.id;
+          if (payload.eventType === 'INSERT') {
+            const row = payload.new as any;
+            if (!row || !row.id || !row.group_id) return;
+            const member = this.members().find((m) => m.userId === row.sender_id);
+            const msg: GroupMessage = {
+              id: row.id,
+              groupId: row.group_id,
+              senderId: row.sender_id,
+              message: row.message ?? undefined,
+              mentions: normalizeMentions(row.mentions),
+              createdAt: row.created_at,
+              editedAt: row.edited_at ?? undefined,
+              deletedAt: row.deleted_at ?? undefined,
+              attachmentUrl: row.attachment_url ?? undefined,
+              attachmentName: row.attachment_name ?? undefined,
+              attachmentType: row.attachment_type ?? undefined,
+              attachmentSize: row.attachment_size ?? undefined,
+              senderEmail: member?.email,
+              senderName: member?.email ? member.email.split('@')[0] : undefined,
+            };
+            const currentUser = this.authStore.user();
+            const isFromOther = currentUser && msg.senderId !== currentUser.id;
 
-          if (this.isActiveGroup(msg.groupId)) {
-            // Cùng lý do với handler group:messageSent ở trên: tin này có thể
-            // đã tới qua socket rồi, chỉ đếm lần đầu thấy id này.
-            const alreadySeen = this.messages().some((m) => m.id === msg.id);
-            this.upsertMessage(msg);
-            if (
-              !alreadySeen &&
-              isFromOther &&
-              (!this.activeWorkspaceModalOpen() || this.activeWorkspaceTab() !== 'chat')
-            ) {
-              this.unreadChatCount.update((count) => count + 1);
+            if (this.isActiveGroup(msg.groupId)) {
+              const alreadySeen = this.messages().some((m) => m.id === msg.id);
+              this.upsertMessage(msg);
+              if (
+                !alreadySeen &&
+                isFromOther &&
+                (!this.activeWorkspaceModalOpen() || this.activeWorkspaceTab() !== 'chat')
+              ) {
+                this.unreadChatCount.update((count) => count + 1);
+              }
+            }
+            this.notifyIncomingMessage(msg.groupId, msg);
+          } else if (payload.eventType === 'UPDATE') {
+            const row = payload.new as any;
+            if (!row || !row.id) return;
+            if (this.isActiveGroup(row.group_id)) {
+              this.messages.update((list) =>
+                list.map((m) =>
+                  m.id === row.id
+                    ? {
+                        ...m,
+                        message: row.message ?? m.message,
+                        editedAt: row.edited_at ?? m.editedAt,
+                        deletedAt: row.deleted_at ?? m.deletedAt,
+                      }
+                    : m,
+                ),
+              );
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            if (oldRow?.id && this.isActiveGroup(oldRow.group_id)) {
+              this.messages.update((list) => list.filter((m) => m.id !== oldRow.id));
             }
           }
-          this.notifyIncomingMessage(msg.groupId, msg);
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'group_tasks' },
+        (payload) => {
+          const groupId = (payload.new as any)?.group_id ?? (payload.old as any)?.group_id;
+          if (groupId && this.isActiveGroup(groupId)) {
+            void this.loadTasks(groupId);
+          }
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'group_members' },
+        (payload) => {
+          const groupId = (payload.new as any)?.group_id ?? (payload.old as any)?.group_id;
+          if (groupId && this.isActiveGroup(groupId)) {
+            void this.loadMembers(groupId);
+          }
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'groups' },
+        (payload) => {
+          if (payload.eventType === 'UPDATE') {
+            const row = payload.new as any;
+            if (row?.id) {
+              this.groups.update((list) =>
+                list.map((g) =>
+                  g.id === row.id
+                    ? {
+                        ...g,
+                        name: row.name ?? g.name,
+                        description: row.description ?? g.description,
+                        ownerId: row.owner_id ?? g.ownerId,
+                      }
+                    : g,
+                ),
+              );
+              if (this.activeGroupId() === row.id) {
+                this.activeGroup.update((g) =>
+                  g
+                    ? {
+                        ...g,
+                        name: row.name ?? g.name,
+                        description: row.description ?? g.description,
+                        ownerId: row.owner_id ?? g.ownerId,
+                      }
+                    : g,
+                );
+              }
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            if (oldRow?.id) {
+              this.removeGroupLocally(oldRow.id);
+            }
+          }
         },
       )
       .subscribe();
@@ -347,7 +459,8 @@ export class GroupStore {
           return [payload.task, ...list];
         });
       }
-      this.notifyTaskEvent(payload.groupId, payload.task, 'created');
+      // Không gọi notifyTaskEvent ở event chung cho cả nhóm,
+      // việc bắn thông báo cho đúng người phụ trách sẽ do socket 'task:assigned' đảm nhận!
     });
 
     this.realtime.on<{ groupId: string; task: GroupTask }>('task:assigned', (payload) => {
@@ -696,9 +809,14 @@ export class GroupStore {
     return lower.includes(email.toLowerCase()) || lower.includes(`@${localPart}`);
   }
 
+  private readonly notifiedTaskEventIds = new Set<string>();
+
   private notifyTaskEvent(groupId: string, task: GroupTask, kind: 'created' | 'updated'): void {
     const currentUserId = this.authStore.user()?.id;
     if (!currentUserId) return;
+
+    const dedupeKey = `task-${task.id}-${kind}-${task.assignedTo || 'none'}`;
+    if (this.notifiedTaskEventIds.has(dedupeKey)) return;
 
     const group = this.groups().find((g) => g.id === groupId || g.id === task.groupId);
     const groupName = group?.name ?? 'nhóm của bạn';
@@ -712,23 +830,25 @@ export class GroupStore {
       createdAt: task.createdAt,
     };
 
-    // 1. Người dùng hiện tại được giao task này (kể cả khi tự giao việc cho chính mình hoặc người khác giao cho)
+    // 1. CHỈ THÔNG BÁO CHO NGƯỜI ĐƯỢC GIAO TASK (Người phụ trách)
     if (task.assignedTo === currentUserId) {
+      this.notifiedTaskEventIds.add(dedupeKey);
       this.notifications.ingest(
         kind === 'created' ? groupTaskAssignedDraft(this.nt, input) : groupTaskUpdatedDraft(this.nt, input),
       );
 
       this.notificationQueue.push({
-        id: `task-${kind}-${task.id}`,
+        id: `toast-${dedupeKey}`,
         title: kind === 'created' ? 'Nhiệm vụ mới' : 'Cập nhật nhiệm vụ',
         body: `Bạn được phân công nhiệm vụ "${task.title}" trong ${groupName}`,
         kind: 'created',
       });
-    } else if (kind === 'updated' && task.createdBy === currentUserId) {
-      // 2. Người tạo task nhận được thông báo khi thành viên được phân công cập nhật tiến độ
+    } else if (kind === 'updated' && task.createdBy === currentUserId && task.assignedTo !== currentUserId) {
+      // 2. Người tạo task nhận được thông báo khi người phụ trách chuyển trạng thái công việc
+      this.notifiedTaskEventIds.add(dedupeKey);
       this.notifications.ingest(groupTaskUpdatedDraft(this.nt, input));
       this.notificationQueue.push({
-        id: `task-updated-${task.id}`,
+        id: `toast-${dedupeKey}`,
         title: 'Cập nhật nhiệm vụ',
         body: `Nhiệm vụ "${task.title}" trong ${groupName} đã được cập nhật`,
         kind: 'updated',
