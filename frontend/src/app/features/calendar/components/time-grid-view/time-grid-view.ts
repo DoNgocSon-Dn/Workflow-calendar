@@ -66,6 +66,12 @@ function snap(min: number): number {
   templateUrl: './time-grid-view.html',
   styleUrl: './time-grid-view.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    // Thả ghi chú ra ngoài cột ngày / bấm Esc huỷ kéo → không có `drop`, viền
+    // vàng "ô nhận ghi chú" sẽ kẹt lại. `dragend` luôn bắn khi kết thúc kéo
+    // dù thành công hay không, nên dọn ở đây cho chắc.
+    '(document:dragend)': 'dragOverDayKey.set(null)',
+  },
 })
 export class TimeGridView {
   protected readonly store = inject(CalendarStore);

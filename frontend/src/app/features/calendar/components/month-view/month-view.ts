@@ -41,6 +41,13 @@ export interface CreateRequest {
   templateUrl: './month-view.html',
   styleUrl: './month-view.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    // Kéo một ghi chú rồi thả RA NGOÀI ô ngày (hoặc bấm Esc huỷ) không sinh ra
+    // sự kiện `drop` nào — nếu chỉ dựa vào `dragleave` thì viền vàng "ô nhận
+    // ghi chú" kẹt lại vĩnh viễn. `dragend` luôn bắn trên nguồn kéo dù kết
+    // thúc kiểu gì, nên đây là chỗ dọn chắc chắn.
+    '(document:dragend)': 'dragOverDayKey.set(null)',
+  },
 })
 export class MonthView {
   protected readonly store = inject(CalendarStore);
