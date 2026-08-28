@@ -209,14 +209,21 @@ export class GroupsService {
    *  ("Tất cả thành viên đều có quyền theo dõi và tạo sự kiện chung"). Trước
    *  đây RPC gán 'admin' -> editor, còn lại -> viewer, nên thành viên thường
    *  không thêm được sự kiện dù giao diện nói ngược lại. */
-  private readonly GROUP_CALENDAR_ROLE = 'editor' as const;
+  /** Quyền trên LỊCH nhóm suy ra từ VAI TRÒ trong nhóm:
+   *  Trưởng nhóm / Phó nhóm → 'editor' (thêm/sửa/xoá sự kiện chung),
+   *  Thành viên thường     → 'viewer' (chỉ xem). */
+  private groupCalendarRole(groupRole: GroupRole): 'editor' | 'viewer' {
+    return groupRole === GroupRole.LEADER || groupRole === GroupRole.ADMIN
+      ? 'editor'
+      : 'viewer';
+  }
 
-  /** Bảo đảm user có mặt trên lịch nhóm với vai trò 'editor' (dùng sau khi
-   *  chấp nhận lời mời / duyệt yêu cầu — RPC đã chèn hàng nhưng có thể gán
-   *  'viewer', ở đây nâng lên đúng mức). Không bao giờ hạ 'owner'. */
+  /** Đặt quyền lịch nhóm cho MỘT người theo đúng vai trò nhóm của họ. Không
+   *  bao giờ đụng 'owner'. Chỉ ghi khi lệch. */
   private async upsertCalendarMember(
     calendarId: string | null,
     userId: string,
+    groupRole: GroupRole,
   ): Promise<void> {
     if (!calendarId) return;
     const admin = this.supabaseService.getServiceRoleClient();
@@ -229,14 +236,53 @@ export class GroupsService {
       .maybeSingle<{ role: string }>();
     if (existing?.role === 'owner') return;
 
+    const target = this.groupCalendarRole(groupRole);
+    if (existing?.role === target) return;
+
     const { error } = await admin.from('calendar_members').upsert(
-      { calendar_id: calendarId, user_id: userId, role: this.GROUP_CALENDAR_ROLE },
+      { calendar_id: calendarId, user_id: userId, role: target },
       { onConflict: 'calendar_id,user_id' },
     );
     if (error) {
       this.logger.error(
         `upsertCalendarMember(cal=${calendarId} user=${userId}) thất bại: ${error.message}`,
       );
+    }
+  }
+
+  /** Đồng bộ quyền lịch của TOÀN nhóm theo vai trò nhóm hiện tại. Tự chữa dữ
+   *  liệu cũ (thành viên thường trước đây bị gán 'editor'). Fire-and-forget,
+   *  chỉ ghi những hàng lệch. */
+  private async syncGroupCalendarRoles(groupId: string): Promise<void> {
+    const admin = this.supabaseService.getServiceRoleClient();
+    const { data: grp } = await admin
+      .from('groups')
+      .select('calendar_id, owner_id')
+      .eq('id', groupId)
+      .maybeSingle<{ calendar_id: string | null; owner_id: string }>();
+    if (!grp?.calendar_id) return;
+
+    const [{ data: gm }, { data: cm }] = await Promise.all([
+      admin.from('group_members').select('user_id, role').eq('group_id', groupId),
+      admin.from('calendar_members').select('user_id, role').eq('calendar_id', grp.calendar_id),
+    ]);
+    const haveRole = new Map(
+      ((cm ?? []) as { user_id: string; role: string }[]).map((r) => [r.user_id, r.role]),
+    );
+
+    for (const m of (gm ?? []) as { user_id: string; role: string }[]) {
+      const effective =
+        m.user_id === grp.owner_id ? GroupRole.LEADER : normalizeGroupRole(m.role);
+      const want = this.groupCalendarRole(effective);
+      const have = haveRole.get(m.user_id);
+      if (have === 'owner' || have === want) continue;
+      const { error } = await admin.from('calendar_members').upsert(
+        { calendar_id: grp.calendar_id, user_id: m.user_id, role: want },
+        { onConflict: 'calendar_id,user_id' },
+      );
+      if (error) {
+        this.logger.error(`syncGroupCalendarRoles(${groupId}) upsert lỗi: ${error.message}`);
+      }
     }
   }
 
@@ -859,6 +905,10 @@ export class GroupsService {
     });
     if (error) throw new InternalServerErrorException(error.message);
 
+    // Tự chữa dữ liệu cũ: thành viên thường trước đây bị gán 'editor' trên lịch
+    // nhóm. Chạy nền, chỉ ghi hàng lệch — mở workspace một lần là chuẩn lại.
+    void this.syncGroupCalendarRoles(groupId).catch(() => undefined);
+
     return this.mapMemberRows(data, group.owner_id);
   }
 
@@ -1119,13 +1169,13 @@ export class GroupsService {
       invite = toGroupInviteDto({ ...data, inviter_email: null });
     }
 
-    // RPC respond_group_invite chèn calendar_members với role 'viewer' cho mọi
-    // vai trò khác 'admin'. Nâng lên 'editor' để thành viên thường cũng tạo
-    // được sự kiện chung — đúng như mô tả trong tab Lịch Nhóm.
+    // Đặt quyền lịch nhóm theo VAI TRÒ nhóm: Trưởng/Phó nhóm → editor, thành
+    // viên thường → viewer (chỉ xem sự kiện chung, không thêm/sửa/xoá).
     if (dto.status === 'accepted') {
       await this.upsertCalendarMember(
         await this.groupCalendarId(invite.groupId),
         userId,
+        normalizeGroupRole(invite.role),
       );
     }
 
@@ -1533,11 +1583,11 @@ export class GroupsService {
     }
 
     if (dto.status === 'approved') {
-      // approve_group_join_request (migration 24) chèn calendar_members với
-      // 'viewer' cho vai trò khác 'admin' — nâng lên 'editor' như luồng mời.
+      // Người duyệt qua link luôn vào với vai trò MEMBER → chỉ xem lịch nhóm.
       await this.upsertCalendarMember(
         await this.groupCalendarId(groupId),
         request.userId,
+        GroupRole.MEMBER,
       );
 
       const member = await this.getMembers(supabase, groupId).then((members) =>
@@ -1604,10 +1654,9 @@ export class GroupsService {
       );
     }
 
-    // Đồng bộ quyền trên lịch nhóm. Không map admin->editor / còn lại->viewer
-    // nữa: mọi thành viên đều được tạo sự kiện chung (khách 'guest' đã bị
-    // backend gộp về 'member'), nên chỉ cần bảo đảm họ là 'editor'.
-    await this.upsertCalendarMember(group.calendar_id, targetUserId);
+    // Đồng bộ quyền trên lịch nhóm theo vai trò MỚI: Trưởng/Phó nhóm → editor
+    // (thêm/sửa/xoá sự kiện chung), hạ xuống Thành viên → viewer (chỉ xem).
+    await this.upsertCalendarMember(group.calendar_id, targetUserId, nextRole);
 
     const members = await this.getMembers(supabase, groupId);
     const memberDto: GroupMemberDto = members.find((m) => m.userId === targetUserId) || {
