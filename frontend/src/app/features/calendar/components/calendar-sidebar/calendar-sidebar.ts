@@ -79,6 +79,7 @@ export class CalendarSidebar implements OnInit {
   readonly createClicked = output<void>();
   readonly createCalendarClicked = output<void>();
   readonly createGroupClicked = output<void>();
+  readonly notesTrashClicked = output<void>();
   readonly inviteClicked = output<{ calendarId: string; calendarName: string }>();
 
   // CalendarStore đã gộp lịch trùng ngay khi nhận từ API, nên sidebar không cần
@@ -212,7 +213,8 @@ export class CalendarSidebar implements OnInit {
     event.stopPropagation();
     if (this.deletingNoteId()) return;
 
-    const ok = await this.dialog.confirm(this.i18n.t('sidebar.deleteNoteTitle'), {
+    const ok = await this.dialog.confirm(this.i18n.t('note.deleteBody'), {
+      title: this.i18n.t('sidebar.deleteNoteTitle'),
       confirmLabel: this.i18n.t('sidebar.deleteNoteConfirm'),
       danger: true,
     });
@@ -226,6 +228,10 @@ export class CalendarSidebar implements OnInit {
     } finally {
       this.deletingNoteId.set(null);
     }
+  }
+
+  onNotesTrashClicked(): void {
+    this.notesTrashClicked.emit();
   }
 
   /** "Xé" ghi chú ra dán nổi lên màn hình (hoặc gỡ xuống). Chỉ là trạng thái

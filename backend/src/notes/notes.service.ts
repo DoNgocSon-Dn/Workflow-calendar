@@ -14,7 +14,20 @@ export class NotesService {
     const { data, error } = await supabase
       .from('notes')
       .select('*')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
+
+    if (error) throw new InternalServerErrorException(error.message);
+    return (data as NoteRow[]).map(toNoteDto);
+  }
+
+  /** Ghi chú đã xoá mềm — hiển thị trong "Thùng rác ghi chú", mới nhất lên đầu. */
+  async findTrashedForUser(supabase: SupabaseClient): Promise<NoteDto[]> {
+    const { data, error } = await supabase
+      .from('notes')
+      .select('*')
+      .not('deleted_at', 'is', null)
+      .order('deleted_at', { ascending: false });
 
     if (error) throw new InternalServerErrorException(error.message);
     return (data as NoteRow[]).map(toNoteDto);
@@ -63,16 +76,51 @@ export class NotesService {
     return toNoteDto(data[0]);
   }
 
+  /** Xoá MỀM — chuyển ghi chú vào Thùng rác (set deleted_at), vẫn khôi phục
+   *  được. Chặn xoá lại một ghi chú đã ở trong thùng rác. */
   async remove(supabase: SupabaseClient, id: string): Promise<void> {
     const { data, error } = await supabase
       .from('notes')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
+      .is('deleted_at', null)
       .select('id');
 
     if (error) throw new InternalServerErrorException(error.message);
     if ((data as { id: string }[]).length === 0) {
       throw new NotFoundException('Note not found');
+    }
+  }
+
+  /** Đưa ghi chú từ Thùng rác trở lại danh sách. */
+  async restore(supabase: SupabaseClient, id: string): Promise<NoteDto> {
+    const { data, error } = await supabase
+      .from('notes')
+      .update({ deleted_at: null })
+      .eq('id', id)
+      .not('deleted_at', 'is', null)
+      .select('*')
+      .returns<NoteRow[]>();
+
+    if (error) throw new InternalServerErrorException(error.message);
+    if (data.length === 0) {
+      throw new NotFoundException('Note not found in trash');
+    }
+    return toNoteDto(data[0]);
+  }
+
+  /** Xoá VĨNH VIỄN khỏi bảng — chỉ cho ghi chú đang trong Thùng rác. */
+  async purge(supabase: SupabaseClient, id: string): Promise<void> {
+    const { data, error } = await supabase
+      .from('notes')
+      .delete()
+      .eq('id', id)
+      .not('deleted_at', 'is', null)
+      .select('id');
+
+    if (error) throw new InternalServerErrorException(error.message);
+    if ((data as { id: string }[]).length === 0) {
+      throw new NotFoundException('Note not found in trash');
     }
   }
 }

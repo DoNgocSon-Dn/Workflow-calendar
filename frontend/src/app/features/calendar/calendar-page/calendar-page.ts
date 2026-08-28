@@ -17,6 +17,7 @@ import { TimeGridView } from '../components/time-grid-view/time-grid-view';
 import { AgendaView } from '../components/agenda-view/agenda-view';
 import { SettingsModal } from '../components/settings-modal/settings-modal';
 import { TrashModal } from '../components/trash-modal/trash-modal';
+import { NotesTrashModal } from '../components/notes-trash-modal/notes-trash-modal';
 import { CalendarStore, isSidebarDrawerViewport } from '../data/calendar-store';
 import { HolidayThemeService } from '../data/holiday-theme.service';
 import { VN_HOLIDAY_CALENDAR_ID } from '../data/vietnam-holidays';
@@ -56,6 +57,7 @@ interface ModalState {
     TimeGridView,
     AgendaView,
     TrashModal,
+    NotesTrashModal,
     SettingsModal,
     EventFormModal,
     InviteModal,
@@ -117,6 +119,7 @@ export class CalendarPage {
   );
 
   protected readonly trashModalOpen = signal(false);
+  protected readonly notesTrashModalOpen = signal(false);
   protected readonly settingsModalOpen = signal(false);
   protected readonly inviteModalTarget = signal<{ calendarId: string; calendarName: string } | null>(
     null,

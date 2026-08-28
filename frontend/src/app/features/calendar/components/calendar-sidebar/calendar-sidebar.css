@@ -149,6 +149,13 @@
   white-space: nowrap;
 }
 
+.note-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  flex-shrink: 0;
+}
+
 .add-calendar-btn {
   flex-shrink: 0;
   border: none;

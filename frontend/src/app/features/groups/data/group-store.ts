@@ -37,6 +37,8 @@ import {
   taskDeadlineDraft,
 } from '../../../core/services/notification-drafts';
 
+import { CalendarStore } from '../../calendar/data/calendar-store';
+
 /** Các tab của Group Workspace — khai báo ở store để luồng bên ngoài có thể
  *  yêu cầu mở đúng tab mà không phải import ngược vào component modal. */
 export type WorkspaceTabRequest = 'members' | 'calendar' | 'tasks' | 'chat';
@@ -58,6 +60,7 @@ export class GroupStore {
   private readonly notifications = inject(NotificationService);
   private readonly notificationQueue = inject(NotificationQueue);
   private readonly i18n = inject(TranslationService);
+  private readonly calendarStore = inject(CalendarStore);
   /** Hàm dịch truyền cho các notification-draft (xem notification-drafts.ts). */
   private readonly nt = (key: string, vars?: Readonly<Record<string, string | number>>) =>
     this.i18n.t(key, vars);
@@ -511,9 +514,9 @@ export class GroupStore {
       }
     });
 
-    this.realtime.on<{ groupId: string }>('group:deleted', (payload) => {
+    this.realtime.on<{ groupId: string; calendarId?: string }>('group:deleted', (payload) => {
       if (!payload?.groupId) return;
-      this.removeGroupLocally(payload.groupId);
+      this.removeGroupLocally(payload.groupId, payload.calendarId);
     });
 
     this.realtime.on<{ groupId: string }>('group:unhidden', (payload) => {
@@ -614,15 +617,17 @@ export class GroupStore {
     // Bị xoá khỏi nhóm (hoặc tự rời — markSelfOrigin ở removeMember() chặn
     // thông báo dội lại cho chính người rời). Người khác bị xoá thì chỉ cập
     // nhật danh sách thành viên nếu đang mở đúng nhóm đó.
-    this.realtime.on<{ groupId: string; userId: string }>('group:memberRemoved', (payload) => {
+    this.realtime.on<{ groupId: string; userId: string; calendarId?: string }>('group:memberRemoved', (payload) => {
       if (!payload?.userId) return;
       const currentUserId = this.authStore.user()?.id;
       if (payload.userId === currentUserId) {
         const key = `${payload.groupId}:${payload.userId}`;
         const isSelfOrigin = this.selfOriginMemberRemovals.has(key);
         if (isSelfOrigin) this.selfOriginMemberRemovals.delete(key);
-        const groupName = this.groups().find((g) => g.id === payload.groupId)?.name ?? null;
-        this.removeGroupLocally(payload.groupId);
+        const group = this.groups().find((g) => g.id === payload.groupId);
+        const groupName = group?.name ?? null;
+        const calendarId = payload.calendarId || group?.calendarId;
+        this.removeGroupLocally(payload.groupId, calendarId);
         if (!isSelfOrigin) {
           this.notifications.ingest(groupMemberRemovedDraft(this.nt, payload.groupId, groupName));
         }
@@ -706,7 +711,9 @@ export class GroupStore {
     this.groups.update((list) => list.map((g) => (g.id === groupId ? { ...g, hidden } : g)));
   }
 
-  private removeGroupLocally(groupId: string): void {
+  private removeGroupLocally(groupId: string, calendarId?: string): void {
+    const targetGroup = this.groups().find((g) => g.id === groupId);
+    const calId = calendarId || targetGroup?.calendarId;
     this.groups.update((list) => list.filter((g) => g.id !== groupId));
     if (this.activeGroupId() === groupId) {
       this.activeGroup.set(null);
@@ -714,6 +721,9 @@ export class GroupStore {
       this.members.set([]);
       this.tasks.set([]);
       this.messages.set([]);
+    }
+    if (calId) {
+      this.calendarStore.handleGroupCalendarRemoved(calId);
     }
   }
 
@@ -832,6 +842,16 @@ export class GroupStore {
 
   private notifyTaskEvent(groupId: string, task: GroupTask, kind: 'created' | 'updated'): void {
     const currentUserId = this.authStore.user()?.id;
+    // eslint-disable-next-line no-console
+    console.debug('[notifyTaskEvent]', {
+      kind,
+      taskId: task.id,
+      status: task.status,
+      assignedTo: task.assignedTo,
+      createdBy: task.createdBy,
+      currentUserId,
+      isSelfOrigin: currentUserId ? this.selfOriginTaskIds.has(task.id) : null,
+    });
     if (!currentUserId) return;
     // Chính người dùng này vừa gây ra thay đổi (kéo-thả, đổi trạng thái...) —
     // đây là tiếng vọng realtime của thao tác của họ, không phải ai khác báo,
@@ -946,8 +966,9 @@ export class GroupStore {
   }
 
   async deleteGroup(groupId: string): Promise<void> {
+    const group = this.groups().find((g) => g.id === groupId);
     await this.api.deleteGroup(groupId);
-    this.removeGroupLocally(groupId);
+    this.removeGroupLocally(groupId, group?.calendarId);
   }
 
   async setGroupHidden(groupId: string, hidden: boolean): Promise<void> {
@@ -1060,11 +1081,12 @@ export class GroupStore {
   }
 
   async removeMember(groupId: string, userId: string): Promise<void> {
+    const group = this.groups().find((g) => g.id === groupId);
     this.selfOriginMemberRemovals.add(`${groupId}:${userId}`);
     setTimeout(() => this.selfOriginMemberRemovals.delete(`${groupId}:${userId}`), SELF_ORIGIN_TTL_MS);
     await this.api.removeMember(groupId, userId);
     this.members.update((prev) => prev.filter((m) => m.userId !== userId));
-    if (userId === this.authStore.user()?.id) this.removeGroupLocally(groupId);
+    if (userId === this.authStore.user()?.id) this.removeGroupLocally(groupId, group?.calendarId);
   }
 
   async loadTasks(groupId: string): Promise<void> {

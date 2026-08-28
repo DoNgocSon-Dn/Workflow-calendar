@@ -67,12 +67,20 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'sidebar.deleteNoteError': 'Không thể xóa ghi chú này.',
     'sidebar.pinNoteToScreen': 'Xé dán ghi chú lên màn hình',
     'sidebar.unpinNoteFromScreen': 'Gỡ ghi chú khỏi màn hình',
+    'sidebar.notesTrash': 'Thùng rác ghi chú',
 
     // --- ghi chú dán nổi trên màn hình ----------------------------------
     'screenNote.color': 'Đổi màu',
     'screenNote.popOut': 'Mở trong cửa sổ nổi luôn trên cùng',
     'screenNote.unpin': 'Gỡ khỏi màn hình',
+    'screenNote.delete': 'Xóa ghi chú',
     'screenNote.edit': 'Sửa',
+
+    // --- xoá ghi chú + thùng rác ghi chú --------------------------------
+    'note.deleteBody': 'Ghi chú sẽ được chuyển vào Thùng rác — khôi phục lại được sau.',
+    'note.deleteFromDay': 'Gỡ ghi chú khỏi ngày',
+    'notesTrash.title': 'Thùng rác ghi chú',
+    'notesTrash.empty': 'Thùng rác ghi chú trống.',
 
     // --- header ---------------------------------------------------------
     'header.toggleSidebar': 'Ẩn/hiện thanh bên',
@@ -252,6 +260,8 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'nd.calendarDeleted.title': 'Lịch đã bị xóa',
     'nd.calendarDeleted.body': 'Lịch "{name}" mà bạn được chia sẻ đã bị chủ sở hữu xóa.',
     'nd.calendarDeleted.bodyNoName': 'Một lịch mà bạn được chia sẻ đã bị chủ sở hữu xóa.',
+    'nd.noteTrashed.title': 'Đã xóa ghi chú',
+    'nd.noteTrashed.body': 'Ghi chú đã vào Thùng rác — mở "Thùng rác ghi chú" để khôi phục.',
     'nd.reminder.title': 'Sắp diễn ra',
     'nd.reminder.body': 'Sự kiện "{title}" sắp bắt đầu.',
 
@@ -1156,12 +1166,20 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'sidebar.deleteNoteError': "Couldn't delete this note.",
     'sidebar.pinNoteToScreen': 'Stick note on screen',
     'sidebar.unpinNoteFromScreen': 'Remove note from screen',
+    'sidebar.notesTrash': 'Notes trash',
 
     // --- screen-pinned sticky notes ------------------------------------
     'screenNote.color': 'Change colour',
     'screenNote.popOut': 'Open in an always-on-top window',
     'screenNote.unpin': 'Remove from screen',
+    'screenNote.delete': 'Delete note',
     'screenNote.edit': 'Edit',
+
+    // --- deleting notes + notes trash ---------------------------------
+    'note.deleteBody': 'The note moves to the trash — you can restore it later.',
+    'note.deleteFromDay': 'Unpin note from this day',
+    'notesTrash.title': 'Notes trash',
+    'notesTrash.empty': 'The notes trash is empty.',
 
     // --- header ---------------------------------------------------------
     'header.toggleSidebar': 'Toggle sidebar',
@@ -1341,6 +1359,8 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'nd.calendarDeleted.title': 'Calendar deleted',
     'nd.calendarDeleted.body': 'The calendar "{name}" shared with you was deleted by its owner.',
     'nd.calendarDeleted.bodyNoName': 'A calendar shared with you was deleted by its owner.',
+    'nd.noteTrashed.title': 'Note deleted',
+    'nd.noteTrashed.body': 'The note went to the trash — open "Notes trash" to restore it.',
     'nd.reminder.title': 'Upcoming',
     'nd.reminder.body': 'Event "{title}" is starting soon.',
 

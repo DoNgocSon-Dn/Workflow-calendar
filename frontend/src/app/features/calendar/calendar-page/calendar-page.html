@@ -18,6 +18,7 @@
       (inviteClicked)="openInvite($event)"
       (createCalendarClicked)="createCalendarModalOpen.set(true)"
       (createGroupClicked)="createGroupModalOpen.set(true)"
+      (notesTrashClicked)="notesTrashModalOpen.set(true)"
     />
 
     <main
@@ -86,6 +87,10 @@
 
 @if (trashModalOpen()) {
   <app-trash-modal (closed)="trashModalOpen.set(false)" />
+}
+
+@if (notesTrashModalOpen()) {
+  <app-notes-trash-modal (closed)="notesTrashModalOpen.set(false)" />
 }
 
 @if (settingsModalOpen()) {

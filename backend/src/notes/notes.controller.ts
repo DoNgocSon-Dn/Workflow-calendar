@@ -17,6 +17,12 @@ export class NotesController {
     return this.notesService.findAllForUser(supabase);
   }
 
+  // Phải khai TRƯỚC mọi route ':id' để "trash" không bị nuốt thành một id.
+  @Get('trash')
+  findTrash(@CurrentSupabase() supabase: SupabaseClient) {
+    return this.notesService.findTrashedForUser(supabase);
+  }
+
   @Post()
   create(
     @CurrentSupabase() supabase: SupabaseClient,
@@ -35,8 +41,20 @@ export class NotesController {
     return this.notesService.update(supabase, id, dto);
   }
 
+  /** Xoá mềm — chuyển vào Thùng rác. */
   @Delete(':id')
   remove(@CurrentSupabase() supabase: SupabaseClient, @Param('id') id: string) {
     return this.notesService.remove(supabase, id);
+  }
+
+  @Post(':id/restore')
+  restore(@CurrentSupabase() supabase: SupabaseClient, @Param('id') id: string) {
+    return this.notesService.restore(supabase, id);
+  }
+
+  /** Xoá vĩnh viễn khỏi Thùng rác. */
+  @Delete(':id/permanent')
+  purge(@CurrentSupabase() supabase: SupabaseClient, @Param('id') id: string) {
+    return this.notesService.purge(supabase, id);
   }
 }

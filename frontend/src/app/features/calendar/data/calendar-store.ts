@@ -185,6 +185,7 @@ interface NoteApiDto {
   content: string;
   color: string;
   pinnedDate?: string;
+  deletedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -233,6 +234,7 @@ function toNote(dto: NoteApiDto): Note {
     // ngày ở các múi giờ trước UTC (đúng bẫy đã gặp với ngày sinh nhật/allDay
     // ở nơi khác trong app).
     pinnedDate: dto.pinnedDate ? fromDateInputValue(dto.pinnedDate) : undefined,
+    deletedAt: dto.deletedAt ? new Date(dto.deletedAt) : undefined,
     createdAt: new Date(dto.createdAt),
     updatedAt: new Date(dto.updatedAt),
   };
@@ -813,13 +815,14 @@ export class CalendarStore {
     this.notifications.ingest(calendarDeletedDraft(this.nt, calendarId, name));
   }
 
-  private handleGroupCalendarRemoved(calendarId: string | null): void {
+  handleGroupCalendarRemoved(calendarId: string | null): void {
     if (!calendarId) return;
     this.calendars.update((list) => list.filter((c) => c.id !== calendarId));
     this.events.update((list) => list.filter((e) => e.calendarId !== calendarId));
     this.visibleCalendarIds.update((set) => {
       const next = new Set(set);
       next.delete(calendarId);
+      this.saveVisibleCalendarIds(next);
       return next;
     });
   }
@@ -2115,6 +2118,9 @@ export class CalendarStore {
     }
   }
 
+  /** Xoá MỀM — backend chuyển ghi chú vào Thùng rác (không mất nội dung), ở đây
+   *  gỡ khỏi danh sách đang hiển thị và báo một toast cho người dùng biết còn
+   *  khôi phục được. */
   async deleteNote(id: string): Promise<void> {
     const removed = this.notes().find((n) => n.id === id);
     this.notes.update((list) => list.filter((n) => n.id !== id));
@@ -2124,6 +2130,37 @@ export class CalendarStore {
       if (removed) this.notes.update((list) => [removed, ...list]);
       throw err;
     }
+    this.notificationQueue.push({
+      kind: 'deleted',
+      title: this.i18n.t('nd.noteTrashed.title'),
+      body: this.i18n.t('nd.noteTrashed.body'),
+    });
+  }
+
+  /** Ghi chú đang trong Thùng rác — dùng bởi màn hình "Thùng rác ghi chú". */
+  async listTrashedNotes(): Promise<Note[]> {
+    const result = await firstValueFrom(
+      this.http.get<NoteApiDto[]>(`${this.apiUrl}/notes/trash`),
+    );
+    return result.map(toNote);
+  }
+
+  async restoreNote(id: string): Promise<Note> {
+    const restored = await firstValueFrom(
+      this.http.post<NoteApiDto>(`${this.apiUrl}/notes/${id}/restore`, {}),
+    );
+    const note = toNote(restored);
+    // Đưa lại vào danh sách, đúng chỗ theo thời điểm tạo (mới nhất lên đầu).
+    this.notes.update((list) =>
+      [note, ...list.filter((n) => n.id !== note.id)].sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+      ),
+    );
+    return note;
+  }
+
+  async permanentlyDeleteNote(id: string): Promise<void> {
+    await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/notes/${id}/permanent`));
   }
 
   /** Nguồn dữ liệu todo/todo-list DUY NHẤT của toàn app — FloatingHub, TasksPage

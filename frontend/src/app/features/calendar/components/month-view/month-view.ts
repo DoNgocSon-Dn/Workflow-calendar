@@ -406,10 +406,35 @@ export class MonthView {
     this.draggingEventId = null;
   }
 
-  /** Bấm vào một ghi chú đã dán trên lịch để gỡ nó ra — nội dung vẫn còn
-   *  nguyên trong sidebar, chỉ mất liên kết ngày. */
+  /** GỠ tờ giấy khỏi ngày này — không hỏi gì, nội dung vẫn còn nguyên trong
+   *  danh sách ghi chú ở sidebar, chỉ mất liên kết ngày. */
   unpinNote(event: MouseEvent, noteId: string): void {
     event.stopPropagation();
     void this.store.unpinNote(noteId);
+  }
+
+  protected readonly deletingNoteId = signal<string | null>(null);
+
+  /** XÓA hẳn ghi chú — hỏi xác nhận trước, rồi chuyển vào Thùng rác ghi chú
+   *  (khôi phục được). Khác hẳn "gỡ": xóa thì mất khỏi cả sidebar lẫn lịch. */
+  async deletePinnedNote(event: MouseEvent, noteId: string): Promise<void> {
+    event.stopPropagation();
+    if (this.deletingNoteId()) return;
+
+    const ok = await this.dialog.confirm(this.i18n.t('note.deleteBody'), {
+      title: this.i18n.t('sidebar.deleteNoteTitle'),
+      confirmLabel: this.i18n.t('sidebar.deleteNoteConfirm'),
+      danger: true,
+    });
+    if (!ok) return;
+
+    this.deletingNoteId.set(noteId);
+    try {
+      await this.store.deleteNote(noteId);
+    } catch {
+      await this.dialog.alert(this.i18n.t('sidebar.deleteNoteError'));
+    } finally {
+      this.deletingNoteId.set(null);
+    }
   }
 }

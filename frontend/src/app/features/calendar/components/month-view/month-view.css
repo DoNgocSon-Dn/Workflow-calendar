@@ -363,7 +363,7 @@
 
 .day-cell.has-notes:hover,
 .day-cell:has(.paper-note:hover),
-.day-cell:has(.paper-note__remove:focus-visible) {
+.day-cell:has(.paper-note__btn:focus-visible) {
   z-index: 20;
 }
 
@@ -482,10 +482,24 @@
     6px 22px 34px -10px rgba(40, 30, 12, 0.3);
 }
 
-.paper-note__remove {
+/* Hai nút ở góc trên-phải tờ giấy: × = gỡ khỏi ngày (không hỏi), thùng rác =
+   xóa hẳn (hỏi xác nhận → Thùng rác ghi chú). Ẩn tới khi hover tờ giấy. */
+.paper-note__actions {
   position: absolute;
   top: 0.05rem;
-  right: 0.15rem;
+  right: 0.1rem;
+  display: flex;
+  gap: 0.05rem;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.paper-note:hover .paper-note__actions,
+.paper-note:focus-within .paper-note__actions {
+  opacity: 1;
+}
+
+.paper-note__btn {
   width: 1rem;
   height: 1rem;
   display: flex;
@@ -498,19 +512,22 @@
   font-size: 0.9rem;
   line-height: 1;
   cursor: pointer;
-  opacity: 0;
   border-radius: var(--radius-full);
-  transition: opacity 0.15s ease, background 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.paper-note:hover .paper-note__remove,
-.paper-note__remove:focus-visible {
-  opacity: 0.8;
-}
-
-.paper-note__remove:hover {
-  opacity: 1;
+.paper-note__btn:hover {
   background: rgba(40, 30, 12, 0.14);
+}
+
+.paper-note__btn--delete:hover {
+  color: #b91c1c;
+  background: rgba(185, 28, 28, 0.16);
+}
+
+.paper-note__btn:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 /* Xấp còn dày hơn maxNotesPerDay — một nhãn giấy nhỏ, bấm để bung hết. */
@@ -758,7 +775,7 @@
   }
 
   .paper-note__tape,
-  .paper-note__remove,
+  .paper-note__actions,
   .paper-note::after {
     display: none;
   }

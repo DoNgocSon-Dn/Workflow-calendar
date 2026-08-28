@@ -113,6 +113,8 @@ export interface Note {
   color: string;
   /** Có giá trị khi ghi chú đã được kéo-thả "dán" lên một ngày trên lịch. */
   pinnedDate?: Date;
+  /** Có giá trị khi ghi chú đang nằm trong Thùng rác (đã xoá mềm). */
+  deletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

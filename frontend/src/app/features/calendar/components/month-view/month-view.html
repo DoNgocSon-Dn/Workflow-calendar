@@ -118,14 +118,29 @@
               >
                 <span class="paper-note__tape" aria-hidden="true"></span>
                 <p class="paper-note__text">{{ note.content }}</p>
-                <button
-                  type="button"
-                  class="paper-note__remove"
-                  [attr.aria-label]="i18n.t('calendar.unpinNoteAria')"
-                  [title]="i18n.t('calendar.unpinNote')"
-                  (mousedown)="$event.stopPropagation()"
-                  (click)="unpinNote($event, note.id)"
-                >×</button>
+                <div class="paper-note__actions">
+                  <button
+                    type="button"
+                    class="paper-note__btn"
+                    [attr.aria-label]="i18n.t('note.deleteFromDay')"
+                    [title]="i18n.t('note.deleteFromDay')"
+                    (mousedown)="$event.stopPropagation()"
+                    (click)="unpinNote($event, note.id)"
+                  >×</button>
+                  <button
+                    type="button"
+                    class="paper-note__btn paper-note__btn--delete"
+                    [disabled]="deletingNoteId() === note.id"
+                    [attr.aria-label]="i18n.t('sidebar.deleteNoteAria')"
+                    [title]="i18n.t('sidebar.deleteNoteAria')"
+                    (mousedown)="$event.stopPropagation()"
+                    (click)="deletePinnedNote($event, note.id)"
+                  >
+                    <svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true">
+                      <path fill="currentColor" d="M6 7h12l-1 13H7L6 7zm3-3h6l1 2H8l1-2zM4 6h16v1H4V6z" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             }
             @if (hiddenNotesCountFor(day) > 0) {

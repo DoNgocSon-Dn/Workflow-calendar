@@ -1880,7 +1880,11 @@ export class GroupsService {
       task: taskDto,
     });
 
-    if (taskDto.assignedTo) {
+    // Chỉ bắn 'task:assigned' khi request này THỰC SỰ gán/đổi người phụ trách
+    // (dto.assignedTo có mặt) — không phải mỗi lần cập nhật bất kỳ trường nào
+    // (vd. kéo-thả đổi trạng thái), kẻo người được giao nhận nhầm thông báo
+    // "nhiệm vụ mới" cho một task họ đã được giao từ trước.
+    if (dto.assignedTo !== undefined && taskDto.assignedTo) {
       this.realtimeGateway.emitToUser(taskDto.assignedTo, 'task:assigned', {
         groupId,
         task: taskDto,

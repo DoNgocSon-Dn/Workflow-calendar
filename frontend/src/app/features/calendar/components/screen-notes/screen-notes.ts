@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { CalendarStore } from '../../data/calendar-store';
 import { ScreenNotesService } from '../../data/screen-notes.service';
+import { DialogService } from '../../../../core/services/dialog.service';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { NOTE_COLOR_HEX, Note } from '../../models/calendar.models';
 import { Icon } from '../../../../shared/components/icon/icon';
@@ -69,6 +70,7 @@ interface PipReturn {
 export class ScreenNotes {
   protected readonly store = inject(CalendarStore);
   protected readonly screen = inject(ScreenNotesService);
+  private readonly dialog = inject(DialogService);
   protected readonly i18n = inject(TranslationService);
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
 
@@ -195,11 +197,34 @@ export class ScreenNotes {
     }
   }
 
-  // --- Bỏ dán -------------------------------------------------------
+  // --- Bỏ dán / xóa ------------------------------------------------
 
+  /** GỠ tờ giấy khỏi màn hình — nội dung vẫn còn trong danh sách ghi chú. */
   unpin(noteId: string): void {
     if (this.poppedOutId() === noteId) return;
     this.screen.unpin(noteId);
+  }
+
+  protected readonly deletingId = signal<string | null>(null);
+
+  /** XÓA hẳn ghi chú — hỏi xác nhận, rồi vào Thùng rác ghi chú. Tờ giấy cũng
+   *  biến mất khỏi màn hình (store cập nhật notes → reconcile gỡ ghim). */
+  async requestDelete(note: Note): Promise<void> {
+    if (this.poppedOutId() === note.id || this.deletingId()) return;
+    const ok = await this.dialog.confirm(this.i18n.t('note.deleteBody'), {
+      title: this.i18n.t('sidebar.deleteNoteTitle'),
+      confirmLabel: this.i18n.t('sidebar.deleteNoteConfirm'),
+      danger: true,
+    });
+    if (!ok) return;
+    this.deletingId.set(note.id);
+    try {
+      await this.store.deleteNote(note.id);
+    } catch {
+      await this.dialog.alert(this.i18n.t('sidebar.deleteNoteError'));
+    } finally {
+      this.deletingId.set(null);
+    }
   }
 
   // --- Cửa sổ nổi luôn-trên-cùng (Document Picture-in-Picture) --------
