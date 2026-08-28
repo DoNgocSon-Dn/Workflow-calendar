@@ -544,7 +544,7 @@
                 }
               </div>
 
-              @if (canUserApproveJoinRequests()) {
+              @if (canUserApproveJoinRequests() && store.pendingJoinRequests().length > 0) {
                 <div class="invite-card join-requests-card">
                   <h3>{{ i18n.t('group.joinRequestsTitle') }} ({{ store.pendingJoinRequests().length }})</h3>
                   @for (r of store.pendingJoinRequests(); track r.id) {
@@ -562,8 +562,6 @@
                         </button>
                       </div>
                     </div>
-                  } @empty {
-                    <p class="empty-text">{{ i18n.t('group.joinRequestsEmpty') }}</p>
                   }
                 </div>
               }
