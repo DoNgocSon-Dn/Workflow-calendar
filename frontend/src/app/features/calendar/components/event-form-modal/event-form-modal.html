@@ -404,24 +404,6 @@
         }
       </div>
 
-      <!-- Bình luận (chỉ khi sửa sự kiện đã có) -->
-      @if (event(); as evt) {
-      <div class="field-row">
-        <svg class="field-icon" viewBox="0 0 24 24" width="20" height="20">
-          <path fill="currentColor" d="M4 4h16v12H7l-3 3z" />
-        </svg>
-        @if (commentsOpen()) {
-        <div class="field-content">
-          <app-comments-section [eventId]="evt.id" />
-        </div>
-        } @else {
-        <button type="button" class="field-toggle" (click)="toggleField('comments')">
-          {{ i18n.t('event.comments') }}
-        </button>
-        }
-      </div>
-      }
-
       <!-- Lịch -->
       <div class="field-row">
         <svg class="field-icon" viewBox="0 0 24 24" width="20" height="20">

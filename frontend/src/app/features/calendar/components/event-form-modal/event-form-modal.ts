@@ -42,7 +42,6 @@ import {
   startOfDay,
   toDateInputValue,
 } from '../../utils/date-utils';
-import { CommentsSection } from '../comments-section/comments-section';
 import { TimePicker } from '../time-picker/time-picker';
 import { DatePicker } from '../date-picker/date-picker';
 import { CharCounter } from '../../../../shared/components/char-counter/char-counter';
@@ -97,7 +96,7 @@ import { Icon } from '../../../../shared/components/icon/icon';
   templateUrl: './event-form-modal.html',
   styleUrl: './event-form-modal.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, TimePicker, DatePicker, CommentsSection, CharCounter, Icon],
+  imports: [ReactiveFormsModule, TimePicker, DatePicker, CharCounter, Icon],
 })
 export class EventFormModal {
   private readonly fb = inject(FormBuilder);
@@ -221,7 +220,6 @@ export class EventFormModal {
   readonly descriptionOpen = signal(false);
   readonly attendeesOpen = signal(false);
   readonly remindersOpen = signal(false);
-  readonly commentsOpen = signal(false);
 
   /** Chỉ sửa được lúc TẠO MỚI — sự kiện đã có chỉ hiển thị tóm tắt quy tắc
    *  lặp (xem describeRecurrence trong template), không cho đổi giữa chừng. */
@@ -351,7 +349,6 @@ export class EventFormModal {
       // Mở sẵn cho sự kiện mới để lời nhắc mặc định NHÌN THẤY được và bỏ tick
       // được ngay — thêm lời nhắc ngầm sau lưng người dùng còn tệ hơn không thêm.
       this.remindersOpen.set(!evt);
-      this.commentsOpen.set(false);
       this.recurrenceRule.set(evt?.seriesId ? evt.recurrenceRule ?? null : null);
       this.calendarType.set(evt?.calendarType ?? 'solar');
       this.repeatPickerOpen.set(false);
@@ -523,13 +520,12 @@ export class EventFormModal {
     }
   }
 
-  toggleField(field: 'location' | 'description' | 'attendees' | 'reminders' | 'comments'): void {
+  toggleField(field: 'location' | 'description' | 'attendees' | 'reminders'): void {
     const signals = {
       location: this.locationOpen,
       description: this.descriptionOpen,
       attendees: this.attendeesOpen,
       reminders: this.remindersOpen,
-      comments: this.commentsOpen,
     } as const;
     signals[field].update((open) => !open);
   }
