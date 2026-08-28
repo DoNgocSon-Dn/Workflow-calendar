@@ -106,16 +106,6 @@
              cắt tràn (overflow:hidden) còn giấy thì phải nổi ra ngoài. -->
         @if (notesFor(day).length > 0) {
           <div class="day-notes">
-            @if (hiddenNotesCountFor(day) > 0) {
-              <button
-                type="button"
-                class="note-pile-more"
-                (mousedown)="$event.stopPropagation()"
-                (click)="revealAllNotes(day, $event)"
-              >
-                {{ i18n.t('calendar.moreNotes', { count: hiddenNotesCountFor(day) }) }}
-              </button>
-            }
             @for (note of notesToRenderFor(day); track note.id) {
               <div
                 class="paper-note"
@@ -137,6 +127,16 @@
                   (click)="unpinNote($event, note.id)"
                 >×</button>
               </div>
+            }
+            @if (hiddenNotesCountFor(day) > 0) {
+              <button
+                type="button"
+                class="note-pile-more"
+                (mousedown)="$event.stopPropagation()"
+                (click)="revealAllNotes(day, $event)"
+              >
+                {{ i18n.t('calendar.moreNotes', { count: hiddenNotesCountFor(day) }) }}
+              </button>
             }
           </div>
         }

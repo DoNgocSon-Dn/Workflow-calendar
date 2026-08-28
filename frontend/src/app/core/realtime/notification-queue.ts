@@ -7,18 +7,18 @@ export type NotificationKind =
   | 'reminder'
   | 'invite'
   | 'success'
-  | 'conflict';
+  | 'conflict'
+  | 'message';
 
 export interface NotificationItem {
   id: string;
   eventId?: string;
+  groupId?: string;
+  messageId?: string;
   title: string;
   body: string;
   kind: NotificationKind;
   reminderId?: string;
-  /** Có giá trị khi sự kiện được nhắc là một buổi họp trực tuyến — toast sẽ
-   *  mọc thêm nút Tham gia. Nhắc tới giờ họp mà bắt người dùng đi mở lịch tìm
-   *  lại link thì buổi họp đã bắt đầu mất rồi. */
   meetLink?: string;
 }
 

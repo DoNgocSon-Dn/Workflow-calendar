@@ -773,10 +773,26 @@ export class GroupStore {
     // chặn thông báo là tin do chính mình gửi (đã lọc ở đầu hàm).
     if (this.mentionsCurrentUser(message, text, currentUser.id, currentUser.email)) {
       this.notifications.ingest(groupMentionDraft(this.nt, input));
-      return;
+    } else {
+      this.notifications.ingest(groupMessageDraft(this.nt, input));
     }
 
-    this.notifications.ingest(groupMessageDraft(this.nt, input));
+    const isCurrentlyInThisChat =
+      this.activeGroupId() === (group?.id ?? message.groupId) &&
+      this.activeWorkspaceModalOpen() &&
+      this.activeWorkspaceTab() === 'chat';
+
+    if (!isCurrentlyInThisChat) {
+      const senderDisplayName = message.senderName || message.senderEmail?.split('@')[0] || 'Thành viên';
+      this.notificationQueue.push({
+        id: `toast-msg-${message.id}`,
+        title: group?.name ? `${senderDisplayName} (${group.name})` : senderDisplayName,
+        body: text || 'Đã gửi tin nhắn mới',
+        kind: 'message',
+        groupId: group?.id ?? message.groupId,
+        messageId: message.id,
+      });
+    }
   }
 
   /** Không đánh dấu unread nếu người dùng đang nhìn thẳng vào đúng tab Chat

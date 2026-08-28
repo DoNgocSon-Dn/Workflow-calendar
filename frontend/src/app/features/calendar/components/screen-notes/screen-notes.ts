@@ -61,6 +61,10 @@ interface PipReturn {
   styleUrl: './screen-notes.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Icon],
+  host: {
+    // Cửa sổ co lại thì kéo mọi tờ về trong tầm với, đừng để tờ nào kẹt ngoài mép.
+    '(window:resize)': 'screen.rescueAll()',
+  },
 })
 export class ScreenNotes {
   protected readonly store = inject(CalendarStore);
@@ -95,6 +99,21 @@ export class ScreenNotes {
 
   protected tint(color: string): string {
     return NOTE_COLOR_HEX[color] ?? NOTE_COLOR_HEX['yellow'];
+  }
+
+  /** Góc nghiêng "dán vội bằng tay" cho mỗi tờ — suy ra từ id nên cố định qua
+   *  các lần vẽ lại, nhưng giữa các tờ thì lệch nhau. */
+  private readonly tiltCache = new Map<string, string>();
+
+  protected tilt(noteId: string): string {
+    const cached = this.tiltCache.get(noteId);
+    if (cached) return cached;
+    let h = 5381;
+    for (let i = 0; i < noteId.length; i++) h = ((h << 5) + h + noteId.charCodeAt(i)) >>> 0;
+    const deg = (((h % 900) / 100) - 4.5).toFixed(2); // -4.5deg .. 4.5deg
+    const value = `${deg}deg`;
+    this.tiltCache.set(noteId, value);
+    return value;
   }
 
   protected leftOf(noteId: string): number {

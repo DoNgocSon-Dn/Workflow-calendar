@@ -261,7 +261,9 @@
               </button>
             </div>
           } @empty {
-            <div class="empty-groups-hint">{{ i18n.t('sidebar.notesEmptyHint') }}</div>
+            <div class="empty-groups-hint" (click)="onCreateNoteClicked()">
+              {{ i18n.t('sidebar.notesEmptyHint') }}
+            </div>
           }
         </div>
       </div>

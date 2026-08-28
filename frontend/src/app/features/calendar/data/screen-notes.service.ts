@@ -9,11 +9,25 @@ export interface ScreenNotePos {
 const STORAGE_KEY = 'screen-pinned-notes-v1';
 /** Bề ngang thẻ ghi chú nổi — khớp `.sticky` trong screen-notes.css. */
 const CARD_W = 232;
-const CARD_H = 176;
-const EDGE = 16;
+/** Kéo đi đâu cũng được, KHÔNG ràng buộc — nhưng luôn chừa lại chừng này pixel
+ *  của thanh kéo trong viewport để tờ giấy không bao giờ mất hẳn ngoài mép,
+ *  không tài nào tóm lại được. Đây là mức tối thiểu duy nhất còn giữ. */
+const MIN_VISIBLE = 34;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
+}
+
+/** Giữ tờ giấy nằm trong tầm với: cho phép thò ra gần hết mọi phía, chỉ chặn
+ *  đúng lúc nó sắp trôi ra khỏi màn hình hoàn toàn. */
+function keepReachable(pos: ScreenNotePos): ScreenNotePos {
+  const w = typeof window !== 'undefined' ? window.innerWidth : 1280;
+  const h = typeof window !== 'undefined' ? window.innerHeight : 800;
+  return {
+    x: clamp(pos.x, -(CARD_W - MIN_VISIBLE), w - MIN_VISIBLE),
+    // Không cho mép trên (chỗ có thanh kéo) chui lên trên viewport, còn lại thả tự do.
+    y: clamp(pos.y, 0, Math.max(0, h - MIN_VISIBLE)),
+  };
 }
 
 function readStored(): Record<string, ScreenNotePos> {
@@ -24,7 +38,8 @@ function readStored(): Record<string, ScreenNotePos> {
     const out: Record<string, ScreenNotePos> = {};
     for (const [id, pos] of Object.entries(parsed)) {
       if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') {
-        out[id] = { x: pos.x, y: pos.y };
+        // Màn hình lần này có thể nhỏ hơn lần trước — kéo mọi tờ về lại trong tầm.
+        out[id] = keepReachable({ x: pos.x, y: pos.y });
       }
     }
     return out;
@@ -55,7 +70,7 @@ export class ScreenNotesService {
   }
 
   /** Dán một ghi chú lên màn hình. Thẻ mới xếp bậc thang từ góc trên-phải để
-   *  không chồng khít lên thẻ đã có. */
+   *  không chồng khít lên thẻ đã có — sau đó kéo đi đâu tuỳ ý. */
   pin(noteId: string): void {
     if (this.isPinned(noteId)) return;
     this.positions.update((map) => ({ ...map, [noteId]: this.nextSlot(Object.keys(map).length) }));
@@ -77,18 +92,33 @@ export class ScreenNotesService {
   }
 
   /** `persist: false` khi đang kéo — chỉ cập nhật signal để thẻ chạy theo con
-   *  trỏ; gọi `commit()` một lần lúc thả để ghi xuống localStorage. */
+   *  trỏ; gọi `commit()` một lần lúc thả để ghi xuống localStorage.
+   *
+   *  Không ràng buộc vùng thả: tờ giấy đi tới bất kỳ đâu trên màn hình, chỉ
+   *  `keepReachable` chặn đúng trường hợp nó sắp biến mất hẳn ngoài mép. */
   setPosition(noteId: string, x: number, y: number, opts: { persist?: boolean } = {}): void {
     if (!this.isPinned(noteId)) return;
-    const clamped: ScreenNotePos = {
-      x: clamp(x, EDGE, Math.max(EDGE, window.innerWidth - CARD_W - EDGE)),
-      y: clamp(y, EDGE, Math.max(EDGE, window.innerHeight - CARD_H - EDGE)),
-    };
-    this.positions.update((map) => ({ ...map, [noteId]: clamped }));
+    const next = keepReachable({ x, y });
+    this.positions.update((map) => ({ ...map, [noteId]: next }));
     if (opts.persist !== false) this.persist();
   }
 
   commit(): void {
+    this.persist();
+  }
+
+  /** Kéo mọi tờ đang dán về lại trong tầm với — gọi khi cửa sổ đổi kích thước
+   *  để không có tờ nào kẹt ngoài viewport mới. */
+  rescueAll(): void {
+    let changed = false;
+    const next: Record<string, ScreenNotePos> = {};
+    for (const [id, pos] of Object.entries(this.positions())) {
+      const fixed = keepReachable(pos);
+      if (fixed.x !== pos.x || fixed.y !== pos.y) changed = true;
+      next[id] = fixed;
+    }
+    if (!changed) return;
+    this.positions.set(next);
     this.persist();
   }
 
@@ -106,13 +136,13 @@ export class ScreenNotesService {
   }
 
   private nextSlot(index: number): ScreenNotePos {
-    const baseX = Math.max(EDGE, window.innerWidth - CARD_W - EDGE * 2);
-    const step = 26;
+    const w = window.innerWidth;
+    const step = 28;
     const wrapped = index % 6;
-    return {
-      x: clamp(baseX - wrapped * step, EDGE, window.innerWidth - CARD_W - EDGE),
-      y: clamp(88 + wrapped * step, EDGE, Math.max(EDGE, window.innerHeight - CARD_H - EDGE)),
-    };
+    return keepReachable({
+      x: w - CARD_W - 32 - wrapped * step,
+      y: 88 + wrapped * step,
+    });
   }
 
   private persist(): void {

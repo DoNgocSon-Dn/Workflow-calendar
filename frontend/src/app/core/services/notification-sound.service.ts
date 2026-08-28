@@ -141,14 +141,12 @@ export class NotificationSoundService {
       this.playImportantEventChime();
       return;
     }
-
-    try {
-      const audio = this.ensureAudio(kind);
-      audio.currentTime = 0;
-      void audio.play().catch(() => undefined);
-    } catch {
-      // Ignored
+    if (kind === 'chat') {
+      this.playChatSound();
+      return;
     }
+
+    this.playDefaultSound();
   }
 
   /**
@@ -237,6 +235,66 @@ export class NotificationSoundService {
         osc.connect(gain);
         gain.connect(ctx.destination);
 
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + duration);
+      });
+    } catch {
+      this.playFallbackAudio();
+    }
+  }
+
+  playChatSound(): void {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') void ctx.resume();
+
+      const notes = [
+        { freq: 698.46, duration: 0.1, delay: 0 },
+        { freq: 1046.50, duration: 0.18, delay: 0.09 },
+      ];
+
+      notes.forEach(({ freq, duration, delay }) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+        gain.gain.setValueAtTime(0, ctx.currentTime + delay);
+        gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + delay + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + duration);
+      });
+    } catch {
+      this.playFallbackAudio();
+    }
+  }
+
+  playDefaultSound(): void {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') void ctx.resume();
+
+      const notes = [
+        { freq: 659.25, duration: 0.15, delay: 0 },
+        { freq: 880.00, duration: 0.25, delay: 0.12 },
+      ];
+
+      notes.forEach(({ freq, duration, delay }) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+        gain.gain.setValueAtTime(0, ctx.currentTime + delay);
+        gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + delay + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
         osc.start(ctx.currentTime + delay);
         osc.stop(ctx.currentTime + delay + duration);
       });

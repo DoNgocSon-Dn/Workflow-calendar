@@ -185,7 +185,9 @@ export class CalendarSidebar implements OnInit {
   protected readonly creatingNote = signal(false);
 
   /** Tạo nhanh một ghi chú thủ công — không cần đi qua Trợ lý AI. Chỉ hỏi
-   *  nội dung (màu mặc định 'yellow', đổi màu vẫn làm được qua AI như cũ). */
+   *  nội dung (màu ngẫu nhiên trong bảng giấy), rồi "xé" luôn ra dán nổi lên
+   *  màn hình để kéo đi đâu tuỳ ý; không muốn tờ giấy thì bấm × trên đó, ghi
+   *  chú vẫn còn trong danh sách. */
   async onCreateNoteClicked(): Promise<void> {
     if (this.creatingNote()) return;
     const content = await this.dialog.prompt(this.i18n.t('sidebar.createNotePrompt'));
@@ -194,7 +196,10 @@ export class CalendarSidebar implements OnInit {
 
     this.creatingNote.set(true);
     try {
-      await this.store.createNote(trimmed, 'yellow');
+      const palette = Object.keys(NOTE_COLOR_HEX);
+      const color = palette[Math.floor(Math.random() * palette.length)] ?? 'yellow';
+      const note = await this.store.createNote(trimmed, color);
+      this.screenNotes.pin(note.id);
     } catch {
       await this.dialog.alert(this.i18n.t('sidebar.createNoteError'));
     } finally {
