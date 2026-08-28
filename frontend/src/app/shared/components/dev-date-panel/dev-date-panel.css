@@ -15,16 +15,32 @@
 }
 
 .dev-date-panel__toggle {
-  width: 38px;
-  height: 38px;
-  border-radius: 999px;
-  border: 1px solid #92400e;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1.5px solid #92400e;
   background: #fbbf24;
   color: #451a03;
-  font-size: 16px;
-  line-height: 1;
   cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.dev-date-panel__toggle:hover {
+  transform: scale(1.08);
+  background-color: #f59e0b;
+}
+
+.dev-date-panel__toggle svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin: 0;
 }
 
 /* Viền đỏ nhấp nháy nhẹ khi đang giả lập — tránh quên mất mình không còn ở

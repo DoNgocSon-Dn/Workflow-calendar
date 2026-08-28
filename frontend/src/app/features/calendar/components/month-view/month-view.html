@@ -19,6 +19,7 @@
         [class.drag-selecting]="isInDragRange(day)"
         [class.holiday]="!!holiday"
         [class.note-drag-over]="isDragOver(day)"
+        [class.has-notes]="notesFor(day).length > 0"
         (mousedown)="onCellMouseDown(day, $event)"
         (mouseenter)="onCellMouseEnter(day)"
         (dragover)="onDragOver($event)"
@@ -97,27 +98,60 @@
               {{ i18n.t('calendar.moreEvents', { count: hiddenCountFor(day) }) }}
             </button>
           }
+        </div>
 
-          <!-- Ghi chú đã kéo-thả "dán" lên ngày này — KHÔNG phải sự kiện thật,
-               chỉ là một chip nhỏ trỏ về đúng ghi chú trong sidebar. -->
-          @for (note of notesFor(day); track note.id) {
-            <span
-              class="note-pin-chip"
-              [style.--chip-color]="noteColorHex[note.color]"
-              [title]="note.content"
-            >
-              <span class="note-pin-chip__text">{{ note.content }}</span>
+        <!-- Ghi chú đã "dán" lên ngày này — vẽ thành xấp giấy nhớ thật: nghiêng
+             tự nhiên, có băng dính, được phép tràn nhẹ ra ô bên cạnh để phá
+             cái khung lưới quá vuông vức. Nằm ngoài .chip-list vì .chip-list
+             cắt tràn (overflow:hidden) còn giấy thì phải nổi ra ngoài. -->
+        @if (notesFor(day).length > 0) {
+          <div class="day-notes">
+            @if (hiddenNotesCountFor(day) > 0) {
               <button
                 type="button"
-                class="note-pin-chip__remove"
-                [attr.aria-label]="i18n.t('calendar.unpinNoteAria')"
-                [title]="i18n.t('calendar.unpinNote')"
+                class="note-pile-more"
                 (mousedown)="$event.stopPropagation()"
-                (click)="unpinNote($event, note.id)"
-              >×</button>
-            </span>
-          }
-        </div>
+                (click)="revealAllNotes(day, $event)"
+              >
+                {{ i18n.t('calendar.moreNotes', { count: hiddenNotesCountFor(day) }) }}
+              </button>
+            }
+            @for (note of notesToRenderFor(day); track note.id) {
+              <div
+                class="paper-note"
+                [style]="noteStyle(note)"
+                [style.--paper-tint]="noteColorHex[note.color]"
+                [title]="note.content"
+                (mousedown)="$event.stopPropagation()"
+              >
+                <span class="paper-note__tape" aria-hidden="true"></span>
+                <p class="paper-note__text">{{ note.content }}</p>
+                <button
+                  type="button"
+                  class="paper-note__remove"
+                  [attr.aria-label]="i18n.t('calendar.unpinNoteAria')"
+                  [title]="i18n.t('calendar.unpinNote')"
+                  (mousedown)="$event.stopPropagation()"
+                  (click)="unpinNote($event, note.id)"
+                >×</button>
+              </div>
+            }
+          </div>
+        }
+
+        <button
+          type="button"
+          class="add-note-btn"
+          [disabled]="addingNoteForDay() === dayKey(day)"
+          [attr.aria-label]="i18n.t('calendar.addNoteForDay')"
+          [title]="i18n.t('calendar.addNoteForDay')"
+          (mousedown)="$event.stopPropagation()"
+          (click)="onAddNoteClick(day, $event)"
+        >
+          <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+            <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z" />
+          </svg>
+        </button>
 
         @if (isExpanded(day)) {
           <div

@@ -344,46 +344,239 @@
   color: #fff;
 }
 
-/* Ghi chú đã "dán" lên ngày (kéo-thả từ sidebar) — KHÔNG phải sự kiện thật,
-   nên cố tình khác hẳn .event-chip: nền pastel đặc (đúng màu ghi chú thật ở
-   sidebar) thay vì viền trái + nền nhạt, và luôn có nút gỡ (×) vì đây là thứ
-   người dùng vừa "dán" lên, không phải dữ liệu lịch cố định. */
-.note-pin-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  max-width: 100%;
-  background: var(--chip-color, #fef08a);
-  color: color-mix(in srgb, var(--chip-color, #fef08a) 35%, black);
-  border-radius: var(--radius-xs);
-  padding: var(--chip-padding-block, 0.15rem) 0.3rem var(--chip-padding-block, 0.15rem) 0.45rem;
-  font-size: 0.7rem;
+/* ============================================================
+   GHI CHÚ "DÁN" LÊN NGÀY  —  hiệu ứng mẩu giấy nhớ thật
+
+   Không phải sự kiện: đây là mẩu giấy người dùng vừa dán lên tờ lịch. Nên nó
+   được vẽ như giấy thật — bề mặt pastel hơi loang sáng, nghiêng vài độ, có
+   băng dính ở mép trên, góc dưới cong lên đổ bóng, và được phép tràn ra khỏi
+   ô để phá cái lưới quá vuông.
+   ============================================================ */
+
+/* Ô có giấy phải cho tràn (mặc định .day-cell cắt overflow) và nổi lên trên
+   ô lân cận. Khi trỏ vào ô/tờ giấy thì nâng hẳn để tờ đang xem không bị tờ
+   của ô vẽ sau đè mất. */
+.day-cell.has-notes {
+  overflow: visible;
+  z-index: 4;
+}
+
+.day-cell.has-notes:hover,
+.day-cell:has(.paper-note:hover),
+.day-cell:has(.paper-note__remove:focus-visible) {
+  z-index: 20;
+}
+
+.day-notes {
+  position: absolute;
+  left: 0.4rem;
+  right: 0.4rem;
+  bottom: 0.35rem;
+  z-index: 6;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: stretch;
+  pointer-events: none;
+}
+
+.paper-note {
+  --tilt: 0deg;
+  --nudge-x: 0px;
+  --nudge-y: 0px;
+  pointer-events: auto;
+  position: relative;
+  /* Chồng mép lên tờ bên dưới cho ra một "xấp" giấy. */
+  margin-top: -1.05rem;
+  padding: 0.5rem 0.5rem 0.55rem;
+  min-height: 2.15rem;
+  cursor: default;
+  color: #43391d;
+  font-family: var(--font-handwriting);
+  font-size: 1.02rem;
   font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  line-height: 1.02;
+  /* Bề mặt giấy: một lớp loang sáng rất nhẹ chồng lên nền pastel pha gradient
+     chéo — đủ để mắt đọc ra "tờ giấy" chứ không phải "ô màu phẳng". */
+  background-image:
+    linear-gradient(200deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 42%),
+    linear-gradient(
+      152deg,
+      color-mix(in srgb, var(--paper-tint, #fef08a) 88%, white) 0%,
+      var(--paper-tint, #fef08a) 55%,
+      color-mix(in srgb, var(--paper-tint, #fef08a) 84%, #000 9%) 100%
+    );
+  /* Bốn góc lệch nhau chút cho hết cảm giác "hộp bo tròn đều". */
+  border-radius: 2px 4px 3px 5px / 4px 3px 5px 2px;
+  transform: translate(var(--nudge-x), var(--nudge-y)) rotate(var(--tilt));
+  transform-origin: 50% 8%;
+  box-shadow:
+    0 0.5px 0.5px rgba(45, 35, 15, 0.05),
+    0 1px 1px rgba(45, 35, 15, 0.06),
+    1px 5px 9px -3px rgba(40, 30, 12, 0.28),
+    4px 13px 20px -8px rgba(40, 30, 12, 0.26);
+  transition:
+    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.18s ease;
 }
 
-.note-pin-chip__text {
-  min-width: 0;
+.paper-note:first-child {
+  margin-top: 0;
+}
+
+/* Băng dính bán trong suốt vắt qua mép trên — dấu hiệu "được ghim cố định". */
+.paper-note__tape {
+  position: absolute;
+  top: -0.5rem;
+  left: 50%;
+  width: 2.4rem;
+  height: 0.95rem;
+  transform: translateX(-50%) rotate(-2.5deg);
+  background: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.5) 45%,
+    rgba(255, 255, 255, 0.12)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 1px 2px rgba(40, 30, 12, 0.14);
+}
+
+.paper-note:nth-child(3n) .paper-note__tape {
+  transform: translateX(-50%) rotate(3deg);
+  width: 2rem;
+}
+
+/* Góc giấy cong lên ở đáy phải — tam giác gập + bóng hắt vào trong. */
+.paper-note::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  border-style: solid;
+  border-width: 0 0 0.85rem 0.85rem;
+  border-color: transparent transparent rgba(255, 255, 255, 0.4)
+    color-mix(in srgb, var(--paper-tint, #fef08a) 62%, #000 26%);
+  border-bottom-right-radius: 3px;
+  box-shadow: -1px -1px 3px rgba(40, 30, 12, 0.18);
+}
+
+.paper-note__text {
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  line-clamp: 3;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  /* Chừa chỗ cho góc gập ở dưới phải để chữ không đè lên. */
+  padding-right: 0.3rem;
 }
 
-.note-pin-chip__remove {
-  flex-shrink: 0;
+.paper-note:hover {
+  z-index: 20;
+  transform: translate(var(--nudge-x), calc(var(--nudge-y) - 3px))
+    rotate(calc(var(--tilt) * 0.35)) scale(1.06);
+  box-shadow:
+    0 1px 1px rgba(45, 35, 15, 0.06),
+    2px 10px 16px -4px rgba(40, 30, 12, 0.32),
+    6px 22px 34px -10px rgba(40, 30, 12, 0.3);
+}
+
+.paper-note__remove {
+  position: absolute;
+  top: 0.05rem;
+  right: 0.15rem;
+  width: 1rem;
+  height: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   background: none;
-  color: inherit;
-  opacity: 0.6;
-  font-size: 0.85rem;
+  color: #6b5c34;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
   line-height: 1;
-  padding: 0;
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  opacity: 0;
+  border-radius: var(--radius-full);
+  transition: opacity 0.15s ease, background 0.15s ease;
 }
 
-.note-pin-chip__remove:hover {
+.paper-note:hover .paper-note__remove,
+.paper-note__remove:focus-visible {
+  opacity: 0.8;
+}
+
+.paper-note__remove:hover {
   opacity: 1;
+  background: rgba(40, 30, 12, 0.14);
+}
+
+/* Xấp còn dày hơn maxNotesPerDay — một nhãn giấy nhỏ, bấm để bung hết. */
+.note-pile-more {
+  align-self: center;
+  margin-bottom: 0.2rem;
+  pointer-events: auto;
+  border: none;
+  background: rgba(250, 250, 245, 0.92);
+  color: #6b5c34;
+  font-family: var(--font-handwriting);
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0.05rem 0.5rem;
+  border-radius: 2px 4px 3px 5px;
+  box-shadow: 0 2px 5px -1px rgba(40, 30, 12, 0.28);
+  transform: rotate(-1.5deg);
+  cursor: pointer;
+}
+
+.note-pile-more:hover {
+  background: #fffef8;
+}
+
+/* Nút thêm giấy — ẩn tới khi trỏ vào ô, nằm nép góc dưới-phải. */
+.add-note-btn {
+  position: absolute;
+  right: 0.25rem;
+  bottom: 0.25rem;
+  z-index: 9;
+  width: 1.15rem;
+  height: 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text-tertiary);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.day-cell:hover .add-note-btn,
+.add-note-btn:focus-visible {
+  opacity: 1;
+}
+
+.add-note-btn:hover {
+  color: var(--holiday-accent);
+  background: var(--holiday-accent-soft);
+}
+
+.add-note-btn:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paper-note,
+  .paper-note:hover {
+    transition: none;
+  }
 }
 
 .more-btn {
@@ -480,6 +673,27 @@
     font-size: 0.62rem;
     padding: 0 0.2rem;
   }
+
+  /* Ô nhỏ hơn — mẩu giấy co lại, bớt chồng mép, ít nghiêng cho đỡ trào. */
+  .paper-note {
+    font-size: 0.86rem;
+    padding: 0.3rem 0.35rem 0.4rem;
+    min-height: 1.7rem;
+    margin-top: -0.75rem;
+  }
+
+  .paper-note__text {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+}
+
+/* Không có hover (cảm ứng): nút thêm giấy phải luôn thấy, nếu không thì trên
+   điện thoại chẳng có đường nào bấm tới nó. */
+@media (hover: none) {
+  .add-note-btn {
+    opacity: 0.65;
+  }
 }
 
 /* Mobile nhỏ: ô ngày chỉ còn ~48px ngang, chữ trong chip không còn nghĩa lý
@@ -518,5 +732,38 @@
   .more-btn {
     font-size: 0.58rem;
     padding: 0;
+  }
+
+  /* Ô ~48px: giấy có vẽ cũng không đọc được. Rút thành một mảnh giấy vuông
+     nhỏ xíu ở góc — vẫn thấy "ngày này có ghi chú", chạm ô để mở đầy đủ. */
+  .day-notes {
+    left: auto;
+    right: 2px;
+    bottom: 2px;
+    flex-direction: row;
+  }
+
+  .paper-note {
+    width: 9px;
+    height: 9px;
+    min-height: 0;
+    margin: 0 0 0 -3px;
+    padding: 0;
+    font-size: 0;
+    border-radius: 1px 2px 1px 2px;
+  }
+
+  .paper-note:first-child {
+    margin-left: 0;
+  }
+
+  .paper-note__tape,
+  .paper-note__remove,
+  .paper-note::after {
+    display: none;
+  }
+
+  .note-pile-more {
+    display: none;
   }
 }
