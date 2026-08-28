@@ -46,13 +46,24 @@
 
         <button
           type="button"
-          class="ico-btn danger"
+          class="ico-btn"
           [disabled]="poppedOutId() === note.id"
           [attr.aria-label]="i18n.t('screenNote.unpin')"
           [title]="i18n.t('screenNote.unpin')"
           (click)="unpin(note.id)"
         >
           <app-icon name="close" />
+        </button>
+
+        <button
+          type="button"
+          class="ico-btn danger"
+          [disabled]="poppedOutId() === note.id || deletingId() === note.id"
+          [attr.aria-label]="i18n.t('screenNote.delete')"
+          [title]="i18n.t('screenNote.delete')"
+          (click)="requestDelete(note)"
+        >
+          <app-icon name="trash" />
         </button>
       </div>
     </div>
