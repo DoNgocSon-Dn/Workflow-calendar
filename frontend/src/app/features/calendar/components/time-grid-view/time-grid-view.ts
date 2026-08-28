@@ -71,6 +71,7 @@ function snap(min: number): number {
     // vàng "ô nhận ghi chú" sẽ kẹt lại. `dragend` luôn bắn khi kết thúc kéo
     // dù thành công hay không, nên dọn ở đây cho chắc.
     '(document:dragend)': 'dragOverDayKey.set(null)',
+    '(document:drop)': 'dragOverDayKey.set(null)',
   },
 })
 export class TimeGridView {

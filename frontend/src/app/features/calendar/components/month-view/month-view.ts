@@ -47,6 +47,7 @@ export interface CreateRequest {
     // ghi chú" kẹt lại vĩnh viễn. `dragend` luôn bắn trên nguồn kéo dù kết
     // thúc kiểu gì, nên đây là chỗ dọn chắc chắn.
     '(document:dragend)': 'dragOverDayKey.set(null)',
+    '(document:drop)': 'dragOverDayKey.set(null)',
   },
 })
 export class MonthView {

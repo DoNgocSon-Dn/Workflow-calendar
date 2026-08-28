@@ -154,9 +154,14 @@ export class ScreenNotes {
     const noteId = event.dataTransfer?.getData('application/x-note-id');
     if (!noteId) return;
     event.preventDefault();
-    // Đặt mép trên–trái tờ giấy sao cho con trỏ rơi vào gần góc trên của nó
-    // (giống cầm một tờ giấy ở mép rồi dán xuống).
-    this.screen.pin(noteId, { x: event.clientX - 24, y: event.clientY - 12 });
+    // Đặt mép trên–trái tờ giấy sao cho con trỏ rơi vào gần góc trên của nó.
+    const x = event.clientX - 24;
+    const y = event.clientY - 12;
+    // HOÃN tới khi thao tác kéo đã kết thúc hẳn: pin() khiến `.note-item` nguồn
+    // biến khỏi sidebar NGAY, làm `dragend` bắn trên một node đã lìa DOM (không
+    // nổi bọt lên document để dọn viền vàng), và trình duyệt có thể để lại
+    // "ảnh kéo" mờ dính trên màn hình. Chờ một nhịp là hết cả hai.
+    setTimeout(() => this.screen.pin(noteId, { x, y }), 0);
   }
 
   // --- Kéo tờ giấy nổi trên màn hình (pointer) -------------------------
