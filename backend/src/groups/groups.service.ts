@@ -1095,6 +1095,7 @@ export class GroupsService {
       })
       .single<Omit<GroupInviteRow, 'inviter_email'>>();
 
+    let invite: GroupInviteDto;
     if (error) {
       if (error.message.includes('invite not found')) {
         throw new NotFoundException('Lời mời không tồn tại');
@@ -1102,10 +1103,21 @@ export class GroupsService {
       if (error.message.includes('already handled')) {
         throw new ConflictException('Lời mời này đã được xử lý');
       }
-      throw new InternalServerErrorException(error.message);
+      // Hàm RPC respond_group_invite trong DB cloud có thể là bản CŨ chưa vá
+      // #variable_conflict (migration 28) → "column reference group_id is
+      // ambiguous", chặn MỌI accept/decline. Trong lúc migration chưa chạy,
+      // làm tay bằng service-role để người dùng không bị kẹt.
+      if (error.message.includes('ambiguous')) {
+        this.logger.warn(
+          'respond_group_invite RPC là bản cũ (ambiguous group_id) — dùng fallback service-role. HÃY CHẠY migration 28 trên Supabase.',
+        );
+        invite = await this.respondGroupInviteFallback(userId, inviteId, dto.status);
+      } else {
+        throw new InternalServerErrorException(error.message);
+      }
+    } else {
+      invite = toGroupInviteDto({ ...data, inviter_email: null });
     }
-
-    const invite = toGroupInviteDto({ ...data, inviter_email: null });
 
     // RPC respond_group_invite chèn calendar_members với role 'viewer' cho mọi
     // vai trò khác 'admin'. Nâng lên 'editor' để thành viên thường cũng tạo
@@ -1128,6 +1140,81 @@ export class GroupsService {
     );
 
     return invite;
+  }
+
+  /**
+   * Thay cho RPC respond_group_invite() khi hàm trong DB còn là bản cũ dính
+   * lỗi "ambiguous group_id" (migration 28 chưa chạy). Làm đúng các bước của
+   * RPC nhưng bằng service-role client ở tầng ứng dụng.
+   */
+  private async respondGroupInviteFallback(
+    userId: string,
+    inviteId: string,
+    status: 'accepted' | 'declined',
+  ): Promise<GroupInviteDto> {
+    const admin = this.supabaseService.getServiceRoleClient();
+
+    const { data: inv } = await admin
+      .from('group_invites')
+      .select('id, group_id, role, status, created_at, invited_user_id')
+      .eq('id', inviteId)
+      .maybeSingle<{
+        id: string;
+        group_id: string;
+        role: string;
+        status: string;
+        created_at: string;
+        invited_user_id: string;
+      }>();
+
+    if (!inv || inv.invited_user_id !== userId) {
+      throw new NotFoundException('Lời mời không tồn tại');
+    }
+    if (inv.status !== 'pending') {
+      throw new ConflictException('Lời mời này đã được xử lý');
+    }
+
+    const { error: updErr } = await admin
+      .from('group_invites')
+      .update({ status })
+      .eq('id', inviteId);
+    if (updErr) throw new InternalServerErrorException(updErr.message);
+
+    const { data: grp } = await admin
+      .from('groups')
+      .select('name, color, calendar_id')
+      .eq('id', inv.group_id)
+      .maybeSingle<{ name: string; color: string; calendar_id: string | null }>();
+
+    if (status === 'accepted') {
+      await admin
+        .from('group_members')
+        .upsert(
+          { group_id: inv.group_id, user_id: userId, role: inv.role },
+          { onConflict: 'group_id,user_id', ignoreDuplicates: true },
+        );
+      if (grp?.calendar_id) {
+        await admin.from('calendar_members').upsert(
+          {
+            calendar_id: grp.calendar_id,
+            user_id: userId,
+            role: inv.role === 'admin' ? 'editor' : 'viewer',
+          },
+          { onConflict: 'calendar_id,user_id', ignoreDuplicates: true },
+        );
+      }
+    }
+
+    return toGroupInviteDto({
+      id: inv.id,
+      group_id: inv.group_id,
+      group_name: grp?.name ?? '',
+      group_color: grp?.color ?? 'blue',
+      role: inv.role,
+      status,
+      created_at: inv.created_at,
+      inviter_email: null,
+    });
   }
 
   /**
