@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
 import { DensityService } from '../../../../core/density/density-service';
+import { DialogService } from '../../../../core/services/dialog.service';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { TimeFormatService } from '../../../../core/time-format/time-format-service';
 import { CalendarStore } from '../../data/calendar-store';
@@ -44,6 +45,7 @@ export interface CreateRequest {
 export class MonthView {
   protected readonly store = inject(CalendarStore);
   private readonly densityService = inject(DensityService);
+  private readonly dialog = inject(DialogService);
   protected readonly i18n = inject(TranslationService);
   private readonly timeFormatService = inject(TimeFormatService);
   protected readonly colorHex = CALENDAR_COLOR_HEX;
@@ -178,6 +180,86 @@ export class MonthView {
 
   notesFor(day: Date): Note[] {
     return this.notesByDay().get(toDateInputValue(day)) ?? [];
+  }
+
+  /** Tối đa số mẩu giấy vẽ chồng lên một ngày trước khi gộp phần còn lại vào
+   *  thẻ "+N" — chồng quá nhiều thì đống giấy trào ra che mất ngày bên cạnh. */
+  private readonly maxNotesPerDay = 3;
+
+  /** Ngày đang được người dùng bấm "+N" để xem hết cả xấp giấy. */
+  readonly showAllNotesDayKey = signal<string | null>(null);
+
+  notesToRenderFor(day: Date): Note[] {
+    const all = this.notesFor(day);
+    if (this.showAllNotesDayKey() === this.dayKey(day)) return all;
+    return all.slice(0, this.maxNotesPerDay);
+  }
+
+  hiddenNotesCountFor(day: Date): number {
+    if (this.showAllNotesDayKey() === this.dayKey(day)) return 0;
+    return Math.max(0, this.notesFor(day).length - this.maxNotesPerDay);
+  }
+
+  revealAllNotes(day: Date, domEvent: MouseEvent): void {
+    domEvent.stopPropagation();
+    this.showAllNotesDayKey.set(this.dayKey(day));
+  }
+
+  /**
+   * Kiểu "dán thủ công" cho một mẩu giấy — góc nghiêng và độ xê dịch nhỏ,
+   * suy ra TỪ id nên mỗi tờ luôn nằm y một chỗ qua các lần vẽ lại (không nhảy
+   * loạn mỗi lần Angular chạy change detection), nhưng giữa các tờ thì lệch
+   * nhau đủ để trông như được dán vội bằng tay.
+   */
+  private readonly noteStyleCache = new Map<string, Record<string, string>>();
+
+  noteStyle(note: Note): Record<string, string> {
+    const cached = this.noteStyleCache.get(note.id);
+    if (cached) return cached;
+
+    let h = 5381;
+    for (let i = 0; i < note.id.length; i++) h = ((h << 5) + h + note.id.charCodeAt(i)) >>> 0;
+
+    const tilt = ((h % 640) / 100 - 3.2).toFixed(2); // -3.2deg .. 3.2deg
+    const nudgeX = (((h >>> 8) % 180) / 10 - 9).toFixed(1); // -9px .. 9px
+    const nudgeY = (((h >>> 16) % 130) / 10 - 5).toFixed(1); // -5px .. 8px
+
+    const style: Record<string, string> = {
+      '--tilt': `${tilt}deg`,
+      '--nudge-x': `${nudgeX}px`,
+      '--nudge-y': `${nudgeY}px`,
+    };
+    this.noteStyleCache.set(note.id, style);
+    return style;
+  }
+
+  private readonly notePalette = Object.keys(NOTE_COLOR_HEX);
+  protected readonly addingNoteForDay = signal<string | null>(null);
+
+  /**
+   * Thêm nhanh một mẩu giấy cho đúng ngày này. Ô ngày vốn đã bắt sự kiện
+   * chuột để tạo SỰ KIỆN (kéo-chọn khoảng ngày), nên nút này là đường riêng —
+   * bấm vào là hỏi nội dung rồi tạo ghi chú + ghim thẳng vào ngày, không đụng
+   * tới luồng tạo sự kiện.
+   */
+  async onAddNoteClick(day: Date, domEvent: MouseEvent): Promise<void> {
+    domEvent.stopPropagation();
+    if (this.addingNoteForDay()) return;
+
+    const content = (await this.dialog.prompt(this.i18n.t('sidebar.createNotePrompt')))?.trim();
+    if (!content) return;
+
+    this.addingNoteForDay.set(this.dayKey(day));
+    try {
+      const color =
+        this.notePalette[Math.floor(Math.random() * this.notePalette.length)] ?? 'yellow';
+      const note = await this.store.createNote(content, color);
+      await this.store.pinNoteToDay(note.id, day);
+    } catch {
+      await this.dialog.alert(this.i18n.t('sidebar.createNoteError'));
+    } finally {
+      this.addingNoteForDay.set(null);
+    }
   }
 
   visibleEventsFor(day: Date): CalendarEvent[] {

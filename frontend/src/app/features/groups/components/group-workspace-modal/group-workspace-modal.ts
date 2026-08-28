@@ -1191,6 +1191,19 @@ export class GroupWorkspaceModal {
    * nên nó mới là thứ đưa người ta vào phòng họp.
    */
   protected readonly meetRemindEveryone = signal(true);
+  protected readonly meetRemindOffsets = signal<Set<number>>(new Set([10, 5, 0]));
+
+  toggleMeetReminderOffset(minutes: number): void {
+    this.meetRemindOffsets.update((set) => {
+      const next = new Set(set);
+      if (next.has(minutes)) {
+        next.delete(minutes);
+      } else {
+        next.add(minutes);
+      }
+      return next;
+    });
+  }
 
   protected readonly meetAnnounceInChat = signal(false);
   protected readonly meetSaving = signal(false);
@@ -1273,11 +1286,12 @@ export class GroupWorkspaceModal {
           // đã nằm trên lịch — chỉ riêng phần chuông là hỏng, và người dùng cần
           // biết đúng chừng đó.
           try {
-            await this.calendarStore.setRemindersForAllMembers(event.id, [
-              { offsetMinutes: 10, type: 'popup' },
-              { offsetMinutes: 5, type: 'popup' },
-              { offsetMinutes: 0, type: 'popup' },
-            ]);
+            const selectedOffsets = Array.from(this.meetRemindOffsets());
+            const reminderItems = (selectedOffsets.length > 0 ? selectedOffsets : [0]).map((offset) => ({
+              offsetMinutes: offset,
+              type: 'popup' as const,
+            }));
+            await this.calendarStore.setRemindersForAllMembers(event.id, reminderItems);
           } catch {
             this.meetError.set(this.i18n.t('meet.errRemind'));
           }

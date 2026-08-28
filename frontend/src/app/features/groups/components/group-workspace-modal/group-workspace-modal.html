@@ -930,6 +930,40 @@
                   />
                   {{ i18n.t('meet.remindEveryone') }}
                 </label>
+
+                @if (meetRemindEveryone() && canRemindEveryone()) {
+                  <div class="meet-reminders-sub" style="margin-left: 1.6rem; margin-top: 0.25rem; margin-bottom: 0.6rem;">
+                    <span style="font-size: 0.8rem; color: var(--text-muted, #94a3b8); margin-bottom: 0.35rem; display: block;">
+                      ⏱️ Chọn các mốc báo trước cho nhóm:
+                    </span>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 4px 10px; background: var(--bg-surface-elevated, rgba(255, 255, 255, 0.05)); border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12)); border-radius: 14px; user-select: none;">
+                        <input
+                          type="checkbox"
+                          [checked]="meetRemindOffsets().has(10)"
+                          (change)="toggleMeetReminderOffset(10)"
+                        />
+                        10 phút trước
+                      </label>
+                      <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 4px 10px; background: var(--bg-surface-elevated, rgba(255, 255, 255, 0.05)); border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12)); border-radius: 14px; user-select: none;">
+                        <input
+                          type="checkbox"
+                          [checked]="meetRemindOffsets().has(5)"
+                          (change)="toggleMeetReminderOffset(5)"
+                        />
+                        5 phút trước
+                      </label>
+                      <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 4px 10px; background: var(--bg-surface-elevated, rgba(255, 255, 255, 0.05)); border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12)); border-radius: 14px; user-select: none;">
+                        <input
+                          type="checkbox"
+                          [checked]="meetRemindOffsets().has(0)"
+                          (change)="toggleMeetReminderOffset(0)"
+                        />
+                        Đúng giờ họp (0 phút)
+                      </label>
+                    </div>
+                  </div>
+                }
               } @else {
                 <p class="meet-hint">
                   {{ i18n.t('meet.noPermission') }}
