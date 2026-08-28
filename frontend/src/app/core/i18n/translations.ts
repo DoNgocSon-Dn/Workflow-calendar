@@ -396,19 +396,6 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'login.googleSignInError': 'Lỗi đăng nhập Google: {message}',
     'login.preloader': 'Đang mở Workflow',
 
-    // --- đăng nhập Google qua Socket.io (trang chẩn đoán) -----------
-    'gsocket.title': 'Đăng nhập bằng Google (qua Socket.io)',
-    'gsocket.hint':
-      'Kênh xác thực riêng qua Socket.io (google-auth-server) — độc lập với đăng nhập Supabase.',
-    'gsocket.connecting': 'Đang xác thực với máy chủ…',
-    'gsocket.greeting': 'Xin chào, {name} ({email})',
-    'gsocket.errMissingToken': 'Không nhận được idToken từ Google.',
-    'gsocket.errExpiredToken': 'Token Google đã hết hạn, vui lòng đăng nhập lại.',
-    'gsocket.errInvalidToken': 'Token Google không hợp lệ.',
-    'gsocket.errAuthFailed': 'Xác thực thất bại, vui lòng thử lại.',
-    'gsocket.errConnect': 'Không thể kết nối máy chủ xác thực.',
-    'gsocket.errLostConnection': 'Mất kết nối tới máy chủ, vui lòng thử lại.',
-
     // --- trang Việc cần làm (todo list) -----------------------------
     'tasks.title': 'Việc cần làm',
     'tasks.calendar': 'Lịch',
@@ -1494,19 +1481,6 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'login.googleNoCredentials': 'Google credentials are not configured',
     'login.googleSignInError': 'Google sign-in error: {message}',
     'login.preloader': 'Opening Workflow',
-
-    // --- Google sign-in over Socket.io (diagnostic page) -----------
-    'gsocket.title': 'Sign in with Google (over Socket.io)',
-    'gsocket.hint':
-      'A separate auth channel over Socket.io (google-auth-server) — independent of Supabase sign-in.',
-    'gsocket.connecting': 'Authenticating with the server…',
-    'gsocket.greeting': 'Hello, {name} ({email})',
-    'gsocket.errMissingToken': "Didn't receive an idToken from Google.",
-    'gsocket.errExpiredToken': 'The Google token has expired, please sign in again.',
-    'gsocket.errInvalidToken': 'The Google token is invalid.',
-    'gsocket.errAuthFailed': 'Authentication failed, please try again.',
-    'gsocket.errConnect': "Couldn't connect to the authentication server.",
-    'gsocket.errLostConnection': 'Lost connection to the server, please try again.',
 
     // --- tasks page (todo list) ------------------------------------
     'tasks.title': 'Tasks',

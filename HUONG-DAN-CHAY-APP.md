@@ -162,7 +162,9 @@ Gửi 2 thứ đó là khoanh được đúng nguyên nhân.
 
 ## Ghi chú
 
-- Thư mục `google-auth-server/` là **kênh đăng nhập cũ, độc lập**, cần MongoDB,
-  **không liên quan** tới app này và không cần chạy.
-- Backend đọc cấu hình từ `backend/.env`. Frontend cắm sẵn URL Supabase trong
+- App **chỉ dùng Supabase (Postgres)** làm database. Không có MongoDB.
+  Kênh đăng nhập cũ qua Socket.io + MongoDB (`google-auth-server/` và trang
+  `/login-google-socket`) đã bị **gỡ bỏ hoàn toàn** — không còn liên quan.
+- Backend đọc cấu hình từ `backend/.env` (xem `backend/.env.example` để biết
+  danh sách biến). Frontend cắm sẵn URL Supabase trong
   `frontend/src/environments/environment.ts`.
