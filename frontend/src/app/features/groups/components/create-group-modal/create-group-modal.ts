@@ -6,17 +6,10 @@ import { GROUP_COLOR_HEX, GROUP_COLORS, GroupColor } from '../../models/group.mo
 import { Icon } from '../../../../shared/components/icon/icon';
 import { CharCounter } from '../../../../shared/components/char-counter/char-counter';
 
+import { extractHttpErrorMessage } from '../../../../shared/utils/error-extractor';
+
 function extractErrorMessage(err: unknown, i18n: TranslationService): string {
-  if (err instanceof HttpErrorResponse) {
-    if (err.status === 0) {
-      return i18n.t('createGroup.networkError');
-    }
-    const inner = err.error as { message?: string | string[] } | undefined;
-    const msg = inner?.message;
-    if (Array.isArray(msg)) return msg.join(', ');
-    if (typeof msg === 'string') return msg;
-  }
-  return i18n.t('createGroup.error');
+  return extractHttpErrorMessage(err, i18n.t('createGroup.error'), i18n.t('createGroup.networkError'));
 }
 
 @Component({

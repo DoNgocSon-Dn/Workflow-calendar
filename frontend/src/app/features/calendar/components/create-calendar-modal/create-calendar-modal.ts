@@ -5,17 +5,12 @@ import { TranslationService } from '../../../../core/i18n/translation.service';
 import { CALENDAR_COLOR_HEX, CalendarColor } from '../../models/calendar.models';
 import { CharCounter } from '../../../../shared/components/char-counter/char-counter';
 
+import { extractHttpErrorMessage } from '../../../../shared/utils/error-extractor';
+
 const CALENDAR_COLORS = Object.keys(CALENDAR_COLOR_HEX) as CalendarColor[];
 
 function extractErrorMessage(err: unknown, i18n: TranslationService): string {
-  if (err instanceof HttpErrorResponse) {
-    if (err.status === 0) return i18n.t('createCal.networkError');
-    const inner = err.error as { message?: string | string[] } | undefined;
-    const msg = inner?.message;
-    if (Array.isArray(msg)) return msg.join(', ');
-    if (typeof msg === 'string') return msg;
-  }
-  return i18n.t('createCal.error');
+  return extractHttpErrorMessage(err, i18n.t('createCal.error'), i18n.t('createCal.networkError'));
 }
 
 @Component({

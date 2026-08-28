@@ -55,21 +55,10 @@ import {
   describeRecurrence,
 } from '../../utils/recurrence';
 
+import { extractHttpErrorMessage } from '../../../../shared/utils/error-extractor';
+
 function extractErrorMessage(err: unknown, fallback: string, netFallback = fallback): string {
-  // status 0 = request không tới được server (mất mạng, backend chưa chạy,
-  // CORS). Body lúc này là một ProgressEvent, không có `message` nào để đọc,
-  // nên nếu không tách riêng thì người dùng chỉ nhận được câu báo lỗi chung
-  // chung trong khi nguyên nhân thật lại rất cụ thể và tự sửa được.
-  if (err instanceof HttpErrorResponse && err.status === 0) {
-    return netFallback;
-  }
-  if (err && typeof err === 'object' && 'error' in err) {
-    const inner = (err as { error?: { message?: string | string[] } }).error;
-    const msg = inner?.message;
-    if (Array.isArray(msg)) return msg.join(', ');
-    if (typeof msg === 'string') return msg;
-  }
-  return fallback;
+  return extractHttpErrorMessage(err, fallback, netFallback);
 }
 
 import { convertSolarToLunar } from '../../utils/lunar-calendar';

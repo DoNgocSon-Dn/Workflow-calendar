@@ -34,6 +34,7 @@ import {
   signalsFiles,
   skippedFilesMessage,
 } from '../../utils/clipboard-files';
+import { extractHttpErrorMessage } from '../../utils/error-extractor';
 
 /** Số lượt chat gần nhất gửi kèm lên backend làm ngữ cảnh — đủ để AI hiểu các
  *  câu hỏi tiếp nối ("còn ngày mai thì sao?") mà không làm phình prompt. */
@@ -207,33 +208,7 @@ function extractErrorMessage(
   err: unknown,
   t: (key: string) => string,
 ): string {
-  if (err instanceof HttpErrorResponse) {
-    if (err.status === 0) {
-      return t('hub.errNetwork');
-    }
-    const inner = err.error as { message?: string | string[] } | undefined;
-    const msg = inner?.message;
-    const raw = Array.isArray(msg)
-      ? msg.join(', ')
-      : typeof msg === 'string'
-        ? msg
-        : typeof err.error === 'string'
-          ? err.error
-          : '';
-    if (raw) {
-      if (
-        raw.includes('<!DOCTYPE') ||
-        raw.includes('<html') ||
-        raw.includes('522') ||
-        raw.includes('Cloudflare') ||
-        raw.includes('Connection timed out')
-      ) {
-        return 'Máy chủ cơ sở dữ liệu (Supabase) đang tạm thời mất kết nối (522 Connection Timeout). Vui lòng thử lại sau giây lát.';
-      }
-      return raw;
-    }
-  }
-  return t('hub.errGeneric');
+  return extractHttpErrorMessage(err, t('hub.errGeneric'), t('hub.errNetwork'));
 }
 
 function isDeleteIntent(text: string): boolean {
