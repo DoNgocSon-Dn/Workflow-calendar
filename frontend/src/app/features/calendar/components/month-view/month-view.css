@@ -392,9 +392,9 @@
   cursor: default;
   color: #43391d;
   font-family: var(--font-handwriting);
-  font-size: 1.02rem;
+  font-size: 1.04rem;
   font-weight: 600;
-  line-height: 1.02;
+  line-height: 1.12;
   /* Bề mặt giấy: một lớp loang sáng rất nhẹ chồng lên nền pastel pha gradient
      chéo — đủ để mắt đọc ra "tờ giấy" chứ không phải "ô màu phẳng". */
   background-image:
