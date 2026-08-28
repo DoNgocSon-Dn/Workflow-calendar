@@ -240,6 +240,17 @@
               <span class="calendar-name">{{ note.content }}</span>
               <button
                 type="button"
+                class="note-pin-btn"
+                [class.is-active]="screenNotes.isPinned(note.id)"
+                [attr.aria-pressed]="screenNotes.isPinned(note.id)"
+                [attr.aria-label]="screenNotes.isPinned(note.id) ? i18n.t('sidebar.unpinNoteFromScreen') : i18n.t('sidebar.pinNoteToScreen')"
+                [title]="screenNotes.isPinned(note.id) ? i18n.t('sidebar.unpinNoteFromScreen') : i18n.t('sidebar.pinNoteToScreen')"
+                (click)="onToggleScreenPin($event, note.id)"
+              >
+                <app-icon name="pin" />
+              </button>
+              <button
+                type="button"
                 class="delete-calendar-btn"
                 [attr.aria-label]="i18n.t('sidebar.deleteNoteAria')"
                 [title]="i18n.t('sidebar.deleteNoteAria')"
