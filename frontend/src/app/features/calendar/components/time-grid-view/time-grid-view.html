@@ -67,10 +67,22 @@
             <button
               type="button"
               class="note-pin-chip__remove"
-              [attr.aria-label]="i18n.t('calendar.unpinNoteAria')"
-              [title]="i18n.t('calendar.unpinNote')"
+              [attr.aria-label]="i18n.t('note.deleteFromDay')"
+              [title]="i18n.t('note.deleteFromDay')"
               (click)="unpinNote($event, note.id)"
             >×</button>
+            <button
+              type="button"
+              class="note-pin-chip__remove note-pin-chip__delete"
+              [disabled]="deletingNoteId() === note.id"
+              [attr.aria-label]="i18n.t('sidebar.deleteNoteAria')"
+              [title]="i18n.t('sidebar.deleteNoteAria')"
+              (click)="deletePinnedNote($event, note.id)"
+            >
+              <svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true">
+                <path fill="currentColor" d="M6 7h12l-1 13H7L6 7zm3-3h6l1 2H8l1-2zM4 6h16v1H4V6z" />
+              </svg>
+            </button>
           </span>
         }
       </div>

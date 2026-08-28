@@ -430,6 +430,20 @@
   opacity: 1;
 }
 
+.note-pin-chip__remove:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.note-pin-chip__delete {
+  display: inline-flex;
+  align-items: center;
+}
+
+.note-pin-chip__delete:hover {
+  color: #b91c1c;
+}
+
 /* Màn hẹp: 7 cột `flex: 1` (mỗi cột chỉ còn vài chục pixel) khiến các khối
    sự kiện trùng giờ (đặt cạnh nhau bằng left%/width% của .event-block, xem
    time-grid-layout) bị bóp tới mức đè lên nhau, chữ không đọc nổi.
