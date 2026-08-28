@@ -117,6 +117,12 @@ export class BirthdayPopup {
     }, 280);
   }
 
+  dontShowAgain(): void {
+    if (this.closing()) return;
+    this.popupService.disableForCurrentYear();
+    this.close();
+  }
+
   onEscape(): void {
     if (this.visible()) this.close();
   }

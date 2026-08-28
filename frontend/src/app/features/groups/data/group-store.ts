@@ -868,6 +868,13 @@ export class GroupStore {
     // nên không tự thông báo cho họ.
     if (this.selfOriginTaskIds.has(task.id)) return;
 
+    const statusLabel =
+      task.status === 'done'
+        ? 'Hoàn thành'
+        : task.status === 'in_progress'
+        ? 'Đang làm'
+        : 'Cần làm';
+
     const dedupeKey = `task-${task.id}-${kind}-${task.assignedTo || 'none'}-${task.status}`;
     if (this.notifiedTaskEventIds.has(dedupeKey)) return;
 
@@ -883,29 +890,29 @@ export class GroupStore {
       createdAt: task.createdAt,
     };
 
-    // 1. CHỈ THÔNG BÁO CHO NGƯỜI ĐƯỢC GIAO TASK (Người phụ trách)
-    if (task.assignedTo === currentUserId) {
-      this.notifiedTaskEventIds.add(dedupeKey);
-      this.notifications.ingest(
-        kind === 'created' ? groupTaskAssignedDraft(this.nt, input) : groupTaskUpdatedDraft(this.nt, input),
-      );
-
-      this.notificationQueue.push({
-        id: `toast-${dedupeKey}`,
-        title: kind === 'created' ? 'Nhiệm vụ mới' : 'Cập nhật nhiệm vụ',
-        body: `Bạn được phân công nhiệm vụ "${task.title}" trong ${groupName}`,
-        kind: 'created',
-      });
-    } else if (kind === 'updated' && task.createdBy === currentUserId && task.assignedTo !== currentUserId) {
-      // 2. Người tạo task nhận được thông báo khi người phụ trách chuyển trạng thái công việc
-      this.notifiedTaskEventIds.add(dedupeKey);
-      this.notifications.ingest(groupTaskUpdatedDraft(this.nt, input));
-      this.notificationQueue.push({
-        id: `toast-${dedupeKey}`,
-        title: 'Cập nhật nhiệm vụ',
-        body: `Nhiệm vụ "${task.title}" trong ${groupName} đã được cập nhật`,
-        kind: 'updated',
-      });
+    if (kind === 'created') {
+      if (task.assignedTo === currentUserId) {
+        this.notifiedTaskEventIds.add(dedupeKey);
+        this.notifications.ingest(groupTaskAssignedDraft(this.nt, input));
+        this.notificationQueue.push({
+          id: `toast-${dedupeKey}`,
+          title: 'Nhiệm vụ mới',
+          body: `Bạn được phân công nhiệm vụ "${task.title}" trong ${groupName}`,
+          kind: 'created',
+        });
+      }
+    } else {
+      // kind === 'updated' (Kéo-thả task, đổi trạng thái, cập nhật nội dung)
+      if (task.assignedTo === currentUserId || task.createdBy === currentUserId || this.isActiveGroup(groupId)) {
+        this.notifiedTaskEventIds.add(dedupeKey);
+        this.notifications.ingest(groupTaskUpdatedDraft(this.nt, input));
+        this.notificationQueue.push({
+          id: `toast-${dedupeKey}`,
+          title: 'Cập nhật nhiệm vụ',
+          body: `Nhiệm vụ "${task.title}" trong ${groupName} đã chuyển sang "${statusLabel}"`,
+          kind: 'updated',
+        });
+      }
     }
   }
 

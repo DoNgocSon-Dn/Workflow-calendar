@@ -170,6 +170,15 @@ export class SettingsModal {
     setTimeout(() => this.dobSaved.set(false), 2500);
   }
 
+  protected readonly isBirthdayDisabled = signal<boolean>(
+    this.birthdayPopupService.isBirthdayDisabledForCurrentYear(),
+  );
+
+  enableBirthdayPopup(): void {
+    this.birthdayPopupService.enableForCurrentYear();
+    this.isBirthdayDisabled.set(false);
+  }
+
   testBirthdayPopup(): void {
     this.birthdayPopupService.triggerBirthday(this.dobDraft() || undefined, true);
   }

@@ -63,6 +63,12 @@
             <button type="button" class="btn-start-app" (click)="close()">
               🚀 Cảm ơn! Bắt đầu ngày mới
             </button>
+
+            @if (!data()?.isPreview) {
+              <button type="button" class="btn-dont-show-again" (click)="dontShowAgain()">
+                🚫 Không hiển thị lại sinh nhật năm nay
+              </button>
+            }
           </div>
         </div>
       </div>

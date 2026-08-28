@@ -13,6 +13,7 @@ export interface BirthdayPopupData {
 
 const DOB_STORAGE_KEY = 'workflow_user_dob';
 const SHOWN_PREFIX = 'workflow_birthday_shown_';
+const DO_NOT_SHOW_YEARLY_KEY = 'workflow_birthday_disabled_year_';
 
 @Injectable({ providedIn: 'root' })
 export class BirthdayPopupService {
@@ -23,6 +24,27 @@ export class BirthdayPopupService {
 
   readonly visible = signal<boolean>(false);
   readonly data = signal<BirthdayPopupData | null>(null);
+
+  /** Kiểm tra xem chúc mừng sinh nhật năm nay có bị chọn "Không hiển thị lại" hay không */
+  isBirthdayDisabledForCurrentYear(): boolean {
+    const now = todayInVietnam(this.clock.now());
+    const yearKey = `${DO_NOT_SHOW_YEARLY_KEY}${now.getFullYear()}`;
+    return localStorage.getItem(yearKey) === 'true';
+  }
+
+  /** Đánh dấu không hiển thị lại chúc mừng sinh nhật cho năm hiện tại */
+  disableForCurrentYear(): void {
+    const now = todayInVietnam(this.clock.now());
+    const yearKey = `${DO_NOT_SHOW_YEARLY_KEY}${now.getFullYear()}`;
+    localStorage.setItem(yearKey, 'true');
+  }
+
+  /** Bật lại hiển thị chúc mừng sinh nhật cho năm hiện tại */
+  enableForCurrentYear(): void {
+    const now = todayInVietnam(this.clock.now());
+    const yearKey = `${DO_NOT_SHOW_YEARLY_KEY}${now.getFullYear()}`;
+    localStorage.removeItem(yearKey);
+  }
 
   /**
    * Tự động trích xuất ngày sinh từ tài khoản Google OAuth / Supabase metadata / LocalStorage
@@ -142,6 +164,10 @@ export class BirthdayPopupService {
 
     const parsed = this.parseDob(dob);
     if (!parsed) return;
+
+    if (this.isBirthdayDisabledForCurrentYear() && !this.clock.devOverride()) {
+      return;
+    }
 
     // Dùng Clock.now() (hỗ trợ giả lập ngày) thay vì new Date() cứng của máy
     const now = todayInVietnam(this.clock.now());

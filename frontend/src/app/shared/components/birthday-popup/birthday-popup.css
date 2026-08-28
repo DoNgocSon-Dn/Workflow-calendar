@@ -363,6 +363,28 @@
   background: #1d4ed8;
 }
 
+.btn-dont-show-again {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.btn-dont-show-again:hover {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+}
+
 /* Birthday Mode Tabs */
 .birthday-tabs {
   display: flex;
