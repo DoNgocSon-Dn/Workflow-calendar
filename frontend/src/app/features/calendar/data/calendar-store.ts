@@ -2363,9 +2363,15 @@ export class CalendarStore {
     message: string,
     calendarId: string,
     history: readonly AiChatHistoryEntry[] = [],
+    lastRelevantEntity?: AiLastRelevantEntity,
   ): Promise<AiChatResult> {
     const result = await firstValueFrom(
-      this.http.post<AiChatResult>(`${this.apiUrl}/ai/chat`, { message, calendarId, history }),
+      this.http.post<AiChatResult>(`${this.apiUrl}/ai/chat`, {
+        message,
+        calendarId,
+        history,
+        ...(lastRelevantEntity ? { lastRelevantEntity } : {}),
+      }),
     );
     if (result.intent === 'create_event') {
       // events (nếu có) là TOÀN BỘ chuỗi lặp lại — mỗi lần xuất hiện phải
@@ -2482,4 +2488,15 @@ export interface AiFileAnalysis {
 export interface AiChatHistoryEntry {
   readonly role: 'user' | 'assistant';
   readonly content: string;
+}
+
+/** Entity gần nhất AI vừa thao tác — frontend giữ lại và gửi kèm mỗi request
+ *  để backend truyền vào Gemini context, giúp AI resolve tham chiếu "nó"/"cái
+ *  đó" không cần hỏi lại. */
+export interface AiLastRelevantEntity {
+  readonly type: 'event' | 'todo' | 'note';
+  readonly title: string;
+  readonly start?: string;
+  readonly end?: string;
+  readonly source: 'recently_created' | 'recently_updated' | 'recently_deleted';
 }

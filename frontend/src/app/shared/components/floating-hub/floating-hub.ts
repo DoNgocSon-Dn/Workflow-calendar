@@ -17,6 +17,7 @@ import { NotificationQueue } from '../../../core/realtime/notification-queue';
 import { NotificationSoundService } from '../../../core/services/notification-sound.service';
 import {
   AiChatHistoryEntry,
+  AiLastRelevantEntity,
   AiFileAnalysis,
   AiFileEvent,
   AiSuggestedTodo,
@@ -410,6 +411,9 @@ export class FloatingHub {
   protected readonly pos = signal<HubPos>(readStoredPos());
   protected readonly dragging = signal(false);
   protected readonly lastCreatedEventId = signal<string | null>(null);
+  /** Entity gần nhất AI vừa thao tác thành công — giữ qua giữa các turn
+   *  để gửi kèm mỗi request, giúp backend resolve tham chiếu "nó"/"cái đó". */
+  protected readonly lastRelevantEntity = signal<AiLastRelevantEntity | null>(null);
 
   private dragStart: { pointerX: number; pointerY: number; fabX: number; fabY: number } | null = null;
   private movedDuringDrag = false;
@@ -619,7 +623,7 @@ export class FloatingHub {
     this.startThinking(text);
 
     try {
-      const result = await this.store.sendAiChat(text, calendarId, history);
+      const result = await this.store.sendAiChat(text, calendarId, history, this.lastRelevantEntity() ?? undefined);
       if (result.intent === 'create_event') {
         if (result.event?.id) this.lastCreatedEventId.set(result.event.id);
         const createdCount = result.events?.length ?? 1;
@@ -632,7 +636,15 @@ export class FloatingHub {
         } else {
           this.pushEventMessage(this.i18n.t('hub.addedToCalendar'), buildEventCard(result.event, this.t));
         }
-
+        // Cập nhật entity gần nhất để turn sau có thể resolve "nó"/"cái đó"
+        const primaryEvent = result.events?.[0] ?? result.event;
+        this.lastRelevantEntity.set({
+          type: 'event',
+          title: primaryEvent.title,
+          start: primaryEvent.start,
+          end: primaryEvent.end,
+          source: 'recently_created',
+        });
         // Toast + âm thanh xác nhận: MỘT bộ duy nhất cho CẢ YÊU CẦU, dù AI vừa
         // tạo 1 sự kiện hay cả một chuỗi lặp lại N sự kiện — gọi đúng MỘT lần
         // ở đây (không lặp qua từng event) nên không có nguy cơ ra N toast
@@ -683,6 +695,43 @@ export class FloatingHub {
         // áp thẳng vào signal tương ứng (events/todos/notes) rồi — ở đây chỉ cần
         // báo lại cho người dùng biết đã làm gì.
         this.pushMessage('assistant', result.reply);
+        // Cập nhật entity gần nhất khi action thành công
+        if (result.intent === 'event_action') {
+          if (result.action === 'update') {
+            this.lastRelevantEntity.set({
+              type: 'event',
+              title: result.event.title,
+              start: result.event.start,
+              end: result.event.end,
+              source: 'recently_updated',
+            });
+          } else {
+            // delete: xoá entity sau khi xác nhận done
+            this.lastRelevantEntity.set(null);
+          }
+        } else if (result.intent === 'todo_action') {
+          if (result.action !== 'delete') {
+            this.lastRelevantEntity.set({
+              type: 'todo',
+              title: result.todo.content,
+              source:
+                result.action === 'create' ? 'recently_created' : 'recently_updated',
+            });
+          } else {
+            this.lastRelevantEntity.set(null);
+          }
+        } else if (result.intent === 'note_action') {
+          if (result.action !== 'delete') {
+            this.lastRelevantEntity.set({
+              type: 'note',
+              title: result.note.content,
+              source:
+                result.action === 'create' ? 'recently_created' : 'recently_updated',
+            });
+          } else {
+            this.lastRelevantEntity.set(null);
+          }
+        }
       } else {
         // Thiếu ngày là tình huống RIÊNG: mọi thứ khác đã hiểu rồi, chỉ cần
         // người dùng nói một chữ "ngày mai" là xong. Đẩy họ sang form nhập

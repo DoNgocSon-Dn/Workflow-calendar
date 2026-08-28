@@ -182,6 +182,21 @@ export interface AiNoteSummary {
   content: string;
 }
 
+/** Entity gần nhất AI vừa thao tác (tạo/sửa/xoá) — để giải quyết tham chiếu
+ *  như "nó", "cái đó", "sự kiện đó" ở lượt tiếp theo mà không cần hỏi lại. */
+export interface AiLastRelevantEntity {
+  /** 'event' | 'todo' | 'note' */
+  type: 'event' | 'todo' | 'note';
+  /** Tiêu đề / nội dung entity. */
+  title: string;
+  /** Mốc thời gian bắt đầu (ISO) — chỉ có với event. */
+  start?: string;
+  /** Mốc thời gian kết thúc (ISO) — chỉ có với event. */
+  end?: string;
+  /** Nguồn xác định entity (recently_created / recently_updated / recently_deleted). */
+  source: 'recently_created' | 'recently_updated' | 'recently_deleted';
+}
+
 export interface AiChatContext {
   history: AiChatHistoryEntry[];
   events: AiEventSummary[];
@@ -190,6 +205,10 @@ export interface AiChatContext {
    *  chú (vẫn tạo sự kiện/chat bình thường). */
   todos?: AiTodoSummary[];
   notes?: AiNoteSummary[];
+  /** Entity gần nhất AI vừa thao tác thành công — truyền vào để Gemini có thể
+   *  resolve tham chiếu "nó"/"cái đó" mà không cần hỏi lại. Optional để không
+   *  phá caller cũ chưa cung cấp. */
+  lastRelevantEntity?: AiLastRelevantEntity;
 }
 
 interface GeminiResponse {
@@ -215,11 +234,15 @@ export class AiService {
           if (geminiResult.intent === 'chat' && geminiResult.reply) return geminiResult;
           if (geminiResult.intent === 'create_todos' && geminiResult.todos?.length) return geminiResult;
           if (geminiResult.intent === 'unclear') return geminiResult;
-          // Bốn intent hành động mới — chỉ tin khi có đủ hình dạng tối thiểu
-          // (action hợp lệ, target_match có mặt khi bắt buộc). Sai hình dạng
-          // thì coi như model trả lỗi, rơi xuống bộ phân tích cục bộ giống các
-          // trường hợp khác — an toàn hơn là tin một object thiếu trường rồi để
-          // tầng dispatch tự vỡ.
+          // Bốn intent hành động mới — chỉ tin khi "action" là một giá trị hợp
+          // lệ. CỐ Ý KHÔNG bắt buộc "content" phải có mặt ở action 'create':
+          // "tạo ghi chú cho tôi" / "tạo việc cần làm" (chưa nói nội dung) VẪN
+          // LÀ note_action/todo_action hợp lệ với content rỗng — AiController
+          // đã tự hỏi lại nội dung cho đúng trường hợp này (xem
+          // handleTodoAction/handleNoteAction). Trước đây đòi content ở ĐÂY
+          // khiến những câu chưa có nội dung bị rơi xuống bộ phân tích cục bộ
+          // parseLocalVietnameseEvent — nơi không biết "ghi chú"/"việc cần làm"
+          // là gì cả, hiểu nhầm thành tạo SỰ KIỆN rồi hỏi ngày giờ sai bét.
           if (
             geminiResult.intent === 'event_action' &&
             geminiResult.event_action &&
@@ -230,20 +253,14 @@ export class AiService {
           if (
             geminiResult.intent === 'todo_action' &&
             geminiResult.todo_action &&
-            ['create', 'update', 'delete', 'complete'].includes(geminiResult.todo_action.action) &&
-            (geminiResult.todo_action.action === 'create'
-              ? !!geminiResult.todo_action.content
-              : true)
+            ['create', 'update', 'delete', 'complete'].includes(geminiResult.todo_action.action)
           ) {
             return geminiResult;
           }
           if (
             geminiResult.intent === 'note_action' &&
             geminiResult.note_action &&
-            ['create', 'update', 'delete'].includes(geminiResult.note_action.action) &&
-            (geminiResult.note_action.action === 'create'
-              ? !!geminiResult.note_action.content
-              : true)
+            ['create', 'update', 'delete'].includes(geminiResult.note_action.action)
           ) {
             return geminiResult;
           }
@@ -518,9 +535,11 @@ QUY TẮC BẮT BUỘC:
             .join('\n')
         : '(không có sự kiện nào trong khoảng thời gian gần đây)';
 
+    // Chỉ dùng 10 turns gần nhất để tránh prompt phình vô ích với phiên dài.
+    const recentHistory = context.history.slice(-20);
     const historyBlock =
-      context.history.length > 0
-        ? context.history.map((h) => `${h.role === 'user' ? 'Người dùng' : 'Trợ lý'}: ${h.content}`).join('\n')
+      recentHistory.length > 0
+        ? recentHistory.map((h) => `${h.role === 'user' ? 'Người dùng' : 'Trợ lý'}: ${h.content}`).join('\n')
         : '(chưa có tin nhắn trước đó)';
 
     const todos = context.todos ?? [];
@@ -536,6 +555,43 @@ QUY TẮC BẮT BUỘC:
     const notesBlock =
       notes.length > 0 ? notes.map((n) => `- "${n.content}"`).join('\n') : '(không có ghi chú nào)';
 
+    // --- Block entity gần nhất (nếu có) để AI resolve tham chiếu "nó"/"cái đó" ---
+    const entity = context.lastRelevantEntity;
+    const lastEntityBlock = entity
+      ? (() => {
+          const sourceLabel =
+            entity.source === 'recently_created'
+              ? 'vừa được TẠO'
+              : entity.source === 'recently_updated'
+                ? 'vừa được CẬP NHẬT'
+                : 'vừa được XOÁ';
+          const timeInfo =
+            entity.type === 'event' && entity.start
+              ? (() => {
+                  const startFmt = new Intl.DateTimeFormat('vi-VN', {
+                    dateStyle: 'short',
+                    timeStyle: 'short',
+                    timeZone: 'Asia/Ho_Chi_Minh',
+                  }).format(new Date(entity.start));
+                  const endFmt = entity.end
+                    ? new Intl.DateTimeFormat('vi-VN', {
+                        timeStyle: 'short',
+                        timeZone: 'Asia/Ho_Chi_Minh',
+                      }).format(new Date(entity.end))
+                    : '';
+                  return `\n  - Thời gian: ${startFmt}${endFmt ? ` - ${endFmt}` : ''}`;
+                })()
+              : '';
+          return `ENTITY NGỮ CẢNH GẦN NHẤT (${sourceLabel} trong lượt hội thoại ngay trước):
+  - Loại: ${entity.type === 'event' ? 'Sự kiện lịch' : entity.type === 'todo' ? 'Việc cần làm' : 'Ghi chú'}
+  - Tiêu đề/Nội dung: "${entity.title}"${timeInfo}
+  - Nguồn: ${sourceLabel}
+Khi câu nói của người dùng chứa tham chiếu như "nó", "cái đó", "cái này", "sự kiện đó", "cuộc họp đó",
+"việc đó", "ghi chú đó", "task đó" — ưu tiên entity trên làm target trước khi tìm nơi khác.
+Nếu action và loại entity không khớp (vd "đánh dấu xong" với sự kiện) thì mới tìm candidate khác.`;
+        })()
+      : '(Chưa có entity nào được thao tác trong phiên này — nếu câu nói có tham chiếu mà không có entity rõ ràng trong lịch sử thì hỏi lại.)';
+
     const systemPrompt = `Bạn là trợ lý AI lịch làm việc, có thể vừa TẠO SỰ KIỆN vừa TRÒ CHUYỆN tự nhiên (trả lời câu hỏi về lịch của người dùng hoặc trò chuyện chung) bằng tiếng Việt hoặc tiếng Anh — trả lời theo đúng ngôn ngữ người dùng đang dùng.
 Thời điểm hiện tại: ${vnTimeStr} (ISO: ${now.toISOString()}). Múi giờ mặc định: Asia/Ho_Chi_Minh (+07:00).
 
@@ -548,8 +604,52 @@ ${todosBlock}
 Ghi chú gần đây của người dùng (đã sắp theo thời gian tạo, mới nhất trước):
 ${notesBlock}
 
-Lịch sử hội thoại gần nhất trong phiên chat này:
+Lịch sử hội thoại gần nhất trong phiên chat này (10 turns gần nhất):
 ${historyBlock}
+
+${lastEntityBlock}
+
+===== QUY TẮC XỬ LÝ NGỮ CẢNH VÀ TIN NHẮN NGẮN (BẮT BUỘC) =====
+
+GIẢI QUYẾT THAM CHIẾU NGỮ CẢNH:
+Trước khi hỏi lại bất kỳ điều gì, bắt buộc kiểm tra theo thứ tự:
+1. ENTITY NGỮ CẢNH GẦN NHẤT ở trên (nếu có).
+2. Lịch sử hội thoại — turn ngay trước (trợ lý vừa làm gì, nhắc entity nào).
+3. Danh sách sự kiện/việc/ghi chú trong ngữ cảnh hiện tại.
+Các từ tham chiếu như "nó", "cái đó", "cái này", "sự kiện đó", "cuộc họp đó", "việc đó",
+"ghi chú đó", "task đó" PHẢI được resolve tới entity tương thích gần nhất trong context.
+Không được hỏi lại nếu:
+  - ENTITY NGỮ CẢNH GẦN NHẤT đã xác định và loại khớp với action.
+  - Chỉ có DUY NHẤT một entity trong danh sách tương thích.
+Chỉ hỏi lại khi: không có entity phù hợp HOẶC có nhiều entity ngang nhau.
+
+XỬ LÝ CÂU NGẮN VÀ THIẾU THÔNG TIN (suy luận từ ngữ cảnh):
+- "dời sang chiều" / "đổi sang 3h" / "3h được" → event_action update, target là entity sự kiện gần nhất.
+  Nếu người dùng nói "chiều" mà không có giờ cụ thể, dùng 14:00 làm mặc định.
+- "dời sang thứ Sáu" / "chuyển sang mai" → event_action update start_at/end_at sang ngày mới,
+  giữ nguyên giờ của sự kiện hiện tại.
+- "xóa nó đi" / "hủy đi" / "xóa đi" → event_action/todo_action/note_action delete,
+  target là entity gần nhất tương thích với loại action (xóa sự kiện → event, xóa việc → todo...).
+- "thêm vào lịch" / "đặt lịch" → nếu title, date và time đã có trong lịch sử hội thoại → create_event ngay,
+  KHÔNG hỏi lại thông tin đã biết.
+- Câu chỉ chứa giờ như "3h chiều" → nếu entity sự kiện đã xác định và turn trước đang bàn về giờ → event_action update.
+- "đánh dấu xong" / "đánh dấu hoàn thành" → todo_action complete, target là todo gần nhất.
+- "nhắc tôi trước N phút/giờ" → trả lời "chat" giải thích tính năng nhắc nhở (reminder) hiện chưa
+  hỗ trợ qua trợ lý AI, mời người dùng dùng tính năng tạo sự kiện với thời gian sớm hơn thay thế.
+
+PHÂN LOẠI ĐỘ PHỨC TẠP (chọn xử lý tối ưu):
+- Yêu cầu rõ ràng đủ dữ kiện ("tạo họp mai 9h", "xóa việc X") → thực hiện ngay, không hỏi thêm.
+- Yêu cầu có tham chiếu ("nó", "cái đó") nhưng context đủ rõ → resolve và thực hiện.
+- Yêu cầu thiếu một phần dữ kiện → chỉ hỏi đúng phần còn thiếu, không hỏi lại cái đã biết.
+- Mơ hồ thực sự (nhiều candidate ngang nhau) → hỏi ngắn gọn, chỉ hỏi đúng điểm mơ hồ.
+
+AN TOÀN ACTION:
+- Read-only (hỏi lịch, tìm kiếm) → thực hiện ngay khi đủ context.
+- Create/Update → thực hiện ngay khi target và dữ liệu đủ rõ; chỉ hỏi phần thực sự còn thiếu.
+- Delete → phải xác định target chính xác TRƯỚC; nếu nhiều candidate phù hợp → hỏi rõ target.
+- Không bao giờ tự đoán ngẫu nhiên khi có nhiều candidate ngang nhau.
+
+===== KẾT THÚC QUY TẮC NGỮ CẢNH =====
 
 Nhiệm vụ: Đọc câu nói MỚI NHẤT của người dùng, xác định đúng MỘT trong các ý định sau, và trả về DUY NHẤT một JSON object (không thêm markdown hoặc text nào khác ngoài JSON):
 
@@ -637,16 +737,17 @@ QUY TẮC BẮT BUỘC cho "create_todos":
 }
 - "complete" dùng khi người dùng nói đã xong/hoàn thành/done một việc.
 
-7) Người dùng muốn TẠO một ghi chú, hoặc SỬA/XOÁ một ghi chú ĐÃ CÓ trong "Ghi chú gần đây" ở trên (vd "tạo ghi chú về kế hoạch dự án", "xoá ghi chú hôm qua", "sửa ghi chú họp nhóm thành ..."):
+7) Người dùng muốn TẠO một ghi chú, hoặc SỬA/XOÁ một ghi chú ĐÃ CÓ trong "Ghi chú gần đây" ở trên (vd "tạo ghi chú về kế hoạch dự án", "xoá ghi chú hôm qua", "sửa ghi chú họp nhóm thành ...", "tạo ghi chú cho tôi", "ghi chú lại giúp tôi", "tạo note"):
 {
   "intent": "note_action",
   "note_action": {
     "action": "create" | "update" | "delete",
     "target_match": "đoạn text khớp với đúng MỘT ghi chú trong danh sách — BẮT BUỘC khi action khác \"create\", để trống CHỈ khi người dùng nói \"ghi chú vừa tạo/gần nhất\"",
-    "content": "nội dung ghi chú — dùng khi tạo mới hoặc đổi nội dung",
+    "content": "nội dung ghi chú — dùng khi tạo mới hoặc đổi nội dung. Người dùng CHƯA nói nội dung thật (chỉ nói \"tạo ghi chú cho tôi\"/\"tạo một ghi chú\"/\"ghi chú lại giúp tôi\" mà không kèm nội dung) thì để \"content\" RỖNG — TUYỆT ĐỐI không tự bịa nội dung, và TUYỆT ĐỐI không chuyển sang ý định khác (không phải \"unclear\", không phải \"create_event\") chỉ vì thiếu nội dung. Thiếu nội dung vẫn LÀ note_action, chỉ là content rỗng — hệ thống sẽ tự hỏi lại người dùng.",
     "color": "yellow | blue | green | pink | purple — chỉ điền khi người dùng nói rõ màu, mặc định bỏ trống"
   }
 }
+- GHI CHÚ KHÔNG PHẢI SỰ KIỆN: ghi chú không có ngày/giờ, không bao giờ cần hỏi ngày hoặc giờ. Một cụm chỉ thời gian NẰM TRONG nội dung ghi chú (vd "tạo ghi chú: mua sách ngày mai") vẫn chỉ là VĂN BẢN của "content" — giữ nguyên "mua sách ngày mai" làm content, KHÔNG tách "ngày mai" ra làm start_at, KHÔNG đổi ý định sang "create_event", trừ khi người dùng nói rõ muốn TẠO SỰ KIỆN/LỊCH HẸN/NHẮC LỊCH (không chỉ nhắc một cụm ngày suông trong câu có chữ "ghi chú").
 
 8) Câu nói có nhắc tới "nhóm" hoặc "group" VÀ là một thao tác QUẢN TRỊ nhóm (xoá nhóm, thêm thành viên, xoá thành viên) — CHỈ dùng ý định này khi câu THỰC SỰ nói tới nhóm, không dùng cho việc cá nhân:
 {
@@ -660,6 +761,12 @@ QUY TẮC BẮT BUỘC cho "create_todos":
   }
 }
 - Ghi chú và Việc cần làm KHÔNG hỗ trợ phạm vi nhóm — câu vừa nhắc "nhóm" vừa nói về ghi chú/việc cần làm thì dùng ý định "chat" trả lời rằng tính năng đó hiện chỉ hỗ trợ cá nhân, KHÔNG dùng "note_action"/"todo_action" lẫn "group_action" cho trường hợp này.
+
+QUY TẮC PHÂN BIỆT Ý ĐỊNH BẮT BUỘC (ưu tiên theo TỪ KHOÁ chính người dùng dùng, tránh lẫn giữa ghi chú/việc/sự kiện):
+- Câu có "ghi chú" hoặc "note" → LUÔN LÀ "note_action" (mục 7). Không bao giờ rơi vào "create_event" hay "unclear" chỉ vì câu thiếu ngày/giờ — ghi chú không cần ngày/giờ nên KHÔNG BAO GIỜ "thiếu" chúng.
+- Câu có "việc cần làm", "to-do", "todo", "task" → "todo_action" action "create" (mục 6, việc ĐƠN LẺ cụ thể) hoặc "create_todos" (mục 3, một MỤC TIÊU cần tách nhiều bước) — không phải "create_event".
+- Câu có "sự kiện", "lịch", "lịch hẹn", "cuộc họp", "nhắc lịch" (và không có "ghi chú"/"note"/"việc cần làm"/"to-do"/"task") → mới xét "create_event"/"event_action".
+- Ba nhóm từ khoá trên KHÔNG DÙNG CHUNG một logic: quy tắc "thiếu ngày/giờ thì hỏi lại" (mục 4, "unclear") CHỈ áp dụng cho sự kiện — tuyệt đối không mang logic đó sang xử lý ghi chú hay việc cần làm.
 
 QUY TẮC BẮT BUỘC cho thời gian (áp dụng cho cả "create_event" và "unclear"):
 - KHOẢNG thời gian phải giữ NGUYÊN cả hai đầu. "từ 9h-17h", "9h đến 17h", "8h tới 10h30", "9 giờ đến 11 giờ", "1h chiều đến 5h chiều" — end_at lấy đúng giờ người dùng nói, KHÔNG cắt còn 1 tiếng.
@@ -770,8 +877,51 @@ Chỉ trả về "unclear" khi thật sự không đủ dữ kiện TẠO MỚI 
     return { hour, minute, index: m.index, length: m[0].length };
   }
 
+  /**
+   * Nhận diện "ghi chú"/"note" TRƯỚC khi rơi vào logic phân tích SỰ KIỆN bên
+   * dưới — nếu không, "tạo ghi chú cho tôi" (không có Gemini, hoặc Gemini lỗi)
+   * sẽ bị bộ phân tích ngày/giờ hiểu nhầm thành cố tạo lịch, không tìm thấy
+   * ngày nào rồi hỏi lại ngày — đúng lỗi đã báo. Trả `null` khi câu không nhắc
+   * ghi chú, để hàm gọi chuyển tiếp sang logic sự kiện như cũ.
+   */
+  private parseLocalNoteIntent(raw: string): AiParsedIntent | null {
+    const lower = raw.toLowerCase();
+    const hasNoteKeyword =
+      lower.includes('ghi chú') || lower.includes('ghi chu') || /(^|[^a-z])note([^a-z]|$)/i.test(lower);
+    if (!hasNoteKeyword) return null;
+
+    // "tạo ghi chú: nội dung" / "ghi chú: nội dung" — ưu tiên phần sau dấu ':'.
+    const colonMatch = raw.match(/[:：]\s*(.+)$/s);
+    let content = colonMatch ? colonMatch[1].trim() : '';
+
+    if (!content) {
+      // Bóc các cụm mệnh lệnh/chủ ngữ thường gặp — phần còn lại (nếu có) mới
+      // là nội dung thật. CỐ Ý không dùng \b quanh chữ có dấu: \w của regex
+      // JS không nhận nguyên âm có dấu nên \b khớp sai vị trí ở đó (xem
+      // parseClockAt phía trên) — thay bằng match trực tiếp cụm từ.
+      content = raw
+        .replace(/(tạo|thêm|lưu|viết)\s+(một\s+)?(cái\s+)?(ghi\s*chú|ghi\s*chu|note)/gi, ' ')
+        .replace(/ghi\s*chú\s*l[aạ]i|ghi\s*chu\s*lai/gi, ' ')
+        .replace(/ghi\s*chú|ghi\s*chu|note/gi, ' ')
+        .replace(/(cho|giúp|dùm|giùm)\s+(tôi|mình|em|anh|chị)/gi, ' ')
+        .replace(/[:：]/g, ' ')
+        .trim()
+        .replace(/\s{2,}/g, ' ');
+    }
+
+    return {
+      intent: 'note_action',
+      note_action: {
+        action: 'create',
+        ...(content ? { content } : {}),
+      },
+    };
+  }
+
   private parseLocalVietnameseEvent(text: string): AiParsedIntent {
     const raw = text.trim();
+    const noteIntent = this.parseLocalNoteIntent(raw);
+    if (noteIntent) return noteIntent;
     const lower = raw.toLowerCase();
 
     // Việt Nam dùng múi giờ cố định +07:00 (không có giờ mùa hè), nhưng

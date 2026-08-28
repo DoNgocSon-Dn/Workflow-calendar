@@ -30,8 +30,9 @@ import {
   AiTodoActionIntent,
   AiNoteActionIntent,
   AiGroupActionIntent,
+  AiLastRelevantEntity,
 } from './ai.service';
-import { AiChatDto } from './dto/ai-chat.dto';
+import { AiChatDto, AiChatHistoryEntryDto, AiPendingActionDto } from './dto/ai-chat.dto';
 import { AiFileImportService } from '../import/services/ai-file-import.service';
 import { MulterExceptionFilter } from '../common/multer-exception.filter';
 import {
@@ -84,6 +85,15 @@ function matchGroupInMessage<T extends { name: string }>(groups: T[], message: s
   return groups.length === 1 ? groups[0] : null;
 }
 
+/** Người dùng muốn HUỶ hành động đang chờ ("hủy", "thôi", "bỏ đi"...) — chỉ
+ *  khớp khi cả câu CHỈ LÀ một từ/cụm huỷ, không khớp một câu dài có lẫn những
+ *  chữ đó (vd "thôi để mai tạo ghi chú đi học" KHÔNG phải lệnh huỷ). */
+const CANCEL_WORDS_RE =
+  /^(hủy|huỷ|thôi|bỏ đi|bỏ|không tạo nữa|không cần nữa|không làm nữa|dừng lại|dừng|không muốn nữa)[.!\s]*$/i;
+function isCancelWord(text: string): boolean {
+  return CANCEL_WORDS_RE.test(text.trim());
+}
+
 @Controller('ai')
 @UseGuards(SupabaseAuthGuard)
 export class AiController {
@@ -105,10 +115,174 @@ export class AiController {
     @CurrentUser() user: User,
     @Body() dto: AiChatDto,
   ) {
+    // BẮT BUỘC kiểm tra pending action TRƯỚC bất kỳ bước nhận diện ý định nào
+    // — nếu không, câu trả lời cho một câu hỏi đang chờ ("Test AI" trả lời cho
+    // "Bạn muốn ghi chú nội dung gì?") sẽ bị chạy qua toàn bộ luồng phân loại ý
+    // định từ đầu như một tin nhắn độc lập, và có thể rơi vào "chat"/lời chào
+    // chung chung thay vì được hiểu đúng là dữ liệu điền tiếp cho action đang
+    // dở. Xem AiPendingActionDto để biết vì sao trạng thái này nằm ở CLIENT
+    // (echo lại) chứ không lưu ở server.
+    if (dto.pendingAction) {
+      if (isCancelWord(dto.message)) {
+        return {
+          intent: 'chat' as const,
+          reply: 'Đã huỷ yêu cầu trước đó, không tạo gì cả.',
+          pendingAction: null,
+        };
+      }
+      return this.resumePendingAction(supabase, user, dto.pendingAction, dto.message, dto.calendarId);
+    }
+
+    return this.processMessage(
+      supabase,
+      user,
+      dto.message,
+      dto.calendarId,
+      dto.history ?? [],
+      dto.lastRelevantEntity,
+    );
+  }
+
+  /**
+   * Tiếp tục MỘT hành động đang chờ dữ liệu (pending action) bằng chính câu
+   * người dùng vừa gõ — coi TOÀN BỘ câu đó là giá trị điền vào field còn
+   * thiếu, KHÔNG chạy lại intent detection (không gọi Gemini để "đoán ý định
+   * mới" cho ba loại note/todo/group — chỉ event mới cần Gemini để hiểu ngày
+   * giờ tự nhiên, và dùng lại đúng `processMessage()` cho việc đó thay vì viết
+   * lại bộ hiểu ngày/giờ).
+   */
+  private async resumePendingAction(
+    supabase: SupabaseClient,
+    user: User,
+    pending: AiPendingActionDto,
+    message: string,
+    calendarId: string,
+  ) {
+    const answer = message.trim();
+
+    if (pending.type === 'note') {
+      if (!answer) {
+        return {
+          intent: 'chat' as const,
+          reply: 'Bạn muốn ghi chú nội dung gì? Nói rõ giúp mình nhé.',
+          pendingAction: pending,
+        };
+      }
+      const created = await this.notesService.create(supabase, user.id, {
+        content: answer,
+        color: 'yellow',
+      });
+      return {
+        intent: 'note_action' as const,
+        action: 'create' as const,
+        note: created,
+        reply: `Đã tạo ghi chú "${created.content}".`,
+        pendingAction: null,
+      };
+    }
+
+    if (pending.type === 'todo') {
+      if (!answer) {
+        return {
+          intent: 'chat' as const,
+          reply: 'Bạn muốn tạo việc gì? Nói rõ nội dung giúp mình nhé.',
+          pendingAction: pending,
+        };
+      }
+      const listId = await this.ensureDefaultTodoList(supabase, user.id);
+      const created = await this.todosService.create(supabase, user.id, { content: answer, listId });
+      return {
+        intent: 'todo_action' as const,
+        action: 'create' as const,
+        todo: created,
+        reply: `Đã thêm việc "${created.content}" vào việc cần làm.`,
+        pendingAction: null,
+      };
+    }
+
+    if (pending.type === 'group') {
+      if (!answer) {
+        return {
+          intent: 'chat' as const,
+          reply: 'Bạn chưa cho mình biết — nói lại giúp mình nhé.',
+          pendingAction: pending,
+        };
+      }
+      // Gộp dữ liệu đã có (collected) với câu trả lời vừa rồi vào đúng field
+      // đang thiếu, rồi chạy lại TOÀN BỘ luồng kiểm tra quyền của
+      // handleGroupAction — không bỏ qua bước kiểm tra quyền chỉ vì đang ở
+      // giữa một hành động nhiều lượt.
+      const merged = {
+        ...(pending.collected as Record<string, unknown> | undefined),
+        [pending.missingField]: answer,
+      } as unknown as AiGroupActionIntent;
+      return this.handleGroupAction(supabase, user, merged);
+    }
+
+    if (pending.type === 'event') {
+      if (!answer) {
+        return {
+          intent: 'chat' as const,
+          reply: 'Bạn chưa cho mình biết — nói lại giúp mình nhé.',
+          pendingAction: pending,
+        };
+      }
+      // Ghép lại thành MỘT câu đầy đủ ("<tiêu đề> lúc <giờ đã biết> <câu trả
+      // lời mới>") rồi tái dùng đúng processMessage() — bộ hiểu ngày/giờ tự
+      // nhiên (Gemini + fallback cục bộ) đã có sẵn ở đó, không viết lại.
+      const collected = (pending.collected ?? {}) as {
+        title?: string;
+        startTime?: string;
+        endTime?: string;
+      };
+      const parts = [
+        collected.title,
+        collected.startTime
+          ? `lúc ${collected.startTime}${collected.endTime ? ` đến ${collected.endTime}` : ''}`
+          : '',
+        answer,
+      ].filter((p): p is string => !!p && p.trim().length > 0);
+      const synthesized = parts.join(' ').trim() || answer;
+      return this.processMessage(supabase, user, synthesized, calendarId, []);
+    }
+
+    // Loại pending lạ (không nên xảy ra) — bỏ qua thay vì kẹt cứng, xử lý như
+    // một tin nhắn hoàn toàn mới.
+    return this.processMessage(supabase, user, message, calendarId, []);
+  }
+
+  /** Luồng chính: nạp ngữ cảnh (lịch/việc/ghi chú), nhận diện ý định từ đầu
+   *  bằng AiService, rồi gọi đúng service thật tương ứng. Chỉ chạy khi KHÔNG
+   *  có pending action đang chờ — xem chat()/resumePendingAction() ở trên.
+   *
+   *  Smart context loading: chỉ load todos/notes khi câu hỏi hoặc ngữ cảnh gần
+   *  đây thực sự liên quan — tránh 3 DB query cho mọi request kể cả câu chào
+   *  hỏi đơn giản. Events luôn được load vì cần cho hầu hết intent. */
+  private async processMessage(
+    supabase: SupabaseClient,
+    user: User,
+    message: string,
+    calendarId: string,
+    history: AiChatHistoryEntryDto[],
+    lastRelevantEntity?: AiLastRelevantEntity,
+  ) {
     // Ngữ cảnh lịch: toàn bộ sự kiện người dùng có quyền xem (RLS lọc sẵn qua
     // supabase client theo user), giới hạn về một cửa sổ gần "hiện tại" và cắt
     // bớt số lượng để prompt không phình to vô hạn với người dùng nhiều sự kiện.
-    const allEvents = await this.eventsService.findAll(supabase, user.id);
+    //
+    // Smart loading: events luôn load (cần cho hầu hết intent). Todos/notes chỉ
+    // load khi message hoặc history gần đây thực sự liên quan, để tránh 3 DB
+    // query cho mọi request kể cả câu chào hỏi đơn giản.
+    const RECENT_WINDOW = 6; // số turns gần nhất xét để quyết định load todos/notes
+    const needsTodos = this.contextNeedsTodos(message, history, lastRelevantEntity);
+    const needsNotes = this.contextNeedsNotes(message, history, lastRelevantEntity);
+
+    const [allEvents, rawTodos, rawNotes] = await Promise.all([
+      this.eventsService.findAll(supabase, user.id),
+      needsTodos ? this.todosService.findAllForUser(supabase) : Promise.resolve([] as Awaited<ReturnType<typeof this.todosService.findAllForUser>>),
+      needsNotes ? this.notesService.findAllForUser(supabase) : Promise.resolve([] as Awaited<ReturnType<typeof this.notesService.findAllForUser>>),
+    ]);
+    void RECENT_WINDOW; // documented above, used via contextNeedsTodos/Notes
     const now = Date.now();
     const windowStart = now - 7 * 24 * 60 * 60 * 1000;
     const windowEnd = now + 30 * 24 * 60 * 60 * 1000;
@@ -126,33 +300,29 @@ export class AiController {
       ...(e.location ? { location: e.location } : {}),
     }));
 
-    // Ngữ cảnh việc/ghi chú — cùng lý do với ngữ cảnh lịch ở trên: để AI khớp
-    // được câu nói ("xoá ghi chú hôm qua", "đánh dấu việc X xong") với đúng
-    // mục THẬT của người dùng, không đoán bừa.
-    const openTodos = (await this.todosService.findAllForUser(supabase))
-      .filter((t) => !t.done)
-      .slice(0, 30);
+    const openTodos = rawTodos.filter((t) => !t.done).slice(0, 30);
     const todos = openTodos.map((t) => ({
       content: t.content,
       done: t.done,
       ...(t.dueAt ? { dueAt: t.dueAt } : {}),
     }));
 
-    const recentNotes = (await this.notesService.findAllForUser(supabase)).slice(0, 20);
+    const recentNotes = rawNotes.slice(0, 20);
     const notes = recentNotes.map((n) => ({ content: n.content }));
 
-    const parsed = await this.aiService.chat(dto.message, {
+    const parsed = await this.aiService.chat(message, {
       events,
       todos,
       notes,
-      history: dto.history ?? [],
+      history,
+      ...(lastRelevantEntity ? { lastRelevantEntity } : {}),
     });
 
     // Lưu lịch sử chat — best-effort, không chặn phản hồi nếu insert lỗi.
     await supabase.from('ai_conversations').insert({
       user_id: user.id,
       messages: [
-        { role: 'user', content: dto.message },
+        { role: 'user', content: message },
         { role: 'assistant', content: JSON.stringify(parsed) },
       ],
     });
@@ -161,7 +331,7 @@ export class AiController {
     // luôn thuộc phạm vi cá nhân. Ghi chú/Việc cần làm không có group_id trong
     // schema nên tuyệt đối không đụng vào chúng khi câu có nhắc nhóm — model đã
     // được dặn trong prompt, đây là lớp chặn thứ hai để chắc chắn 100%.
-    const mentionsGroup = /\bnh[oó]m\b|\bgroup\b/i.test(dto.message);
+    const mentionsGroup = /\bnh[oó]m\b|\bgroup\b/i.test(message);
     if (mentionsGroup && (parsed.intent === 'todo_action' || parsed.intent === 'note_action')) {
       return {
         intent: 'chat' as const,
@@ -194,17 +364,17 @@ export class AiController {
     }
 
     if (parsed.intent === 'create_event' && parsed.title && parsed.start_at && parsed.end_at) {
-      let calendarId = dto.calendarId;
+      let effectiveCalendarId = calendarId;
       if (mentionsGroup) {
         // "tạo lịch họp cho nhóm X" — trỏ sang đúng lịch của nhóm đó thay vì
         // lịch cá nhân mặc định. Không tìm được nhóm khớp thì vẫn tạo vào lịch
         // cá nhân như hành vi cũ — không chặn hẳn chỉ vì không đoán được nhóm.
         const groups = await this.groupsService.findAllForUser(supabase, user);
-        const matchedGroup = matchGroupInMessage(groups, dto.message);
-        if (matchedGroup) calendarId = matchedGroup.calendarId;
+        const matchedGroup = matchGroupInMessage(groups, message);
+        if (matchedGroup) effectiveCalendarId = matchedGroup.calendarId;
       }
       const baseDto = {
-        calendarId,
+        calendarId: effectiveCalendarId,
         title: parsed.title,
         start: parsed.start_at,
         end: parsed.end_at,
@@ -254,7 +424,7 @@ export class AiController {
     return {
       intent: 'unclear' as const,
       title: parsed.title,
-      message: dto.message,
+      message: message,
       ...(parsed.missingFields?.length ? { missingFields: parsed.missingFields } : {}),
       ...(parsed.startTime ? { startTime: parsed.startTime } : {}),
       ...(parsed.endTime ? { endTime: parsed.endTime } : {}),
@@ -308,6 +478,62 @@ export class AiController {
       event: updated,
       reply: `Đã cập nhật sự kiện "${updated.title}".`,
     };
+  }
+
+  /**
+   * Kiểm tra xem request hiện tại có thực sự cần context todos không.
+   *
+   * - Nếu lastRelevantEntity là todo → cần load (câu follow-up sửa/xoá todo).
+   * - Nếu message chứa keyword liên quan todo → load.
+   * - Nếu 6 turns gần nhất của history nhắc tới todo action → load.
+   * - Không xét toàn bộ history để tránh một todo cũ nhiều turn trước làm mọi
+   *   request sau đều phải load todos.
+   */
+  private contextNeedsTodos(
+    message: string,
+    history: AiChatHistoryEntryDto[],
+    lastEntity?: AiLastRelevantEntity,
+  ): boolean {
+    if (lastEntity?.type === 'todo') return true;
+    const lower = message.toLowerCase();
+    if (
+      /\b(vi[eệ]c|to.?do|task|c[aầ]n l[aà]m|ho[aà]n th[aà]nh|xong|deadline|h[aạ]n|danh s[aá]ch vi[eệ]c|\u0111[aá]nh d[aấ]u)\b/i.test(lower)
+    ) {
+      return true;
+    }
+    // Chỉ xét 6 turns gần nhất (RECENT_WINDOW)
+    const recentHistory = history.slice(-6);
+    return recentHistory.some((h) =>
+      /todo_action|create_todos|vi[eệ]c c[aầ]n l[aà]m|\bt[aạ]o vi[eệ]c\b|\bxo[aá] vi[eệ]c\b|ho[aà]n th[aà]nh vi[eệ]c/i.test(
+        h.content,
+      ),
+    );
+  }
+
+  /**
+   * Kiểm tra xem request hiện tại có thực sự cần context notes không.
+   *
+   * - Nếu lastRelevantEntity là note → cần load.
+   * - Nếu message chứa keyword liên quan note → load.
+   * - Nếu 6 turns gần nhất của history nhắc tới note action → load.
+   */
+  private contextNeedsNotes(
+    message: string,
+    history: AiChatHistoryEntryDto[],
+    lastEntity?: AiLastRelevantEntity,
+  ): boolean {
+    if (lastEntity?.type === 'note') return true;
+    const lower = message.toLowerCase();
+    if (
+      /\b(ghi\s*ch[uú]|note|ghi l[aạ]i|\bnote\b)\b/i.test(lower)
+    ) {
+      return true;
+    }
+    // Chỉ xét 6 turns gần nhất (RECENT_WINDOW)
+    const recentHistory = history.slice(-6);
+    return recentHistory.some((h) =>
+      /note_action|ghi ch[uú]|t[aạ]o ghi|xo[aá] ghi ch[uú]/i.test(h.content),
+    );
   }
 
   /** Lấy (hoặc tạo) danh sách việc mặc định của người dùng — mirror
