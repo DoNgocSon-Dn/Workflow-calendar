@@ -56,6 +56,7 @@ import {
   startOfDay,
   toDateInputValue,
 } from '../utils/date-utils';
+import { stripHtmlTags } from '../../../shared/utils/text.util';
 import { matchScore } from '../utils/search-match';
 import { VN_HOLIDAY_CALENDAR_DEF, VN_HOLIDAY_CALENDAR_ID, buildVietnamHolidayEvents } from './vietnam-holidays';
 
@@ -245,7 +246,7 @@ function toTodo(dto: TodoApiDto): Todo {
     id: dto.id,
     listId: dto.listId,
     content: dto.content,
-    description: dto.description,
+    description: dto.description ? stripHtmlTags(dto.description) : undefined,
     done: dto.done,
     dueAt: dto.dueAt ? new Date(dto.dueAt) : undefined,
     starred: dto.starred,
@@ -342,7 +343,7 @@ function toCalendarEvent(dto: EventApiDto): CalendarEvent {
     calendarId: dto.calendarId,
     title: dto.title,
     location: dto.location,
-    description: dto.description,
+    description: dto.description ? stripHtmlTags(dto.description) : undefined,
     start: new Date(dto.start),
     end: new Date(dto.end),
     allDay: dto.allDay,

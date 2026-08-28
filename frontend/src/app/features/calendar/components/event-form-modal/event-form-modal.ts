@@ -42,6 +42,7 @@ import {
   startOfDay,
   toDateInputValue,
 } from '../../utils/date-utils';
+import { stripHtmlTags } from '../../../../shared/utils/text.util';
 import { TimePicker } from '../time-picker/time-picker';
 import { DatePicker } from '../date-picker/date-picker';
 import { CharCounter } from '../../../../shared/components/char-counter/char-counter';
@@ -367,8 +368,9 @@ export class EventFormModal {
       }
 
       if (evt) {
+        const cleanDesc = stripHtmlTags(evt.description);
         this.locationOpen.set(!!evt.location);
-        this.descriptionOpen.set(!!evt.description);
+        this.descriptionOpen.set(!!cleanDesc);
         // Stored allDay end is exclusive (day after the last day); the date
         // input shows/edits it inclusively, and save() adds the day back.
         const displayEnd = evt.allDay ? addDays(evt.end, -1) : evt.end;
@@ -381,7 +383,7 @@ export class EventFormModal {
           endDate: toDateInputValue(displayEnd),
           endTime: hhmm(evt.end),
           location: evt.location ?? '',
-          description: evt.description ?? '',
+          description: cleanDesc,
           meetLink: evt.meetLink ?? '',
         });
         return;

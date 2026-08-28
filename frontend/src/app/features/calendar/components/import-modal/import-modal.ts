@@ -23,6 +23,7 @@ import {
   signalsFiles,
   skippedFilesMessage,
 } from '../../../../shared/utils/clipboard-files';
+import { stripHtmlTags } from '../../../../shared/utils/text.util';
 
 /**
  * Khớp với `MAX_UPLOAD_BYTES` / `ALLOWED_IMPORT_EXTENSIONS` ở backend
@@ -342,7 +343,7 @@ export class ImportModalComponent {
           endLocal: toDatetimeLocal(e.end),
           allDay: e.allDay,
           location: e.location,
-          description: e.description,
+          description: e.description ? stripHtmlTags(e.description) : undefined,
           needsReview: e.needsReview,
         }));
         this.eventsPreview.set(uiEvents);
@@ -372,7 +373,7 @@ export class ImportModalComponent {
         endLocal: toDatetimeLocal(e.end),
         allDay: e.allDay,
         location: e.location,
-        description: e.description,
+        description: e.description ? stripHtmlTags(e.description) : undefined,
         needsReview: e.needsReview,
       }));
       this.eventsPreview.set(uiEvents);
