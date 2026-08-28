@@ -4,21 +4,23 @@
     <header class="modal-header">
       <textarea id="event-modal-title" class="title-input" formControlName="title" [placeholder]="i18n.t('event.addTitle')"
         maxlength="50" rows="1" (keydown.enter)="$event.preventDefault(); onSubmit()" autofocus></textarea>
-      <app-char-counter [current]="form.controls.title.value.length" [max]="50" />
-      @if (event() && canEditCurrentEvent()) {
-        <button type="button" class="icon-btn danger" [attr.aria-label]="i18n.t('common.delete')" [title]="i18n.t('common.delete')" (click)="remove()">
+      <div class="modal-header-actions">
+        <app-char-counter [current]="form.controls.title.value.length" [max]="50" />
+        @if (event() && canEditCurrentEvent()) {
+          <button type="button" class="icon-btn danger" [attr.aria-label]="i18n.t('common.delete')" [title]="i18n.t('common.delete')" (click)="remove()">
+            <svg viewBox="0 0 24 24" width="20" height="20">
+              <path fill="currentColor"
+                d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12ZM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4Z" />
+            </svg>
+          </button>
+        }
+        <button type="button" class="icon-btn" [attr.aria-label]="i18n.t('common.close')" (click)="cancel()">
           <svg viewBox="0 0 24 24" width="20" height="20">
             <path fill="currentColor"
-              d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12ZM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4Z" />
+              d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
           </svg>
         </button>
-      }
-      <button type="button" class="icon-btn" [attr.aria-label]="i18n.t('common.close')" (click)="cancel()">
-        <svg viewBox="0 0 24 24" width="20" height="20">
-          <path fill="currentColor"
-            d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-        </svg>
-      </button>
+      </div>
     </header>
 
     @if (!event()) {

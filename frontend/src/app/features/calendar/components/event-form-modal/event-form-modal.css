@@ -27,6 +27,20 @@
   padding: 1rem 1rem 0.5rem;
 }
 
+.modal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.modal-header-actions app-char-counter {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
 .title-input {
   flex: 1;
   border: none;
