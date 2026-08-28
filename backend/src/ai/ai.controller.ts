@@ -278,9 +278,19 @@ export class AiController {
     const needsNotes = this.contextNeedsNotes(message, history, lastRelevantEntity);
 
     const [allEvents, rawTodos, rawNotes] = await Promise.all([
-      this.eventsService.findAll(supabase, user.id),
-      needsTodos ? this.todosService.findAllForUser(supabase) : Promise.resolve([] as Awaited<ReturnType<typeof this.todosService.findAllForUser>>),
-      needsNotes ? this.notesService.findAllForUser(supabase) : Promise.resolve([] as Awaited<ReturnType<typeof this.notesService.findAllForUser>>),
+      this.eventsService
+        .findAll(supabase, user.id)
+        .catch(() => [] as EventDto[]),
+      needsTodos
+        ? this.todosService
+            .findAllForUser(supabase)
+            .catch(() => [] as Awaited<ReturnType<typeof this.todosService.findAllForUser>>)
+        : Promise.resolve([] as Awaited<ReturnType<typeof this.todosService.findAllForUser>>),
+      needsNotes
+        ? this.notesService
+            .findAllForUser(supabase)
+            .catch(() => [] as Awaited<ReturnType<typeof this.notesService.findAllForUser>>)
+        : Promise.resolve([] as Awaited<ReturnType<typeof this.notesService.findAllForUser>>),
     ]);
     void RECENT_WINDOW; // documented above, used via contextNeedsTodos/Notes
     const now = Date.now();

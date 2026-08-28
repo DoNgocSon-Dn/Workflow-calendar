@@ -11,13 +11,23 @@ import { NoteDto, NoteRow, toNoteDto } from './note.mapper';
 @Injectable()
 export class NotesService {
   async findAllForUser(supabase: SupabaseClient): Promise<NoteDto[]> {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('notes')
       .select('*')
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
-    if (error) throw new InternalServerErrorException(error.message);
+    if (error && error.message?.includes('deleted_at')) {
+      const res = await supabase
+        .from('notes')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (res.error) throw new InternalServerErrorException(res.error.message);
+      data = res.data;
+      error = null;
+    } else if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
     return (data as NoteRow[]).map(toNoteDto);
   }
 
@@ -29,6 +39,9 @@ export class NotesService {
       .not('deleted_at', 'is', null)
       .order('deleted_at', { ascending: false });
 
+    if (error && error.message?.includes('deleted_at')) {
+      return [];
+    }
     if (error) throw new InternalServerErrorException(error.message);
     return (data as NoteRow[]).map(toNoteDto);
   }
@@ -79,15 +92,29 @@ export class NotesService {
   /** Xoá MỀM — chuyển ghi chú vào Thùng rác (set deleted_at), vẫn khôi phục
    *  được. Chặn xoá lại một ghi chú đã ở trong thùng rác. */
   async remove(supabase: SupabaseClient, id: string): Promise<void> {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('notes')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
       .is('deleted_at', null)
       .select('id');
 
-    if (error) throw new InternalServerErrorException(error.message);
-    if ((data as { id: string }[]).length === 0) {
+    if (error && error.message?.includes('deleted_at')) {
+      // Fallback: nếu DB chưa có cột deleted_at (chưa chạy migration 32),
+      // thực hiện xoá trực tiếp để người dùng vẫn xoá được bình thường.
+      const res = await supabase
+        .from('notes')
+        .delete()
+        .eq('id', id)
+        .select('id');
+      if (res.error) throw new InternalServerErrorException(res.error.message);
+      data = res.data;
+      error = null;
+    } else if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    if (!data || (data as { id: string }[]).length === 0) {
       throw new NotFoundException('Note not found');
     }
   }

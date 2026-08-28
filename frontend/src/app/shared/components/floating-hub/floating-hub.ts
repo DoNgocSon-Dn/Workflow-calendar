@@ -213,8 +213,25 @@ function extractErrorMessage(
     }
     const inner = err.error as { message?: string | string[] } | undefined;
     const msg = inner?.message;
-    if (Array.isArray(msg)) return msg.join(', ');
-    if (typeof msg === 'string') return msg;
+    const raw = Array.isArray(msg)
+      ? msg.join(', ')
+      : typeof msg === 'string'
+        ? msg
+        : typeof err.error === 'string'
+          ? err.error
+          : '';
+    if (raw) {
+      if (
+        raw.includes('<!DOCTYPE') ||
+        raw.includes('<html') ||
+        raw.includes('522') ||
+        raw.includes('Cloudflare') ||
+        raw.includes('Connection timed out')
+      ) {
+        return 'Máy chủ cơ sở dữ liệu (Supabase) đang tạm thời mất kết nối (522 Connection Timeout). Vui lòng thử lại sau giây lát.';
+      }
+      return raw;
+    }
   }
   return t('hub.errGeneric');
 }
