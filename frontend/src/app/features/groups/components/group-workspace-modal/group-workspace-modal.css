@@ -1714,3 +1714,15 @@
     border-radius: 0;
   }
 }
+
+.task-title-input {
+  resize: none;
+  field-sizing: content;
+  min-height: 2.2rem;
+  max-height: 4.5rem;
+  overflow-y: auto;
+  line-height: 1.4;
+  word-break: break-word;
+  white-space: pre-wrap;
+  font-family: inherit;
+}

@@ -148,14 +148,15 @@
               <div class="create-task-card">
                 <h3>{{ i18n.t('group.createTaskTitle') }}</h3>
                 <div class="task-form-grid">
-                  <input
-                    type="text"
-                    class="text-input"
+                  <textarea
+                    class="text-input task-title-input"
+                    rows="1"
                     [placeholder]="i18n.t('group.taskTitlePlaceholder')"
                     maxlength="50"
                     [value]="taskTitle()"
                     (input)="taskTitle.set($any($event.target).value)"
-                  />
+                    (keydown.enter)="$event.preventDefault(); createTask()"
+                  ></textarea>
                   <app-char-counter class="field-counter" [current]="taskTitle().length" [max]="50" />
                   <input
                     type="text"

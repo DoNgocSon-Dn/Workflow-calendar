@@ -2,8 +2,8 @@
   <form class="modal" role="dialog" aria-modal="true" aria-labelledby="event-modal-title" [formGroup]="form"
     (ngSubmit)="onSubmit()">
     <header class="modal-header">
-      <input id="event-modal-title" class="title-input" type="text" formControlName="title" [placeholder]="i18n.t('event.addTitle')"
-        maxlength="50" autofocus />
+      <textarea id="event-modal-title" class="title-input" formControlName="title" [placeholder]="i18n.t('event.addTitle')"
+        maxlength="50" rows="1" (keydown.enter)="$event.preventDefault(); onSubmit()" autofocus></textarea>
       <app-char-counter [current]="form.controls.title.value.length" [max]="50" />
       @if (event() && canEditCurrentEvent()) {
         <button type="button" class="icon-btn danger" [attr.aria-label]="i18n.t('common.delete')" [title]="i18n.t('common.delete')" (click)="remove()">
