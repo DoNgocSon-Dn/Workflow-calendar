@@ -228,13 +228,13 @@
                     <input
                       class="event-proposal__name"
                       type="text"
-                      maxlength="200"
+                      maxlength="50"
                       [value]="row.title"
                       [disabled]="savingEvents()"
                       [attr.aria-label]="i18n.t('hub.eventNameAria')"
                       (input)="setEventRowTitle(row.id, $any($event.target).value)"
                     />
-                    <app-char-counter class="field-counter" [current]="row.title.length" [max]="200" />
+                    <app-char-counter class="field-counter" [current]="row.title.length" [max]="50" />
 
                     @if (row.missing) {
                       <p class="event-proposal__missing">{{ row.missing }}</p>

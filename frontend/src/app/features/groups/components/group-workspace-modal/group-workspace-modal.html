@@ -152,20 +152,20 @@
                     type="text"
                     class="text-input"
                     [placeholder]="i18n.t('group.taskTitlePlaceholder')"
-                    maxlength="200"
+                    maxlength="50"
                     [value]="taskTitle()"
                     (input)="taskTitle.set($any($event.target).value)"
                   />
-                  <app-char-counter class="field-counter" [current]="taskTitle().length" [max]="200" />
+                  <app-char-counter class="field-counter" [current]="taskTitle().length" [max]="50" />
                   <input
                     type="text"
                     class="text-input"
                     [placeholder]="i18n.t('group.taskDescPlaceholder')"
-                    maxlength="2000"
+                    maxlength="200"
                     [value]="taskDescription()"
                     (input)="taskDescription.set($any($event.target).value)"
                   />
-                  <app-char-counter class="field-counter" [current]="taskDescription().length" [max]="2000" />
+                  <app-char-counter class="field-counter" [current]="taskDescription().length" [max]="200" />
                   <div class="form-row">
                     <div class="assignee-picker">
                       <button type="button" class="assignee-picker-btn" aria-haspopup="listbox" [attr.aria-expanded]="assigneeMenuOpen()" (click)="toggleAssigneeMenu()">

@@ -309,7 +309,7 @@ export class EventFormModal {
   });
 
   readonly form = this.fb.nonNullable.group({
-    title: ['', [Validators.required, Validators.maxLength(200)]],
+    title: ['', [Validators.required, Validators.maxLength(50)]],
     calendarId: [this.store.defaultWritableCalendar()?.id ?? '', Validators.required],
     allDay: [false],
     startDate: [toDateInputValue(this.store.today())],
@@ -317,7 +317,7 @@ export class EventFormModal {
     endDate: [toDateInputValue(this.store.today())],
     endTime: ['10:00'],
     location: ['', Validators.maxLength(200)],
-    description: ['', Validators.maxLength(2000)],
+    description: ['', Validators.maxLength(200)],
     meetLink: [''],
   });
 

@@ -3,8 +3,8 @@
     (ngSubmit)="onSubmit()">
     <header class="modal-header">
       <input id="event-modal-title" class="title-input" type="text" formControlName="title" [placeholder]="i18n.t('event.addTitle')"
-        maxlength="200" autofocus />
-      <app-char-counter [current]="form.controls.title.value.length" [max]="200" />
+        maxlength="50" autofocus />
+      <app-char-counter [current]="form.controls.title.value.length" [max]="50" />
       @if (event() && canEditCurrentEvent()) {
         <button type="button" class="icon-btn danger" [attr.aria-label]="i18n.t('common.delete')" [title]="i18n.t('common.delete')" (click)="remove()">
           <svg viewBox="0 0 24 24" width="20" height="20">
@@ -344,8 +344,8 @@
         </svg>
         @if (descriptionOpen()) {
         <div class="field-content">
-          <textarea class="text-input" rows="3" formControlName="description" maxlength="2000" [placeholder]="i18n.t('event.addDescription')"></textarea>
-          <app-char-counter class="field-counter" [current]="form.controls.description.value.length" [max]="2000" />
+          <textarea class="text-input" rows="3" formControlName="description" maxlength="200" [placeholder]="i18n.t('event.addDescription')"></textarea>
+          <app-char-counter class="field-counter" [current]="form.controls.description.value.length" [max]="200" />
         </div>
         } @else {
         <button type="button" class="field-toggle" [class.has-value]="!!form.controls.description.value"
@@ -482,8 +482,8 @@
         </svg>
         @if (descriptionOpen()) {
         <div class="field-content">
-          <textarea class="text-input" rows="3" formControlName="description" maxlength="2000" [placeholder]="i18n.t('event.addDescription')"></textarea>
-          <app-char-counter class="field-counter" [current]="form.controls.description.value.length" [max]="2000" />
+          <textarea class="text-input" rows="3" formControlName="description" maxlength="200" [placeholder]="i18n.t('event.addDescription')"></textarea>
+          <app-char-counter class="field-counter" [current]="form.controls.description.value.length" [max]="200" />
         </div>
         } @else {
         <button type="button" class="field-toggle" [class.has-value]="!!form.controls.description.value"
