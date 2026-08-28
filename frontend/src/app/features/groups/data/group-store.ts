@@ -280,13 +280,16 @@ export class GroupStore {
         }
       });
 
-      // Polling ngầm nhẹ nhàng mỗi 12s khi đang mở bảng nhóm (đảm bảo task/chat luôn tươi 100%)
+      // Polling ngầm nhẹ nhàng mỗi 12s cho công việc, và 3s siêu tốc khi đang xem tab Chat
       setInterval(() => {
         const activeId = this.activeGroupId();
         if (activeId && this.activeWorkspaceModalOpen()) {
           void this.loadTasks(activeId);
+          if (this.activeWorkspaceTab() === 'chat') {
+            void this.loadMessages(activeId);
+          }
         }
-      }, 12000);
+      }, 3000);
     }
 
     this.realtime.on<{ groupId: string; message: GroupMessage }>('group:messageSent', (payload) => {
@@ -1102,7 +1105,24 @@ export class GroupStore {
   async loadMessages(groupId: string): Promise<void> {
     try {
       const list = await this.api.getMessages(groupId);
-      this.messages.set(list);
+      const pendingList = this.messages().filter((m) => m.pending === true);
+      if (pendingList.length === 0) {
+        this.messages.set(list);
+        return;
+      }
+      const merged = [...list];
+      for (const pending of pendingList) {
+        if (
+          !merged.some(
+            (m) =>
+              m.id === pending.id ||
+              (m.message === pending.message && m.senderId === pending.senderId),
+          )
+        ) {
+          merged.push(pending);
+        }
+      }
+      this.messages.set(merged);
     } catch (err) {
       console.error('Lỗi khi tải tin nhắn nhóm:', err);
     }

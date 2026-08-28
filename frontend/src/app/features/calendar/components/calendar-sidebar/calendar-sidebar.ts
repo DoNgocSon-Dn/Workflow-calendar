@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { CalendarStore, localizedCalendarName } from '../../data/calendar-store';
+import { ScreenNotesService } from '../../data/screen-notes.service';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { DialogService } from '../../../../core/services/dialog.service';
 import { GroupStore } from '../../../groups/data/group-store';
@@ -43,6 +44,7 @@ export class CalendarSidebar implements OnInit {
   protected readonly store = inject(CalendarStore);
   protected readonly groupStore = inject(GroupStore);
   protected readonly i18n = inject(TranslationService);
+  protected readonly screenNotes = inject(ScreenNotesService);
   private readonly dialog = inject(DialogService);
   protected readonly colorHex = CALENDAR_COLOR_HEX;
   protected readonly noteColorHex = NOTE_COLOR_HEX;
@@ -219,6 +221,14 @@ export class CalendarSidebar implements OnInit {
     } finally {
       this.deletingNoteId.set(null);
     }
+  }
+
+  /** "Xé" ghi chú ra dán nổi lên màn hình (hoặc gỡ xuống). Chỉ là trạng thái
+   *  client trong ScreenNotesService — nội dung ghi chú không đổi. */
+  onToggleScreenPin(event: Event, noteId: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.screenNotes.toggle(noteId);
   }
 
   /** Bắt đầu kéo một ghi chú ra khỏi sidebar — month-view đọc id này ở

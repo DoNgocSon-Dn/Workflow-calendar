@@ -636,15 +636,38 @@ export interface ReminderDraftInput {
   readonly eventId: string;
   readonly title: string;
   readonly startAt: string;
+  readonly meetLink?: string | null;
+  readonly groupId?: string;
 }
 
 export function reminderDraft(t: NotificationT, input: ReminderDraftInput): NotificationDraft {
+  const startMs = input.startAt ? new Date(input.startAt).getTime() : 0;
+  const nowMs = Date.now();
+  const diffMin = startMs ? Math.round((startMs - nowMs) / 60000) : 0;
+
+  let titleText: Text = tr(t, 'nd.reminder.title');
+  let bodyText: Text = tr(t, 'nd.reminder.body', { title: input.title });
+
+  if (input.meetLink) {
+    if (diffMin <= 1) {
+      titleText = raw('Phòng họp đã sẵn sàng');
+      bodyText = raw(`Cuộc họp "${input.title}" đã bắt đầu.`);
+    } else {
+      titleText = raw(`Sắp tới giờ họp (${diffMin} phút nữa)`);
+      bodyText = raw(`Cuộc họp "${input.title}" chuẩn bị bắt đầu.`);
+    }
+  }
+
   return {
     id: `reminder-${input.reminderId}`,
     type: 'reminder',
-    ...texts(tr(t, 'nd.reminder.title'), tr(t, 'nd.reminder.body', { title: input.title })),
+    ...texts(titleText, bodyText),
     createdAt: new Date().toISOString(),
     relatedId: input.eventId,
-    metadata: { startAt: input.startAt },
+    metadata: {
+      startAt: input.startAt,
+      ...(input.groupId ? { groupId: input.groupId } : {}),
+      ...(input.meetLink ? { meetLink: input.meetLink } : {}),
+    },
   };
 }

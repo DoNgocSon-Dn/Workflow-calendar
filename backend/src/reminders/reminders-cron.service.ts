@@ -10,7 +10,7 @@ interface DueReminderRow {
   event_id: string;
   user_id: string;
   remind_type: 'popup' | 'email';
-  events: { title: string; start_at: string; meet_link: string | null } | null;
+  events: { title: string; start_at: string; meet_link: string | null; calendar_id: string } | null;
 }
 
 @Injectable()
@@ -30,7 +30,7 @@ export class RemindersCronService {
 
     const { data, error } = await supabase
       .from('reminders')
-      .select('id, event_id, user_id, remind_type, events(title, start_at, meet_link)')
+      .select('id, event_id, user_id, remind_type, events(title, start_at, meet_link, calendar_id)')
       .lte('remind_at', nowIso)
       .eq('is_sent', false)
       .returns<DueReminderRow[]>();
@@ -49,8 +49,6 @@ export class RemindersCronService {
           `Failed to dispatch reminder ${reminder.id}: ${(err as Error).message}`,
         );
       } finally {
-        // Đánh dấu đã xử lý dù thành công hay lỗi — tránh cron lặp lại vô hạn
-        // trên 1 reminder bị lỗi (VD email sai định dạng).
         await supabase.from('reminders').update({ is_sent: true }).eq('id', reminder.id);
       }
     }
@@ -59,6 +57,17 @@ export class RemindersCronService {
   private async dispatch(supabase: SupabaseClient, reminder: DueReminderRow): Promise<void> {
     const title = reminder.events?.title ?? 'Sự kiện';
     const startAt = reminder.events?.start_at ?? '';
+    const calendarId = reminder.events?.calendar_id;
+
+    let groupId: string | null = null;
+    if (calendarId) {
+      const { data: group } = await supabase
+        .from('groups')
+        .select('id')
+        .eq('calendar_id', calendarId)
+        .maybeSingle();
+      if (group?.id) groupId = group.id;
+    }
 
     if (reminder.remind_type === 'popup') {
       this.realtimeGateway.emitToUser(reminder.user_id, 'reminder:fire', {
@@ -66,9 +75,8 @@ export class RemindersCronService {
         eventId: reminder.event_id,
         title,
         startAt,
-        // Nhắc một buổi họp mà không kèm link thì người dùng vẫn phải đi mở
-        // lịch tìm lại — đúng vào lúc buổi họp đã bắt đầu.
         meetLink: reminder.events?.meet_link ?? null,
+        groupId,
       });
       return;
     }

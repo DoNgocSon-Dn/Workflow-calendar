@@ -1,0 +1,97 @@
+@for (note of screenNotes(); track note.id) {
+  <div
+    class="sticky"
+    role="note"
+    [attr.aria-label]="note.content"
+    [attr.data-note-id]="note.id"
+    [class.dragging]="draggingId() === note.id"
+    [class.popped-out]="poppedOutId() === note.id"
+    [style.left.px]="leftOf(note.id)"
+    [style.top.px]="topOf(note.id)"
+    [style.--note-tint]="tint(note.color)"
+  >
+    <div
+      class="sticky-head"
+      (pointerdown)="onDragStart($event, note.id)"
+      (pointermove)="onDragMove($event)"
+      (pointerup)="onDragEnd()"
+      (pointercancel)="onDragEnd()"
+    >
+      <span class="grip" aria-hidden="true"></span>
+
+      <div class="head-actions">
+        <button
+          type="button"
+          class="ico-btn"
+          [attr.aria-label]="i18n.t('screenNote.color')"
+          [title]="i18n.t('screenNote.color')"
+          (click)="toggleColorPicker(note.id)"
+        >
+          <span class="swatch" [style.background]="tint(note.color)"></span>
+        </button>
+
+        @if (pipSupported) {
+          <button
+            type="button"
+            class="ico-btn"
+            [disabled]="poppedOutId() === note.id"
+            [attr.aria-label]="i18n.t('screenNote.popOut')"
+            [title]="i18n.t('screenNote.popOut')"
+            (click)="popOut(note.id)"
+          >
+            <app-icon name="external" />
+          </button>
+        }
+
+        <button
+          type="button"
+          class="ico-btn danger"
+          [disabled]="poppedOutId() === note.id"
+          [attr.aria-label]="i18n.t('screenNote.unpin')"
+          [title]="i18n.t('screenNote.unpin')"
+          (click)="unpin(note.id)"
+        >
+          <app-icon name="close" />
+        </button>
+      </div>
+    </div>
+
+    @if (colorPickerId() === note.id) {
+      <div class="color-row">
+        @for (c of palette; track c) {
+          <button
+            type="button"
+            class="color-dot"
+            [class.active]="note.color === c"
+            [style.background]="tint(c)"
+            [attr.aria-label]="c"
+            (click)="setColor(note, c)"
+          ></button>
+        }
+      </div>
+    }
+
+    <div class="sticky-body">
+      @if (editingId() === note.id) {
+        <textarea
+          class="edit-area"
+          [attr.aria-label]="i18n.t('screenNote.edit')"
+          [value]="draft()"
+          (input)="draft.set($any($event.target).value)"
+          (keydown.escape)="cancelEdit()"
+          (keydown.control.enter)="saveEdit(note)"
+          (blur)="saveEdit(note)"
+        ></textarea>
+      } @else {
+        <p class="sticky-text" (dblclick)="startEdit(note)">{{ note.content }}</p>
+      }
+    </div>
+
+    @if (editingId() !== note.id) {
+      <button type="button" class="edit-hint" (click)="startEdit(note)">
+        <app-icon name="pencil" />
+        {{ i18n.t('screenNote.edit') }}
+      </button>
+    }
+  </div>
+}

@@ -1456,20 +1456,46 @@ export class CalendarStore {
     title: string;
     startAt: string;
     meetLink?: string | null;
+    groupId?: string | null;
   }): void {
+    const eventObj = this.events().find((e) => e.id === payload.eventId);
+    const calendar = eventObj ? this.calendars().find((c) => c.id === eventObj.calendarId) : null;
+    const finalGroupId = payload.groupId || (calendar as any)?.groupId;
+
+    const startMs = payload.startAt ? new Date(payload.startAt).getTime() : 0;
+    const nowMs = Date.now();
+    const diffMin = startMs ? Math.round((startMs - nowMs) / 60000) : 0;
+
+    let toastTitle = this.nt('nq.reminder', { title: payload.title });
+    let toastBody = payload.startAt
+      ? formatTimeLabel(new Date(payload.startAt), this.i18n.locale(), this.timeFormatService.format())
+      : '';
+
+    if (payload.meetLink) {
+      if (diffMin <= 1) {
+        toastTitle = this.i18n.t('meet.ready');
+        toastBody = payload.title;
+      } else {
+        toastTitle = `Sắp tới giờ họp (bắt đầu sau ${diffMin} phút)`;
+        toastBody = payload.title;
+      }
+    }
+
     this.notificationQueue.push({
       eventId: payload.eventId,
       reminderId: payload.reminderId,
-      title: payload.meetLink
-        ? this.nt('nq.meetingNow', { title: payload.title })
-        : this.nt('nq.reminder', { title: payload.title }),
-      body: payload.startAt
-        ? formatTimeLabel(new Date(payload.startAt), this.i18n.locale(), this.timeFormatService.format())
-        : '',
+      title: toastTitle,
+      body: toastBody,
       kind: 'reminder',
       meetLink: payload.meetLink ?? undefined,
     });
-    this.notifications.ingest(reminderDraft(this.nt, payload));
+
+    this.notifications.ingest(
+      reminderDraft(this.nt, {
+        ...payload,
+        groupId: finalGroupId ?? undefined,
+      }),
+    );
   }
 
   /**

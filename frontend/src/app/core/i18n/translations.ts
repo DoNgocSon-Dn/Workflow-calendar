@@ -65,6 +65,14 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'sidebar.deleteNoteTitle': 'Xóa ghi chú này?',
     'sidebar.deleteNoteConfirm': 'Đồng ý xóa',
     'sidebar.deleteNoteError': 'Không thể xóa ghi chú này.',
+    'sidebar.pinNoteToScreen': 'Xé dán ghi chú lên màn hình',
+    'sidebar.unpinNoteFromScreen': 'Gỡ ghi chú khỏi màn hình',
+
+    // --- ghi chú dán nổi trên màn hình ----------------------------------
+    'screenNote.color': 'Đổi màu',
+    'screenNote.popOut': 'Mở trong cửa sổ nổi luôn trên cùng',
+    'screenNote.unpin': 'Gỡ khỏi màn hình',
+    'screenNote.edit': 'Sửa',
 
     // --- header ---------------------------------------------------------
     'header.toggleSidebar': 'Ẩn/hiện thanh bên',
@@ -836,6 +844,8 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'event.duration1h': '1 giờ',
     'event.duration1h30m': '1.5 giờ',
     'event.duration2h': '2 giờ',
+    'event.reminder5m': '5 phút trước',
+    'event.reminder10m': '10 phút trước',
     'event.reminder15m': '15 phút trước',
     'event.reminder1h': '1 giờ trước',
     'event.reminder1d': '1 ngày trước',
@@ -1142,6 +1152,14 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'sidebar.deleteNoteTitle': 'Delete this note?',
     'sidebar.deleteNoteConfirm': 'Delete',
     'sidebar.deleteNoteError': "Couldn't delete this note.",
+    'sidebar.pinNoteToScreen': 'Stick note on screen',
+    'sidebar.unpinNoteFromScreen': 'Remove note from screen',
+
+    // --- screen-pinned sticky notes ------------------------------------
+    'screenNote.color': 'Change colour',
+    'screenNote.popOut': 'Open in an always-on-top window',
+    'screenNote.unpin': 'Remove from screen',
+    'screenNote.edit': 'Edit',
 
     // --- header ---------------------------------------------------------
     'header.toggleSidebar': 'Toggle sidebar',
@@ -1912,6 +1930,8 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'event.duration1h': '1 hour',
     'event.duration1h30m': '1.5 hours',
     'event.duration2h': '2 hours',
+    'event.reminder5m': '5 minutes before',
+    'event.reminder10m': '10 minutes before',
     'event.reminder15m': '15 minutes before',
     'event.reminder1h': '1 hour before',
     'event.reminder1d': '1 day before',

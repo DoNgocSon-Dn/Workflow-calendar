@@ -20,7 +20,9 @@ export type IconName =
   | 'chevron-right'
   | 'chevron-left'
   | 'chevron-down'
-  | 'star';
+  | 'star'
+  | 'pin'
+  | 'external';
 
 /**
  * Bộ icon nét mảnh dùng chung, thay cho emoji trong UI.
@@ -133,6 +135,15 @@ export type IconName =
         }
         @case ('star') {
           <path d="M12 2.5 15.1 8.8l6.9 1-5 4.9L18.3 21.5 12 18.1l-6.3 3.4 1.2-6.8-5-4.9 6.9-1z" />
+        }
+        @case ('pin') {
+          <path d="M12 16.5V22" />
+          <path d="M8.5 10.8V4h7v6.8l2.2 3.7H6.3z" />
+        }
+        @case ('external') {
+          <path d="M14 4h6v6" />
+          <path d="M20 4 10.5 13.5" />
+          <path d="M19 13.5v5A1.5 1.5 0 0 1 17.5 20h-11A1.5 1.5 0 0 1 5 18.5v-11A1.5 1.5 0 0 1 6.5 6h5" />
         }
       }
     </svg>

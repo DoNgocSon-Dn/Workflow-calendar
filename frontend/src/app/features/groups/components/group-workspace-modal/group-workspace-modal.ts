@@ -1274,6 +1274,8 @@ export class GroupWorkspaceModal {
           // biết đúng chừng đó.
           try {
             await this.calendarStore.setRemindersForAllMembers(event.id, [
+              { offsetMinutes: 10, type: 'popup' },
+              { offsetMinutes: 5, type: 'popup' },
               { offsetMinutes: 0, type: 'popup' },
             ]);
           } catch {
@@ -1282,18 +1284,24 @@ export class GroupWorkspaceModal {
         }
       }
 
-      // Từ đây phòng họp coi như đã lưu. Lỗi ở bước báo chat KHÔNG được nuốt
-      // mất link: sự kiện có thể đã nằm trên lịch rồi, và thẻ bên dưới là chỗ
-      // duy nhất người dùng còn lấy lại được link vừa dán.
       this.savedMeet.set({ groupId: group.id, link });
       this.resetMeetForm();
 
-      this.notificationQueue.push({
-        title: this.i18n.t('meet.ready'),
-        body: title,
-        kind: 'created',
-        meetLink: link,
-      });
+      const isStartingNow = new Date(start).getTime() <= Date.now() + 60000;
+      if (isStartingNow) {
+        this.notificationQueue.push({
+          title: this.i18n.t('meet.ready'),
+          body: title,
+          kind: 'created',
+          meetLink: link,
+        });
+      } else {
+        this.notificationQueue.push({
+          title: 'Đã lên lịch cuộc họp',
+          body: `Cuộc họp "${title}" đã được lên lịch thành công và sẽ báo trước 10p, 5p & đúng giờ họp.`,
+          kind: 'success',
+        });
+      }
 
       if (announce) {
         try {

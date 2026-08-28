@@ -109,7 +109,20 @@ export class NotificationPanel {
     const all = this.service.notifications().filter((n) => !n.id.startsWith('calendar-invite-'));
     if (tab === 'all') return all;
     if (tab === 'unread') return all.filter((n) => !n.isRead);
-    return all.filter((n) => notificationCategory(n.type) === tab);
+
+    return all.filter((n) => {
+      const cat = notificationCategory(n.type);
+      if (tab === 'group') {
+        return cat === 'group' || n.type === 'message' || !!n.metadata?.['groupId'] || n.id.includes('group') || n.id.includes('task');
+      }
+      if (tab === 'task') {
+        return cat === 'task' || n.type === 'task' || n.type === 'deadline' || n.type === 'reminder';
+      }
+      if (tab === 'event') {
+        return cat === 'event' || n.type === 'reminder' || n.type === 'event_invitation' || n.type === 'event_update';
+      }
+      return cat === tab;
+    });
   });
 
   /**

@@ -300,6 +300,8 @@ export class EventFormModal {
   readonly inviting = signal(false);
 
   readonly reminderPresets: { labelKey: string; offsetMinutes: number }[] = [
+    { labelKey: 'event.reminder5m', offsetMinutes: 5 },
+    { labelKey: 'event.reminder10m', offsetMinutes: 10 },
     { labelKey: 'event.reminder15m', offsetMinutes: 15 },
     { labelKey: 'event.reminder1h', offsetMinutes: 60 },
     { labelKey: 'event.reminder1d', offsetMinutes: 1440 },
