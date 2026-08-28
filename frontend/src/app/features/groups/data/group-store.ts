@@ -848,35 +848,17 @@ export class GroupStore {
     return lower.includes(email.toLowerCase()) || lower.includes(`@${localPart}`);
   }
 
-  private readonly notifiedTaskEventIds = new Set<string>();
+  private taskStatusLabel(status: GroupTask['status']): string {
+    return status === 'done' ? 'Hoàn thành' : status === 'in_progress' ? 'Đang làm' : 'Cần làm';
+  }
 
   private notifyTaskEvent(groupId: string, task: GroupTask, kind: 'created' | 'updated'): void {
     const currentUserId = this.authStore.user()?.id;
-    // eslint-disable-next-line no-console
-    console.debug('[notifyTaskEvent]', {
-      kind,
-      taskId: task.id,
-      status: task.status,
-      assignedTo: task.assignedTo,
-      createdBy: task.createdBy,
-      currentUserId,
-      isSelfOrigin: currentUserId ? this.selfOriginTaskIds.has(task.id) : null,
-    });
     if (!currentUserId) return;
     // Chính người dùng này vừa gây ra thay đổi (kéo-thả, đổi trạng thái...) —
     // đây là tiếng vọng realtime của thao tác của họ, không phải ai khác báo,
     // nên không tự thông báo cho họ.
     if (this.selfOriginTaskIds.has(task.id)) return;
-
-    const statusLabel =
-      task.status === 'done'
-        ? 'Hoàn thành'
-        : task.status === 'in_progress'
-        ? 'Đang làm'
-        : 'Cần làm';
-
-    const dedupeKey = `task-${task.id}-${kind}-${task.assignedTo || 'none'}-${task.status}`;
-    if (this.notifiedTaskEventIds.has(dedupeKey)) return;
 
     const group = this.groups().find((g) => g.id === groupId || g.id === task.groupId);
     const groupName = group?.name ?? 'nhóm của bạn';
@@ -891,29 +873,34 @@ export class GroupStore {
     };
 
     if (kind === 'created') {
-      if (task.assignedTo === currentUserId) {
-        this.notifiedTaskEventIds.add(dedupeKey);
-        this.notifications.ingest(groupTaskAssignedDraft(this.nt, input));
-        this.notificationQueue.push({
-          id: `toast-${dedupeKey}`,
-          title: 'Nhiệm vụ mới',
-          body: `Bạn được phân công nhiệm vụ "${task.title}" trong ${groupName}`,
-          kind: 'created',
-        });
-      }
-    } else {
-      // kind === 'updated' (Kéo-thả task, đổi trạng thái, cập nhật nội dung)
-      if (task.assignedTo === currentUserId || task.createdBy === currentUserId || this.isActiveGroup(groupId)) {
-        this.notifiedTaskEventIds.add(dedupeKey);
-        this.notifications.ingest(groupTaskUpdatedDraft(this.nt, input));
-        this.notificationQueue.push({
-          id: `toast-${dedupeKey}`,
-          title: 'Cập nhật nhiệm vụ',
-          body: `Nhiệm vụ "${task.title}" trong ${groupName} đã chuyển sang "${statusLabel}"`,
-          kind: 'updated',
-        });
-      }
+      if (task.assignedTo !== currentUserId) return;
+      // ingest() tự dedupe theo id ổn định (task-assigned-<taskId>) — không
+      // cần Set riêng, nên không có nguy cơ "khoá cứng" chặn mất các lần báo
+      // hợp lệ sau này như trước (Set cũ không tính theo status/nội dung).
+      if (!this.notifications.ingest(groupTaskAssignedDraft(this.nt, input))) return;
+      this.notificationQueue.push({
+        id: `toast-task-assigned-${task.id}`,
+        title: 'Nhiệm vụ mới',
+        body: `Bạn được phân công nhiệm vụ "${task.title}" trong ${groupName}`,
+        kind: 'created',
+      });
+      return;
     }
+
+    // kind === 'updated' (kéo-thả đổi trạng thái, sửa nội dung...) — báo cho
+    // người được giao, người tạo, và bất kỳ ai đang mở sẵn nhóm này.
+    const shouldNotify =
+      task.assignedTo === currentUserId || task.createdBy === currentUserId || this.isActiveGroup(groupId);
+    if (!shouldNotify) return;
+
+    const draft = groupTaskUpdatedDraft(this.nt, input);
+    if (!this.notifications.ingest(draft)) return;
+    this.notificationQueue.push({
+      id: `toast-${draft.id}`,
+      title: 'Cập nhật nhiệm vụ',
+      body: `Nhiệm vụ "${task.title}" trong ${groupName} đã chuyển sang "${this.taskStatusLabel(task.status)}"`,
+      kind: 'updated',
+    });
   }
 
   /** Cùng bộ lọc với notifyTaskEvent() (chỉ báo nếu đang được giao việc đó) */
@@ -921,18 +908,17 @@ export class GroupStore {
     const currentUserId = this.authStore.user()?.id;
     if (!currentUserId) return;
     if (this.selfOriginTaskIds.has(taskId)) return;
+    if (assignedTo !== currentUserId) return;
 
-    if (assignedTo === currentUserId) {
-      const group = this.groups().find((g) => g.id === groupId);
-      const groupName = group?.name ?? 'nhóm của bạn';
-      this.notifications.ingest(groupTaskDeletedDraft(this.nt, taskId, title ?? 'Công việc', groupName));
-      this.notificationQueue.push({
-        id: `task-deleted-${taskId}`,
-        title: 'Xóa nhiệm vụ',
-        body: `Nhiệm vụ "${title}" bạn được phân công đã bị xóa`,
-        kind: 'deleted',
-      });
-    }
+    const group = this.groups().find((g) => g.id === groupId);
+    const groupName = group?.name ?? 'nhóm của bạn';
+    if (!this.notifications.ingest(groupTaskDeletedDraft(this.nt, taskId, title ?? 'Công việc', groupName))) return;
+    this.notificationQueue.push({
+      id: `task-deleted-${taskId}`,
+      title: 'Xóa nhiệm vụ',
+      body: `Nhiệm vụ "${title}" bạn được phân công đã bị xóa`,
+      kind: 'deleted',
+    });
   }
 
   /** Đánh dấu task vừa được chính người dùng này sửa, để bỏ qua tiếng vọng

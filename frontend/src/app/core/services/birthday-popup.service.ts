@@ -159,6 +159,8 @@ export class BirthdayPopupService {
    * Kiểm tra xem hôm nay (hoặc ngày đang giả lập bằng Clock) có phải sinh nhật hay không
    */
   checkAndTriggerBirthday(): void {
+    if (this.visible()) return;
+
     const dob = this.getUserDob();
     if (!dob) return;
 
@@ -178,8 +180,7 @@ export class BirthdayPopupService {
       const todayKey = `${SHOWN_PREFIX}${now.getFullYear()}-${currentMonth}-${currentDay}`;
       const alreadyShown = localStorage.getItem(todayKey);
 
-      // Nếu đang bật giả lập ngày (devOverride) hoặc chưa hiển thị popup hôm nay -> mở popup sinh nhật
-      if (!alreadyShown || !!this.clock.devOverride()) {
+      if (!alreadyShown) {
         this.triggerBirthday(dob, false);
       }
     }
@@ -189,6 +190,8 @@ export class BirthdayPopupService {
    * Mở màn hình chúc mừng sinh nhật (có cờ `isPreview` nếu bấm xem thử từ Cài đặt)
    */
   triggerBirthday(dob?: string, isPreview = false): void {
+    if (this.visible()) return;
+
     const finalDob = dob || this.getUserDob() || '2000-01-01';
     const userName = this.authStore.displayName() || this.authStore.user()?.email?.split('@')[0] || 'bạn';
 
@@ -200,7 +203,7 @@ export class BirthdayPopupService {
     this.visible.set(true);
     this.sound.notifyKind('birthday');
 
-    if (!isPreview && !this.clock.devOverride()) {
+    if (!isPreview) {
       const now = todayInVietnam(this.clock.now());
       const todayKey = `${SHOWN_PREFIX}${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
       localStorage.setItem(todayKey, 'true');

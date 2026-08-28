@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth-store';
 import { DensityService } from '../../../core/density/density-service';
@@ -147,7 +147,9 @@ export class CalendarPage {
 
     effect(() => {
       if (this.authStore.session()) {
-        this.birthdayService.checkAndTriggerBirthday();
+        untracked(() => {
+          this.birthdayService.checkAndTriggerBirthday();
+        });
       }
     });
 
