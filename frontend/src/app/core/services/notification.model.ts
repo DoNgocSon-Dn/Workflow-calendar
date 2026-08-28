@@ -118,9 +118,7 @@ const CATEGORY_BY_TYPE: Readonly<Record<NotificationType, NotificationCategory |
   event_update: 'event',
   reminder: 'event',
   conflict: 'event',
-  // Mention luôn gắn với một công việc cụ thể trong app này nên xếp vào tab
-  // "Công việc" thay vì để trôi ra ngoài mọi bộ lọc.
-  mention: 'task',
+  mention: 'message',
   deadline: 'task',
   system: null,
 };

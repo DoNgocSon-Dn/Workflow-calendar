@@ -112,14 +112,24 @@ export class NotificationPanel {
 
     return all.filter((n) => {
       const cat = notificationCategory(n.type);
+      if (tab === 'message') {
+        return cat === 'message' || n.type === 'message' || n.type === 'mention';
+      }
       if (tab === 'group') {
-        return cat === 'group' || n.type === 'message' || !!n.metadata?.['groupId'] || n.id.includes('group') || n.id.includes('task');
+        return (
+          cat === 'group' ||
+          n.type === 'message' ||
+          n.type === 'mention' ||
+          !!n.metadata?.['groupId'] ||
+          !!n.messageMeta?.groupId ||
+          n.id.includes('group')
+        );
       }
       if (tab === 'task') {
-        return cat === 'task' || n.type === 'task' || n.type === 'deadline' || n.type === 'reminder';
+        return cat === 'task' || n.type === 'task' || n.type === 'deadline';
       }
       if (tab === 'event') {
-        return cat === 'event' || n.type === 'reminder' || n.type === 'event_invitation' || n.type === 'event_update';
+        return cat === 'event' || n.type === 'reminder' || n.type === 'event_invitation' || n.type === 'event_update' || n.type === 'conflict';
       }
       return cat === tab;
     });
@@ -260,8 +270,9 @@ export class NotificationPanel {
 
     if (notification.type === 'message' || notification.type === 'mention') {
       const meta = notification.messageMeta;
-      if (meta) {
-        this.openGroup.emit({ groupId: meta.groupId, messageId: meta.messageId, tab: 'chat' });
+      const groupId = meta?.groupId || notification.relatedId || notification.metadata?.['groupId'];
+      if (groupId) {
+        this.openGroup.emit({ groupId, messageId: meta?.messageId, tab: 'chat' });
         this.close.emit();
         return;
       }
@@ -269,17 +280,18 @@ export class NotificationPanel {
 
     if (
       (notification.type === 'group_invitation' || notification.type === 'group_join_request') &&
-      notification.relatedId
+      (notification.relatedId || notification.metadata?.['groupId'])
     ) {
-      // Còn "pending" đã có nút Chấp nhận/Từ chối riêng — click vào thân
-      // thông báo lúc đó chỉ nên đánh dấu đã đọc, không điều hướng.
       if (notification.actionStatus === 'pending') return;
-      this.openGroup.emit({ groupId: notification.relatedId, tab: 'chat' });
-      this.close.emit();
-      return;
+      const groupId = notification.relatedId || notification.metadata?.['groupId'];
+      if (groupId) {
+        this.openGroup.emit({ groupId, tab: 'chat' });
+        this.close.emit();
+        return;
+      }
     }
 
-    const groupId = notification.metadata?.['groupId'];
+    const groupId = notification.metadata?.['groupId'] || notification.relatedId;
     if ((notification.type === 'task' || notification.type === 'deadline') && groupId) {
       this.openGroup.emit({ groupId, tab: 'tasks' });
       this.close.emit();

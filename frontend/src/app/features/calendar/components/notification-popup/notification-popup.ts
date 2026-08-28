@@ -14,6 +14,8 @@ const FEEDBACK_MS = 160;
 
 import { formatExternalUrl } from '../../../groups/utils/mention.util';
 
+import { OpenGroupChatRequest } from '../../../../shared/components/notification/notification-panel';
+
 @Component({
   selector: 'app-notification-popup',
   templateUrl: './notification-popup.html',
@@ -29,6 +31,22 @@ export class NotificationPopup {
   protected readonly formatExternalUrl = formatExternalUrl;
 
   readonly viewDetail = output<string>();
+  readonly openGroup = output<OpenGroupChatRequest>();
+
+  onItemClick(item: NotificationItem): void {
+    if (item.eventId) {
+      this.onViewDetail(item.eventId, item.id);
+      return;
+    }
+    if (item.groupId) {
+      this.openGroup.emit({
+        groupId: item.groupId,
+        messageId: item.messageId,
+        tab: item.kind === 'message' ? 'chat' : 'tasks',
+      });
+      this.dismiss(item.id);
+    }
+  }
 
   readonly snoozeOptions = computed(() =>
     SNOOZE_MINUTES.map((minutes) => ({

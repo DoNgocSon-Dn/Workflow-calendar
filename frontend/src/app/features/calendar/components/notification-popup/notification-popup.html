@@ -67,6 +67,10 @@
               <button type="button" class="toast__btn toast__btn--primary" (click)="onViewDetail(eventId, item.id)">
                 {{ i18n.t('notifPopup.viewDetail') }}
               </button>
+            } @else if (item.groupId) {
+              <button type="button" class="toast__btn toast__btn--primary" (click)="onItemClick(item)">
+                {{ item.kind === 'message' ? 'Mở Chat' : 'Xem' }}
+              </button>
             }
 
             <div class="toast__snooze">
