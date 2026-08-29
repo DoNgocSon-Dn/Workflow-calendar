@@ -881,6 +881,18 @@
                     </div>
                   </div>
                 </div>
+                @if (isMyMessage(msg) && isLastOwnMessage(i) && !msg.deletedAt) {
+                  @if (seenBy(msg); as seen) {
+                    @if (seen.length > 0) {
+                      <div class="chat-seen">
+                        <span class="chat-seen__label">{{ i18n.t('group.seen') }}</span>
+                        @for (r of seen.slice(0, 5); track r.userId) {
+                          <span class="chat-seen__avatar" [style.background-color]="r.color">{{ r.initial }}</span>
+                        }
+                      </div>
+                    }
+                  }
+                }
               } @empty {
                 <p class="empty-text">{{ i18n.t('group.noMessages') }}</p>
               }
