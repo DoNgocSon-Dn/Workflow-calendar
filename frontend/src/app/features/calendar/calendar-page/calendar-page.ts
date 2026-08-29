@@ -113,10 +113,11 @@ export class CalendarPage {
   private swipeStart: { x: number; y: number; t: number } | null = null;
 
   protected onViewTouchStart(e: TouchEvent): void {
-    if (!this.store.isPhone() || e.touches.length !== 1) {
-      this.swipeStart = null;
-      return;
-    }
+    this.swipeStart = null;
+    if (!this.store.isPhone() || e.touches.length !== 1) return;
+    // Chạm bắt đầu trên một sự kiện (để nhấn-giữ kéo) thì KHÔNG tính là vuốt đổi
+    // kỳ — nếu không thì kéo sự kiện sang ngày khác lại lỡ lật cả tuần.
+    if ((e.target as HTMLElement | null)?.closest('.event-block, .resize-handle')) return;
     const t = e.touches[0];
     this.swipeStart = { x: t.clientX, y: t.clientY, t: Date.now() };
   }
