@@ -168,6 +168,17 @@ export interface GroupTaskDto {
   createdAt: string;
 }
 
+export interface GroupMeetingDto {
+  groupId: string;
+  link: string;
+  title?: string;
+  startsAt?: string;
+  durationMin?: number;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Mention đã được backend xác thực: `user` luôn trỏ tới một thành viên có
  *  thật của nhóm, `all` là @All. */
 export interface MessageMention {
@@ -2230,6 +2241,150 @@ export class GroupsService {
     await this.emitToGroupMembers(supabase, groupId, 'group:taskDeleted', payload);
 
     return { id: data.id };
+  }
+
+  // ---- Phòng họp của nhóm (1 phòng / nhóm, CRUD cho LEADER/ADMIN) ----
+
+  private mapMeetingRow(row: any): GroupMeetingDto {
+    return {
+      groupId: row.group_id,
+      link: row.link,
+      title: row.title ?? undefined,
+      startsAt: row.starts_at ?? undefined,
+      durationMin: row.duration_min ?? undefined,
+      createdBy: row.created_by ?? undefined,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  }
+
+  async getMeeting(
+    supabase: SupabaseClient,
+    groupId: string,
+  ): Promise<GroupMeetingDto | null> {
+    // Đọc bằng client của người gọi — RLS `group_meetings_select` chỉ cho thành
+    // viên nhóm thấy, người ngoài nhận về rỗng.
+    const { data, error } = await supabase
+      .from('group_meetings')
+      .select('*')
+      .eq('group_id', groupId)
+      .maybeSingle();
+    if (error) {
+      // 42P01 = bảng chưa tạo (migration 40 chưa chạy) → coi như chưa có phòng.
+      if (error.code === '42P01') return null;
+      throw new InternalServerErrorException(error.message);
+    }
+    return data ? this.mapMeetingRow(data) : null;
+  }
+
+  async upsertMeeting(
+    supabase: SupabaseClient,
+    user: User,
+    groupId: string,
+    dto: UpsertGroupMeetingDto,
+  ): Promise<GroupMeetingDto> {
+    const role = await this.requireRole(supabase, user, groupId);
+    if (!canInvite(role)) {
+      throw new ForbiddenException(
+        'Chỉ Trưởng nhóm hoặc Phó nhóm mới đặt được phòng họp',
+      );
+    }
+
+    const existing = await supabase
+      .from('group_meetings')
+      .select('link')
+      .eq('group_id', groupId)
+      .maybeSingle<{ link: string }>();
+    const isNewOrChangedLink = existing.data?.link !== dto.link;
+
+    const row = {
+      group_id: groupId,
+      link: dto.link.trim(),
+      title: dto.title?.trim() || null,
+      starts_at: dto.startsAt ?? null,
+      duration_min: dto.durationMin ?? null,
+      created_by: user.id,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('group_meetings')
+      .upsert(row, { onConflict: 'group_id' })
+      .select('*')
+      .single();
+    if (error || !data) {
+      if (error?.code === '42P01') {
+        throw new InternalServerErrorException(
+          'Tính năng phòng họp cần chạy migration 40_group_meetings.sql trên Supabase',
+        );
+      }
+      throw new InternalServerErrorException(
+        error?.message || 'Không thể lưu phòng họp',
+      );
+    }
+
+    const meeting = this.mapMeetingRow(data);
+    await this.emitToGroupRooms(supabase, groupId, 'group:meetingChanged', {
+      groupId,
+      meeting,
+    });
+
+    // Đăng một dòng vào khung chat khi link MỚI (tạo lần đầu, hoặc đổi link) —
+    // không spam mỗi lần chỉ sửa tiêu đề / giờ.
+    if (isNewOrChangedLink) {
+      const actor =
+        ((user.user_metadata as Record<string, unknown> | undefined)?.[
+          'full_name'
+        ] as string | undefined) ||
+        user.email?.split('@')[0] ||
+        'Một thành viên';
+      const text = `📹 ${actor} đã mở phòng họp: ${meeting.link}`;
+      const { data: msg } = await supabase
+        .from('group_messages')
+        .insert({ group_id: groupId, sender_id: user.id, message: text })
+        .select('*')
+        .single();
+      if (msg) {
+        const msgDto: GroupMessageDto = {
+          ...this.mapMessageRow(msg),
+          senderEmail: user.email,
+        };
+        await this.emitToGroupRooms(supabase, groupId, 'group:messageSent', {
+          groupId,
+          message: msgDto,
+        });
+        await this.emitToGroupMembers(supabase, groupId, 'group:messageSent', {
+          groupId,
+          message: msgDto,
+        });
+      }
+    }
+
+    return meeting;
+  }
+
+  async deleteMeeting(
+    supabase: SupabaseClient,
+    user: User,
+    groupId: string,
+  ): Promise<void> {
+    const role = await this.requireRole(supabase, user, groupId);
+    if (!canInvite(role)) {
+      throw new ForbiddenException(
+        'Chỉ Trưởng nhóm hoặc Phó nhóm mới gỡ được phòng họp',
+      );
+    }
+    const { error } = await supabase
+      .from('group_meetings')
+      .delete()
+      .eq('group_id', groupId);
+    if (error && error.code !== '42P01') {
+      throw new InternalServerErrorException(error.message);
+    }
+    await this.emitToGroupRooms(supabase, groupId, 'group:meetingChanged', {
+      groupId,
+      meeting: null,
+    });
   }
 
   // Realtime Group Messages
