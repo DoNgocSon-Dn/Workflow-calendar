@@ -6,8 +6,8 @@
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: rgba(10, 12, 20, 0.85);
-  backdrop-filter: blur(8px);
+  background: rgba(8, 10, 16, 0.88);
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -41,19 +41,19 @@
   }
   100% {
     transform: translateY(105vh) rotate(360deg);
-    opacity: 0.2;
+    opacity: 0.15;
   }
 }
 
 .birthday-card {
   position: relative;
   width: 100%;
-  max-width: 440px;
-  background: #151722;
-  border: 1px solid #2a2e3d;
-  border-radius: 20px;
-  padding: 1.5rem 1.25rem 1.25rem;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+  max-width: 420px;
+  background: #12141e;
+  border: 1px solid #232738;
+  border-radius: 24px;
+  padding: 1.75rem 1.5rem 1.35rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75);
   color: #f3f4f6;
   display: flex;
   flex-direction: column;
@@ -70,24 +70,25 @@
 
 .close-btn {
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: 16px;
+  right: 16px;
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: none;
-  background: #242838;
+  border: 1px solid #262a3a;
+  background: #181b28;
   color: #9ca3af;
-  font-size: 1rem;
+  font-size: 0.9rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .close-btn:hover {
-  background: #32374a;
+  background: #24283b;
+  border-color: #3b425a;
   color: #ffffff;
 }
 
@@ -96,36 +97,36 @@
   align-items: center;
   padding: 0.35rem 0.85rem;
   border-radius: 20px;
-  background: #272018;
-  border: 1px solid #b45309;
-  color: #fbbf24;
+  background: #241d13;
+  border: 1px solid #92400e;
+  color: #fef08a;
   font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  margin-bottom: 1rem;
+  letter-spacing: 0.04em;
+  margin-bottom: 1.1rem;
 }
 
 .badge-solid-gold {
-  background: #2d2415;
-  border-color: #d97706;
+  background: #241d13;
+  border-color: #b45309;
   color: #fef08a;
 }
 
 .badge-solid-blue {
-  background: #172554;
-  border-color: #2563eb;
+  background: #131d36;
+  border-color: #1d4ed8;
   color: #93c5fd;
 }
 
 .media-frame {
   width: 100%;
-  max-width: 380px;
-  height: 200px;
-  border-radius: 14px;
+  max-width: 370px;
+  height: 190px;
+  border-radius: 16px;
   overflow: hidden;
-  margin-bottom: 1.2rem;
-  background: #0f111a;
-  border: 1px solid #2a2d3d;
+  margin-bottom: 1.25rem;
+  background: #0b0c14;
+  border: 1px solid #212536;
   cursor: pointer;
 }
 
@@ -140,7 +141,7 @@
   font-size: 1.35rem;
   font-weight: 700;
   color: #ffffff;
-  margin: 0 0 0.6rem;
+  margin: 0 0 0.5rem;
   line-height: 1.3;
 }
 
@@ -149,78 +150,80 @@
 }
 
 .greeting-message {
-  font-size: 0.92rem;
-  color: #d1d5db;
+  font-size: 0.9rem;
+  color: #9ca3af;
   line-height: 1.55;
-  margin: 0 0 1.25rem;
-  padding: 0 0.5rem;
+  margin: 0 0 1.35rem;
+  padding: 0 0.25rem;
 }
 
 .wish-section-title {
   font-size: 1.25rem;
   font-weight: 700;
   color: #ffffff;
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.35rem;
 }
 
 .wish-section-sub {
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   color: #9ca3af;
   line-height: 1.5;
   margin: 0 0 1.2rem;
 }
 
 .feedback-text {
-  font-size: 0.95rem;
-  color: #e5e7eb;
-  padding: 0 0.5rem;
+  font-size: 0.92rem;
+  color: #d1d5db;
+  padding: 0 0.25rem;
 }
 
 .wish-input-wrapper {
   width: 100%;
   position: relative;
-  margin-bottom: 1.2rem;
+  margin-bottom: 1.25rem;
 }
 
 .wish-textarea {
   width: 100%;
-  background: #1e2232;
-  border: 1px solid #33394f;
-  border-radius: 12px;
-  padding: 0.8rem;
+  background: #181b28;
+  border: 1px solid #2a2e42;
+  border-radius: 14px;
+  padding: 0.85rem;
   font-size: 0.92rem;
   color: #ffffff;
   resize: none;
   outline: none;
   font-family: inherit;
   box-sizing: border-box;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .wish-textarea:focus {
   border-color: #2563eb;
-  background: #23283c;
+  background: #1d2133;
 }
 
 .wish-char-counter {
   text-align: right;
   font-size: 0.75rem;
-  color: #6b7280;
+  color: #64748b;
   margin-top: 0.35rem;
 }
 
 .past-wish-card {
   width: 100%;
-  background: #1e2436;
-  border: 1px solid #3b82f6;
+  background: #161a29;
+  border: 1px solid #2563eb;
+  border-left: 4px solid #3b82f6;
   border-radius: 12px;
-  padding: 1rem;
+  padding: 0.95rem 1rem;
   box-sizing: border-box;
-  margin-bottom: 1rem;
+  margin-bottom: 1.1rem;
   text-align: left;
 }
 
 .past-wish-quote {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-style: italic;
   color: #fef08a;
   line-height: 1.5;
@@ -228,15 +231,15 @@
 }
 
 .wish-question {
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: #ffffff;
-  margin: 0 0 1.2rem;
+  color: #e2e8f0;
+  margin: 0 0 1.1rem;
 }
 
 .feedback-icon {
   font-size: 3.5rem;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.75rem;
   line-height: 1;
 }
 
@@ -244,72 +247,93 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-}
-
-.btn-primary {
-  width: 100%;
-  padding: 0.75rem;
-  border-radius: 12px;
-  border: none;
-  background: #2563eb;
-  color: #ffffff;
-  font-size: 0.92rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.btn-primary:hover {
-  background: #1d4ed8;
+  gap: 0.65rem;
+  margin-top: 0.25rem;
 }
 
 .btn-make-wish {
   width: 100%;
-  padding: 0.75rem;
-  border-radius: 12px;
-  border: none;
-  background: #d97706;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  border: 1px solid #d97706;
+  background: #b45309;
   color: #ffffff;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background 0.18s ease, transform 0.12s ease;
 }
 
 .btn-make-wish:hover {
-  background: #b45309;
+  background: #d97706;
+  transform: translateY(-1px);
+}
+
+.btn-make-wish:active {
+  transform: translateY(0);
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 0.82rem 1rem;
+  border-radius: 14px;
+  border: 1px solid #33394f;
+  background: #1a1e2d;
+  color: #e2e8f0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.btn-primary:hover {
+  background: #23283c;
+  border-color: #4b5563;
+  color: #ffffff;
 }
 
 .btn-wish-review {
   width: 100%;
-  padding: 0.75rem;
-  border-radius: 12px;
-  border: 1px solid #3b82f6;
-  background: #1e293b;
+  padding: 0.82rem 1rem;
+  border-radius: 14px;
+  border: 1px solid #2563eb;
+  background: #151d33;
   color: #93c5fd;
   font-size: 0.92rem;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
 .btn-wish-review:hover {
-  background: #334155;
+  background: #2563eb;
+  border-color: #2563eb;
   color: #ffffff;
 }
 
 .btn-wish-submit {
   width: 100%;
-  padding: 0.75rem;
-  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
   border: none;
   background: #2563eb;
   color: #ffffff;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s ease, opacity 0.15s ease;
+  transition: background 0.18s ease, opacity 0.18s ease;
 }
 
 .btn-wish-submit:hover:not(:disabled) {
@@ -317,62 +341,68 @@
 }
 
 .btn-wish-submit:disabled {
-  background: #374151;
-  color: #9ca3af;
+  background: #1e2232;
+  color: #64748b;
+  border: 1px solid #2a2e3f;
   cursor: not-allowed;
-  opacity: 0.7;
 }
 
 .btn-cta-solid {
   width: 100%;
-  padding: 0.75rem;
-  border-radius: 12px;
+  padding: 0.82rem 1rem;
+  border-radius: 14px;
   border: none;
   font-size: 0.92rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.18s ease, transform 0.12s ease;
 }
 
 .btn-cta-success {
-  background: #16a34a;
+  background: #15803d;
   color: #ffffff;
 }
 
 .btn-cta-success:hover {
-  background: #15803d;
+  background: #16a34a;
+  transform: translateY(-1px);
 }
 
 .btn-cta-primary {
-  background: #2563eb;
+  background: #1d4ed8;
   color: #ffffff;
 }
 
 .btn-cta-primary:hover {
-  background: #1d4ed8;
+  background: #2563eb;
+  transform: translateY(-1px);
 }
 
 .btn-cta-purple {
-  background: #9333ea;
-  color: #ffffff;
+  background: #1a1e2d;
+  border: 1px solid #475569;
+  color: #e2e8f0;
 }
 
 .btn-cta-purple:hover {
-  background: #7e22ce;
+  background: #272d42;
+  border-color: #64748b;
+  color: #ffffff;
 }
 
 .btn-subtle {
   width: 100%;
-  padding: 0.5rem;
+  padding: 0.45rem;
   border: none;
   background: transparent;
-  color: #9ca3af;
-  font-size: 0.8rem;
+  color: #64748b;
+  font-size: 0.82rem;
   cursor: pointer;
+  transition: color 0.15s ease;
 }
 
 .btn-subtle:hover {
-  color: #e5e7eb;
+  color: #94a3b8;
 }
 
 .pop-in {
