@@ -111,6 +111,14 @@ export class GroupStore {
 
   /** messageId → emoji → danh sách userId đã thả (nhóm ĐANG XEM). */
   readonly reactions = signal<Record<string, Record<string, string[]>>>({});
+
+  /** userId → tên người đang soạn tin (nhóm ĐANG XEM). Phù du, tự hết hạn 4s. */
+  readonly typingUsers = signal<{ userId: string; name: string }[]>([]);
+  private readonly typingExpiry = new Map<string, number>();
+  private typingSweep = 0;
+  /** messageId của các tin CHÍNH MÌNH gửi đã có người báo "đã nhận". */
+  readonly deliveredMessageIds = signal<ReadonlySet<string>>(new Set());
+  private lastTypingEmit = 0;
   /** Tin nhắn cần cuộn tới sau khi mở tab Trò chuyện. */
   readonly pendingChatMessageId = signal<string | null>(null);
   /** ID các nhóm có tin nhắn chưa đọc — cho sidebar "sáng lên" kiểu Messenger
@@ -668,6 +676,32 @@ export class GroupStore {
       this.applyReaction(payload.messageId, payload.emoji, payload.userId, payload.added);
     });
 
+    // "Đang soạn tin" — phù du, tự hết hạn 4s.
+    this.realtime.on<{ groupId: string; userId: string; name: string }>(
+      'group:typing',
+      (payload) => {
+        if (!payload || !this.isActiveGroup(payload.groupId)) return;
+        if (payload.userId === this.authStore.user()?.id) return;
+        this.typingExpiry.set(payload.userId, Date.now() + 4000);
+        this.refreshTyping(payload.userId, payload.name);
+        this.ensureTypingSweep();
+      },
+    );
+
+    // "Đã nhận" — người khác báo đã nhận một tin mình gửi.
+    this.realtime.on<{ messageId: string; userId: string }>(
+      'group:messageDelivered',
+      (payload) => {
+        if (!payload?.messageId) return;
+        this.deliveredMessageIds.update((s) => {
+          if (s.has(payload.messageId)) return s;
+          const next = new Set(s);
+          next.add(payload.messageId);
+          return next;
+        });
+      },
+    );
+
     // Yêu cầu vừa được duyệt: thành viên hiện có refresh danh sách ngay.
     this.realtime.on<{ groupId: string; member: GroupMember }>(
       'group:memberJoined',
@@ -880,6 +914,14 @@ export class GroupStore {
   private notifyIncomingMessage(groupId: string, message: GroupMessage): void {
     const currentUser = this.authStore.user();
     if (!currentUser || message.senderId === currentUser.id) return;
+
+    // Báo "đã nhận" cho người gửi (phù du, không chặn phần còn lại nếu lỗi).
+    if (message.id && !message.id.startsWith('pending-')) {
+      this.realtime.emit('group:messageDelivered', {
+        messageId: message.id,
+        senderId: message.senderId,
+      });
+    }
 
     // Chốt chống trùng: tin nhắn tới qua cả socket lẫn Supabase Realtime.
     if (this.notifiedMessageIds.has(message.id)) return;
@@ -1145,6 +1187,9 @@ export class GroupStore {
     this.meeting.set(null);
     this.messageReads.set({});
     this.reactions.set({});
+    this.typingUsers.set([]);
+    this.typingExpiry.clear();
+    this.deliveredMessageIds.set(new Set());
     this.lastMarkReadAt = 0;
     this.activeWorkspaceModalOpen.set(true);
     this.clearGroupUnread(group.id);
@@ -1169,6 +1214,45 @@ export class GroupStore {
     void this.loadMeeting(group.id);
     void this.loadMessageReads(group.id);
     void this.loadReactions(group.id);
+  }
+
+  private refreshTyping(userId: string, name: string): void {
+    this.typingUsers.update((list) => {
+      const rest = list.filter((t) => t.userId !== userId);
+      return [...rest, { userId, name }];
+    });
+  }
+
+  /** Một vòng dọn duy nhất: gỡ người đã hết hạn "đang soạn tin". */
+  private ensureTypingSweep(): void {
+    if (this.typingSweep) return;
+    this.typingSweep = window.setInterval(() => {
+      const now = Date.now();
+      let changed = false;
+      for (const [uid, exp] of this.typingExpiry) {
+        if (exp <= now) {
+          this.typingExpiry.delete(uid);
+          changed = true;
+        }
+      }
+      if (changed) {
+        this.typingUsers.update((list) =>
+          list.filter((t) => this.typingExpiry.has(t.userId)),
+        );
+      }
+      if (this.typingExpiry.size === 0) {
+        clearInterval(this.typingSweep);
+        this.typingSweep = 0;
+      }
+    }, 1000);
+  }
+
+  /** Gửi tín hiệu "đang soạn tin" — bóp ga 2.5s. */
+  emitTyping(groupId: string): void {
+    const now = Date.now();
+    if (now - this.lastTypingEmit < 2500) return;
+    this.lastTypingEmit = now;
+    this.realtime.emit('group:typing', { groupId });
   }
 
   private applyReaction(

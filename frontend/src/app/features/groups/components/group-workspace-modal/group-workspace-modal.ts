@@ -1343,6 +1343,24 @@ export class GroupWorkspaceModal {
     this.chatMessage.set(el.value);
     this.syncMentionQuery(el);
     this.autoGrowChatInput(el);
+    const group = this.store.activeGroup();
+    if (group && el.value.trim()) this.store.emitTyping(group.id);
+  }
+
+  /** Dòng "… đang soạn tin…" phía trên ô nhập. */
+  protected readonly typingText = computed(() => {
+    const list = this.store.typingUsers();
+    if (list.length === 0) return null;
+    if (list.length === 1) return this.i18n.t('chat.typingOne', { name: list[0].name });
+    return this.i18n.t('chat.typingMany', { n: list.length });
+  });
+
+  /** Trạng thái tin cuối của mình: pending → sent → delivered → seen. */
+  protected ownStatus(msg: GroupMessage): 'pending' | 'seen' | 'delivered' | 'sent' {
+    if (msg.pending) return 'pending';
+    if (this.seenBy(msg).length > 0) return 'seen';
+    if (this.store.deliveredMessageIds().has(msg.id)) return 'delivered';
+    return 'sent';
   }
 
   /** Ô nhập cao dần theo số dòng đang gõ, giới hạn bởi max-height trong CSS

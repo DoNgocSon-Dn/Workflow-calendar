@@ -134,6 +134,50 @@ export class RealtimeGateway implements OnGatewayConnection {
     void client.leave(roomName(payload.calendarId));
   }
 
+  /**
+   * "Đang soạn tin" — tín hiệu phù du, KHÔNG ghi DB. Chỉ chuyển tiếp cho các
+   * client KHÁC đang trong cùng phòng nhóm. Người gửi phải đang ở trong phòng
+   * đó (đã joinCalendar(groupId)) nên không cần truy vấn quyền lại.
+   */
+  @SubscribeMessage('group:typing')
+  async groupTyping(
+    @ConnectedSocket() client: AppSocket,
+    @MessageBody() payload: { groupId: string },
+  ): Promise<void> {
+    await client.data?.ready;
+    const user = client.data?.user;
+    if (!user || !payload?.groupId) return;
+    if (!client.rooms.has(roomName(payload.groupId))) return;
+    const meta = user.user_metadata as Record<string, unknown> | undefined;
+    const name =
+      (meta?.['full_name'] as string | undefined) ||
+      user.email?.split('@')[0] ||
+      'Ai đó';
+    this.server
+      .to(roomName(payload.groupId))
+      .except(client.id)
+      .emit('group:typing', { groupId: payload.groupId, userId: user.id, name });
+  }
+
+  /**
+   * "Đã nhận" (delivered) — client báo đã nhận được một tin nhắn; chuyển tiếp
+   * cho ĐÚNG người gửi tin đó. Cũng phù du, không ghi DB.
+   */
+  @SubscribeMessage('group:messageDelivered')
+  async groupMessageDelivered(
+    @ConnectedSocket() client: AppSocket,
+    @MessageBody() payload: { messageId: string; senderId: string },
+  ): Promise<void> {
+    await client.data?.ready;
+    const user = client.data?.user;
+    if (!user || !payload?.messageId || !payload?.senderId) return;
+    if (payload.senderId === user.id) return;
+    this.server.to(userRoomName(payload.senderId)).emit('group:messageDelivered', {
+      messageId: payload.messageId,
+      userId: user.id,
+    });
+  }
+
   emitToCalendar(calendarId: string, event: string, payload: unknown): void {
     this.server.to(roomName(calendarId)).emit(event, payload);
   }

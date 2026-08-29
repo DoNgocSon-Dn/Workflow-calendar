@@ -155,6 +155,13 @@ export class RealtimeService {
     this.socket?.off(event, handler as (payload: any) => void);
   }
 
+  /** Gửi một sự kiện lên server (client→server). Chỉ dùng cho tín hiệu phù du
+   *  như "đang soạn tin" / "đã nhận" — không cần ack, mất khi mất kết nối là
+   *  chấp nhận được. */
+  emit(event: string, payload: unknown): void {
+    this.socket?.emit(event, payload);
+  }
+
   disconnect(): void {
     this.currentToken = null;
     if (this.socket) {

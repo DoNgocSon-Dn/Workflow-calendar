@@ -923,16 +923,19 @@
                   </div>
                 </div>
                 @if (isMyMessage(msg) && isLastOwnMessage(i) && !msg.deletedAt) {
-                  @if (seenBy(msg); as seen) {
-                    @if (seen.length > 0) {
-                      <div class="chat-seen">
+                  <div class="chat-seen">
+                    @switch (ownStatus(msg)) {
+                      @case ('pending') { <span class="chat-seen__label">{{ i18n.t('chat.sending') }}</span> }
+                      @case ('sent') { <span class="chat-seen__label">✓ {{ i18n.t('chat.sent') }}</span> }
+                      @case ('delivered') { <span class="chat-seen__label">✓✓ {{ i18n.t('chat.delivered') }}</span> }
+                      @case ('seen') {
                         <span class="chat-seen__label">{{ i18n.t('group.seen') }}</span>
-                        @for (r of seen.slice(0, 5); track r.userId) {
+                        @for (r of seenBy(msg).slice(0, 5); track r.userId) {
                           <span class="chat-seen__avatar" [style.background-color]="r.color">{{ r.initial }}</span>
                         }
-                      </div>
+                      }
                     }
-                  }
+                  </div>
                 }
               } @empty {
                 <p class="empty-text">{{ i18n.t('group.noMessages') }}</p>
@@ -951,6 +954,12 @@
             }
             @if (attachmentError(); as err) {
               <p class="error-msg">{{ err }}</p>
+            }
+            @if (typingText(); as tt) {
+              <div class="chat-typing">
+                <span class="chat-typing__dots"><i></i><i></i><i></i></span>
+                {{ tt }}
+              </div>
             }
             @if (replyingTo(); as rt) {
               <div class="chat-reply-bar">
