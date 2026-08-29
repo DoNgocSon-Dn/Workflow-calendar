@@ -336,7 +336,23 @@
           <path fill="currentColor"
             d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11z" />
         </svg>
-        @if (form.controls.meetLink.value) {
+        @if (meetLinkEditing()) {
+        <div class="field-content">
+          <input class="text-input" type="url" formControlName="meetLink" inputmode="url"
+            [placeholder]="i18n.t('event.meetPastePlaceholder')" />
+          <p class="hint-text">{{ i18n.t('event.meetOpenHint') }}</p>
+          <div class="row meet-link-row">
+            <button type="button" class="text-btn compact" (click)="generateVideoCallLink()">
+              {{ i18n.t('event.meetQuickRoom') }}
+            </button>
+            @if (form.controls.meetLink.value) {
+            <button type="button" class="text-btn compact" (click)="removeMeetLink()">
+              {{ i18n.t('common.cancel') }}
+            </button>
+            }
+          </div>
+        </div>
+        } @else if (form.controls.meetLink.value) {
         <div class="field-content">
           <div class="row meet-link-row">
             <a class="text-input meet-link-value" [href]="formatExternalUrl(form.controls.meetLink.value)" target="_blank" rel="noopener noreferrer">
@@ -346,15 +362,6 @@
               {{ i18n.t('common.cancel') }}
             </button>
           </div>
-        </div>
-        } @else if (meetLinkEditing()) {
-        <div class="field-content">
-          <input class="text-input" type="url" formControlName="meetLink" inputmode="url"
-            [placeholder]="i18n.t('event.meetPastePlaceholder')" />
-          <p class="hint-text">{{ i18n.t('event.meetOpenHint') }}</p>
-          <button type="button" class="text-btn compact" (click)="generateVideoCallLink()">
-            {{ i18n.t('event.meetQuickRoom') }}
-          </button>
         </div>
         } @else {
         <button type="button" class="field-toggle" (click)="openGoogleMeet()">
