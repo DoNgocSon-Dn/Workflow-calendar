@@ -353,22 +353,17 @@
 /* Khối đang được "nhấc" để kéo (chuột nhấn giữ, hoặc chạm giữ ~350ms). Bỏ
    transition cho transform để khối bám sát ngón tay/con trỏ, không trễ. */
 .event-block.dragging {
-  /* Vị trí (top/left) đổi qua style binding, KHÔNG qua transform — nên cho
-     transform một transition ngắn để cú "nhấc" nở ra mượt, không giật, mà vẫn
-     bám sát ngón tay. */
-  transform: scale(1.025);
+  /* KHÔNG transition trong lúc kéo: `transform` (di chuyển) và `top/height`
+     (đổi độ dài) đổi mỗi frame — bất kỳ transition nào cũng làm khối trễ sau
+     ngón tay, đúng cảm giác "không mượt". Khi thả, class này bị gỡ, transition
+     ở `.event-block` gốc lo phần "lắng về chỗ" mượt. */
+  transition: none;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
   border-color: rgba(255, 255, 255, 0.9);
   z-index: 30;
   cursor: grabbing;
-  transition: transform 0.12s ease, box-shadow 0.15s ease, border-color 0.15s ease;
   opacity: 0.97;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .event-block.dragging {
-    transition: none;
-  }
+  will-change: transform, top, height;
 }
 
 .resize-handle {

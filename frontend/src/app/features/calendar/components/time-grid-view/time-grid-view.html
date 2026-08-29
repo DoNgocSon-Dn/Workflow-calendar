@@ -145,10 +145,11 @@
                 class="event-block"
                 [class.conflict]="store.conflictingEventIds().has(pe.event.id)"
                 [class.dragging]="isDragging(pe.event.id)"
-                [style.top.px]="blockTop(pe)"
-                [style.height.px]="blockHeight(pe)"
+                [style.top.px]="blockTop(pe) + resizeTopOffset(pe.event.id)"
+                [style.height.px]="blockHeight(pe) + resizeHeightDelta(pe.event.id)"
                 [style.left.%]="pe.leftPct"
                 [style.width.%]="pe.widthPct"
+                [style.transform]="moveTransform(pe.event.id)"
                 [style.--chip-color]="colorFor(pe.event)"
                 (pointerdown)="onBlockPointerDown($event, pe)"
                 (mousedown)="$event.stopPropagation()"
@@ -161,7 +162,7 @@
                 ></div>
                 <div class="block-content">
                   <span class="block-title">{{ pe.event.title }}</span>
-                  <span class="block-time">{{ formatTimeLabel(pe.event.start) }}</span>
+                  <span class="block-time">{{ liveTimeLabel(pe) }}</span>
                 </div>
                 <div
                   class="resize-handle resize-handle--bottom"

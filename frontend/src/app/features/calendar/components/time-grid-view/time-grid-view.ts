@@ -52,12 +52,26 @@ interface DragCreateState {
   endMin: number;
 }
 
-interface DragDeltaState {
+/**
+ * Trạng thái đang KÉO một sự kiện. Tách rõ hai loại giá trị:
+ *  - `dxPx`/`dyPx`: độ dời PIXEL thô — dùng cho `transform: translate()` để khối
+ *    bám sát ngón tay từng frame, không snap, không re-layout ⇒ mượt.
+ *  - `snapMin`/`snapDays`: giá trị đã snap 15 phút / theo cột — chỉ dùng cho
+ *    nhãn giờ hiển thị và lúc thả ra để lưu.
+ */
+interface DragMoveState {
   eventId: string;
-  deltaMin: number;
-  deltaDays?: number;
-  /** Chỉ dùng cho resize: mép nào đang bị kéo. */
-  edge?: 'top' | 'bottom';
+  dxPx: number;
+  dyPx: number;
+  snapMin: number;
+  snapDays: number;
+}
+
+interface DragResizeState {
+  eventId: string;
+  edge: 'top' | 'bottom';
+  dyPx: number;
+  snapMin: number;
 }
 
 function snap(min: number): number {
@@ -182,40 +196,53 @@ export class TimeGridView {
   protected readonly nowTop = computed(() => (minutesSinceMidnight(this.now()) / 60) * HOUR_HEIGHT);
 
   protected readonly dragCreate = signal<DragCreateState | null>(null);
-  protected readonly dragMove = signal<DragDeltaState | null>(null);
-  protected readonly dragResize = signal<DragDeltaState | null>(null);
+  protected readonly dragMove = signal<DragMoveState | null>(null);
+  protected readonly dragResize = signal<DragResizeState | null>(null);
 
-  /** Khối đang bị kéo/đổi độ dài — để template gắn class `.dragging` (không
-   *  dùng classList vì khối bị render lại khi đổi cột / đổi độ dài). */
+  /** Khối đang bị kéo/đổi độ dài — để template gắn class `.dragging`. */
   protected isDragging(eventId: string): boolean {
     return this.dragMove()?.eventId === eventId || this.dragResize()?.eventId === eventId;
+  }
+
+  /** `transform` cho khối đang được DI CHUYỂN — pixel thô, bám sát ngón tay. */
+  protected moveTransform(eventId: string): string | null {
+    const m = this.dragMove();
+    return m && m.eventId === eventId
+      ? `translate(${m.dxPx}px, ${m.dyPx}px) scale(1.02)`
+      : null;
+  }
+
+  /** Bù `top` / `height` cho khối đang ĐỔI ĐỘ DÀI (kéo mép trên / dưới). */
+  protected resizeTopOffset(eventId: string): number {
+    const r = this.dragResize();
+    return r && r.eventId === eventId && r.edge === 'top' ? r.dyPx : 0;
+  }
+  protected resizeHeightDelta(eventId: string): number {
+    const r = this.dragResize();
+    if (!r || r.eventId !== eventId) return 0;
+    return r.edge === 'bottom' ? r.dyPx : -r.dyPx;
+  }
+
+  /** Giờ hiển thị trên khối — đổi theo vị trí kéo/độ dài đang chỉnh (đã snap). */
+  protected liveTimeLabel(pe: PositionedEvent): string {
+    const m = this.dragMove();
+    const r = this.dragResize();
+    let start = pe.event.start;
+    if (m && m.eventId === pe.event.id) start = addMinutes(start, m.snapMin);
+    else if (r && r.eventId === pe.event.id && r.edge === 'top')
+      start = addMinutes(start, r.snapMin);
+    return this.formatTimeLabel(start);
   }
 
   protected readonly Math = Math;
 
   protected readonly timedEventsByDay = computed(() => {
     const map = new Map<string, PositionedEvent[]>();
-    const resizeState = this.dragResize();
-    const moveState = this.dragMove();
 
-    // Map events with active drag modifications so multi-day clipping works dynamically during live dragging
-    const events = this.store.visibleEvents().map((e) => {
-      if (resizeState && resizeState.eventId === e.id) {
-        return resizeState.edge === 'top'
-          ? { ...e, start: addMinutes(e.start, resizeState.deltaMin) }
-          : { ...e, end: addMinutes(e.end, resizeState.deltaMin) };
-      }
-      if (moveState && moveState.eventId === e.id) {
-        let newStart = addMinutes(e.start, moveState.deltaMin);
-        let newEnd = addMinutes(e.end, moveState.deltaMin);
-        if (moveState.deltaDays) {
-          newStart = addDays(newStart, moveState.deltaDays);
-          newEnd = addDays(newEnd, moveState.deltaDays);
-        }
-        return { ...e, start: newStart, end: newEnd };
-      }
-      return e;
-    });
+    // KHÔNG nhào nặn sự kiện đang kéo vào đây nữa: khối đang kéo được dời bằng
+    // `transform: translate()` (xem moveTransform / resizeHeightDelta) nên bố
+    // cục cả ngày đứng yên suốt lúc kéo ⇒ không re-layout mỗi frame ⇒ mượt.
+    const events = this.store.visibleEvents();
 
     for (const day of this.days()) {
       const dayStart = startOfDay(day);
@@ -502,6 +529,10 @@ export class TimeGridView {
     let slid = false;
     let animFrameId: number | null = null;
     let longPressTimer: number | null = null;
+    // Đo TỌA ĐỘ CÁC CỘT một lần lúc nhấc, không đo lại mỗi frame (getBounding
+    // ClientRect trong vòng lặp là thủ phạm giật kinh điển — buộc reflow).
+    let colRects: DOMRect[] = [];
+    let startDayIndex = 0;
 
     if (isTouch) {
       try {
@@ -520,30 +551,23 @@ export class TimeGridView {
         else if (lastY > cRect.bottom - 40) container.scrollTop += 12;
       }
 
-      // Cộng bù phần lưới đã tự cuộn từ lúc nhấc, để khối bám đúng ngón tay
-      // trong "toạ độ lưới" chứ không lệch dần khi auto-scroll.
+      // Cộng bù phần lưới đã tự cuộn từ lúc nhấc, để khối bám đúng ngón tay.
       const scrolled = (container?.scrollTop ?? 0) - startScrollTop;
-      const dy = lastY - startY + scrolled;
-      const dx = lastX - startX;
-      if (Math.abs(dy) > 3 || Math.abs(dx) > 10) moved = true;
+      const dyPx = lastY - startY + scrolled;
+      const dxPx = lastX - startX;
+      if (Math.abs(dyPx) > 3 || Math.abs(dxPx) > 10) moved = true;
 
-      const deltaMin = snapSigned((dy / HOUR_HEIGHT) * 60);
+      const snapMin = snapSigned((dyPx / HOUR_HEIGHT) * 60);
 
-      let deltaDays = 0;
-      if (container) {
-        const columns = container.querySelectorAll('.day-col');
-        let targetDayIndex = -1;
-        columns.forEach((col, idx) => {
-          const r = col.getBoundingClientRect();
-          if (lastX >= r.left && lastX <= r.right) targetDayIndex = idx;
-        });
-        if (targetDayIndex !== -1) {
-          const startDayIndex = this.days().findIndex((d) => isSameDay(d, pe.event.start));
-          if (startDayIndex !== -1) deltaDays = targetDayIndex - startDayIndex;
+      let snapDays = 0;
+      for (let i = 0; i < colRects.length; i++) {
+        if (lastX >= colRects[i].left && lastX <= colRects[i].right) {
+          snapDays = i - startDayIndex;
+          break;
         }
       }
 
-      this.dragMove.set({ eventId: pe.event.id, deltaMin, deltaDays });
+      this.dragMove.set({ eventId: pe.event.id, dxPx, dyPx, snapMin, snapDays });
     };
 
     const activate = (): void => {
@@ -554,13 +578,20 @@ export class TimeGridView {
       startY = lastY;
       startScrollTop = container?.scrollTop ?? 0;
       moved = false;
+      if (container) {
+        colRects = Array.from(container.querySelectorAll('.day-col')).map((c) =>
+          c.getBoundingClientRect(),
+        );
+        const idx = this.days().findIndex((d) => isSameDay(d, pe.event.start));
+        startDayIndex = idx === -1 ? 0 : idx;
+      }
       if (isTouch) navigator.vibrate?.(8);
       try {
         capEl.setPointerCapture(ev.pointerId);
       } catch {
         /* trình duyệt cũ / phần tử đã bỏ */
       }
-      this.dragMove.set({ eventId: pe.event.id, deltaMin: 0, deltaDays: 0 });
+      this.dragMove.set({ eventId: pe.event.id, dxPx: 0, dyPx: 0, snapMin: 0, snapDays: 0 });
     };
 
     const cleanup = (commit: boolean): void => {
@@ -592,11 +623,11 @@ export class TimeGridView {
         return;
       }
 
-      let newStart = addMinutes(pe.event.start, state.deltaMin);
-      let newEnd = addMinutes(pe.event.end, state.deltaMin);
-      if (state.deltaDays) {
-        newStart = addDays(newStart, state.deltaDays);
-        newEnd = addDays(newEnd, state.deltaDays);
+      let newStart = addMinutes(pe.event.start, state.snapMin);
+      let newEnd = addMinutes(pe.event.end, state.snapMin);
+      if (state.snapDays) {
+        newStart = addDays(newStart, state.snapDays);
+        newEnd = addDays(newEnd, state.snapDays);
       }
       this.store.updateEvent(pe.event.id, { start: newStart, end: newEnd });
     };
@@ -668,12 +699,13 @@ export class TimeGridView {
     const startY = ev.clientY;
     const startScrollTop = container?.scrollTop ?? 0;
     const originalDuration = diffMinutes(pe.event.start, pe.event.end);
+    const origHeightPx = pe.height;
 
     let lastY = startY;
     let engaged = false;
     let animFrameId: number | null = null;
 
-    this.dragResize.set({ eventId: pe.event.id, deltaMin: 0, edge });
+    this.dragResize.set({ eventId: pe.event.id, edge, dyPx: 0, snapMin: 0 });
     try {
       capEl.setPointerCapture(ev.pointerId);
     } catch {
@@ -688,14 +720,18 @@ export class TimeGridView {
         else if (lastY > cRect.bottom - 44) container.scrollTop += 14;
       }
       const scrolled = (container?.scrollTop ?? 0) - startScrollTop;
-      let deltaMin = snapSigned(((lastY - startY + scrolled) / HOUR_HEIGHT) * 60);
+      let dyPx = lastY - startY + scrolled;
+      // Chặn để khối không nhỏ hơn ~12px (giữ đọc được).
+      if (edge === 'bottom') dyPx = Math.max(dyPx, 12 - origHeightPx);
+      else dyPx = Math.min(dyPx, origHeightPx - 12);
+
+      let snapMin = snapSigned((dyPx / HOUR_HEIGHT) * 60);
       if (edge === 'bottom') {
-        if (originalDuration + deltaMin < SNAP_MINUTES) deltaMin = SNAP_MINUTES - originalDuration;
-      } else {
-        // Kéo mép trên xuống (deltaMin > 0) = bắt đầu muộn hơn = ngắn lại.
-        if (originalDuration - deltaMin < SNAP_MINUTES) deltaMin = originalDuration - SNAP_MINUTES;
+        if (originalDuration + snapMin < SNAP_MINUTES) snapMin = SNAP_MINUTES - originalDuration;
+      } else if (originalDuration - snapMin < SNAP_MINUTES) {
+        snapMin = originalDuration - SNAP_MINUTES;
       }
-      this.dragResize.set({ eventId: pe.event.id, deltaMin, edge });
+      this.dragResize.set({ eventId: pe.event.id, edge, dyPx, snapMin });
     };
 
     const onPointerMove = (e: PointerEvent): void => {
@@ -718,11 +754,11 @@ export class TimeGridView {
       if (animFrameId) cancelAnimationFrame(animFrameId);
       const state = this.dragResize();
       this.dragResize.set(null);
-      if (commit && state && state.deltaMin !== 0) {
+      if (commit && state && state.snapMin !== 0) {
         if (edge === 'bottom') {
-          this.store.updateEvent(pe.event.id, { end: addMinutes(pe.event.end, state.deltaMin) });
+          this.store.updateEvent(pe.event.id, { end: addMinutes(pe.event.end, state.snapMin) });
         } else {
-          this.store.updateEvent(pe.event.id, { start: addMinutes(pe.event.start, state.deltaMin) });
+          this.store.updateEvent(pe.event.id, { start: addMinutes(pe.event.start, state.snapMin) });
         }
       }
     };
