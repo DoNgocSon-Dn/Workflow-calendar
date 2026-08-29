@@ -8,7 +8,7 @@
   "lang": "vi-VN",
   "dir": "ltr",
   "display": "standalone",
-  "display_override": ["tabbed", "window-controls-overlay", "standalone", "minimal-ui"],
+  "display_override": ["tabbed", "standalone"],
   "orientation": "portrait-primary",
   "background_color": "#060608",
   "theme_color": "#2563eb",
@@ -26,7 +26,7 @@
       "origin": "workflow-calendar.vercel.app"
     },
     {
-      "origin": "*.vercel.app"
+      "origin": "https://workflow-calendar.vercel.app"
     }
   ],
   "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
