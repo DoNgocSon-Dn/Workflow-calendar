@@ -226,6 +226,16 @@ export class CalendarPage {
     void this.store.respondToInvite(payload.eventId, payload.status);
   }
 
+  onRespondJoinRequest(payload: {
+    groupId: string;
+    requestId: string;
+    status: 'accepted' | 'declined';
+  }): void {
+    void (payload.status === 'accepted'
+      ? this.groupStore.approveJoinRequest(payload.groupId, payload.requestId)
+      : this.groupStore.declineJoinRequest(payload.groupId, payload.requestId));
+  }
+
   onViewDetail(eventId: string): void {
     // Must search visibleEvents (not just events), since agenda items can be
     // read-only holiday entries that live in a separate static list. Fallback

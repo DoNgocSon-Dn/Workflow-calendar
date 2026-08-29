@@ -49,6 +49,14 @@
                 {{ i18n.t('notif.decline') }}
               </button>
             }
+            @if (item.kind === 'decision' && item.groupId && item.requestId) {
+              <button type="button" class="toast__btn toast__btn--primary" (click)="onRespondJoinRequest(item, 'accepted')">
+                {{ i18n.t('notif.agree') }}
+              </button>
+              <button type="button" class="toast__btn toast__btn--ghost" (click)="onRespondJoinRequest(item, 'declined')">
+                {{ i18n.t('notif.decline') }}
+              </button>
+            }
             <!-- Nút đầu tiên vì đây là việc cần làm NGAY: nhắc tới giờ họp mà
                  phải bấm "Xem chi tiết" rồi mới tìm được link thì buổi họp đã
                  bắt đầu. Là <a href> chứ không phải <button>: người dùng còn
@@ -75,13 +83,13 @@
               <button type="button" class="toast__btn toast__btn--primary" (click)="onViewDetail(eventId, item.id)">
                 {{ i18n.t('notifPopup.viewDetail') }}
               </button>
-            } @else if (item.groupId) {
+            } @else if (item.groupId && item.kind !== 'decision') {
               <button type="button" class="toast__btn toast__btn--primary" (click)="onItemClick(item)">
                 {{ item.kind === 'message' ? 'Mở Chat' : 'Xem' }}
               </button>
             }
 
-            @if (item.kind !== 'invite') {
+            @if (item.kind !== 'invite' && item.kind !== 'decision') {
             <div class="toast__snooze">
               <button
                 type="button"
@@ -131,8 +139,12 @@
 
       <!-- Thanh này VỪA là chỉ báo thời gian VỪA là đồng hồ đếm: animationend
            của nó chính là lúc hết giờ, nên hover tạm dừng animation là tạm
-           dừng luôn việc tự tắt, không cần timer riêng ở TypeScript. -->
-      <span class="toast__progress" aria-hidden="true" (animationend)="onProgressEnd(item.id)"></span>
+           dừng luôn việc tự tắt, không cần timer riêng ở TypeScript.
+           'decision' (duyệt yêu cầu vào nhóm) KHÔNG có thanh này — phải chờ
+           trưởng nhóm bấm nút, không được tự tắt. -->
+      @if (item.kind !== 'decision') {
+        <span class="toast__progress" aria-hidden="true" (animationend)="onProgressEnd(item.id)"></span>
+      }
     </div>
   }
 </div>

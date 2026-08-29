@@ -604,6 +604,19 @@ export class GroupStore {
             createdAt: payload.request.createdAt,
           }),
         );
+        // Việc CẦN QUYẾT ĐỊNH → nổi popup kèm nút Đồng ý/Từ chối. Backend chỉ
+        // bắn 'group:joinRequested' tới LEADER/ADMIN nên nhận được là đã đủ quyền.
+        const requester =
+          payload.request.requesterName ||
+          payload.request.requesterEmail ||
+          this.nt('nd.joinRequest.someone');
+        this.notificationQueue.pushDecision({
+          id: `join-request-${payload.request.id}`,
+          groupId: payload.groupId,
+          requestId: payload.request.id,
+          title: this.nt('nq.joinRequestTitle'),
+          body: groupName ? `${requester} · ${groupName}` : requester,
+        });
       },
     );
 
@@ -856,22 +869,9 @@ export class GroupStore {
       this.notifications.ingest(groupMessageDraft(this.nt, input));
     }
 
-    const isCurrentlyInThisChat =
-      this.activeGroupId() === (group?.id ?? message.groupId) &&
-      this.activeWorkspaceModalOpen() &&
-      this.activeWorkspaceTab() === 'chat';
-
-    if (!isCurrentlyInThisChat) {
-      const senderDisplayName = message.senderName || message.senderEmail?.split('@')[0] || 'Thành viên';
-      this.notificationQueue.push({
-        id: `toast-msg-${message.id}`,
-        title: group?.name ? `${senderDisplayName} (${group.name})` : senderDisplayName,
-        body: text || 'Đã gửi tin nhắn mới',
-        kind: 'message',
-        groupId: group?.id ?? message.groupId,
-        messageId: message.id,
-      });
-    }
+    // Tin nhắn KHÔNG bật popup — theo ranh giới "chuông = nhật ký, popup = việc
+    // cần chú ý ngay" (xem NotificationQueue). Người dùng thấy badge chưa đọc ở
+    // sidebar/chuông + tab Chat. (Trước đây có toast; đã bỏ theo yêu cầu tách luồng.)
   }
 
   /** Không đánh dấu unread nếu người dùng đang nhìn thẳng vào đúng tab Chat
@@ -907,10 +907,6 @@ export class GroupStore {
     return lower.includes(email.toLowerCase()) || lower.includes(`@${localPart}`);
   }
 
-  private taskStatusLabel(status: GroupTask['status']): string {
-    return status === 'done' ? 'Hoàn thành' : status === 'in_progress' ? 'Đang làm' : 'Cần làm';
-  }
-
   private notifyTaskEvent(groupId: string, task: GroupTask, kind: 'created' | 'updated'): void {
     const currentUserId = this.authStore.user()?.id;
     if (!currentUserId) return;
@@ -936,13 +932,8 @@ export class GroupStore {
       // ingest() tự dedupe theo id ổn định (task-assigned-<taskId>) — không
       // cần Set riêng, nên không có nguy cơ "khoá cứng" chặn mất các lần báo
       // hợp lệ sau này như trước (Set cũ không tính theo status/nội dung).
-      if (!this.notifications.ingest(groupTaskAssignedDraft(this.nt, input))) return;
-      this.notificationQueue.push({
-        id: `toast-task-assigned-${task.id}`,
-        title: 'Nhiệm vụ mới',
-        body: `Bạn được phân công nhiệm vụ "${task.title}" trong ${groupName}`,
-        kind: 'created',
-      });
+      // Được giao việc mới = hoạt động, không phải "quyết định" → chỉ vào chuông.
+      this.notifications.ingest(groupTaskAssignedDraft(this.nt, input));
       return;
     }
 
@@ -952,14 +943,8 @@ export class GroupStore {
       task.assignedTo === currentUserId || task.createdBy === currentUserId || this.isActiveGroup(groupId);
     if (!shouldNotify) return;
 
-    const draft = groupTaskUpdatedDraft(this.nt, input);
-    if (!this.notifications.ingest(draft)) return;
-    this.notificationQueue.push({
-      id: `toast-${draft.id}`,
-      title: 'Cập nhật nhiệm vụ',
-      body: `Nhiệm vụ "${task.title}" trong ${groupName} đã chuyển sang "${this.taskStatusLabel(task.status)}"`,
-      kind: 'updated',
-    });
+    // Đổi trạng thái / nội dung việc = hoạt động → chỉ vào chuông, không popup.
+    this.notifications.ingest(groupTaskUpdatedDraft(this.nt, input));
   }
 
   /** Cùng bộ lọc với notifyTaskEvent() (chỉ báo nếu đang được giao việc đó) */
@@ -971,13 +956,8 @@ export class GroupStore {
 
     const group = this.groups().find((g) => g.id === groupId);
     const groupName = group?.name ?? 'nhóm của bạn';
-    if (!this.notifications.ingest(groupTaskDeletedDraft(this.nt, taskId, title ?? 'Công việc', groupName))) return;
-    this.notificationQueue.push({
-      id: `task-deleted-${taskId}`,
-      title: 'Xóa nhiệm vụ',
-      body: `Nhiệm vụ "${title}" bạn được phân công đã bị xóa`,
-      kind: 'deleted',
-    });
+    // Việc bị xoá = hoạt động → chỉ vào chuông, không popup.
+    this.notifications.ingest(groupTaskDeletedDraft(this.nt, taskId, title ?? 'Công việc', groupName));
   }
 
   /** Đánh dấu task vừa được chính người dùng này sửa, để bỏ qua tiếng vọng

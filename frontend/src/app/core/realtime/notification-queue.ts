@@ -6,15 +6,32 @@ export type NotificationKind =
   | 'deleted'
   | 'reminder'
   | 'invite'
+  | 'decision'
   | 'success'
   | 'conflict'
   | 'message';
 
+/**
+ * Ranh giới giữa hai hệ thống thông báo (yêu cầu "tách luồng"):
+ *
+ * - **Quả chuông** (`NotificationService.ingest`) = NHẬT KÝ HOẠT ĐỘNG. Mọi việc
+ *   "chỉ để biết" đi vào đây: có người nhắn tin, ai đó đổi trạng thái / xoá /
+ *   được giao một công việc, thành viên mới vào nhóm. Không tự bật popup.
+ * - **Popup** (`NotificationQueue`) = việc CẦN CHÚ Ý NGAY:
+ *     · `kind: 'reminder'` — nhắc trước / tới giờ họp.
+ *     · `kind: 'invite'` / `kind: 'decision'` — cần một quyết định (nhận/từ chối
+ *       lời mời sự kiện, DUYỆT yêu cầu vào nhóm). Kèm nút hành động, KHÔNG tự tắt
+ *       (bỏ thanh đếm giờ trong `notification-popup.html`).
+ *
+ * Một việc "cần quyết định" vẫn ingest vào chuông song song để có bản lưu vết.
+ */
 export interface NotificationItem {
   id: string;
   eventId?: string;
   groupId?: string;
   messageId?: string;
+  /** Chỉ với `kind: 'decision'` — yêu cầu tham gia nhóm cần duyệt. */
+  requestId?: string;
   title: string;
   body: string;
   kind: NotificationKind;
@@ -40,6 +57,19 @@ export class NotificationQueue {
    * vì chỉ hẹn giờ lại cục bộ — set bởi CalendarStore để tránh phụ thuộc
    * vòng (store phụ thuộc queue, không phải ngược lại). */
   onSnoozeReminder: ((reminderId: string, minutes: number) => void) | null = null;
+
+  /** Popup "cần quyết định" (duyệt yêu cầu vào nhóm...). Không tự tắt — người
+   *  dùng phải bấm Đồng ý / Từ chối / Bỏ qua. `id` ổn định nên nhận lại event
+   *  realtime nhiều lần không nhân đôi. */
+  pushDecision(item: {
+    id: string;
+    title: string;
+    body: string;
+    groupId?: string;
+    requestId?: string;
+  }): void {
+    this.push({ ...item, kind: 'decision' });
+  }
 
   push(item: Omit<NotificationItem, 'id'> & { id?: string }): void {
     const full: NotificationItem = { ...item, id: item.id ?? crypto.randomUUID() };
