@@ -1,8 +1,4 @@
 :host {
-  /* Nằm trong .view-area (position:relative) — nhét ngay sau <main> mở thẻ,
-     trước lưới lịch thật (app-month-view/time-grid-view/agenda-view đã có
-     z-index:1 riêng ở calendar-page.css) nên tự động ở LỚP DƯỚI mà không
-     cần đụng tới CSS của .view-area. */
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -16,166 +12,85 @@
   overflow: hidden;
 }
 
-/* Neo ở góc trên-phải, đủ lớn để "cảm" được nhưng không lấn hết vùng lịch —
-   cành rủ xuống từ đây, phần còn lại của lưới lịch vẫn đọc rõ như thường. */
-/* Neo ở góc trên-phải, mờ nhẹ tạo chiều sâu không khí mà không lấn vùng lịch */
+/* Neo CHÍNH GIỮA màn hình cho TẤT CẢ các Motif ngày lễ — mờ nhẹ nhã nhặn, hòa quyện bằng radial gradient mask */
 .holiday-backdrop__motif {
   position: absolute;
-  top: 0;
-  right: 0;
-  width: min(44vw, 500px);
-  height: min(60%, 440px);
-  opacity: 0.32;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, -50%);
+  width: min(48vw, 520px);
+  height: min(58%, 440px);
+  opacity: 0.28;
   filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.05));
+  mask-image: radial-gradient(60% 60% at 50% 50%, #000 50%, transparent 100%);
+  -webkit-mask-image: radial-gradient(60% 60% at 50% 50%, #000 50%, transparent 100%);
 }
 
 @media (max-width: 900px) {
   .holiday-backdrop__motif {
-    width: min(65vw, 360px);
-    height: min(45%, 280px);
-    opacity: 0.25;
-  }
-}
-
-/* Cụm Bánh Răng Cơ Khí 1/5 — đặt CHÍNH GIỮA màn hình mờ dịu nhã nhặn */
-.holiday-backdrop--labor-day .holiday-backdrop__motif {
-  top: 50%;
-  left: 50%;
-  right: auto;
-  transform: translate(-50%, -50%);
-  width: min(46vw, 480px);
-  height: min(56%, 420px);
-  opacity: 0.25;
-  mask-image: radial-gradient(60% 60% at 50% 50%, #000 50%, transparent 100%);
-  -webkit-mask-image: radial-gradient(60% 60% at 50% 50%, #000 50%, transparent 100%);
-}
-
-:host-context(.dark) .holiday-backdrop--labor-day .holiday-backdrop__motif {
-  opacity: 0.30;
-}
-
-@media (max-width: 1200px) {
-  .holiday-backdrop--labor-day .holiday-backdrop__motif {
-    width: min(52vw, 380px);
-    height: min(44%, 310px);
+    width: min(70vw, 320px);
+    height: min(40%, 240px);
     opacity: 0.20;
   }
 }
 
-@media (max-width: 900px) {
-  .holiday-backdrop--labor-day .holiday-backdrop__motif {
-    width: min(68vw, 280px);
-    height: min(34%, 200px);
-    opacity: 0.16;
-  }
-}
-
-/* Cờ + skyline Quốc khánh — đặt CHÍNH GIỮA màn hình, mask mờ mềm mỏng */
-.holiday-backdrop--national-day .holiday-backdrop__motif {
+/* Cụm Bánh Răng Cơ Khí 1/5 */
+.holiday-backdrop--labor-day .holiday-backdrop__motif {
   top: 50%;
   left: 50%;
-  right: auto;
-  transform: translate(-50%, -50%);
-  width: min(44vw, 480px);
-  height: min(55%, 400px);
-  opacity: 0.24;
-  mask-image: radial-gradient(60% 60% at 50% 50%, #000 45%, transparent 100%);
-  -webkit-mask-image: radial-gradient(60% 60% at 50% 50%, #000 45%, transparent 100%);
-}
-
-@media (max-width: 1200px) {
-  .holiday-backdrop--national-day .holiday-backdrop__motif {
-    width: min(50vw, 380px);
-    height: min(42%, 300px);
-    opacity: 0.2;
-  }
-}
-
-@media (max-width: 900px) {
-  .holiday-backdrop--national-day .holiday-backdrop__motif {
-    width: min(65vw, 270px);
-    height: min(32%, 190px);
-    opacity: 0.16;
-  }
-}
-
-/* Cờ 30/4 + Dinh Độc Lập — đặt CHÍNH GIỮA, mờ dịu */
-.holiday-backdrop--flag .holiday-backdrop__motif {
-  top: 50%;
-  left: 50%;
-  right: auto;
-  transform: translate(-50%, -50%);
-  width: min(46vw, 500px);
-  height: min(56%, 420px);
-  opacity: 0.24;
-  mask-image: radial-gradient(60% 60% at 50% 50%, #000 45%, transparent 100%);
-  -webkit-mask-image: radial-gradient(60% 60% at 50% 50%, #000 45%, transparent 100%);
-}
-
-@media (max-width: 1200px) {
-  .holiday-backdrop--flag .holiday-backdrop__motif {
-    width: min(52vw, 400px);
-    height: min(44%, 320px);
-    opacity: 0.2;
-  }
-}
-
-@media (max-width: 900px) {
-  .holiday-backdrop--flag .holiday-backdrop__motif {
-    width: min(65vw, 290px);
-    height: min(34%, 210px);
-    opacity: 0.16;
-  }
-}
-
-/* Trống đồng Đông Sơn — mờ nhẹ nhã nhặn giữa màn hình */
-.holiday-backdrop--dong-son .holiday-backdrop__motif {
-  top: 50%;
-  left: 50%;
-  right: auto;
   transform: translate(-50%, -50%);
   width: min(46vw, 480px);
   height: min(56%, 420px);
   opacity: 0.25;
-  mask-image: radial-gradient(60% 60% at 50% 50%, #000 50%, transparent 100%);
-  -webkit-mask-image: radial-gradient(60% 60% at 50% 50%, #000 50%, transparent 100%);
 }
 
-@media (max-width: 1200px) {
-  .holiday-backdrop--dong-son .holiday-backdrop__motif {
-    width: min(52vw, 380px);
-    height: min(44%, 310px);
-    opacity: 0.2;
-  }
+/* Cờ + skyline Quốc khánh */
+.holiday-backdrop--national-day .holiday-backdrop__motif {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(44vw, 480px);
+  height: min(55%, 400px);
+  opacity: 0.24;
 }
 
-@media (max-width: 900px) {
-  .holiday-backdrop--dong-son .holiday-backdrop__motif {
-    width: min(68vw, 280px);
-    height: min(34%, 200px);
-    opacity: 0.16;
-  }
+/* Cờ 30/4 + Dinh Độc Lập */
+.holiday-backdrop--flag .holiday-backdrop__motif {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(46vw, 500px);
+  height: min(56%, 420px);
+  opacity: 0.24;
 }
 
-/* Đồng hồ giao thừa + pháo hoa — mờ nhẹ ở góc */
+/* Trống đồng Đông Sơn */
+.holiday-backdrop--dong-son .holiday-backdrop__motif {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(46vw, 480px);
+  height: min(56%, 420px);
+  opacity: 0.25;
+}
+
+/* Đồng hồ giao thừa + pháo hoa Tết Dương Lịch — đặt CHÍNH GIỮA màn hình */
 .holiday-backdrop--new-year .holiday-backdrop__motif {
-  width: min(38vw, 420px);
-  height: min(52%, 380px);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(48vw, 520px);
+  height: min(58%, 440px);
   opacity: 0.28;
 }
 
-@media (max-width: 1200px) {
-  .holiday-backdrop--new-year .holiday-backdrop__motif {
-    width: min(44vw, 340px);
-    height: min(40%, 270px);
-    opacity: 0.22;
-  }
-}
-
-@media (max-width: 900px) {
-  .holiday-backdrop--new-year .holiday-backdrop__motif {
-    width: min(55vw, 250px);
-    height: min(28%, 180px);
-    opacity: 0.18;
-  }
+/* Cành Đào Tết Nguyên Đán — đặt CHÍNH GIỮA màn hình */
+.holiday-backdrop--tet .holiday-backdrop__motif {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(48vw, 520px);
+  height: min(58%, 440px);
+  opacity: 0.28;
 }

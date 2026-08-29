@@ -395,6 +395,26 @@ export class GroupsController {
     return this.groupsService.toggleReaction(supabase, user, groupId, messageId, dto.emoji);
   }
 
+  @Post(':id/messages/:messageId/pin')
+  async pinMessage(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('id') groupId: string,
+    @Param('messageId') messageId: string,
+  ) {
+    return this.groupsService.setPinned(supabase, user, groupId, messageId, true);
+  }
+
+  @Delete(':id/messages/:messageId/pin')
+  async unpinMessage(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('id') groupId: string,
+    @Param('messageId') messageId: string,
+  ) {
+    return this.groupsService.setPinned(supabase, user, groupId, messageId, false);
+  }
+
   @Post(':id/messages')
   async sendMessage(
     @CurrentSupabase() supabase: SupabaseClient,

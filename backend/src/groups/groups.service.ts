@@ -210,6 +210,8 @@ export interface GroupMessageDto {
   replyPreview?: string;
   replySenderName?: string;
   replyDeleted?: boolean;
+  pinnedAt?: string;
+  pinnedBy?: string;
 }
 
 @Injectable()
@@ -581,6 +583,8 @@ export class GroupsService {
       replyPreview: row.reply_preview ?? undefined,
       replySenderName: row.reply_sender_name ?? undefined,
       replyDeleted: row.reply_deleted ?? undefined,
+      pinnedAt: row.pinned_at ?? undefined,
+      pinnedBy: row.pinned_by ?? undefined,
     };
   }
 
@@ -2758,6 +2762,52 @@ export class GroupsService {
       added,
     });
     return { added };
+  }
+
+  // ---- Ghim tin nhắn (Trưởng/Phó nhóm, migration 45) ----
+
+  async setPinned(
+    supabase: SupabaseClient,
+    user: User,
+    groupId: string,
+    messageId: string,
+    pinned: boolean,
+  ): Promise<{ pinned: boolean }> {
+    const role = await this.requireRole(supabase, user, groupId);
+    if (!canInvite(role)) {
+      throw new ForbiddenException(
+        'Chỉ Trưởng nhóm hoặc Phó nhóm mới ghim được tin nhắn',
+      );
+    }
+
+    const { data, error } = await supabase
+      .from('group_messages')
+      .update({
+        pinned_at: pinned ? new Date().toISOString() : null,
+        pinned_by: pinned ? user.id : null,
+      })
+      .eq('id', messageId)
+      .eq('group_id', groupId)
+      .is('deleted_at', null)
+      .select('id')
+      .maybeSingle();
+    if (error) {
+      if (error.code === '42703') {
+        throw new InternalServerErrorException(
+          'Tính năng ghim tin cần chạy migration 45_group_message_pin.sql',
+        );
+      }
+      throw new InternalServerErrorException(error.message);
+    }
+    if (!data) throw new NotFoundException('Không tìm thấy tin nhắn');
+
+    await this.emitToGroupRooms(supabase, groupId, 'group:messagePinned', {
+      groupId,
+      messageId,
+      pinned,
+      pinnedBy: pinned ? user.id : null,
+    });
+    return { pinned };
   }
 
   // Realtime Group Messages
