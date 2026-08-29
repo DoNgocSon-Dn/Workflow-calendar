@@ -355,6 +355,26 @@ export class GroupApiService {
     );
   }
 
+  /** Mốc "đã đọc tới đâu" của từng thành viên — để hiện "Đã xem". */
+  async getMessageReads(groupId: string): Promise<{ userId: string; at: string }[]> {
+    return firstValueFrom(
+      this.http.get<{ userId: string; at: string }[]>(
+        `${environment.apiUrl}/groups/${groupId}/message-reads`,
+        { headers: this.authHeaders },
+      ),
+    );
+  }
+
+  async markMessagesRead(groupId: string): Promise<{ at: string }> {
+    return firstValueFrom(
+      this.http.post<{ at: string }>(
+        `${environment.apiUrl}/groups/${groupId}/messages/read`,
+        {},
+        { headers: this.authHeaders },
+      ),
+    );
+  }
+
   async sendMessage(
     groupId: string,
     message: string,

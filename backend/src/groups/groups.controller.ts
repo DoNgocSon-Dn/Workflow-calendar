@@ -358,6 +358,23 @@ export class GroupsController {
     return this.groupsService.getMessages(supabase, groupId);
   }
 
+  @Get(':id/message-reads')
+  async getMessageReads(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @Param('id') groupId: string,
+  ) {
+    return this.groupsService.getMessageReads(supabase, groupId);
+  }
+
+  @Post(':id/messages/read')
+  async markMessagesRead(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('id') groupId: string,
+  ) {
+    return this.groupsService.markMessagesRead(supabase, user, groupId);
+  }
+
   @Post(':id/messages')
   async sendMessage(
     @CurrentSupabase() supabase: SupabaseClient,

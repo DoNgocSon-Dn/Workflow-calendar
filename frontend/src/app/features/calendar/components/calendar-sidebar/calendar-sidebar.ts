@@ -149,12 +149,13 @@ export class CalendarSidebar implements OnInit {
     const emojis = this.holidayEmojis();
     if (!this.particlesEnabled() || emojis.length === 0) return [];
 
-    return Array.from({ length: 22 }, (_, i) => ({
+    // Chỉ giữ 8 icon nhỏ tinh tế, mờ nhẹ để tuyệt đối không làm rối mắt
+    return Array.from({ length: 8 }, (_, i) => ({
       emoji: emojis[i % emojis.length],
-      leftPercent: (i * 137.5) % 94,
-      delaySeconds: (i % 6) * 0.4,
-      durationSeconds: 5.5 + (i % 5) * 0.9,
-      sizePx: 14 + (i % 5) * 3,
+      leftPercent: ((i * 11) + 6) % 88,
+      delaySeconds: i * 0.9,
+      durationSeconds: 7.5 + (i % 4) * 1.2,
+      sizePx: 12 + (i % 3) * 2,
     }));
   });
 

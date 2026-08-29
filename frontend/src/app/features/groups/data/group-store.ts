@@ -104,6 +104,10 @@ export class GroupStore {
   /** Phòng họp "đang mở" của nhóm ĐANG XEM (null nếu chưa có / migration 40 chưa
    *  chạy). Đặt lại mỗi lần đổi nhóm trong `selectGroup`. */
   readonly meeting = signal<GroupMeeting | null>(null);
+
+  /** userId → mốc ISO "đã đọc tới đâu" của nhóm ĐANG XEM (cho "Đã xem"). */
+  readonly messageReads = signal<Record<string, string>>({});
+  private lastMarkReadAt = 0;
   /** Tin nhắn cần cuộn tới sau khi mở tab Trò chuyện. */
   readonly pendingChatMessageId = signal<string | null>(null);
   /** ID các nhóm có tin nhắn chưa đọc — cho sidebar "sáng lên" kiểu Messenger
@@ -635,6 +639,19 @@ export class GroupStore {
       },
     );
 
+    // Ai đó vừa đọc tới đâu → cập nhật "Đã xem".
+    this.realtime.on<{ groupId: string; userId: string; at: string }>(
+      'group:messageRead',
+      (payload) => {
+        if (!payload || !this.isActiveGroup(payload.groupId)) return;
+        this.messageReads.update((prev) => {
+          const cur = prev[payload.userId];
+          if (cur && cur >= payload.at) return prev;
+          return { ...prev, [payload.userId]: payload.at };
+        });
+      },
+    );
+
     // Yêu cầu vừa được duyệt: thành viên hiện có refresh danh sách ngay.
     this.realtime.on<{ groupId: string; member: GroupMember }>(
       'group:memberJoined',
@@ -1110,6 +1127,8 @@ export class GroupStore {
     // lý, hoặc (với người không thuộc nhóm cũ) trả null gây điều hướng tab lặp.
     this.members.set([]);
     this.meeting.set(null);
+    this.messageReads.set({});
+    this.lastMarkReadAt = 0;
     this.activeWorkspaceModalOpen.set(true);
     this.clearGroupUnread(group.id);
     // Đọc rồi xoá ngay trong cùng chỗ — chỉ MỘT nơi tiêu thụ cờ này, tránh
@@ -1131,6 +1150,34 @@ export class GroupStore {
 
     await Promise.all([this.loadMembers(group.id), this.loadTasks(group.id), this.loadMessages(group.id)]);
     void this.loadMeeting(group.id);
+    void this.loadMessageReads(group.id);
+  }
+
+  async loadMessageReads(groupId: string): Promise<void> {
+    try {
+      const rows = await this.api.getMessageReads(groupId);
+      if (this.activeGroupId() !== groupId) return;
+      const map: Record<string, string> = {};
+      for (const r of rows) map[r.userId] = r.at;
+      this.messageReads.set(map);
+    } catch {
+      /* migration 42 chưa chạy / lỗi mạng — ẩn "Đã xem" */
+    }
+  }
+
+  /** Đánh dấu đã đọc hết chat của nhóm — gọi khi người dùng đang nhìn tab Chat.
+   *  Bóp ga 3s để gõ/cuộn liên tục không spam API. */
+  markGroupMessagesRead(groupId: string): void {
+    const now = Date.now();
+    if (now - this.lastMarkReadAt < 3000) return;
+    this.lastMarkReadAt = now;
+    const me = this.authStore.user()?.id;
+    if (me) {
+      this.messageReads.update((prev) => ({ ...prev, [me]: new Date().toISOString() }));
+    }
+    void this.api.markMessagesRead(groupId).catch(() => {
+      this.lastMarkReadAt = 0; // cho thử lại sớm nếu lỗi
+    });
   }
 
   async loadMeeting(groupId: string): Promise<void> {

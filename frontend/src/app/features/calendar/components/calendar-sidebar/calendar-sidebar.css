@@ -28,20 +28,25 @@
 
 .sidebar-particle {
   position: absolute;
-  top: -40px;
+  top: -30px;
   animation: sidebar-particle-fall linear infinite;
   user-select: none;
   z-index: 0;
+  opacity: 0.3;
+  filter: saturate(0.85);
 }
 
 @keyframes sidebar-particle-fall {
   0% {
     transform: translateY(0) rotate(0deg);
-    opacity: 0.85;
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.22;
   }
   100% {
-    transform: translateY(calc(100vh + 50px)) rotate(360deg);
-    opacity: 0.15;
+    transform: translateY(calc(100vh + 40px)) rotate(180deg);
+    opacity: 0.05;
   }
 }
 

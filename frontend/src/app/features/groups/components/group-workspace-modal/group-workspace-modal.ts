@@ -286,6 +286,14 @@ export class GroupWorkspaceModal {
   private static readonly MAX_ATTACHMENT_BYTES = 15 * 1024 * 1024;
 
   constructor() {
+    // Đang nhìn tab Chat + có tin → đánh dấu đã đọc (store tự bóp ga 3s).
+    effect(() => {
+      const msgs = this.store.messages();
+      const group = this.store.activeGroup();
+      if (!group || this.activeTab() !== 'chat' || msgs.length === 0) return;
+      untracked(() => this.store.markGroupMessagesRead(group.id));
+    });
+
     effect(() => {
       const msgs = this.store.messages();
       if (this.activeTab() !== 'chat' || msgs.length === 0) return;
@@ -855,6 +863,38 @@ export class GroupWorkspaceModal {
   /** Tin do chính người đang xem gửi — căn phải, bong bóng màu, không avatar. */
   isMyMessage(msg: GroupMessage): boolean {
     return msg.senderId === this.currentUserId();
+  }
+
+  /** Tin cuối cùng do CHÍNH MÌNH gửi — chỉ hiện "Đã xem" ở đây (kiểu Zalo). */
+  isLastOwnMessage(index: number): boolean {
+    const msgs = this.store.messages();
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      if (msgs[i].senderId === this.currentUserId() && !msgs[i].deletedAt) return i === index;
+    }
+    return false;
+  }
+
+  /** Avatar những người đã đọc tới (hoặc qua) tin này — trừ mình và người gửi. */
+  seenBy(msg: GroupMessage): { userId: string; initial: string; color: string }[] {
+    const reads = this.store.messageReads();
+    const me = this.currentUserId();
+    return this.store
+      .members()
+      .filter((m) => m.userId !== me && m.userId !== msg.senderId)
+      .filter((m) => {
+        const at = reads[m.userId];
+        return !!at && at >= msg.createdAt;
+      })
+      .map((m) => ({
+        userId: m.userId,
+        initial: (this.memberDisplayName(m, m.userId)[0] || 'U').toUpperCase(),
+        color: this.colorForUserIdPublic(m.userId),
+      }));
+  }
+
+  /** Bọc `colorForUserId` (private) cho template dùng ở "Đã xem". */
+  colorForUserIdPublic(userId: string): string {
+    return this.colorForUserId(userId);
   }
 
   /** Ẩn header (tên + giờ lặp lại) khi tin liền trước cùng người gửi và cách
