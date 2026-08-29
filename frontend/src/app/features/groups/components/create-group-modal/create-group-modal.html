@@ -48,6 +48,18 @@
         }
       </div>
 
+      <label class="approval-row">
+        <input
+          type="checkbox"
+          [checked]="requiresApproval()"
+          (change)="requiresApproval.set($any($event.target).checked)"
+        />
+        <span>
+          <strong>{{ i18n.t('createGroup.requiresApproval') }}</strong>
+          <span class="approval-hint">{{ i18n.t('createGroup.requiresApprovalHint') }}</span>
+        </span>
+      </label>
+
       @if (error(); as err) {
         <p class="error-msg" role="alert">{{ err }}</p>
       }

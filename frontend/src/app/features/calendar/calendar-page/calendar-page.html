@@ -25,6 +25,7 @@
       (inviteClicked)="openInvite($event)"
       (createCalendarClicked)="createCalendarModalOpen.set(true)"
       (createGroupClicked)="createGroupModalOpen.set(true)"
+    (joinGroupClicked)="joinGroupModalOpen.set(true)"
       (notesTrashClicked)="notesTrashModalOpen.set(true)"
     />
 
@@ -135,6 +136,13 @@
   <app-create-group-modal
     (created)="onGroupCreated($event)"
     (closed)="createGroupModalOpen.set(false)"
+  />
+}
+
+@if (joinGroupModalOpen()) {
+  <app-join-group-modal
+    (joined)="onGroupJoined($event)"
+    (closed)="joinGroupModalOpen.set(false)"
   />
 }
 

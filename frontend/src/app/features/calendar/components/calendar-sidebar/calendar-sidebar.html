@@ -1,4 +1,21 @@
 <aside class="sidebar" [class.collapsed]="store.sidebarCollapsed()">
+  <!-- SIDEBAR HOLIDAY PARTICLE RAIN -->
+  @if (particlesEnabled() && activeHoliday()) {
+    <div class="sidebar-particle-container" aria-hidden="true">
+      @for (p of sidebarParticles(); track $index) {
+        <span
+          class="sidebar-particle"
+          [style.left.%]="p.leftPercent"
+          [style.animation-delay.s]="p.delaySeconds"
+          [style.animation-duration.s]="p.durationSeconds"
+          [style.font-size.px]="p.sizePx"
+        >
+          {{ p.emoji }}
+        </span>
+      }
+    </div>
+  }
+
   <div class="sidebar-top">
     <button
       type="button"
@@ -16,6 +33,21 @@
     </button>
   </div>
 
+  @if (!store.sidebarCollapsed() && activeHoliday()) {
+    <div class="sidebar-holiday-banner">
+      <span class="holiday-banner-title">✨ {{ activeHoliday()?.name }}</span>
+      <button
+        type="button"
+        class="toggle-particles-btn"
+        [class.active]="particlesEnabled()"
+        [title]="particlesEnabled() ? 'Tắt hiệu ứng rơi icon ngày lễ' : 'Bật hiệu ứng rơi icon ngày lễ'"
+        (click)="toggleParticles()"
+      >
+        {{ particlesEnabled() ? '🎆 Icon: Bật' : '🎆 Icon: Tắt' }}
+      </button>
+    </div>
+  }
+
   @if (!store.sidebarCollapsed()) {
     <app-mini-calendar
       [focusedDate]="store.focusedDate()"
@@ -30,6 +62,17 @@
       <div class="calendar-list">
         <div class="calendar-list-header">
           <h2 class="calendar-list-title">{{ i18n.t('sidebar.workspaces') }}</h2>
+          <button
+            type="button"
+            class="add-calendar-btn"
+            [attr.aria-label]="i18n.t('sidebar.joinWorkspace')"
+            [title]="i18n.t('sidebar.joinWorkspace')"
+            (click)="joinGroupClicked.emit()"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path fill="currentColor" d="M11 7 6.4 11.6 11 16.2l1.4-1.4-2.2-2.2H18v-2h-7.8l2.2-2.2zM4 4h9v2H6v12h7v2H4z" />
+            </svg>
+          </button>
           <button
             type="button"
             class="add-calendar-btn"
@@ -210,8 +253,7 @@
         </div>
       </div>
 
-      <!-- NOTES SECTION — Trợ lý AI tạo/sửa/xoá được, sidebar cho tạo nhanh +
-           luôn hiển thị/xoá. -->
+      <!-- NOTES SECTION -->
       <div class="calendar-list">
         <div class="calendar-list-header">
           <h2 class="calendar-list-title">{{ i18n.t('sidebar.notes') }}</h2>
@@ -279,7 +321,7 @@
         </div>
       </div>
     } @else {
-      <!-- COLLAPSED RAIL — icon-only, native title tooltips on hover -->
+      <!-- COLLAPSED RAIL -->
       <div class="rail-list">
         @for (g of displayGroups(); track g.id) {
           <button

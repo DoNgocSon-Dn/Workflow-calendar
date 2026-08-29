@@ -24,6 +24,7 @@ import { VN_HOLIDAY_CALENDAR_ID } from '../data/vietnam-holidays';
 import { CalendarEvent } from '../models/calendar.models';
 import { addDays, addMinutes, buildWeekDays, dateInputValue } from '../utils/date-utils';
 import { CreateGroupModal } from '../../groups/components/create-group-modal/create-group-modal';
+import { JoinGroupModal } from '../../groups/components/join-group-modal/join-group-modal';
 import { GroupWorkspaceModal } from '../../groups/components/group-workspace-modal/group-workspace-modal';
 import { GroupStore } from '../../groups/data/group-store';
 import { OpenGroupChatRequest } from '../../../shared/components/notification/notification-panel';
@@ -64,6 +65,7 @@ interface ModalState {
     InviteModal,
     CreateCalendarModal,
     CreateGroupModal,
+    JoinGroupModal,
     GroupWorkspaceModal,
     NotificationPopup,
     FloatingHub,
@@ -166,6 +168,7 @@ export class CalendarPage {
   );
   protected readonly createCalendarModalOpen = signal(false);
   protected readonly createGroupModalOpen = signal(false);
+  protected readonly joinGroupModalOpen = signal(false);
 
   /** Popup "hoàn tất hồ sơ" lần đầu đăng nhập — bắt buộc điền cả Tên hiển thị
    *  lẫn Ngày sinh trước khi vào app, không có nút bỏ qua nữa: ngày sinh cần
@@ -324,7 +327,14 @@ export class CalendarPage {
     this.inviteModalTarget.set(target);
   }
 
-  onGroupCreated(target: { groupId: string; groupName: string }): void {
+  onGroupCreated(_target: { groupId: string; groupName: string }): void {
     this.createGroupModalOpen.set(false);
+  }
+
+  onGroupJoined(target: { groupId: string; groupName: string }): void {
+    this.joinGroupModalOpen.set(false);
+    // Vừa vào nhóm bằng mã → mở luôn workspace cho tiện.
+    const group = this.groupStore.groups().find((g) => g.id === target.groupId);
+    if (group) void this.groupStore.selectGroup(group);
   }
 }

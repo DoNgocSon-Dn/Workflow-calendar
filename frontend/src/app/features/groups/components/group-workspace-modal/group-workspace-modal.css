@@ -475,6 +475,47 @@
   border-bottom: none;
 }
 
+/* Mã tham gia nhóm */
+.join-code-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.join-code-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.approval-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.approval-row input {
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
+
+.join-code-hint {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: var(--color-text-tertiary);
+}
+
 .pending-invites {
   margin-top: 14px;
   padding-top: 12px;

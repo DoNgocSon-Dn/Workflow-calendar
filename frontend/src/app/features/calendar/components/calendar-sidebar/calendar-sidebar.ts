@@ -16,6 +16,15 @@ import { Group } from '../../../groups/models/group.models';
 import { CALENDAR_COLOR_HEX, NOTE_COLOR_HEX, CalendarColor } from '../../models/calendar.models';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { MiniCalendar } from '../mini-calendar/mini-calendar';
+import { resolveTopHolidayForDate } from '../../utils/holiday-resolver';
+
+interface SidebarParticle {
+  readonly emoji: string;
+  readonly leftPercent: number;
+  readonly delaySeconds: number;
+  readonly durationSeconds: number;
+  readonly sizePx: number;
+}
 
 /** Cùng một nhóm có thể về từ nhiều membership; sidebar chỉ hiện một dòng. */
 function dedupeByName(groups: Group[]): Group[] {
@@ -59,6 +68,52 @@ export class CalendarSidebar implements OnInit {
     'teal',
   ];
 
+  protected readonly particlesEnabled = signal<boolean>(
+    localStorage.getItem('workflow_sidebar_particles_enabled') !== 'false',
+  );
+
+  toggleParticles(): void {
+    const next = !this.particlesEnabled();
+    this.particlesEnabled.set(next);
+    localStorage.setItem('workflow_sidebar_particles_enabled', next ? 'true' : 'false');
+  }
+
+  protected readonly activeHoliday = computed(() => {
+    return resolveTopHolidayForDate(this.store.today());
+  });
+
+  protected readonly holidayEmojis = computed<readonly string[]>(() => {
+    const h = this.activeHoliday();
+    if (!h) return [];
+    const themeEmojis = h.theme?.decoration?.particleEmoji;
+    if (themeEmojis && themeEmojis.length > 0) return themeEmojis;
+
+    const id = h.id.toLowerCase();
+    if (id.includes('christmas')) return ['❄️', '🎄', '✨'];
+    if (id.includes('tet')) return ['🌸', '✨', '🧧'];
+    if (id.includes('new-year')) return ['🎆', '✨', '🎉'];
+    if (id.includes('national')) return ['⭐', '🎆'];
+    if (id.includes('halloween')) return ['🎃', '👻', '🕸️'];
+    if (id.includes('valentine')) return ['❤️', '💕', '💖'];
+    if (id.includes('women')) return ['🌷', '🌸', '💐'];
+    if (id.includes('teacher')) return ['📚', '✏️', '🌻'];
+    if (id.includes('autumn')) return ['🌕', '🏮', '⭐'];
+    return ['✨', '⭐', '🎉'];
+  });
+
+  protected readonly sidebarParticles = computed<readonly SidebarParticle[]>(() => {
+    const emojis = this.holidayEmojis();
+    if (!this.particlesEnabled() || emojis.length === 0) return [];
+
+    return Array.from({ length: 18 }, (_, i) => ({
+      emoji: emojis[i % emojis.length],
+      leftPercent: (i * 137.5) % 94,
+      delaySeconds: (i % 5) * 0.35,
+      durationSeconds: 4.2 + (i % 4) * 0.8,
+      sizePx: 15 + (i % 4) * 3,
+    }));
+  });
+
   toggleColorPicker(event: Event, calendarId: string): void {
     event.preventDefault();
     event.stopPropagation();
@@ -79,20 +134,15 @@ export class CalendarSidebar implements OnInit {
   readonly createClicked = output<void>();
   readonly createCalendarClicked = output<void>();
   readonly createGroupClicked = output<void>();
+  readonly joinGroupClicked = output<void>();
   readonly notesTrashClicked = output<void>();
   readonly inviteClicked = output<{ calendarId: string; calendarName: string }>();
 
-  // CalendarStore đã gộp lịch trùng ngay khi nhận từ API, nên sidebar không cần
-  // gộp lại lần nữa — và nhờ vậy nó khớp với bảng chọn lịch trong form sự kiện.
   protected readonly displayCalendars = this.store.calendars;
-
   protected readonly displayGroups = computed(() => dedupeByName(this.groupStore.visibleGroups()));
   protected readonly hiddenGroups = computed(() => dedupeByName(this.groupStore.hiddenGroups()));
-
   protected readonly hiddenSectionOpen = signal(false);
 
-  /** Lịch của một nhóm phải xoá qua "Xóa nhóm" (group-workspace-modal) —
-   *  xoá thẳng ở đây sẽ làm nhóm mồ côi calendar_id thay vì mất theo nhóm. */
   private readonly groupCalendarIds = computed(
     () => new Set(this.groupStore.groups().map((g) => g.calendarId)),
   );
@@ -119,7 +169,6 @@ export class CalendarSidebar implements OnInit {
     return this.store.visibleCalendarIds().has(calendarId);
   }
 
-  /** Display label for a calendar — localises the auto-created "Cá nhân". */
   calendarLabel(cal: { name: string }): string {
     return localizedCalendarName(cal.name, (k) => this.i18n.t(k));
   }
@@ -135,8 +184,6 @@ export class CalendarSidebar implements OnInit {
     event.stopPropagation();
     if (this.deletingCalendarId()) return;
 
-    // Phải còn ít nhất một lịch ghi được — nhiều chỗ trong app (trợ lý AI,
-    // import, tạo sự kiện nhanh) giả định defaultWritableCalendar() luôn có.
     const writableCount = this.store.calendars().filter((c) => c.canEdit).length;
     if (writableCount <= 1) {
       await this.dialog.alert(this.i18n.t('sidebar.needWritableCalendar'));
@@ -185,17 +232,10 @@ export class CalendarSidebar implements OnInit {
   protected readonly deletingNoteId = signal<string | null>(null);
   protected readonly creatingNote = signal(false);
 
-  /** Ghi chú hiện trong danh sách = những tờ CHƯA "xé" ra màn hình. Tờ nào
-   *  đang dán nổi trên màn hình thì biến khỏi đây (kéo trở lại thanh bên là
-   *  nó hiện lại) — một tờ giấy chỉ ở một chỗ. */
   protected readonly visibleNotes = computed(() =>
     this.store.notes().filter((n) => !this.screenNotes.pinnedIds().has(n.id)),
   );
 
-  /** Tạo nhanh một ghi chú thủ công — không cần đi qua Trợ lý AI. Chỉ hỏi
-   *  nội dung (màu ngẫu nhiên trong bảng giấy), rồi "xé" luôn ra dán nổi lên
-   *  màn hình để kéo đi đâu tuỳ ý; không muốn tờ giấy thì bấm × trên đó, ghi
-   *  chú vẫn còn trong danh sách. */
   async onCreateNoteClicked(): Promise<void> {
     if (this.creatingNote()) return;
     const content = await this.dialog.prompt(this.i18n.t('sidebar.createNotePrompt'));
@@ -241,18 +281,12 @@ export class CalendarSidebar implements OnInit {
     this.notesTrashClicked.emit();
   }
 
-  /** "Xé" ghi chú ra dán nổi lên màn hình (hoặc gỡ xuống). Chỉ là trạng thái
-   *  client trong ScreenNotesService — nội dung ghi chú không đổi. */
   onToggleScreenPin(event: Event, noteId: string): void {
     event.preventDefault();
     event.stopPropagation();
     this.screenNotes.toggle(noteId);
   }
 
-  /** Bắt đầu kéo một ghi chú ra khỏi sidebar — month-view đọc id này ở
-   *  onDrop() để "dán" ghi chú lên đúng ô ngày người dùng thả vào. Kiểu dữ
-   *  liệu RIÊNG (application/x-note-id) để month-view phân biệt được đây là
-   *  một ghi chú, không phải một sự kiện đang được kéo di chuyển. */
   onNoteDragStart(event: DragEvent, noteId: string): void {
     event.dataTransfer?.setData('application/x-note-id', noteId);
     if (event.dataTransfer) event.dataTransfer.effectAllowed = 'copy';

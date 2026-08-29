@@ -1,4 +1,11 @@
-import { IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class UpdateGroupDto {
   @IsOptional()
@@ -15,4 +22,9 @@ export class UpdateGroupDto {
   @IsOptional()
   @IsIn(['blue', 'green', 'orange', 'red', 'purple', 'teal'])
   color?: string;
+
+  /** Bật/tắt "yêu cầu phê duyệt" khi có người tham gia bằng mã nhóm. */
+  @IsOptional()
+  @IsBoolean()
+  requiresApproval?: boolean;
 }

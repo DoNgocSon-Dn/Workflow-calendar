@@ -32,6 +32,8 @@ export class CreateGroupModal {
   protected readonly name = signal('');
   protected readonly description = signal('');
   protected readonly color = signal<GroupColor>('blue');
+  /** Mặc định BẬT — an toàn hơn: người có mã vẫn phải chờ Trưởng nhóm duyệt. */
+  protected readonly requiresApproval = signal(true);
   protected readonly creating = signal(false);
   protected readonly error = signal<string | null>(null);
 
@@ -46,7 +48,12 @@ export class CreateGroupModal {
     this.creating.set(true);
     this.error.set(null);
     try {
-      const group = await this.groupStore.createGroup(name, this.description().trim(), this.color());
+      const group = await this.groupStore.createGroup(
+        name,
+        this.description().trim(),
+        this.color(),
+        this.requiresApproval(),
+      );
       this.created.emit({ groupId: group.id, groupName: group.name });
       this.closed.emit();
     } catch (err) {

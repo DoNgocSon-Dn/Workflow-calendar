@@ -14,7 +14,10 @@
   color: var(--color-text);
   border-radius: 12px;
   width: 100%;
-  max-width: 440px;
+  max-width: 420px;
+  max-height: 92dvh;
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-modal);
   overflow: hidden;
@@ -32,7 +35,6 @@
   font-size: 1.1rem;
   font-weight: 600;
   margin: 0;
-  color: var(--color-text);
 }
 
 .btn-close {
@@ -56,12 +58,9 @@
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-}
-
-.field-counter {
-  align-self: flex-end;
-  margin-top: -8px;
+  gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .field-label {
@@ -70,7 +69,7 @@
   color: var(--color-text-tertiary);
 }
 
-.text-input, .text-area {
+.text-input {
   width: 100%;
   background: var(--color-surface-input);
   border: 1px solid var(--color-border-strong);
@@ -81,60 +80,37 @@
   box-sizing: border-box;
 }
 
-.text-input:focus, .text-area:focus {
+.text-input:focus {
   outline: none;
   border-color: var(--holiday-accent);
   box-shadow: 0 0 0 2px var(--holiday-accent-soft);
 }
 
-.color-palette {
-  display: flex;
-  gap: 12px;
+.code-input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.4rem;
+  letter-spacing: 0.28em;
+  text-align: center;
+  text-transform: uppercase;
 }
 
-.color-dot {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition: transform 0.15s ease;
+.hint {
+  font-size: 0.8rem;
+  color: var(--color-text-tertiary);
+  margin: 0;
 }
 
-.color-dot:hover {
-  transform: scale(1.15);
-}
-
-.color-dot.selected {
-  border-color: var(--color-text);
-  box-shadow: 0 0 0 2px var(--holiday-accent);
+.pending-msg {
+  margin: 8px 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--color-text);
 }
 
 .error-msg {
   color: var(--color-danger);
   font-size: 0.85rem;
   margin: 0;
-}
-
-.approval-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  color: var(--color-text);
-}
-
-.approval-row input {
-  margin-top: 3px;
-  flex: 0 0 auto;
-}
-
-.approval-row .approval-hint {
-  display: block;
-  margin-top: 2px;
-  font-size: 0.8rem;
-  color: var(--color-text-tertiary);
 }
 
 .modal-footer {
@@ -175,28 +151,11 @@
   cursor: not-allowed;
 }
 
-/* .modal-card có overflow: hidden nhưng KHÔNG có trần chiều cao, còn backdrop
-   thì căn giữa và không cuộn. Trên màn hình thấp (điện thoại xoay ngang) card
-   dài hơn viewport sẽ bị cắt cụt cả hai đầu mà không cuộn tới được. Cho nó
-   một trần theo dvh và để phần thân tự cuộn. */
-.modal-card {
-  max-height: 92dvh;
-  display: flex;
-  flex-direction: column;
-}
-
-.modal-card > .modal-body {
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
 @media (max-width: 599.98px) {
   .modal-backdrop {
     align-items: flex-end;
     padding: 0;
   }
-
   .modal-card {
     max-width: none;
     border-radius: 12px 12px 0 0;

@@ -14,6 +14,78 @@
   background: var(--color-bg-sidebar);
   box-sizing: border-box;
   transition: width 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-particle-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.sidebar-particle {
+  position: absolute;
+  top: -30px;
+  animation: sidebar-particle-fall linear infinite;
+  user-select: none;
+}
+
+@keyframes sidebar-particle-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateY(105%) rotate(360deg);
+    opacity: 0.15;
+  }
+}
+
+.sidebar-holiday-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.85rem;
+  margin: 0 1rem 0.6rem;
+  background: var(--holiday-accent-soft, #1e2436);
+  border: 1px solid var(--color-border, #33394f);
+  border-radius: 12px;
+  font-size: 0.78rem;
+  z-index: 2;
+  position: relative;
+}
+
+.holiday-banner-title {
+  font-weight: 700;
+  color: var(--holiday-accent, #fbbf24);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toggle-particles-btn {
+  border: none;
+  background: #1e293b;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.25rem 0.55rem;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.toggle-particles-btn.active {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.toggle-particles-btn:hover {
+  opacity: 0.9;
 }
 
 .sidebar.collapsed {
@@ -74,6 +146,8 @@
   align-items: center;
   justify-content: center;
   margin: 0.25rem 1rem 0.85rem;
+  z-index: 2;
+  position: relative;
 }
 
 .sidebar.collapsed .sidebar-top {
@@ -118,6 +192,8 @@
   overflow-y: auto;
   min-height: 0;
   padding-bottom: 2rem;
+  z-index: 2;
+  position: relative;
 }
 
 .calendar-list {
@@ -201,8 +277,6 @@
   transform: translateX(2px);
 }
 
-/* Ghi chú kéo được sang lịch — grab thay vì pointer để gợi ý đúng thao tác,
-   khác với các dòng lịch/nhóm chỉ bấm để chọn. */
 .note-item {
   cursor: grab;
 }
@@ -211,14 +285,10 @@
   cursor: grabbing;
 }
 
-/* Đã dán lên một ngày rồi — mờ nhẹ để phân biệt với ghi chú còn "rảnh", vẫn
-   kéo lại được để đổi ngày khác (xem sidebar.noteAlreadyPinned). */
 .note-item.is-pinned {
   opacity: 0.7;
 }
 
-/* "Xé dán lên màn hình" — ẩn cho tới khi hover, nhưng khi ghi chú đang được
-   dán thì luôn hiện + tô màu accent để thấy trạng thái. */
 .note-pin-btn {
   flex-shrink: 0;
   border: none;
@@ -374,8 +444,6 @@
 
 .group-item {
   border-radius: var(--radius-md);
-  /* Gap mặc định 0.65rem là để tách chấm màu khỏi tên; icon nhóm đứng ngay
-     trước tên nên cần khoảng hẹp hơn, kẻo trông như hai nhóm rời nhau. */
   gap: 0.45rem;
 }
 
@@ -399,9 +467,6 @@
   opacity: 1;
 }
 
-/* "Sáng lên" kiểu Messenger khi nhóm có tin nhắn chưa đọc: nền tint nhẹ + tên
-   in đậm + chấm accent. :not(:hover) để hover vẫn thấy rõ phản hồi tương tác
-   thay vì bị lớp tint đè lên. */
 .group-item.has-unread:not(:hover) {
   background: var(--holiday-accent-soft);
 }
@@ -419,8 +484,6 @@
   background: var(--holiday-accent);
 }
 
-/* Cùng cách ẩn/hiện như .invite-btn: chỉ lộ ra khi hover hoặc khi focus bằng
-   bàn phím, để không có nút nào bị "khoá" ngoài tầm với của người dùng phím. */
 .group-hide-btn {
   flex-shrink: 0;
   display: inline-flex;
@@ -452,7 +515,6 @@
   opacity: 0.55;
 }
 
-/* Nhóm đã ẩn luôn hiện sẵn nút gỡ ẩn — hover mới thấy thì không có lối ra. */
 .group-item.is-hidden .group-hide-btn {
   opacity: 0.75;
 }
@@ -508,9 +570,6 @@
   color: var(--holiday-accent-contrast);
 }
 
-/* Icon-rail mode is a desktop affordance — the mobile drawer (see
-   calendar-page.css's max-width:720px override) always shows the full
-   sidebar, so the collapse control has no effect there. */
 @media (max-width: 767.98px) {
   .sidebar.collapsed {
     width: 256px;

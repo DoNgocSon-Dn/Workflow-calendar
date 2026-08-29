@@ -1,0 +1,52 @@
+<div class="modal-backdrop" (click)="onBackdropClick($event)" role="dialog" aria-modal="true" aria-labelledby="join-group-modal-title">
+  <div class="modal-card">
+    <header class="modal-header">
+      <h2 id="join-group-modal-title">{{ i18n.t('joinGroup.title') }}</h2>
+      <button type="button" class="btn-close" (click)="cancel()" [attr.aria-label]="i18n.t('common.close')">
+        <app-icon name="close" />
+      </button>
+    </header>
+
+    <div class="modal-body">
+      @if (pending()) {
+        <p class="pending-msg">⏳ {{ i18n.t('joinGroup.pending') }}</p>
+      } @else {
+        <label class="field-label" for="join-code-input">{{ i18n.t('joinGroup.codeLabel') }}</label>
+        <input
+          id="join-code-input"
+          type="text"
+          class="text-input code-input"
+          inputmode="text"
+          autocapitalize="characters"
+          autocomplete="off"
+          [placeholder]="i18n.t('joinGroup.codePlaceholder')"
+          [value]="code()"
+          (input)="onCodeInput($any($event.target).value)"
+          (keydown.enter)="submit()"
+          autofocus
+        />
+        <p class="hint">{{ i18n.t('joinGroup.hint') }}</p>
+
+        @if (error(); as err) {
+          <p class="error-msg" role="alert">{{ err }}</p>
+        }
+      }
+    </div>
+
+    <footer class="modal-footer">
+      @if (pending()) {
+        <button type="button" class="btn btn-primary" (click)="cancel()">{{ i18n.t('common.close') }}</button>
+      } @else {
+        <button type="button" class="btn btn-secondary" (click)="cancel()">{{ i18n.t('common.cancel') }}</button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="code().length < 4 || joining()"
+          (click)="submit()"
+        >
+          {{ joining() ? i18n.t('joinGroup.joining') : i18n.t('joinGroup.submit') }}
+        </button>
+      }
+    </footer>
+  </div>
+</div>

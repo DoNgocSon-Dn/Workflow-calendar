@@ -23,12 +23,16 @@ export interface Group {
   createdAt: string;
   /** Người này đã ẩn nhóm khỏi sidebar của mình — không ảnh hưởng người khác. */
   hidden?: boolean;
+  /** Chỉ có sau migration 41. Mã ngắn để người khác tham gia nhóm. */
+  joinCode?: string;
+  requiresApproval?: boolean;
 }
 
 export interface GroupUpdate {
   name?: string;
   description?: string;
   color?: GroupColor;
+  requiresApproval?: boolean;
 }
 
 export interface GroupMember {

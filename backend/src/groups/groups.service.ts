@@ -145,6 +145,9 @@ export interface GroupDto {
   createdAt: string;
   /** Ẩn/hiện là trạng thái riêng của người đang gọi, không phải của cả nhóm. */
   hidden?: boolean;
+  /** Chỉ có khi migration 41 đã chạy. */
+  joinCode?: string;
+  requiresApproval?: boolean;
 }
 
 export interface GroupMemberDto {
@@ -399,6 +402,8 @@ export class GroupsService {
       calendarId: row.calendar_id,
       createdAt: row.created_at,
       hidden,
+      joinCode: row.join_code ?? undefined,
+      requiresApproval: row.requires_approval ?? undefined,
     };
   }
 
@@ -699,6 +704,18 @@ export class GroupsService {
       );
     }
 
+    // Công tắc "yêu cầu phê duyệt" — best-effort: cột chỉ có sau migration 41,
+    // nếu chưa chạy thì bỏ qua chứ không làm hỏng việc tạo nhóm. Mặc định DB là
+    // true nên chỉ cần ghi khi người tạo TẮT phê duyệt.
+    let requiresApproval = true;
+    if (dto.requiresApproval === false) {
+      const { error } = await supabase
+        .from('groups')
+        .update({ requires_approval: false })
+        .eq('id', groupId);
+      if (!error) requiresApproval = false;
+    }
+
     return {
       id: groupId,
       name: dto.name,
@@ -707,6 +724,7 @@ export class GroupsService {
       ownerId: user.id,
       calendarId,
       createdAt,
+      requiresApproval,
     };
   }
 
@@ -757,6 +775,8 @@ export class GroupsService {
     if (dto.description !== undefined)
       updateData.description = dto.description.trim() || null;
     if (dto.color !== undefined) updateData.color = dto.color;
+    if (dto.requiresApproval !== undefined)
+      updateData.requires_approval = dto.requiresApproval;
 
     if (Object.keys(updateData).length === 0) {
       throw new BadRequestException('Không có thông tin nào để cập nhật');
@@ -1618,6 +1638,175 @@ export class GroupsService {
     }
 
     return request;
+  }
+
+  /**
+   * Tham gia nhóm bằng MÃ NGẮN (từ màn hình Dashboard).
+   *
+   * RPC `join_group_by_code` (migration 41) làm phần DB nguyên tử; ở đây lo
+   * phần realtime + dòng chào. Dùng service-role cho tra cứu vì người gọi chưa
+   * chắc đã là thành viên (trường hợp chờ duyệt).
+   */
+  async joinByCode(
+    supabase: SupabaseClient,
+    user: User,
+    code: string,
+  ): Promise<
+    | { status: 'joined'; group: GroupDto }
+    | { status: 'pending'; groupId: string }
+  > {
+    const { data, error } = await supabase
+      .rpc('join_group_by_code', { p_code: code })
+      .single<{ outcome: string; group_id: string; request_id: string | null }>();
+
+    if (error) {
+      const m = error.message || '';
+      if (m.includes('group not found')) {
+        throw new NotFoundException('Không tìm thấy nhóm với mã này');
+      }
+      if (m.includes('already a member')) {
+        throw new ConflictException('Bạn đã ở trong nhóm này rồi');
+      }
+      if (m.includes('request already pending')) {
+        throw new ConflictException('Bạn đã gửi yêu cầu tham gia nhóm này rồi');
+      }
+      if (error.code === '42883' || m.includes('join_group_by_code')) {
+        throw new InternalServerErrorException(
+          'Tính năng tham gia bằng mã cần chạy migration 41_group_join_code.sql trên Supabase',
+        );
+      }
+      throw new InternalServerErrorException(m);
+    }
+
+    const admin = this.supabaseService.getServiceRoleClient();
+    const groupId = data.group_id;
+
+    if (data.outcome === 'pending') {
+      const { data: reqRow } = await admin
+        .from('group_join_requests')
+        .select('id, group_id, user_id, role, status, created_at')
+        .eq('id', data.request_id)
+        .maybeSingle();
+      const request = toGroupJoinRequestDto({
+        id: reqRow?.id ?? data.request_id!,
+        group_id: reqRow?.group_id ?? groupId,
+        user_id: reqRow?.user_id ?? user.id,
+        role: reqRow?.role ?? 'member',
+        status: reqRow?.status ?? 'pending',
+        created_at: reqRow?.created_at ?? new Date().toISOString(),
+        requester_email: user.email ?? null,
+        requester_name:
+          ((user.user_metadata as Record<string, unknown> | undefined)?.[
+            'full_name'
+          ] as string | undefined) ?? null,
+      });
+      const { data: adminRows } = await admin
+        .from('group_members')
+        .select('user_id, role')
+        .eq('group_id', groupId);
+      for (const m of (adminRows ?? []) as { user_id: string; role: string }[]) {
+        if (normalizeGroupRole(m.role) === GroupRole.MEMBER) continue;
+        this.realtimeGateway.emitToUser(m.user_id, 'group:joinRequested', {
+          groupId,
+          request,
+        });
+      }
+      return { status: 'pending', groupId };
+    }
+
+    // outcome === 'joined'
+    const { data: groupRow } = await admin
+      .from('groups')
+      .select('*')
+      .eq('id', groupId)
+      .single();
+    const group = this.mapGroupRow(groupRow);
+
+    const actor =
+      ((user.user_metadata as Record<string, unknown> | undefined)?.[
+        'full_name'
+      ] as string | undefined) ||
+      user.email?.split('@')[0] ||
+      'Một thành viên';
+    const { data: welcome } = await admin
+      .from('group_messages')
+      .insert({
+        group_id: groupId,
+        sender_id: user.id,
+        message: `👋 ${actor} vừa tham gia nhóm`,
+      })
+      .select('*')
+      .single();
+    if (welcome) {
+      const msgDto: GroupMessageDto = {
+        ...this.mapMessageRow(welcome),
+        senderEmail: user.email,
+      };
+      await this.emitToGroupRooms(admin, groupId, 'group:messageSent', {
+        groupId,
+        message: msgDto,
+      });
+      await this.emitToGroupMembers(admin, groupId, 'group:messageSent', {
+        groupId,
+        message: msgDto,
+      });
+    }
+
+    // Đồng bộ quyền lịch nhóm cho người mới + báo thành viên hiện có.
+    void this.syncGroupCalendarRoles(groupId).catch(() => undefined);
+    await this.emitToGroupMembers(admin, groupId, 'group:memberJoined', {
+      groupId,
+    });
+
+    return { status: 'joined', group };
+  }
+
+  async getJoinCode(
+    supabase: SupabaseClient,
+    actor: User,
+    groupId: string,
+  ): Promise<{ code: string; requiresApproval: boolean }> {
+    const role = await this.requireRole(supabase, actor, groupId);
+    if (!canInvite(role)) {
+      throw new ForbiddenException(
+        'Chỉ Trưởng nhóm hoặc Phó nhóm mới xem được mã nhóm',
+      );
+    }
+    const { data, error } = await supabase
+      .from('groups')
+      .select('join_code, requires_approval')
+      .eq('id', groupId)
+      .single<{ join_code: string | null; requires_approval: boolean | null }>();
+    if (error) {
+      if (error.code === '42703') {
+        throw new InternalServerErrorException(
+          'Tính năng mã nhóm cần chạy migration 41_group_join_code.sql trên Supabase',
+        );
+      }
+      throw new InternalServerErrorException(error.message);
+    }
+    return {
+      code: data.join_code ?? '',
+      requiresApproval: data.requires_approval ?? true,
+    };
+  }
+
+  async regenerateJoinCode(
+    supabase: SupabaseClient,
+    actor: User,
+    groupId: string,
+  ): Promise<{ code: string }> {
+    const role = await this.requireRole(supabase, actor, groupId);
+    if (!canInvite(role)) {
+      throw new ForbiddenException(
+        'Chỉ Trưởng nhóm hoặc Phó nhóm mới tạo lại được mã nhóm',
+      );
+    }
+    const { data, error } = await supabase
+      .rpc('regenerate_group_join_code', { p_group_id: groupId })
+      .single<string>();
+    if (error) throw new InternalServerErrorException(error.message);
+    return { code: (data as unknown as string) ?? '' };
   }
 
   async listJoinRequests(

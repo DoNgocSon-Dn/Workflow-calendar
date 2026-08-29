@@ -321,6 +321,7 @@ export class GroupWorkspaceModal {
       const groupId = untracked(() => group.id);
       void this.store.loadInviteLink(groupId);
       void this.store.loadGroupInvites(groupId);
+      void this.loadJoinCode(groupId);
       if (this.canUserApproveJoinRequests()) {
         void this.store.loadPendingJoinRequests(groupId);
       }
@@ -513,6 +514,64 @@ export class GroupWorkspaceModal {
     const group = this.store.activeGroup();
     if (!group) return;
     await this.store.regenerateInviteLink(group.id);
+  }
+
+  // --- Mã tham gia nhóm + công tắc "yêu cầu phê duyệt" -----------------------
+  protected readonly joinCode = signal<string | null>(null);
+  protected readonly joinCodeRequiresApproval = signal(true);
+  protected readonly joinCodeCopied = signal(false);
+  protected readonly joinCodeBusy = signal(false);
+
+  private async loadJoinCode(groupId: string): Promise<void> {
+    try {
+      const res = await this.store.getJoinCode(groupId);
+      if (this.store.activeGroup()?.id !== groupId) return;
+      this.joinCode.set(res.code || null);
+      this.joinCodeRequiresApproval.set(res.requiresApproval);
+    } catch {
+      // Migration 41 chưa chạy — ẩn khối mã, không làm ồn.
+      this.joinCode.set(null);
+    }
+  }
+
+  protected async copyJoinCode(): Promise<void> {
+    const code = this.joinCode();
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      this.joinCodeCopied.set(true);
+      setTimeout(() => this.joinCodeCopied.set(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  protected async regenerateJoinCode(): Promise<void> {
+    const group = this.store.activeGroup();
+    if (!group || this.joinCodeBusy()) return;
+    this.joinCodeBusy.set(true);
+    try {
+      this.joinCode.set(await this.store.regenerateJoinCode(group.id));
+    } catch (err: any) {
+      await this.dialog.alert(err?.error?.message || this.i18n.t('group.joinCodeError'));
+    } finally {
+      this.joinCodeBusy.set(false);
+    }
+  }
+
+  protected async toggleJoinApproval(next: boolean): Promise<void> {
+    const group = this.store.activeGroup();
+    if (!group || this.joinCodeBusy()) return;
+    this.joinCodeBusy.set(true);
+    this.joinCodeRequiresApproval.set(next); // lạc quan
+    try {
+      await this.store.updateGroup(group.id, { requiresApproval: next });
+    } catch (err: any) {
+      this.joinCodeRequiresApproval.set(!next);
+      await this.dialog.alert(err?.error?.message || this.i18n.t('group.joinCodeError'));
+    } finally {
+      this.joinCodeBusy.set(false);
+    }
   }
 
   protected async approveJoinRequest(r: GroupJoinRequest): Promise<void> {

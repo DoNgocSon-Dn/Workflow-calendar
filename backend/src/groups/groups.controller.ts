@@ -28,6 +28,7 @@ import { RespondGroupInviteDto } from './dto/respond-group-invite.dto';
 import { CreateInviteLinkDto } from './dto/create-invite-link.dto';
 import { RequestJoinGroupDto } from './dto/request-join-group.dto';
 import { DecideJoinRequestDto } from './dto/decide-join-request.dto';
+import { JoinByCodeDto } from './dto/join-by-code.dto';
 import { GroupsService } from './groups.service';
 
 @Controller('groups')
@@ -73,6 +74,15 @@ export class GroupsController {
     @Body() dto: RequestJoinGroupDto,
   ) {
     return this.groupsService.requestToJoin(supabase, user, dto.token);
+  }
+
+  @Post('join-by-code')
+  async joinByCode(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Body() dto: JoinByCodeDto,
+  ) {
+    return this.groupsService.joinByCode(supabase, user, dto.code);
   }
 
   @Post()
@@ -183,6 +193,24 @@ export class GroupsController {
       groupId,
       dto.role,
     );
+  }
+
+  @Get(':id/join-code')
+  async getJoinCode(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('id') groupId: string,
+  ) {
+    return this.groupsService.getJoinCode(supabase, user, groupId);
+  }
+
+  @Post(':id/join-code')
+  async regenerateJoinCode(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('id') groupId: string,
+  ) {
+    return this.groupsService.regenerateJoinCode(supabase, user, groupId);
   }
 
   @Get(':id/join-requests')

@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsOptional, IsString, IsIn, MaxLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsIn,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateGroupDto {
   @IsNotEmpty()
@@ -14,4 +21,9 @@ export class CreateGroupDto {
   @IsOptional()
   @IsIn(['blue', 'green', 'orange', 'red', 'purple', 'teal'])
   color?: string;
+
+  /** Mặc định true (an toàn hơn). Tắt = ai nhập đúng mã nhóm là vào ngay. */
+  @IsOptional()
+  @IsBoolean()
+  requiresApproval?: boolean;
 }

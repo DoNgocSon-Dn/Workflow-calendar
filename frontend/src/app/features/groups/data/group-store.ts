@@ -1002,13 +1002,49 @@ export class GroupStore {
     void this.scanMyTaskDeadlines();
   }
 
-  async createGroup(name: string, description?: string, color?: string): Promise<Group> {
-    const newGroup = await this.api.createGroup(name, description, color);
+  async createGroup(
+    name: string,
+    description?: string,
+    color?: string,
+    requiresApproval?: boolean,
+  ): Promise<Group> {
+    const newGroup = await this.api.createGroup(name, description, color, requiresApproval);
     this.groups.update((prev) => [newGroup, ...prev]);
     this.initRealtime();
     this.realtime.joinCalendar(newGroup.id);
     if (newGroup.calendarId) this.realtime.joinCalendar(newGroup.calendarId);
     return newGroup;
+  }
+
+  /**
+   * Tham gia nhóm bằng mã ngắn.
+   *  - `joined`: nhóm xuất hiện ở sidebar ngay + join room realtime.
+   *  - `pending`: chỉ tạo yêu cầu, chờ Trưởng nhóm duyệt.
+   */
+  async joinByCode(
+    code: string,
+  ): Promise<{ status: 'joined'; group: Group } | { status: 'pending' }> {
+    const res = await this.api.joinByCode(code.trim());
+    if (res.status === 'joined') {
+      this.groups.update((prev) =>
+        prev.some((g) => g.id === res.group.id) ? prev : [res.group, ...prev],
+      );
+      this.initRealtime();
+      this.realtime.joinCalendar(res.group.id);
+      if (res.group.calendarId) this.realtime.joinCalendar(res.group.calendarId);
+      return { status: 'joined', group: res.group };
+    }
+    return { status: 'pending' };
+  }
+
+  /** Mã tham gia nhóm + trạng thái phê duyệt (LEADER/ADMIN). */
+  getJoinCode(groupId: string): Promise<{ code: string; requiresApproval: boolean }> {
+    return this.api.getJoinCode(groupId);
+  }
+
+  async regenerateJoinCode(groupId: string): Promise<string> {
+    const res = await this.api.regenerateJoinCode(groupId);
+    return res.code;
   }
 
   async updateGroup(groupId: string, updates: GroupUpdate): Promise<Group> {

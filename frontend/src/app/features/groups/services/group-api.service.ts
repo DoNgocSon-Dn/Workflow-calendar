@@ -39,11 +39,46 @@ export class GroupApiService {
     );
   }
 
-  async createGroup(name: string, description?: string, color?: string): Promise<Group> {
+  async createGroup(
+    name: string,
+    description?: string,
+    color?: string,
+    requiresApproval?: boolean,
+  ): Promise<Group> {
     return firstValueFrom(
       this.http.post<Group>(
         `${environment.apiUrl}/groups`,
-        { name, description, color },
+        { name, description, color, requiresApproval },
+        { headers: this.authHeaders },
+      ),
+    );
+  }
+
+  /** Tham gia nhóm bằng mã ngắn (màn hình Dashboard). */
+  async joinByCode(
+    code: string,
+  ): Promise<{ status: 'joined'; group: Group } | { status: 'pending'; groupId: string }> {
+    return firstValueFrom(
+      this.http.post<
+        { status: 'joined'; group: Group } | { status: 'pending'; groupId: string }
+      >(`${environment.apiUrl}/groups/join-by-code`, { code }, { headers: this.authHeaders }),
+    );
+  }
+
+  async getJoinCode(groupId: string): Promise<{ code: string; requiresApproval: boolean }> {
+    return firstValueFrom(
+      this.http.get<{ code: string; requiresApproval: boolean }>(
+        `${environment.apiUrl}/groups/${groupId}/join-code`,
+        { headers: this.authHeaders },
+      ),
+    );
+  }
+
+  async regenerateJoinCode(groupId: string): Promise<{ code: string }> {
+    return firstValueFrom(
+      this.http.post<{ code: string }>(
+        `${environment.apiUrl}/groups/${groupId}/join-code`,
+        {},
         { headers: this.authHeaders },
       ),
     );

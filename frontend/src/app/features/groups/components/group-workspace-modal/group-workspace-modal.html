@@ -614,6 +614,33 @@
                 }
               </div>
 
+              @if (joinCode(); as code) {
+                <div class="invite-card join-code-card">
+                  <h3>{{ i18n.t('group.joinCodeTitle') }}</h3>
+                  <div class="join-code-row">
+                    <span class="join-code-value">{{ code }}</span>
+                    <button type="button" class="btn btn-ghost" (click)="copyJoinCode()">
+                      {{ joinCodeCopied() ? i18n.t('group.inviteLinkCopied') : i18n.t('group.inviteLinkCopy') }}
+                    </button>
+                    <button type="button" class="btn btn-ghost" [disabled]="joinCodeBusy()" (click)="regenerateJoinCode()">
+                      {{ i18n.t('group.inviteLinkRegenerate') }}
+                    </button>
+                  </div>
+                  <label class="approval-row">
+                    <input
+                      type="checkbox"
+                      [checked]="joinCodeRequiresApproval()"
+                      [disabled]="joinCodeBusy()"
+                      (change)="toggleJoinApproval($any($event.target).checked)"
+                    />
+                    <span>{{ i18n.t('group.joinCodeRequiresApproval') }}</span>
+                  </label>
+                  <p class="join-code-hint">
+                    {{ joinCodeRequiresApproval() ? i18n.t('group.joinCodeApprovalOn') : i18n.t('group.joinCodeApprovalOff') }}
+                  </p>
+                </div>
+              }
+
               @if (canUserApproveJoinRequests() && store.pendingJoinRequests().length > 0) {
                 <div class="invite-card join-requests-card">
                   <h3>{{ i18n.t('group.joinRequestsTitle') }} ({{ store.pendingJoinRequests().length }})</h3>
