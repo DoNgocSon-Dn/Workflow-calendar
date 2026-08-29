@@ -42,6 +42,14 @@ import {
   startOfDay,
   toDateInputValue,
 } from '../../utils/date-utils';
+import {
+  deviceTimeZone,
+  formatTzOffset,
+  listTimeZones,
+  tzPickerLabel,
+  utcToZonedWall,
+  zonedWallTimeToUtc,
+} from '../../utils/tz-utils';
 import { stripHtmlTags } from '../../../../shared/utils/text.util';
 import { TimePicker } from '../time-picker/time-picker';
 import { DatePicker } from '../date-picker/date-picker';
@@ -163,8 +171,33 @@ export class EventFormModal {
     return true;
   });
 
-  /** Chỉ hiển thị — app chưa hỗ trợ đa múi giờ, đây luôn là múi giờ trình duyệt. */
-  protected readonly timezoneLabel = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  /** Múi giờ của trình duyệt — mốc so sánh mặc định. */
+  protected readonly deviceTz = deviceTimeZone();
+  /** Danh sách múi giờ cho ô chọn (đầy đủ nếu trình duyệt hỗ trợ). */
+  protected readonly timeZoneOptions = listTimeZones();
+
+  /** Nhãn "Asia/Ho Chi Minh (GMT+7)" cho một tên múi giờ. */
+  protected tzOptionLabel(tz: string): string {
+    return tzPickerLabel(tz, this.event()?.start ?? this.store.today());
+  }
+
+  /** Khi người dùng chọn múi giờ KHÁC máy mình: hiện lại giờ tương ứng ở múi
+   *  giờ của họ để khỏi nhẩm. Trả null nếu cùng múi giờ hoặc là sự kiện cả ngày. */
+  protected tzHint(): string | null {
+    const v = this.form.getRawValue();
+    const tz = v.timeZone || this.deviceTz;
+    if (v.allDay || tz === this.deviceTz) return null;
+    const [y, m, d] = v.startDate.split('-').map(Number);
+    const [h, mi] = v.startTime.split(':').map(Number);
+    if ([y, m, d, h, mi].some((n) => Number.isNaN(n))) return null;
+    const utc = zonedWallTimeToUtc(y, m, d, h, mi, tz);
+    const local = utcToZonedWall(utc, this.deviceTz);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return this.i18n.t('event.tzHint', {
+      time: `${pad(local.hour)}:${pad(local.minute)}`,
+      zone: formatTzOffset(this.deviceTz, utc),
+    });
+  }
 
   /** Đánh số thứ theo RecurrenceRule.byWeekdays (0 = CN .. 6 = Thứ Bảy). */
   protected readonly weekdayChips: { value: number; labelKey: string }[] = [
@@ -317,6 +350,7 @@ export class EventFormModal {
     startTime: ['09:00'],
     endDate: [toDateInputValue(this.store.today())],
     endTime: ['10:00'],
+    timeZone: [deviceTimeZone()],
     location: ['', Validators.maxLength(200)],
     description: ['', Validators.maxLength(200)],
     meetLink: [''],
@@ -374,14 +408,29 @@ export class EventFormModal {
         // Stored allDay end is exclusive (day after the last day); the date
         // input shows/edits it inclusively, and save() adds the day back.
         const displayEnd = evt.allDay ? addDays(evt.end, -1) : evt.end;
+        // Múi giờ chỉ áp cho sự kiện có giờ. Nếu sự kiện gắn múi giờ khác, ô
+        // ngày/giờ phải hiện giờ TREO TƯỜNG ở múi giờ đó, không phải giờ máy.
+        const tz = !evt.allDay && evt.startTz ? evt.startTz : this.deviceTz;
+        const useTz = !evt.allDay && !!evt.startTz && evt.startTz !== this.deviceTz;
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const wall = (d: Date) => {
+          const w = utcToZonedWall(d, tz);
+          return {
+            date: `${w.year}-${pad(w.mon)}-${pad(w.day)}`,
+            time: `${pad(w.hour)}:${pad(w.minute)}`,
+          };
+        };
+        const sw = useTz ? wall(evt.start) : null;
+        const ew = useTz ? wall(evt.end) : null;
         this.form.reset({
           title: evt.title,
           calendarId: evt.calendarId,
           allDay: evt.allDay,
-          startDate: toDateInputValue(evt.start),
-          startTime: hhmm(evt.start),
-          endDate: toDateInputValue(displayEnd),
-          endTime: hhmm(evt.end),
+          startDate: sw ? sw.date : toDateInputValue(evt.start),
+          startTime: sw ? sw.time : hhmm(evt.start),
+          endDate: ew ? ew.date : toDateInputValue(displayEnd),
+          endTime: ew ? ew.time : hhmm(evt.end),
+          timeZone: tz,
           location: evt.location ?? '',
           description: cleanDesc,
           meetLink: evt.meetLink ?? '',
@@ -401,6 +450,7 @@ export class EventFormModal {
         startTime: hhmm(start),
         endDate: toDateInputValue(end),
         endTime: hhmm(end),
+        timeZone: this.deviceTz,
         location: '',
         description: '',
         meetLink: '',
@@ -452,14 +502,23 @@ export class EventFormModal {
     });
   }
 
+  /** Ngày ('YYYY-MM-DD') + giờ ('HH:mm') nhập vào form, hiểu theo múi giờ đang
+   *  chọn, quy về mốc tuyệt đối. */
+  private wallInputToInstant(dateStr: string, timeStr: string): Date {
+    const tz = this.form.getRawValue().timeZone || this.deviceTz;
+    const [y, mo, d] = dateStr.split('-').map(Number);
+    const [h, mi] = timeStr.split(':').map(Number);
+    return zonedWallTimeToUtc(y, mo, d, h || 0, mi || 0, tz);
+  }
+
   private async refreshConflicts(): Promise<void> {
     const v = this.form.getRawValue();
     if (v.allDay) {
       this.conflicts.set(null);
       return;
     }
-    const start = parseTime24(v.startTime, fromDateInputValue(v.startDate));
-    const end = parseTime24(v.endTime, fromDateInputValue(v.endDate));
+    const start = this.wallInputToInstant(v.startDate, v.startTime);
+    const end = this.wallInputToInstant(v.endDate, v.endTime);
     if (end.getTime() <= start.getTime()) {
       this.conflicts.set(null);
       return;
@@ -764,12 +823,15 @@ export class EventFormModal {
     }
     const v = this.form.getRawValue();
 
+    // Sự kiện cả ngày là "trôi nổi" — không gắn múi giờ. Sự kiện có giờ: diễn
+    // giải ngày+giờ nhập vào theo múi giờ ĐÃ CHỌN rồi quy về mốc tuyệt đối.
+    const tz = v.timeZone || this.deviceTz;
     const start = v.allDay
       ? startOfDay(fromDateInputValue(v.startDate))
-      : parseTime24(v.startTime, fromDateInputValue(v.startDate));
+      : this.wallInputToInstant(v.startDate, v.startTime);
     const end = v.allDay
       ? addMinutesDays(startOfDay(fromDateInputValue(v.endDate)), 1)
-      : parseTime24(v.endTime, fromDateInputValue(v.endDate));
+      : this.wallInputToInstant(v.endDate, v.endTime);
 
     if (end.getTime() <= start.getTime()) {
       this.rangeError.set(true);
@@ -783,6 +845,9 @@ export class EventFormModal {
       allDay: v.allDay,
       start,
       end,
+      // Chỉ lưu khi khác múi giờ máy người tạo — sự kiện cùng múi giờ để trống
+      // (null) như hành vi cũ, và không cần migration 34 mới tạo được.
+      startTz: !v.allDay && tz !== this.deviceTz ? tz : undefined,
       location: v.location.trim() || undefined,
       description: v.description.trim() || undefined,
       meetLink: v.meetLink.trim() || undefined,

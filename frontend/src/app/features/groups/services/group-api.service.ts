@@ -9,6 +9,7 @@ import {
   GroupInviteLink,
   GroupInviteLinkPreview,
   GroupJoinRequest,
+  GroupPendingInvite,
   GroupMember,
   GroupMessage,
   GroupMessageAttachment,
@@ -96,6 +97,23 @@ export class GroupApiService {
   async getMyInvites(): Promise<GroupInvite[]> {
     return firstValueFrom(
       this.http.get<GroupInvite[]>(`${environment.apiUrl}/groups/invites/mine`, {
+        headers: this.authHeaders,
+      }),
+    );
+  }
+
+  /** Lời mời đang chờ của một nhóm — chỉ trưởng/phó nhóm gọi được. */
+  async listGroupInvites(groupId: string): Promise<GroupPendingInvite[]> {
+    return firstValueFrom(
+      this.http.get<GroupPendingInvite[]>(`${environment.apiUrl}/groups/${groupId}/invites`, {
+        headers: this.authHeaders,
+      }),
+    );
+  }
+
+  async cancelGroupInvite(groupId: string, inviteId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete(`${environment.apiUrl}/groups/${groupId}/invites/${inviteId}`, {
         headers: this.authHeaders,
       }),
     );

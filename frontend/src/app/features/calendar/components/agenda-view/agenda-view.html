@@ -111,6 +111,9 @@
                     } @else {
                       <span class="time-tag">{{ event.start | date:'HH:mm' }} - {{ event.end | date:'HH:mm' }}</span>
                     }
+                    @if (tzBadge(event); as tzb) {
+                      <span class="time-tag tz-tag" [title]="i18n.t('event.timezone')">🌐 {{ tzb }}</span>
+                    }
                     @if (event.location) {
                       <span class="event-location">📍 {{ event.location }}</span>
                     }

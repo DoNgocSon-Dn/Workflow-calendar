@@ -5,6 +5,7 @@ import { Locale, TranslationService } from '../../../../core/i18n/translation.se
 import { HolidayPopupService } from '../../../../core/services/holiday-popup.service';
 import { BirthdayPopupService } from '../../../../core/services/birthday-popup.service';
 import { NotificationSoundService, SoundKind } from '../../../../core/services/notification-sound.service';
+import { PushNotificationService } from '../../../../core/realtime/push-notification.service';
 import { TimeFormatService } from '../../../../core/time-format/time-format-service';
 import { TimeFormat, dateInputValue } from '../../utils/date-utils';
 import { BrandTheme, BrandThemeService } from '../../../../core/theme/brand-theme-service';
@@ -55,6 +56,7 @@ export class SettingsModal {
   protected readonly holidayPopupService = inject(HolidayPopupService);
   protected readonly holidayThemeService = inject(HolidayThemeService);
   protected readonly soundService = inject(NotificationSoundService);
+  protected readonly pushService = inject(PushNotificationService);
   protected readonly birthdayPopupService = inject(BirthdayPopupService);
   protected readonly devUnlock = inject(DevUnlockService);
   protected readonly authStore = inject(AuthStore);

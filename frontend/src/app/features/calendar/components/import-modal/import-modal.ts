@@ -14,6 +14,7 @@ import { TranslationService } from '../../../../core/i18n/translation.service';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../../environments/environment';
 import { CalendarStore, localizedCalendarName } from '../../data/calendar-store';
+import { CalendarEvent } from '../../models/calendar.models';
 import { FormsModule } from '@angular/forms';
 import { OverflowTooltip } from '../../../../shared/directives/overflow-tooltip';
 import { CharCounter } from '../../../../shared/components/char-counter/char-counter';
@@ -522,12 +523,13 @@ export class ImportModalComponent {
         // ngoài và người dùng nhận báo lỗi — thay vì thấy màn hình "import
         // thành công" rồi mất sạch sau khi tải lại trang.
         console.warn('Lưu bulk lên backend thất bại, thử tạo từng sự kiện:', backendErr);
+        const createdOneByOne: CalendarEvent[] = [];
         for (const draft of drafts) {
-          await this.store.createEvent(draft);
+          createdOneByOne.push(await this.store.createEvent(draft));
         }
         // Đường dự phòng không đi qua bulk-create nên phải tự báo, nếu không
         // người dùng offline sẽ thấy màn hình báo thành công mà chuông trống.
-        this.store.notifyEventsImported(calId, drafts.length);
+        this.store.notifyEventsImported(calId, createdOneByOne.length, undefined, createdOneByOne);
       }
 
       this.importSuccess.set(true);

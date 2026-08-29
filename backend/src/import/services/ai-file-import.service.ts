@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppConfig } from '../../config/configuration';
+import { GEMINI_MODELS, looksLikeGeminiApiKey } from '../../ai/gemini.constants';
 import { ParsedImportEvent } from './ics-import.service';
 // pdf-parse v2 KHÔNG còn xuất ra một hàm gọi thẳng như v1 — nó xuất lớp
 // PDFParse. Code cũ gọi pdfParse(buffer) nên ném TypeError với MỌI file PDF,
@@ -8,6 +9,8 @@ import { ParsedImportEvent } from './ics-import.service';
 import { PDFParse } from 'pdf-parse';
 import { getPath } from 'pdf-parse/worker';
 import { pathToFileURL } from 'url';
+import * as mammoth from 'mammoth';
+import * as xlsx from 'xlsx';
 
 // Khởi tạo worker path cho pdf-parse v2 tương thích trên môi trường Windows / Node ESM
 try {
@@ -25,15 +28,23 @@ export class AiFileImportService {
   /**
    * Lấy chữ trong file để đưa cho AI đọc.
    *
-   * Chỉ còn hai nhánh: PDF phải giải nén qua pdf.js, còn lại (.ics, .csv)
-   * vốn đã là văn bản thuần nên đọc thẳng. Định dạng nhị phân của Office
-   * (.xlsx/.docx) không còn được nhận nên nhánh xử lý chúng đã bỏ.
+   * - `.pdf`   → giải nén qua pdf.js
+   * - `.docx`  → mammoth trích văn bản thô (bỏ định dạng)
+   * - `.xlsx`/`.xls` → xlsx đọc từng sheet, quy về CSV
+   * - còn lại (`.ics`, `.csv`, text) → đọc thẳng UTF-8
    */
   async extractTextFromFile(file: Express.Multer.File): Promise<string> {
     const filename = file.originalname.toLowerCase();
     try {
       if (filename.endsWith('.pdf')) {
         return await this.extractPdfText(file.buffer);
+      }
+      if (filename.endsWith('.docx') || filename.endsWith('.doc')) {
+        const result = await mammoth.extractRawText({ buffer: file.buffer });
+        return result.value;
+      }
+      if (filename.endsWith('.xlsx') || filename.endsWith('.xls')) {
+        return this.extractSpreadsheetText(file.buffer);
       }
       return file.buffer.toString('utf-8');
     } catch (err) {
@@ -43,6 +54,17 @@ export class AiFileImportService {
           'File có thể bị hỏng, đặt mật khẩu, hoặc là bản scan chỉ có ảnh chứ không có chữ.',
       );
     }
+  }
+
+  /** Mỗi sheet → một khối CSV có nhãn, ghép lại để AI đọc như một tài liệu. */
+  private extractSpreadsheetText(buffer: Buffer): string {
+    const workbook = xlsx.read(buffer, { type: 'buffer' });
+    return workbook.SheetNames.map((name) => {
+      const csv = xlsx.utils.sheet_to_csv(workbook.Sheets[name]);
+      return `--- Sheet: ${name} ---\n${csv}`;
+    })
+      .join('\n\n')
+      .trim();
   }
 
   /**
@@ -68,6 +90,13 @@ export class AiFileImportService {
     const apiKey = this.configService.get('ai', { infer: true }).geminiApiKey?.trim();
     if (!apiKey) {
       this.logger.warn('Chưa cấu hình GEMINI_API_KEY, trả về fallback parser');
+      return this.fallbackTextParse(rawText);
+    }
+    if (!looksLikeGeminiApiKey(apiKey)) {
+      this.logger.warn(
+        'GEMINI_API_KEY trống hoặc là giá trị giữ chỗ — Smart Import AI dùng ' +
+          'fallback parser. Lấy key tại https://aistudio.google.com/app/apikey',
+      );
       return this.fallbackTextParse(rawText);
     }
 
@@ -101,24 +130,28 @@ Không trả về văn bản khác ngoài JSON.
 `;
 
       try {
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [{ text: `${systemPrompt}\n\nNội dung file (Đoạn ${i + 1}/${chunks.length}):\n"${chunk}"` }],
-                },
-              ],
-              generationConfig: { responseMimeType: 'application/json' },
-            }),
-          },
-        );
+        let response: Response | null = null;
+        for (const model of GEMINI_MODELS) {
+          response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    parts: [{ text: `${systemPrompt}\n\nNội dung file (Đoạn ${i + 1}/${chunks.length}):\n"${chunk}"` }],
+                  },
+                ],
+                generationConfig: { responseMimeType: 'application/json' },
+              }),
+            },
+          );
+          if (response.ok || response.status !== 404) break;
+        }
 
-        if (!response.ok) {
-          throw new Error(`Gemini API HTTP Error ${response.status}`);
+        if (!response || !response.ok) {
+          throw new Error(`Gemini API HTTP Error ${response?.status ?? 'no response'}`);
         }
 
         const data = await response.json();

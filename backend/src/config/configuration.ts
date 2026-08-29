@@ -14,6 +14,14 @@ export interface AppConfig {
     gmailUser: string;
     gmailAppPassword: string;
   };
+  /** Web Push (VAPID). Thiếu public+private ⇒ đẩy push bị TẮT (chỉ còn email +
+   *  popup realtime khi mở app). Sinh cặp khoá: `npx web-push generate-vapid-keys`. */
+  push: {
+    vapidPublicKey: string;
+    vapidPrivateKey: string;
+    /** `mailto:` bắt buộc theo chuẩn VAPID — nơi push service liên hệ khi có sự cố. */
+    vapidSubject: string;
+  };
   /** Token bảo vệ endpoint gửi thông báo hệ thống. Để trống = tắt endpoint. */
   systemNotificationToken: string;
 }
@@ -37,6 +45,13 @@ export default (): AppConfig => {
     mail: {
       gmailUser: process.env.GMAIL_USER ?? '',
       gmailAppPassword: process.env.GMAIL_APP_PASSWORD ?? '',
+    },
+    push: {
+      vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? '',
+      vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? '',
+      vapidSubject:
+        process.env.VAPID_SUBJECT ??
+        (process.env.GMAIL_USER ? `mailto:${process.env.GMAIL_USER}` : 'mailto:admin@example.com'),
     },
     systemNotificationToken: process.env.SYSTEM_NOTIFICATION_TOKEN ?? '',
   };

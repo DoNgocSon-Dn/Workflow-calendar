@@ -51,6 +51,10 @@ export interface CalendarEvent {
   description?: string;
   start: Date;
   end: Date;
+  /** Múi giờ IANA sự kiện thuộc về (vd 'America/New_York'). `start`/`end` vẫn là
+   *  mốc tuyệt đối; giá trị này chỉ để hiện lại đúng giờ gốc khi người xem ở múi
+   *  giờ khác. Vắng mặt ⇒ hiển thị theo múi giờ trình duyệt (hành vi cũ). */
+  startTz?: string;
   allDay: boolean;
   deletedAt?: Date;
   meetLink?: string;

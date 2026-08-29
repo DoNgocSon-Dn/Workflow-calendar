@@ -437,6 +437,11 @@
   gap: 10px;
 }
 
+.invite-form-row .text-input {
+  flex: 1;
+  min-width: 0;
+}
+
 .invite-link-row {
   display: flex;
   align-items: center;
@@ -451,6 +456,28 @@
 
 .join-requests-card .member-row:last-child {
   border-bottom: none;
+}
+
+.pending-invites {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--color-border);
+}
+
+.pending-invites h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+}
+
+.pending-invites .member-row:last-child {
+  border-bottom: none;
+}
+
+.pending-invite-status {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--color-text-tertiary);
 }
 
 .section-subtitle {

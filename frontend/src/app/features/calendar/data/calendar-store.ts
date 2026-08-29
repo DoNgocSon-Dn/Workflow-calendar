@@ -130,6 +130,7 @@ interface EventApiDto {
   description?: string;
   start: string;
   end: string;
+  startTz?: string;
   allDay: boolean;
   deletedAt?: string;
   meetLink?: string;
@@ -346,6 +347,7 @@ function toCalendarEvent(dto: EventApiDto): CalendarEvent {
     description: dto.description ? stripHtmlTags(dto.description) : undefined,
     start: new Date(dto.start),
     end: new Date(dto.end),
+    startTz: dto.startTz || undefined,
     allDay: dto.allDay,
     deletedAt: dto.deletedAt ? new Date(dto.deletedAt) : undefined,
     meetLink: dto.meetLink,
@@ -1249,6 +1251,10 @@ export class CalendarStore {
       this.notificationQueue.push({ title: this.nt('nq.importDone'), body: message, kind: 'created' });
     }
 
+    const earliest = events.reduce<EventApiDto | null>(
+      (min, e) => (!min || e.start < min.start ? e : min),
+      null,
+    );
     this.notifications.ingest(
       eventsImportedDraft(this.nt, {
         // Thiếu batchId (client cũ) thì dựng khoá từ chính nội dung lô, để
@@ -1256,6 +1262,8 @@ export class CalendarStore {
         batchId: payload.batchId ?? `${payload.calendarId}-${events.map((e) => e.id).join('.')}`,
         count: events.length,
         calendarName,
+        firstEventId: earliest?.id,
+        firstEventStart: earliest?.start,
       }),
     );
   }
@@ -1306,10 +1314,15 @@ export class CalendarStore {
       body: this.nt('nq.seriesUpdatedBody', { count: events.length }),
       kind: 'updated',
     });
+    const earliestUpdated = events.reduce<EventApiDto | null>(
+      (min, e) => (!min || e.start < min.start ? e : min),
+      null,
+    );
     this.notifications.ingest(
       eventsBulkUpdatedDraft(this.nt, {
         calendarId: payload.calendarId,
         eventIds: events.map((e) => e.id),
+        firstEventId: earliestUpdated?.id,
       }),
     );
   }
@@ -1681,7 +1694,7 @@ export class CalendarStore {
 
     const events = (created ?? []).map(toCalendarEvent);
     for (const event of events) this.upsertEvent(event);
-    this.notifyEventsImported(calendarId, events.length, batchId);
+    this.notifyEventsImported(calendarId, events.length, batchId, events);
     return events;
   }
 
@@ -1690,11 +1703,31 @@ export class CalendarStore {
    *
    * Tách ra công khai vì màn hình Import còn một đường dự phòng (mất mạng thì
    * tạo từng sự kiện một) — đường đó cũng phải báo đúng như đường chính.
+   *
+   * `events` (nếu có) dùng để gắn sự kiện SỚM NHẤT vào thông báo: bấm vào sẽ
+   * mở nó và nhảy lịch tới đúng ngày.
    */
-  notifyEventsImported(calendarId: string, count: number, batchId = crypto.randomUUID()): void {
+  notifyEventsImported(
+    calendarId: string,
+    count: number,
+    batchId = crypto.randomUUID(),
+    events?: readonly CalendarEvent[],
+  ): void {
     if (count <= 0) return;
     const calendarName = this.calendars().find((c) => c.id === calendarId)?.name ?? null;
-    this.notifications.ingest(eventsImportedDraft(this.nt, { batchId, count, calendarName }));
+    const earliest = (events ?? []).reduce<CalendarEvent | null>(
+      (min, e) => (!min || e.start < min.start ? e : min),
+      null,
+    );
+    this.notifications.ingest(
+      eventsImportedDraft(this.nt, {
+        batchId,
+        count,
+        calendarName,
+        firstEventId: earliest?.id,
+        firstEventStart: earliest?.start.toISOString(),
+      }),
+    );
   }
 
   /**

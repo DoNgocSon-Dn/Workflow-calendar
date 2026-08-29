@@ -40,6 +40,14 @@ export class CreateEventDto {
   @IsBoolean()
   allDay!: boolean;
 
+  /** Tên múi giờ IANA sự kiện thuộc về (vd 'America/New_York'). Bỏ trống ⇒ sự
+   *  kiện hiển thị theo múi giờ người xem (hành vi cũ). `start`/`end` luôn là
+   *  mốc UTC bất kể giá trị này. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  startTz?: string;
+
   @IsOptional()
   @IsString()
   @MaxLength(500)

@@ -22,6 +22,7 @@ import {
 } from '../../utils/event-classification';
 import { VN_HOLIDAY_CALENDAR_ID } from '../../data/vietnam-holidays';
 import { isSameDay, startOfDay, toDateInputValue } from '../../utils/date-utils';
+import { deviceTimeZone, formatTzOffset, sameOffset, utcToZonedWall } from '../../utils/tz-utils';
 
 type AgendaEvent = CalendarEvent & { isLunarMarker?: boolean };
 
@@ -65,6 +66,18 @@ export class AgendaView {
   protected readonly mineStatus = signal<MineStatusFilter>('all');
 
   protected readonly maxDisplayedDays = signal<number>(10);
+
+  private readonly viewerTz = deviceTimeZone();
+
+  /** Sự kiện gắn múi giờ khác người xem: nhãn giờ gốc + offset (vd "09:00 GMT-4").
+   *  Trả null nếu cùng offset, là sự kiện cả ngày, hoặc không gắn múi giờ. */
+  protected tzBadge(event: CalendarEvent): string | null {
+    if (!event.startTz || event.allDay) return null;
+    if (sameOffset(event.startTz, this.viewerTz, event.start)) return null;
+    const w = utcToZonedWall(event.start, event.startTz);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${pad(w.hour)}:${pad(w.minute)} ${formatTzOffset(event.startTz, event.start)}`;
+  }
 
   setScope(scope: AgendaScope): void {
     this.scope.set(scope);

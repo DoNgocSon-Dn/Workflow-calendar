@@ -413,26 +413,51 @@ export interface EventsImportedDraftInput {
   readonly batchId: string;
   readonly count: number;
   readonly calendarName?: string | null;
+  /** Sự kiện SỚM NHẤT trong lô — bấm thông báo sẽ mở nó và nhảy lịch tới ngày đó. */
+  readonly firstEventId?: string;
+  /** ISO của sự kiện sớm nhất — để hiện ngày trong nội dung thông báo. */
+  readonly firstEventStart?: string;
 }
 
 export function eventsImportedDraft(t: NotificationT, input: EventsImportedDraftInput): NotificationDraft {
+  const hasDate = !!input.firstEventStart;
+  const dateLabel = hasDate
+    ? new Date(input.firstEventStart as string).toLocaleDateString(t('common.dateLocale'), {
+        day: 'numeric',
+        month: 'short',
+      })
+    : '';
+  const key = input.calendarName
+    ? hasDate
+      ? 'nd.eventsImported.bodyToCalendarDated'
+      : 'nd.eventsImported.bodyToCalendar'
+    : hasDate
+      ? 'nd.eventsImported.bodyDated'
+      : 'nd.eventsImported.body';
+  const params: NotifParams = {
+    count: input.count,
+    ...(input.calendarName ? { name: input.calendarName } : {}),
+    ...(hasDate ? { date: dateLabel } : {}),
+  };
   return {
     id: `events-imported-${input.batchId}`,
     type: 'event_update',
-    ...texts(
-      tr(t, 'nd.eventsImported.title'),
-      input.calendarName
-        ? tr(t, 'nd.eventsImported.bodyToCalendar', { count: input.count, name: input.calendarName })
-        : tr(t, 'nd.eventsImported.body', { count: input.count }),
-    ),
+    ...texts(tr(t, 'nd.eventsImported.title'), tr(t, key, params)),
     createdAt: new Date().toISOString(),
-    metadata: { count: String(input.count) },
+    // Bấm thông báo → mở sự kiện sớm nhất + nhảy lịch tới ngày đó.
+    relatedId: input.firstEventId,
+    metadata: {
+      count: String(input.count),
+      ...(hasDate ? { date: input.firstEventStart as string } : {}),
+    },
   };
 }
 
 export interface EventsBulkDraftInput {
   readonly calendarId: string;
   readonly eventIds: readonly string[];
+  /** Lần lặp sớm nhất trong lô — bấm thông báo mở nó + nhảy lịch tới ngày đó. */
+  readonly firstEventId?: string;
 }
 
 /** Sửa hàng loạt lần lặp của một chuỗi lặp lại (updateEventSeries scope
@@ -449,6 +474,7 @@ export function eventsBulkUpdatedDraft(t: NotificationT, input: EventsBulkDraftI
       tr(t, 'nd.eventsBulkUpdated.body', { count: input.eventIds.length }),
     ),
     createdAt: new Date().toISOString(),
+    relatedId: input.firstEventId,
   };
 }
 

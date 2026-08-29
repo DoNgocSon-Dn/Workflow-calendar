@@ -46,6 +46,15 @@ export interface GroupInviteDto {
   inviterEmail: string | null;
 }
 
+/** Lời mời nhìn từ phía NGƯỜI MỜI (danh sách "đang chờ" trong workspace). */
+export interface GroupPendingInviteDto {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  createdAt: string;
+}
+
 /** Hàng thô từ RPC list_my_group_invites / respond_group_invite. */
 export interface GroupInviteRow {
   id: string;
@@ -1032,30 +1041,63 @@ export class GroupsService {
 
     // Tạo LỜI MỜI ở trạng thái pending thay vì thêm thẳng vào nhóm — người được
     // mời tự quyết định Chấp nhận / Từ chối (giống luồng calendar_invites).
-    const { data: inviteRow, error: inviteErr } = await supabase
+    //
+    // Mời LẠI một người đã từ chối (hoặc từng bị đá khỏi nhóm): bảng có ràng
+    // buộc unique(group_id, invited_user_id). Trước đây dùng `upsert onConflict`
+    // → Postgres chạy UPDATE trên hàng 'declined'/'accepted' cũ, mà policy RLS
+    // cho UPDATE nằm ở migration 13 — DB nào chưa chạy migration đó thì "mời
+    // lại" luôn báo lỗi "row-level security policy".
+    //
+    // Nay: xoá hàng KHÔNG-pending rồi INSERT mới (chỉ cần policy DELETE + INSERT
+    // ở migration 07, chắc chắn có). Nếu đã có lời mời pending thì coi như mời
+    // rồi — trả lại nguyên trạng, không spam thông báo lần hai.
+    const { error: cleanupErr } = await supabase
       .from('group_invites')
-      .upsert(
-        {
+      .delete()
+      .eq('group_id', groupId)
+      .eq('invited_user_id', invitedUserId)
+      .neq('status', 'pending');
+    if (cleanupErr) {
+      throw new InternalServerErrorException(
+        cleanupErr.message || 'Không thể làm mới lời mời',
+      );
+    }
+
+    type InviteRowShape = {
+      id: string;
+      role: string;
+      status: string;
+      created_at: string;
+    };
+
+    const { data: stillPending } = await supabase
+      .from('group_invites')
+      .select('id, role, status, created_at')
+      .eq('group_id', groupId)
+      .eq('invited_user_id', invitedUserId)
+      .eq('status', 'pending')
+      .maybeSingle<InviteRowShape>();
+
+    let inviteRow = stillPending;
+    if (!inviteRow) {
+      const { data, error: inviteErr } = await supabase
+        .from('group_invites')
+        .insert({
           group_id: groupId,
           invited_user_id: invitedUserId,
           invited_by: inviter.id,
           role: toDbGroupRole(role),
           status: 'pending',
-        },
-        { onConflict: 'group_id,invited_user_id' },
-      )
-      .select('id, role, status, created_at')
-      .single<{
-        id: string;
-        role: string;
-        status: string;
-        created_at: string;
-      }>();
+        })
+        .select('id, role, status, created_at')
+        .single<InviteRowShape>();
 
-    if (inviteErr || !inviteRow) {
-      throw new InternalServerErrorException(
-        inviteErr?.message || 'Không thể tạo lời mời',
-      );
+      if (inviteErr || !data) {
+        throw new InternalServerErrorException(
+          inviteErr?.message || 'Không thể tạo lời mời',
+        );
+      }
+      inviteRow = data;
     }
 
     const { data: groupRow } = await supabase
@@ -1080,8 +1122,103 @@ export class GroupsService {
     this.realtimeGateway.emitToUser(invitedUserId as string, 'group:invited', {
       invite,
     });
+    // Báo cho quản trị nhóm để danh sách "Lời mời đang chờ" của họ tự cập nhật.
+    await this.emitToGroupMembers(supabase, groupId, 'group:inviteCreated', {
+      groupId,
+      invite: {
+        id: inviteRow.id,
+        email: dto.email,
+        role: normalizeGroupRole(inviteRow.role),
+        status: inviteRow.status,
+        createdAt: inviteRow.created_at,
+      },
+    });
 
     return invite;
+  }
+
+  /**
+   * Danh sách lời mời ĐANG CHỜ của một nhóm — để trưởng/phó nhóm thấy mình đã
+   * mời ai, ai chưa trả lời, và huỷ lại được. Trước đây không có endpoint này
+   * nên lời mời gửi đi xong là "biến mất" khỏi mắt người mời.
+   */
+  async listGroupInvites(
+    supabase: SupabaseClient,
+    actor: User,
+    groupId: string,
+  ): Promise<GroupPendingInviteDto[]> {
+    const role = await this.requireRole(supabase, actor, groupId);
+    if (!canInvite(role)) {
+      throw new ForbiddenException('Chỉ trưởng nhóm và quản trị viên mới xem được lời mời');
+    }
+
+    const { data, error } = await supabase
+      .from('group_invites')
+      .select('id, invited_user_id, role, status, created_at')
+      .eq('group_id', groupId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .returns<
+        {
+          id: string;
+          invited_user_id: string;
+          role: string;
+          status: string;
+          created_at: string;
+        }[]
+      >();
+    if (error) throw new InternalServerErrorException(error.message);
+
+    return Promise.all(
+      (data ?? []).map(async (row) => {
+        const { data: email } = await supabase.rpc('get_user_email_by_id', {
+          p_user_id: row.invited_user_id,
+        });
+        return {
+          id: row.id,
+          email: (email as string | null) ?? row.invited_user_id,
+          role: normalizeGroupRole(row.role),
+          status: row.status,
+          createdAt: row.created_at,
+        };
+      }),
+    );
+  }
+
+  /** Huỷ một lời mời đang chờ. Chỉ trưởng/phó nhóm. */
+  async cancelGroupInvite(
+    supabase: SupabaseClient,
+    actor: User,
+    groupId: string,
+    inviteId: string,
+  ): Promise<void> {
+    const role = await this.requireRole(supabase, actor, groupId);
+    if (!canInvite(role)) {
+      throw new ForbiddenException('Chỉ trưởng nhóm và quản trị viên mới huỷ được lời mời');
+    }
+
+    const { data: deleted, error } = await supabase
+      .from('group_invites')
+      .delete()
+      .eq('id', inviteId)
+      .eq('group_id', groupId)
+      .select('id, invited_user_id')
+      .returns<{ id: string; invited_user_id: string }[]>();
+    if (error) throw new InternalServerErrorException(error.message);
+    if (!deleted || deleted.length === 0) {
+      throw new NotFoundException('Lời mời không tồn tại');
+    }
+
+    // Người được mời: gỡ thẻ lời mời khỏi màn hình họ ngay.
+    this.realtimeGateway.emitToUser(deleted[0].invited_user_id, 'group:inviteRevoked', {
+      inviteId,
+      groupId,
+    });
+    // Quản trị nhóm khác: cập nhật danh sách "đang chờ".
+    await this.emitToGroupMembers(supabase, groupId, 'group:inviteRemoved', {
+      groupId,
+      inviteId,
+    });
   }
 
   /** Task được giao cho người gọi trên MỌI nhóm — Notification Center dùng để

@@ -47,7 +47,7 @@ export class ImportController {
         if (!hasAllowedExtension(file.originalname, ALLOWED_IMPORT_EXTENSIONS)) {
           callback(
             new BadRequestException(
-              'Chỉ hỗ trợ file .ics hoặc .csv. File .pdf hãy gửi cho Trợ lý AI.',
+              'Import Lịch chỉ nhận .ics hoặc .csv. File PDF / Word / Excel hãy gửi cho Trợ lý AI.',
             ),
             false,
           );

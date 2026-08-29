@@ -38,8 +38,20 @@ export const ALLOWED_IMPORT_EXTENSIONS = ['.ics', '.csv'] as const;
  * thể đưa vào Import Lịch (đọc theo đúng chuẩn, nhanh, không cần mạng) hoặc
  * đưa cho Trợ lý AI (hiểu được file trình bày tự do). Hai đường phục vụ hai
  * nhu cầu khác nhau, không phải một cái thay thế cái kia.
+ *
+ * PDF qua pdf.js, Word (.docx) qua mammoth, Excel (.xlsx) qua xlsx —
+ * xem AiFileImportService.extractTextFromFile.
  */
-export const ALLOWED_AI_FILE_EXTENSIONS = ['.ics', '.csv', '.pdf'] as const;
+export const ALLOWED_AI_FILE_EXTENSIONS = [
+  '.ics',
+  '.csv',
+  '.pdf',
+  '.docx',
+  '.xlsx',
+] as const;
+
+/** Nhãn hiển thị cho danh sách định dạng Trợ lý AI đọc được. */
+export const AI_FILE_FORMATS_LABEL = '.ics, .csv, .pdf, .docx, .xlsx';
 
 /**
  * Hạn mức cho các thao tác nặng: 10 lượt mỗi giờ.

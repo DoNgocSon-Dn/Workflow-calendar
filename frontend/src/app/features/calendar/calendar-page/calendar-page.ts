@@ -184,9 +184,17 @@ export class CalendarPage {
 
   onViewDetail(eventId: string): void {
     // Must search visibleEvents (not just events), since agenda items can be
-    // read-only holiday entries that live in a separate static list.
-    const event = this.store.visibleEvents().find((e) => e.id === eventId);
-    if (event) this.openEdit(event);
+    // read-only holiday entries that live in a separate static list. Fallback
+    // sang events() cho trường hợp sự kiện vừa import mà lịch chứa nó đang tắt.
+    const event =
+      this.store.visibleEvents().find((e) => e.id === eventId) ??
+      this.store.events().find((e) => e.id === eventId);
+    if (!event) return;
+    // Nhảy lịch tới đúng ngày trước khi mở — bấm thông báo "đã nhập N sự kiện"
+    // (hoặc nhắc lịch của tuần sau) sẽ bay thẳng tới chỗ đó, không chỉ mở modal
+    // trong khi lưới vẫn đứng ở hôm nay.
+    this.store.goTo(event.start);
+    this.openEdit(event);
   }
 
   onOpenGroupFromNotification(request: OpenGroupChatRequest): void {

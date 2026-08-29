@@ -9,7 +9,7 @@ Các file `.sql` ở đây được chạy **thủ công trong Supabase SQL Edit
 1. Chạy `../schema.sql` trước (tạo bảng gốc + RLS + RPC ban đầu).
 2. Sau đó chạy toàn bộ file trong thư mục này **theo thứ tự tên file** (sắp xếp
    chuỗi): `0000`, `0002` … `0006`, `02` … `15a`, `15b`, `16` … `20a`, `20b`,
-   `21` … `33`.
+   `21` … `36`.
 
 Mọi file đều dùng `create or replace` / `drop … if exists` / `if not exists` nên
 chạy lại nhiều lần vẫn an toàn.
@@ -23,6 +23,18 @@ chạy lại nhiều lần vẫn an toàn.
 
 ## Trạng thái
 
-Tất cả migration tới `33_` đã được áp dụng lên project Supabase đang chạy
-(`wdiuuhsfflragxuurwpk`). Đổi tên file ở trên **không ảnh hưởng** DB hiện tại —
-chỉ để lần dựng DB mới chạy đúng thứ tự.
+Migration tới `33_` đã được áp dụng lên project Supabase đang chạy
+(`wdiuuhsfflragxuurwpk`). Đổi tên file 15/20 ở trên **không ảnh hưởng** DB hiện
+tại — chỉ để lần dựng DB mới chạy đúng thứ tự.
+
+**`34`, `35`, `36` CHƯA chạy** — chạy cả ba trước khi deploy backend mới:
+
+- `34_event_timezone.sql` — cột `events.start_tz`. Thiếu ⇒ tạo sự kiện gắn múi
+  giờ khác lỗi "column start_tz does not exist" (sự kiện cùng múi giờ vẫn OK vì
+  frontend chỉ gửi `startTz` khi khác).
+- `35_push_subscriptions.sql` — bảng cho Web Push. Thiếu ⇒ bật "Thông báo trên
+  máy" sẽ lỗi khi lưu subscription.
+- `36_event_recurrence_exceptions.sql` — bảng EXDATE + nền cho cron top-up chuỗi
+  lặp. Thiếu ⇒ `DELETE /events/:id` của một buổi trong chuỗi lặp báo lỗi khi ghi
+  ngoại lệ (đã log-and-continue nên không chặn xoá, nhưng cron top-up sẽ tạo lại
+  buổi đã xoá).

@@ -1,0 +1,18 @@
+{
+  "name": "Lịch Workflow",
+  "short_name": "Lịch",
+  "description": "Lịch cá nhân và nhóm với trợ lý AI thông minh",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#060608",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

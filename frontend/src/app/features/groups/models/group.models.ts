@@ -54,6 +54,15 @@ export interface GroupInvite {
   inviterEmail: string | null;
 }
 
+/** Lời mời nhìn từ phía NGƯỜI MỜI — danh sách "đang chờ" trong workspace. */
+export interface GroupPendingInvite {
+  id: string;
+  email: string;
+  role: string;
+  status: GroupInviteStatus;
+  createdAt: string;
+}
+
 export interface GroupInviteLink {
   token: string;
   groupId: string;

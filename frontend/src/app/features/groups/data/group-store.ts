@@ -4,6 +4,7 @@ import {
   GroupInvite,
   GroupInviteLink,
   GroupJoinRequest,
+  GroupPendingInvite,
   GroupMember,
   GroupMessage,
   GroupMessageAttachment,
@@ -90,6 +91,10 @@ export class GroupStore {
   /** Yêu cầu tham gia đang chờ duyệt của nhóm đang mở. */
   readonly pendingJoinRequests = signal<GroupJoinRequest[]>([]);
 
+  /** Lời mời đích danh (theo email) đang chờ phản hồi của nhóm đang mở —
+   *  để trưởng/phó nhóm thấy đã mời ai và huỷ lại được. */
+  readonly groupPendingInvites = signal<GroupPendingInvite[]>([]);
+
   /** Đặt bởi các luồng mở workspace từ bên ngoài (ví dụ click thông báo tin
    *  nhắn) để yêu cầu modal mở đúng tab thay vì tab mặc định. */
   readonly requestedWorkspaceTab = signal<WorkspaceTabRequest | null>(null);
@@ -104,6 +109,11 @@ export class GroupStore {
 
   private realtimeInitialized = false;
   private readonly selfOriginTaskIds = new Set<string>();
+  /** ID tin nhắn ĐÃ sinh thông báo — mỗi tin tới qua CẢ socket lẫn Supabase
+   *  Realtime, không có chốt này thì tin có @mention bị ghi 2 lần vào chuông
+   *  (một lần `message-X`, một lần `mention-X` nếu hai payload khác nhau ở
+   *  trường mentions). Giữ tối đa 200 id gần nhất là quá đủ. */
+  private readonly notifiedMessageIds = new Set<string>();
   /** `${groupId}:${userId}` — tự rời nhóm (removeMember(groupId, mình)) không
    *  cần báo lại "bạn đã bị xoá khỏi nhóm" khi tiếng vọng realtime quay về. */
   private readonly selfOriginMemberRemovals = new Set<string>();
@@ -223,6 +233,20 @@ export class GroupStore {
     } catch (err) {
       console.error('Không tải được yêu cầu tham gia:', err);
     }
+  }
+
+  async loadGroupInvites(groupId: string): Promise<void> {
+    try {
+      this.groupPendingInvites.set(await this.api.listGroupInvites(groupId));
+    } catch (err) {
+      // Thành viên thường bị 403 — không phải lỗi, chỉ là không có quyền xem.
+      this.groupPendingInvites.set([]);
+    }
+  }
+
+  async cancelGroupInvite(groupId: string, inviteId: string): Promise<void> {
+    await this.api.cancelGroupInvite(groupId, inviteId);
+    this.groupPendingInvites.update((list) => list.filter((i) => i.id !== inviteId));
   }
 
   async approveJoinRequest(groupId: string, requestId: string): Promise<void> {
@@ -597,6 +621,34 @@ export class GroupStore {
       },
     );
 
+    // Danh sách "Lời mời đang chờ" của người mời: một lời mời mới được tạo (kể
+    // cả do quản trị viên khác trong nhóm mời).
+    this.realtime.on<{ groupId: string; invite: GroupPendingInvite }>(
+      'group:inviteCreated',
+      (payload) => {
+        if (!payload?.invite || !this.isActiveGroup(payload.groupId)) return;
+        this.groupPendingInvites.update((list) => [
+          payload.invite,
+          ...list.filter((i) => i.id !== payload.invite.id),
+        ]);
+      },
+    );
+
+    // Lời mời bị huỷ / được chấp nhận / bị từ chối → gỡ khỏi danh sách "đang chờ".
+    const dropInvite = (groupId: string, inviteId: string) => {
+      if (!inviteId || !this.isActiveGroup(groupId)) return;
+      this.groupPendingInvites.update((list) => list.filter((i) => i.id !== inviteId));
+    };
+    this.realtime.on<{ groupId: string; inviteId: string }>('group:inviteRemoved', (p) =>
+      dropInvite(p?.groupId, p?.inviteId),
+    );
+    this.realtime.on<{ groupId: string; inviteId: string }>('group:invitationAccepted', (p) =>
+      dropInvite(p?.groupId, p?.inviteId),
+    );
+    this.realtime.on<{ groupId: string; inviteId: string }>('group:invitationDeclined', (p) =>
+      dropInvite(p?.groupId, p?.inviteId),
+    );
+
     // Vai trò đổi: cập nhật danh sách nếu đang mở nhóm, và báo riêng cho
     // CHÍNH người bị đổi — họ chưa chắc đang mở nhóm này (bắn qua room riêng
     // của mọi thành viên ở backend, không chỉ room "calendar:").
@@ -767,6 +819,13 @@ export class GroupStore {
   private notifyIncomingMessage(groupId: string, message: GroupMessage): void {
     const currentUser = this.authStore.user();
     if (!currentUser || message.senderId === currentUser.id) return;
+
+    // Chốt chống trùng: tin nhắn tới qua cả socket lẫn Supabase Realtime.
+    if (this.notifiedMessageIds.has(message.id)) return;
+    this.notifiedMessageIds.add(message.id);
+    if (this.notifiedMessageIds.size > 200) {
+      this.notifiedMessageIds.delete(this.notifiedMessageIds.values().next().value as string);
+    }
 
     this.markGroupUnread(groupId || message.groupId);
 

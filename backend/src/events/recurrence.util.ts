@@ -8,6 +8,21 @@ import { RecurrenceRuleDto, RecurrenceUnit } from './dto/recurrence-rule.dto';
 export const RECURRENCE_MAX_OCCURRENCES = 180;
 export const RECURRENCE_HORIZON_YEARS = 2;
 
+/** Cron top-up (recurrence-cron.service) kéo dài chuỗi "lặp mãi mãi" tới mốc
+ *  now + ngần này ngày, chạy hằng ngày nên chuỗi không bao giờ cạn. */
+export const RECURRENCE_TOPUP_HORIZON_DAYS = 400;
+
+export interface ExpandOptions {
+  /** Chỉ lấy các lần lặp SAU mốc này (dùng cho top-up: đã có sẵn tới latestStart). */
+  after?: Date;
+  /** Ngưỡng trên tuyệt đối (ghi đè horizon mặc định từ start). */
+  until?: Date;
+  /** Bỏ qua các lần lặp trùng mốc này (getTime()) — EXDATE: buổi đã bị xoá lẻ. */
+  excluded?: ReadonlySet<number>;
+  /** Chặn trên số kết quả (mặc định RECURRENCE_MAX_OCCURRENCES). */
+  max?: number;
+}
+
 export function weekOfMonth(date: Date): number {
   return Math.floor((date.getDate() - 1) / 7) + 1;
 }
@@ -21,22 +36,32 @@ export function expandRecurrence(
   start: Date,
   end: Date,
   rule: RecurrenceRuleDto,
+  options: ExpandOptions = {},
 ): { start: Date; end: Date }[] {
   const durationMs = end.getTime() - start.getTime();
-  const horizon = new Date(start);
-  horizon.setFullYear(horizon.getFullYear() + RECURRENCE_HORIZON_YEARS);
+  const defaultHorizon = new Date(start);
+  defaultHorizon.setFullYear(defaultHorizon.getFullYear() + RECURRENCE_HORIZON_YEARS);
+  const horizon = options.until ?? defaultHorizon;
   const untilDate = rule.endType === 'until' && rule.until ? new Date(rule.until) : null;
   const hardCap = Math.min(
     rule.endType === 'count' && rule.count ? rule.count : RECURRENCE_MAX_OCCURRENCES,
-    RECURRENCE_MAX_OCCURRENCES,
+    options.max ?? RECURRENCE_MAX_OCCURRENCES,
   );
+  const afterMs = options.after?.getTime() ?? -Infinity;
 
   const results: { start: Date; end: Date }[] = [];
+  let seen = 0;
   for (const occStart of candidateDates(start, rule)) {
-    if (results.length >= hardCap) break;
+    // `rule.endType === 'count'` đếm TỔNG số lần lặp kể từ đầu chuỗi, kể cả
+    // những lần đã nằm trước `after` (top-up) — nên đếm trên toàn bộ candidate.
+    seen++;
+    if (rule.endType === 'count' && rule.count && seen > rule.count) break;
     if (occStart.getTime() > horizon.getTime()) break;
     if (untilDate && occStart.getTime() > untilDate.getTime()) break;
+    if (occStart.getTime() <= afterMs) continue;
+    if (options.excluded?.has(occStart.getTime())) continue;
     results.push({ start: occStart, end: new Date(occStart.getTime() + durationMs) });
+    if (results.length >= hardCap) break;
   }
   return results;
 }

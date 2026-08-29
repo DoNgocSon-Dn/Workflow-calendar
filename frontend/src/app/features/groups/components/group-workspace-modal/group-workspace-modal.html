@@ -505,6 +505,26 @@
                 } @else if (inviteSuccess(); as ok) {
                   <p class="success-msg">{{ ok }}</p>
                 }
+
+                @if (store.groupPendingInvites().length > 0) {
+                  <div class="pending-invites">
+                    <h4>{{ i18n.t('group.pendingInvitesTitle') }} ({{ store.groupPendingInvites().length }})</h4>
+                    @for (inv of store.groupPendingInvites(); track inv.id) {
+                      <div class="member-row">
+                        <div class="member-info">
+                          <span class="user-avatar"><app-icon name="user" /></span>
+                          <div>
+                            <strong class="member-email">{{ inv.email }}</strong>
+                            <span class="pending-invite-status">{{ i18n.t('group.pendingInviteWaiting') }}</span>
+                          </div>
+                        </div>
+                        <button type="button" class="btn-mini btn-mini-ghost" (click)="cancelPendingInvite(inv.id)">
+                          {{ i18n.t('group.pendingInviteCancel') }}
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
               </div>
 
               <div class="invite-card invite-link-card">

@@ -4,9 +4,13 @@ import { NotificationDraft } from './notification.model';
 /** Dịch giả lập — trả về chuỗi tiếng Việt để test đọc được nội dung. */
 const t: NotificationT = (key, vars) => {
   const templates: Record<string, string> = {
+    'common.dateLocale': 'vi-VN',
     'nd.eventsImported.title': 'Import lịch hoàn tất',
-    'nd.eventsImported.body': 'Đã nhập {count} sự kiện vào lịch.',
-    'nd.eventsImported.bodyToCalendar': 'Đã nhập {count} sự kiện vào lịch "{name}".',
+    'nd.eventsImported.body': 'Đã nhập {count} sự kiện vào lịch. Bấm để xem.',
+    'nd.eventsImported.bodyToCalendar': 'Đã nhập {count} sự kiện vào lịch "{name}". Bấm để xem.',
+    'nd.eventsImported.bodyDated': 'Đã nhập {count} sự kiện · từ {date}. Bấm để xem.',
+    'nd.eventsImported.bodyToCalendarDated':
+      'Đã nhập {count} sự kiện vào "{name}" · từ {date}. Bấm để xem.',
   };
   let text = templates[key] ?? key;
   for (const [k, v] of Object.entries(vars ?? {})) text = text.replace(`{${k}}`, String(v));
@@ -41,17 +45,29 @@ describe('Thông báo import — "Đã nhập N sự kiện vào lịch"', () =>
 
   it('nội dung đúng câu người dùng cần đọc', () => {
     const d = eventsImportedDraft(t, { batchId: 'b1', count: 20, calendarName: 'Cá nhân' });
-    expect(d.message).toBe('Đã nhập 20 sự kiện vào lịch "Cá nhân".');
+    expect(d.message).toBe('Đã nhập 20 sự kiện vào lịch "Cá nhân". Bấm để xem.');
     expect(d.title).toBe('Import lịch hoàn tất');
   });
 
   it('không biết tên lịch thì vẫn thành câu, không lòi ra dấu ngoặc rỗng', () => {
     expect(eventsImportedDraft(t, { batchId: 'b1', count: 3 }).message).toBe(
-      'Đã nhập 3 sự kiện vào lịch.',
+      'Đã nhập 3 sự kiện vào lịch. Bấm để xem.',
     );
     expect(eventsImportedDraft(t, { batchId: 'b1', count: 3, calendarName: null }).message).toBe(
-      'Đã nhập 3 sự kiện vào lịch.',
+      'Đã nhập 3 sự kiện vào lịch. Bấm để xem.',
     );
+  });
+
+  it('có ngày sự kiện sớm nhất → hiện ngày trong nội dung', () => {
+    const d = eventsImportedDraft(t, {
+      batchId: 'b1',
+      count: 5,
+      calendarName: 'Cá nhân',
+      firstEventId: 'evt-9',
+      firstEventStart: '2026-09-03T02:00:00.000Z',
+    });
+    expect(d.message).toContain('từ 3 thg 9');
+    expect(d.message).toContain('Bấm để xem');
   });
 
   it('socket về TRƯỚC phản hồi HTTP: vẫn chỉ một thông báo', () => {
@@ -88,15 +104,21 @@ describe('Thông báo import — "Đã nhập N sự kiện vào lịch"', () =>
     expect(c.list.length).toBe(2);
   });
 
-  it('KHÔNG đặt relatedId — một lô không trỏ về sự kiện đơn lẻ nào', () => {
-    // Panel coi `event_update` là loại bấm vào thì mở sự kiện. Có relatedId ở
-    // đây nghĩa là bấm vào sẽ đi tìm một sự kiện không tồn tại.
-    const d = eventsImportedDraft(t, { batchId: 'b1', count: 20 });
+  it('relatedId = sự kiện sớm nhất khi có — bấm vào bay tới đúng chỗ', () => {
+    const d = eventsImportedDraft(t, {
+      batchId: 'b1',
+      count: 20,
+      firstEventId: 'evt-1',
+      firstEventStart: '2026-09-03T02:00:00.000Z',
+    });
     expect(d.type).toBe('event_update');
-    expect(d.relatedId).toBeUndefined();
+    expect(d.relatedId).toBe('evt-1');
+    expect(d.metadata).toEqual({ count: '20', date: '2026-09-03T02:00:00.000Z' });
   });
 
-  it('giữ lại số lượng trong metadata để dùng về sau', () => {
-    expect(eventsImportedDraft(t, { batchId: 'b1', count: 20 }).metadata).toEqual({ count: '20' });
+  it('không có sự kiện kèm theo (đường dự phòng cũ) → relatedId để trống, an toàn', () => {
+    const d = eventsImportedDraft(t, { batchId: 'b1', count: 20 });
+    expect(d.relatedId).toBeUndefined();
+    expect(d.metadata).toEqual({ count: '20' });
   });
 });

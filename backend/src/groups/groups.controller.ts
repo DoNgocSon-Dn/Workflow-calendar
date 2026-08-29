@@ -139,6 +139,26 @@ export class GroupsController {
     return this.groupsService.inviteMember(supabase, user, groupId, dto);
   }
 
+  @Get(':id/invites')
+  async listGroupInvites(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('id') groupId: string,
+  ) {
+    return this.groupsService.listGroupInvites(supabase, user, groupId);
+  }
+
+  @Delete(':id/invites/:inviteId')
+  async cancelGroupInvite(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('id') groupId: string,
+    @Param('inviteId') inviteId: string,
+  ) {
+    await this.groupsService.cancelGroupInvite(supabase, user, groupId, inviteId);
+    return { ok: true };
+  }
+
   @Get(':id/invite-link')
   async getInviteLink(
     @CurrentSupabase() supabase: SupabaseClient,

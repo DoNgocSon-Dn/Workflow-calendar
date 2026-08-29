@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { MailService } from '../mail/mail.service';
+import { PushService } from '../push/push.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { SupabaseService } from '../supabase/supabase.service';
 
@@ -21,6 +22,7 @@ export class RemindersCronService {
     private readonly supabaseService: SupabaseService,
     private readonly realtimeGateway: RealtimeGateway,
     private readonly mailService: MailService,
+    private readonly pushService: PushService,
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
@@ -70,6 +72,7 @@ export class RemindersCronService {
     }
 
     if (reminder.remind_type === 'popup') {
+      // App đang mở: popup trong app qua socket.
       this.realtimeGateway.emitToUser(reminder.user_id, 'reminder:fire', {
         reminderId: reminder.id,
         eventId: reminder.event_id,
@@ -77,6 +80,16 @@ export class RemindersCronService {
         startAt,
         meetLink: reminder.events?.meet_link ?? null,
         groupId,
+      });
+      // App đã đóng: thông báo hệ điều hành qua Web Push (bỏ qua êm nếu người
+      // dùng chưa bật hoặc VAPID chưa cấu hình). Giờ diễn ra để service worker
+      // tự format theo múi giờ + ngôn ngữ của trình duyệt.
+      await this.pushService.sendToUser(reminder.user_id, {
+        title,
+        body: 'reminder',
+        startAt: startAt || undefined,
+        url: groupId ? `/groups/${groupId}` : '/calendar',
+        tag: `reminder:${reminder.event_id}`,
       });
       return;
     }

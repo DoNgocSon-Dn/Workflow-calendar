@@ -17,6 +17,7 @@ import { GroupsModule } from './groups/groups.module';
 import { ImportModule } from './import/import.module';
 import { MailModule } from './mail/mail.module';
 import { NotesModule } from './notes/notes.module';
+import { PushModule } from './push/push.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { SupabaseModule } from './supabase/supabase.module';
@@ -42,6 +43,7 @@ import { TodosModule } from './todos/todos.module';
     RemindersModule,
     MailModule,
     NotesModule,
+    PushModule,
     TodosModule,
     CommentsModule,
     AiModule,

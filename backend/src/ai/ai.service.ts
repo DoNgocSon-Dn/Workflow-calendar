@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppConfig } from '../config/configuration';
+import { GEMINI_MODELS, looksLikeGeminiApiKey } from './gemini.constants';
 
 /** Một việc do AI đề xuất. CHƯA được lưu — người dùng phải chọn trước. */
 export interface AiSuggestedTodo {
@@ -219,6 +220,17 @@ interface GeminiResponse {
 export class AiService {
   private readonly logger = new Logger(AiService.name);
 
+  /** Cảnh báo 1 lần nếu key có vẻ sai định dạng (tránh spam log mỗi request). */
+  private warnedBadKey = false;
+  private warnIfKeyLooksInvalid(apiKey: string): void {
+    if (this.warnedBadKey || looksLikeGeminiApiKey(apiKey)) return;
+    this.warnedBadKey = true;
+    this.logger.warn(
+      'GEMINI_API_KEY trống hoặc là giá trị giữ chỗ. Các tính năng AI sẽ bị tắt. ' +
+        'Lấy key (định dạng "AIza..." hoặc "AQ...") tại https://aistudio.google.com/app/apikey',
+    );
+  }
+
   constructor(private readonly configService: ConfigService<AppConfig, true>) {}
 
   async chat(userText: string, context: AiChatContext): Promise<AiParsedIntent> {
@@ -369,7 +381,8 @@ QUY TẮC BẮT BUỘC:
 - File không có gì liên quan lịch hay công việc thì trả "kind": "none", hai mảng rỗng, và giải thích trong "summary".
 - Giữ nguyên tên gọi trong file, không diễn đạt lại thành thứ khác.`;
 
-    const models = ['gemini-flash-latest', 'gemini-3.6-flash'];
+    this.warnIfKeyLooksInvalid(apiKey);
+    const models = [...GEMINI_MODELS];
     let lastStatus = 0;
 
     for (const model of models) {
@@ -777,10 +790,8 @@ QUY TẮC BẮT BUỘC cho thời gian (áp dụng cho cả "create_event" và "
 
 Chỉ trả về "unclear" khi thật sự không đủ dữ kiện TẠO MỚI một sự kiện. Không chắc câu nói đang muốn sửa/xoá đúng mục nào trong các danh sách ở trên (sự kiện/việc/ghi chú) thì dùng "chat" để hỏi lại cho rõ, KHÔNG đoán bừa "target_match". Mọi câu hỏi/trò chuyện khác cũng dùng "chat".`;
 
-    // gemini-2.0-flash/1.5-flash/2.5-flash đã bị Google khai tử (404 NOT_FOUND) —
-    // dùng alias "-latest" làm chính (luôn trỏ tới bản flash mới nhất) với một
-    // bản ghim cụ thể làm dự phòng nếu alias đổi hành vi bất ngờ.
-    const models = ['gemini-flash-latest', 'gemini-3.6-flash'];
+    this.warnIfKeyLooksInvalid(apiKey);
+    const models = [...GEMINI_MODELS];
 
     for (const model of models) {
       try {

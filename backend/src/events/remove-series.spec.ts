@@ -4,8 +4,9 @@ import { EventsService } from './events.service';
 /**
  * Xoá một chuỗi sự kiện lặp lại theo 3 phạm vi kiểu Google Calendar.
  *
- * Mô hình dữ liệu ở dự án này KHÔNG dùng "rrule + danh sách ngoại lệ": mỗi lần
- * lặp đã là một hàng `events` thật, cùng `series_id`. Nên:
+ * Mô hình dữ liệu ở dự án này vật chất hoá mỗi lần lặp thành một hàng `events`
+ * thật, cùng `series_id` (không phải rrule thuần). Xoá một buổi lẻ còn ghi thêm
+ * EXDATE vào `event_recurrence_exceptions` để cron top-up không tạo lại. Nên:
  *   - "Sự kiện này"                → xoá mềm ĐÚNG một hàng (remove()).
  *   - "Sự kiện này và các sự kiện tiếp theo" → xoá mềm mọi hàng có
  *     start_at >= hàng đang mở (removeSeries scope 'following').
@@ -30,6 +31,7 @@ class FakeQuery {
   private filters: ((r: Row) => boolean)[] = [];
   private pendingUpdate: Partial<Row> | null = null;
   private selectCols: string[] | null = null;
+  private inert = false;
 
   constructor(private readonly rows: Row[]) {}
 
@@ -39,6 +41,11 @@ class FakeQuery {
   }
   update(patch: Partial<Row>): this {
     this.pendingUpdate = patch;
+    return this;
+  }
+  /** Ghi EXDATE vào bảng event_recurrence_exceptions — không đụng mảng events. */
+  upsert(_row: unknown, _opts?: unknown): this {
+    this.inert = true;
     return this;
   }
   eq(col: keyof Row, val: unknown): this {
@@ -70,6 +77,7 @@ class FakeQuery {
     return this.rows.filter((r) => this.filters.every((f) => f(r)));
   }
   private async run(): Promise<{ data: unknown[]; error: null }> {
+    if (this.inert) return { data: [], error: null };
     const matched = this.match();
     if (this.pendingUpdate) {
       for (const r of matched) Object.assign(r, this.pendingUpdate);

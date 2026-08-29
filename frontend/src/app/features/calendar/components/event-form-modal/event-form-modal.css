@@ -267,6 +267,20 @@
   line-height: 1;
 }
 
+.timezone-select {
+  font-size: 0.78rem;
+  max-width: 55%;
+  padding: 0.15rem 0.35rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+
+.timezone-hint {
+  margin-top: 0.25rem;
+}
+
 .repeat-readonly-label {
   margin: 0.1rem 0 0;
   font-size: 0.85rem;

@@ -51,6 +51,7 @@ function stubRow(): EventRow {
     description: null,
     start_at: '2026-08-15T07:00:00.000Z',
     end_at: '2026-08-15T09:00:00.000Z',
+    start_tz: null,
     all_day: false,
     created_by: 'u1',
     created_at: '',

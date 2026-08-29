@@ -345,6 +345,28 @@
 
           @case ('notifications') {
             <section class="setting-group">
+              @if (pushService.supported()) {
+              <div class="setting-row">
+                <span class="setting-title" id="push-notif-label">{{ i18n.t('settings.pushNotif') }}</span>
+                <div class="setting-inline">
+                  <label class="toggle-switch">
+                    <input
+                      type="checkbox"
+                      aria-labelledby="push-notif-label"
+                      [checked]="pushService.enabled()"
+                      [disabled]="pushService.busy()"
+                      (change)="pushService.toggle()"
+                    />
+                    <span class="toggle-track" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <p class="setting-hint">{{ i18n.t('settings.pushNotifHint') }}</p>
+              @if (pushService.error() === 'denied') {
+                <p class="setting-hint setting-hint--error" role="alert">{{ i18n.t('settings.pushNotifDenied') }}</p>
+              }
+              }
+
               <div class="setting-row">
                 <span class="setting-title" id="notification-sound-label">{{ i18n.t('settings.notificationSound') }}</span>
                 <div class="setting-inline">

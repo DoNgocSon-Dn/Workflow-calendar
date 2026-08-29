@@ -320,6 +320,7 @@ export class GroupWorkspaceModal {
 
       const groupId = untracked(() => group.id);
       void this.store.loadInviteLink(groupId);
+      void this.store.loadGroupInvites(groupId);
       if (this.canUserApproveJoinRequests()) {
         void this.store.loadPendingJoinRequests(groupId);
       }
@@ -473,13 +474,28 @@ export class GroupWorkspaceModal {
 
     this.inviting.set(true);
     try {
-      await this.store.inviteMember(group.id, email, this.inviteRole());
+      const created = await this.store.inviteMember(group.id, email, this.inviteRole());
       this.inviteEmail.set('');
       this.inviteSuccess.set(this.i18n.t('group.inviteSent', { email }));
+      // Hiện ngay trong "Lời mời đang chờ" (không đợi tiếng vọng realtime).
+      this.store.groupPendingInvites.update((list) => [
+        { id: created.id, email, role: created.role, status: 'pending', createdAt: created.createdAt },
+        ...list.filter((i) => i.id !== created.id && i.email !== email),
+      ]);
     } catch (err: any) {
       this.inviteError.set(err?.error?.message || this.i18n.t('group.inviteError'));
     } finally {
       this.inviting.set(false);
+    }
+  }
+
+  async cancelPendingInvite(inviteId: string): Promise<void> {
+    const group = this.store.activeGroup();
+    if (!group) return;
+    try {
+      await this.store.cancelGroupInvite(group.id, inviteId);
+    } catch (err: any) {
+      this.inviteError.set(err?.error?.message || this.i18n.t('group.inviteCancelError'));
     }
   }
 

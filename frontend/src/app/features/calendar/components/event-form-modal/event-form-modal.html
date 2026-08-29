@@ -71,8 +71,18 @@
               <input type="checkbox" formControlName="allDay" />
               {{ i18n.t('calendar.allDay') }}
             </label>
-            <span class="timezone-label">{{ timezoneLabel }}</span>
+            @if (!form.controls.allDay.value) {
+            <select class="timezone-select" formControlName="timeZone"
+              [attr.aria-label]="i18n.t('event.timezone')" [title]="i18n.t('event.timezone')">
+              @for (tz of timeZoneOptions; track tz) {
+              <option [value]="tz">{{ tzOptionLabel(tz) }}</option>
+              }
+            </select>
+            }
           </div>
+          @if (!form.controls.allDay.value && tzHint(); as hint) {
+          <p class="hint-text timezone-hint">🌐 {{ hint }}</p>
+          }
 
           @if (dateTimeOpen()) {
           <div class="row date-row">

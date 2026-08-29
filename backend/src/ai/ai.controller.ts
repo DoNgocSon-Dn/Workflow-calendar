@@ -36,6 +36,7 @@ import { AiChatDto, AiChatHistoryEntryDto, AiPendingActionDto } from './dto/ai-c
 import { AiFileImportService } from '../import/services/ai-file-import.service';
 import { MulterExceptionFilter } from '../common/multer-exception.filter';
 import {
+  AI_FILE_FORMATS_LABEL,
   ALLOWED_AI_FILE_EXTENSIONS,
   HEAVY_OPERATION_RATE_LIMIT,
   MULTER_FILE_SIZE_LIMIT,
@@ -763,7 +764,7 @@ export class AiController {
   }
 
   /**
-   * Đọc một file .ics/.csv/.pdf và đề xuất sự kiện + việc cần làm.
+   * Đọc một file (.ics/.csv/.pdf/.docx/.xlsx) và đề xuất sự kiện + việc cần làm.
    *
    * CỐ Ý KHÔNG lưu bất cứ thứ gì: kết quả chỉ để dựng bảng xem trước trong
    * khung chat. Người dùng chọn xong mới gọi các endpoint tạo sẵn có.
@@ -777,7 +778,7 @@ export class AiController {
         if (!hasAllowedExtension(file.originalname, ALLOWED_AI_FILE_EXTENSIONS)) {
           callback(
             new BadRequestException(
-              'Chỉ hỗ trợ file .ics, .csv hoặc .pdf.',
+              `Chỉ hỗ trợ file ${AI_FILE_FORMATS_LABEL}.`,
             ),
             false,
           );
@@ -798,9 +799,7 @@ export class AiController {
     }
 
     if (!hasAllowedExtension(file.originalname, ALLOWED_AI_FILE_EXTENSIONS)) {
-      throw new BadRequestException(
-        'Chỉ hỗ trợ file .ics, .csv hoặc .pdf.',
-      );
+      throw new BadRequestException(`Chỉ hỗ trợ file ${AI_FILE_FORMATS_LABEL}.`);
     }
 
     const text = await this.fileImport.extractTextFromFile(file);

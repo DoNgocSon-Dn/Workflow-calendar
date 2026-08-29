@@ -114,10 +114,9 @@ function normalizeTodoContent(content: string): string {
  * Khớp ALLOWED_AI_FILE_EXTENSIONS ở backend (backend/src/common/limits.ts).
  *
  * .ics và .csv trùng với chức năng Import Lịch là CỐ Ý — Import đọc theo đúng
- * chuẩn, còn Trợ lý AI hiểu được file trình bày tự do. Định dạng Office
- * (.xlsx/.docx) không còn được nhận.
+ * chuẩn, còn Trợ lý AI hiểu được file trình bày tự do (PDF, Word, Excel).
  */
-const ACCEPTED_FILE_EXT = ['.ics', '.csv', '.pdf'] as const;
+const ACCEPTED_FILE_EXT = ['.ics', '.csv', '.pdf', '.docx', '.xlsx'] as const;
 const ACCEPT_ATTR = ACCEPTED_FILE_EXT.join(',');
 
 /** Khớp giới hạn phía backend để báo lỗi ngay, khỏi tải lên rồi mới bị từ chối. */
@@ -242,10 +241,12 @@ const FILE_SUBJECT =
   'file|t[eệ]p|t[aà]i li[eệ]u|b[aả]ng( t[ií]nh| bi[eể]u)?|danh s[aá]ch|n[oộ]i dung|' +
   'd[uữ] li[eệ]u|th[oô]ng tin|l[iị]ch( h[oọ]c| thi| bi[eể]u)?|c[aá]i';
 
-/** Tên gọi của chính tài liệu — đứng một mình đã đủ rõ, không cần "này". */
+/** Tên gọi của chính tài liệu — đứng một mình đã đủ rõ, không cần "này".
+ *  Các đuôi ngắn (ics/csv/docx/xlsx) neo \b để không nuốt "Physics", "topics",
+ *  "logistics"… làm yêu cầu mở file. "excel"/"word" chỉ nhận khi đứng riêng. */
 const FILE_NOUN =
   'file|t[eệ]p|t[aà]i li[eệ]u|[dđ][ií]nh k[eè]m|pdf|' +
-  '\\bics\\b|\\bcsv\\b|' +
+  '\\bics\\b|\\bcsv\\b|\\bdocx\\b|\\bxlsx\\b|\\bexcel\\b|\\bword\\b|b[aả]ng t[ií]nh|' +
   'th[oờ]i kh[oó]a bi[eể]u|th[oờ]i kho[aá] bi[eể]u|tkb';
 
 

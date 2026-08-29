@@ -303,6 +303,15 @@
   font-size: 0.75rem;
 }
 
+.time-tag.tz-tag {
+  background: color-mix(in srgb, var(--color-text-tertiary) 15%, transparent);
+  color: var(--color-text-tertiary);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
 .time-tag.lunar-tag {
   background: color-mix(in srgb, var(--color-warning) 15%, transparent);
   color: var(--color-warning);

@@ -1,7 +1,23 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
+import * as xlsx from 'xlsx';
 import { AiFileImportService } from './ai-file-import.service';
 import { BadRequestException } from '@nestjs/common';
+
+function multerFile(name: string, buffer: Buffer): Express.Multer.File {
+  return {
+    fieldname: 'file',
+    originalname: name,
+    encoding: '7bit',
+    mimetype: 'application/octet-stream',
+    buffer,
+    size: buffer.length,
+    stream: null as never,
+    destination: '',
+    filename: '',
+    path: '',
+  };
+}
 
 describe('AiFileImportService', () => {
   let service: AiFileImportService;
@@ -62,5 +78,34 @@ describe('AiFileImportService', () => {
     };
 
     await expect(service.extractTextFromFile(mockFile)).rejects.toThrow(BadRequestException);
+  });
+
+  it('đọc .xlsx: mỗi sheet thành một khối CSV có nhãn', async () => {
+    const wb = xlsx.utils.book_new();
+    const ws = xlsx.utils.aoa_to_sheet([
+      ['Môn', 'Thứ', 'Giờ', 'Phòng'],
+      ['Toán', 'Hai', '07:00', 'A101'],
+      ['Lý', 'Tư', '09:30', 'B203'],
+    ]);
+    xlsx.utils.book_append_sheet(wb, ws, 'HK1');
+    const buffer: Buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    const text = await service.extractTextFromFile(multerFile('tkb.xlsx', buffer));
+    expect(text).toContain('--- Sheet: HK1 ---');
+    expect(text).toContain('Toán,Hai,07:00,A101');
+    expect(text).toContain('Lý,Tư,09:30,B203');
+  });
+
+  it('đọc .csv thẳng (không đổi hành vi cũ)', async () => {
+    const text = await service.extractTextFromFile(
+      multerFile('a.csv', Buffer.from('title,start\nHọp,2026-09-01T09:00', 'utf-8')),
+    );
+    expect(text).toContain('Họp,2026-09-01T09:00');
+  });
+
+  it('file .docx hỏng → BadRequestException', async () => {
+    await expect(
+      service.extractTextFromFile(multerFile('x.docx', Buffer.from('not a real docx'))),
+    ).rejects.toThrow(BadRequestException);
   });
 });

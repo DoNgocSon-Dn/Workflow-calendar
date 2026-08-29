@@ -10,6 +10,7 @@ export interface EventRow {
   description: string | null;
   start_at: string;
   end_at: string;
+  start_tz: string | null;
   all_day: boolean;
   created_by: string | null;
   created_at: string;
@@ -29,6 +30,8 @@ export interface EventDto {
   description?: string;
   start: string;
   end: string;
+  /** Múi giờ IANA sự kiện thuộc về; vắng mặt ⇒ hiển thị theo múi giờ người xem. */
+  startTz?: string;
   allDay: boolean;
   deletedAt?: string;
   meetLink?: string;
@@ -57,6 +60,7 @@ export function toEventDto(row: EventRow): EventDto {
     description: row.description ?? undefined,
     start: row.start_at,
     end: row.end_at,
+    startTz: row.start_tz ?? undefined,
     allDay: row.all_day,
     deletedAt: row.deleted_at ?? undefined,
     meetLink: row.meet_link ?? undefined,
@@ -79,6 +83,7 @@ export function toEventInsertRow(
     description: dto.description ?? null,
     start_at: dto.start,
     end_at: dto.end,
+    start_tz: dto.startTz ?? null,
     all_day: dto.allDay,
     created_by: createdBy,
     meet_link: dto.meetLink ?? null,
@@ -96,6 +101,7 @@ export function toEventUpdateRow(dto: UpdateEventDto): Record<string, unknown> {
   if (dto.description !== undefined) row['description'] = dto.description;
   if (dto.start !== undefined) row['start_at'] = dto.start;
   if (dto.end !== undefined) row['end_at'] = dto.end;
+  if (dto.startTz !== undefined) row['start_tz'] = dto.startTz || null;
   if (dto.allDay !== undefined) row['all_day'] = dto.allDay;
   if (dto.meetLink !== undefined) row['meet_link'] = dto.meetLink;
   if (dto.calendarType !== undefined) row['calendar_type'] = dto.calendarType;

@@ -421,14 +421,36 @@ export class EventsService {
       .from('events')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
-      .select('id, calendar_id')
-      .returns<{ id: string; calendar_id: string }[]>();
+      .select('id, calendar_id, series_id, start_at')
+      .returns<
+        { id: string; calendar_id: string; series_id: string | null; start_at: string }[]
+      >();
 
     if (error) throw new InternalServerErrorException(error.message);
     if (data.length === 0) {
       throw new NotFoundException(
         'Event not found or you do not have permission to delete it',
       );
+    }
+    // Xoá một buổi lẻ trong chuỗi lặp: ghi EXDATE để cron top-up không tạo lại
+    // (kể cả sau khi buổi này bị xoá vĩnh viễn khỏi thùng rác). Lỗi ở bước này
+    // không nên chặn việc xoá — chuỗi vẫn còn horizon 2 năm ban đầu.
+    if (data[0].series_id) {
+      const { error: exError } = await supabase
+        .from('event_recurrence_exceptions')
+        .upsert(
+          {
+            series_id: data[0].series_id,
+            occurred_at: data[0].start_at,
+            calendar_id: data[0].calendar_id,
+          },
+          { onConflict: 'series_id,occurred_at' },
+        );
+      if (exError) {
+        this.logger.warn(
+          `Không ghi được EXDATE cho series ${data[0].series_id}: ${exError.message}`,
+        );
+      }
     }
     this.realtimeGateway.emitToCalendar(data[0].calendar_id, 'event:deleted', {
       id: data[0].id,
