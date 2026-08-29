@@ -977,12 +977,68 @@
   border-color: color-mix(in srgb, var(--holiday-accent) 30%, transparent);
 }
 
-/* Đuôi bong bóng: bo góc dưới ở phía người gửi cho có hướng. */
-.chat-msg-row:not(.mine) .chat-msg-body {
-  border-bottom-left-radius: 4px;
+/* Gom cụm: chỉ tin CUỐI cụm có "đuôi" (góc dưới phía người gửi = 4px). Các tin
+   giữa cụm bo nhỏ cả trên lẫn dưới phía người gửi để dính thành một khối. */
+.chat-msg-row.group-end:not(.mine) .chat-msg-body { border-bottom-left-radius: 4px; }
+.chat-msg-row.group-end.mine .chat-msg-body { border-bottom-right-radius: 4px; }
+
+.chat-msg-row.grouped:not(.mine) .chat-msg-body { border-top-left-radius: 5px; }
+.chat-msg-row.grouped.mine .chat-msg-body { border-top-right-radius: 5px; }
+
+.chat-msg-row:not(.group-end):not(.mine) .chat-msg-body { border-bottom-left-radius: 5px; }
+.chat-msg-row:not(.group-end).mine .chat-msg-body { border-bottom-right-radius: 5px; }
+
+/* --- Vạch chia ngày + ngày ghim dính --- */
+.chat-section { position: relative; }
+
+.chat-day-sep {
+  align-self: center;
+  margin: 6px 0 2px;
+  z-index: 1;
 }
-.chat-msg-row.mine .chat-msg-body {
-  border-bottom-right-radius: 4px;
+.chat-day-sep span,
+.chat-sticky-day span {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  background: color-mix(in srgb, var(--color-surface) 82%, var(--color-border));
+}
+
+.chat-sticky-day {
+  position: absolute;
+  top: 6px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 4;
+}
+.chat-sticky-day span {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+  backdrop-filter: blur(2px);
+}
+
+.chat-new-msgs {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 88px;
+  z-index: 5;
+  padding: 6px 16px;
+  border: 0;
+  border-radius: 99px;
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  animation: fadeInPanel 0.16s ease-out;
 }
 
 .chat-msg-header {

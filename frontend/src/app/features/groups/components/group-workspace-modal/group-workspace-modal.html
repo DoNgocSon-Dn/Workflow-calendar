@@ -786,14 +786,21 @@
         <!-- TAB 3: CHAT -->
         @if (activeTab() === 'chat' && canUserSeeChat()) {
           <div class="chat-section">
-            <div class="chat-messages">
+            @if (stickyDay(); as day) {
+              <div class="chat-sticky-day"><span>{{ day }}</span></div>
+            }
+            <div class="chat-messages" (scroll)="onChatScroll($event)">
               @for (msg of store.messages(); track msg.clientMessageId ?? msg.id; let i = $index) {
+                @if (daySeparatorBefore(i); as sepLabel) {
+                  <div class="chat-day-sep" [attr.data-label]="sepLabel"><span>{{ sepLabel }}</span></div>
+                }
                 <div
                   class="chat-msg-row"
                   [id]="'chat-msg-' + msg.id"
                   [class.deleted]="msg.deletedAt"
                   [class.mine]="isMyMessage(msg)"
                   [class.grouped]="!showMessageHeader(msg, i)"
+                  [class.group-end]="isGroupEnd(i)"
                 >
                   @if (!isMyMessage(msg)) {
                     <div class="chat-avatar" [style.background-color]="senderColor(msg)" [class.chat-avatar--hidden]="!showMessageHeader(msg, i)">
@@ -897,6 +904,11 @@
                 <p class="empty-text">{{ i18n.t('group.noMessages') }}</p>
               }
             </div>
+            @if (newChatMessages() > 0) {
+              <button type="button" class="chat-new-msgs" (click)="scrollChatToBottom()">
+                ↓ {{ i18n.t('chat.newMessages', { n: newChatMessages() }) }}
+              </button>
+            }
             @if (attachmentFile(); as f) {
               <div class="attachment-preview">
                 <app-icon name="paperclip" /> {{ f.name }} ({{ formatFileSize(f.size) }})

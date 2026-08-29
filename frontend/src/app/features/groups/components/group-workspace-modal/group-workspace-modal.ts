@@ -268,6 +268,14 @@ export class GroupWorkspaceModal {
   protected readonly editingMessageId = signal<string | null>(null);
   protected readonly editingText = signal('');
 
+  // Chat: cuộn thông minh + vạch chia ngày
+  private prevChatMsgCount = 0;
+  /** Số tin mới tới trong lúc người dùng đang cuộn lên đọc tin cũ. */
+  protected readonly newChatMessages = signal(0);
+  /** Nhãn ngày ghim dính mép trên khung chat (null = đang ở đầu, tự ẩn). */
+  protected readonly stickyDay = signal<string | null>(null);
+  private stickyRaf = 0;
+
   // Task reassignment
   protected readonly reassigningTaskId = signal<string | null>(null);
 
@@ -298,24 +306,41 @@ export class GroupWorkspaceModal {
       const msgs = this.store.messages();
       if (this.activeTab() !== 'chat' || msgs.length === 0) return;
 
-      // untracked: xoá cờ sau khi cuộn xong không được kích hoạt lại effect,
-      // nếu không lần chạy thứ hai sẽ cuộn xuống đáy và huỷ mất focus vừa đặt.
       const targetId = untracked(() => this.store.pendingChatMessageId());
+      const prevCount = untracked(() => this.prevChatMsgCount);
+      const lastMsg = msgs[msgs.length - 1];
+      const lastIsMine = lastMsg?.senderId === untracked(() => this.currentUserId());
+      const added = msgs.length - prevCount;
+      this.prevChatMsgCount = msgs.length;
+
       setTimeout(() => {
-        const container = document.querySelector('.chat-messages');
+        const container = document.querySelector('.chat-messages') as HTMLElement | null;
         if (!container) return;
 
-        // Có tin nhắn cần focus thì cuộn tới đúng nó, còn lại giữ hành vi cũ
-        // là cuộn xuống tin mới nhất.
+        // Có tin nhắn cần focus (mở từ thông báo) → nhảy tới đúng nó.
         const target = targetId ? document.getElementById(`chat-msg-${targetId}`) : null;
         if (target) {
           target.scrollIntoView({ block: 'center' });
           target.classList.add('chat-msg-row--focused');
           setTimeout(() => target.classList.remove('chat-msg-row--focused'), 2000);
-        } else {
-          container.scrollTop = container.scrollHeight;
+          if (targetId) this.store.pendingChatMessageId.set(null);
+          return;
         }
-        if (targetId) this.store.pendingChatMessageId.set(null);
+
+        const distanceFromBottom =
+          container.scrollHeight - container.scrollTop - container.clientHeight;
+        const nearBottom = distanceFromBottom < 140;
+
+        // Auto-scroll CHỈ khi: đang ở gần đáy sẵn, hoặc chính mình vừa gửi, hoặc
+        // đây là lần nạp đầu (prevCount 0). Đang cuộn lên đọc tin cũ mà người
+        // khác nhắn → KHÔNG giật xuống, chỉ đếm vào nút "↓ tin nhắn mới".
+        if (prevCount === 0 || nearBottom || lastIsMine) {
+          container.scrollTop = container.scrollHeight;
+          this.newChatMessages.set(0);
+        } else if (added > 0) {
+          this.newChatMessages.update((n) => n + added);
+        }
+        this.updateStickyDay(container);
       }, 50);
     });
 
@@ -898,13 +923,90 @@ export class GroupWorkspaceModal {
   }
 
   /** Ẩn header (tên + giờ lặp lại) khi tin liền trước cùng người gửi và cách
-   *  nhau dưới 5 phút — gom cụm cho giống Zalo. */
+   *  nhau dưới 5 phút — gom cụm cho giống Zalo. Cũng = "tin ĐẦU cụm". */
   showMessageHeader(msg: GroupMessage, index: number): boolean {
     if (index <= 0) return true;
     const prev = this.store.messages()[index - 1];
     if (!prev || prev.senderId !== msg.senderId) return true;
     if (prev.deletedAt || msg.deletedAt) return true;
+    if (this.daySeparatorBefore(index)) return true;
     return new Date(msg.createdAt).getTime() - new Date(prev.createdAt).getTime() > 5 * 60_000;
+  }
+
+  /** Tin CUỐI cụm — tin kế tiếp khác người / cách xa giờ / sang ngày mới. */
+  isGroupEnd(index: number): boolean {
+    const msgs = this.store.messages();
+    const cur = msgs[index];
+    const next = msgs[index + 1];
+    if (!cur || !next) return true;
+    if (next.senderId !== cur.senderId || cur.deletedAt || next.deletedAt) return true;
+    if (this.daySeparatorBefore(index + 1)) return true;
+    return new Date(next.createdAt).getTime() - new Date(cur.createdAt).getTime() > 5 * 60_000;
+  }
+
+  // --- Vạch chia ngày + ngày ghim dính -----------------------------------
+  private dayKey(iso: string): string {
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  }
+
+  /** Nhãn ngày cho tin `index` nếu nó mở ĐẦU một ngày mới (hoặc là tin đầu). */
+  daySeparatorBefore(index: number): string | null {
+    const msgs = this.store.messages();
+    const cur = msgs[index];
+    if (!cur) return null;
+    if (index === 0) return this.dayLabel(cur.createdAt);
+    const prev = msgs[index - 1];
+    if (prev && this.dayKey(prev.createdAt) !== this.dayKey(cur.createdAt)) {
+      return this.dayLabel(cur.createdAt);
+    }
+    return null;
+  }
+
+  private dayLabel(iso: string): string {
+    const d = new Date(iso);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    if (this.dayKey(iso) === this.dayKey(today.toISOString())) return this.i18n.t('chat.today');
+    if (this.dayKey(iso) === this.dayKey(yesterday.toISOString())) return this.i18n.t('chat.yesterday');
+    return new Intl.DateTimeFormat(this.i18n.t('common.dateLocale'), {
+      weekday: 'short',
+      day: '2-digit',
+      month: '2-digit',
+      year: d.getFullYear() === today.getFullYear() ? undefined : 'numeric',
+    }).format(d);
+  }
+
+  /** Cuộn khung chat: cập nhật nút "tin mới" + nhãn ngày ghim dính (throttle rAF). */
+  onChatScroll(ev: Event): void {
+    const el = ev.target as HTMLElement;
+    const dist = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (dist < 60) this.newChatMessages.set(0);
+    if (this.stickyRaf) return;
+    this.stickyRaf = requestAnimationFrame(() => {
+      this.stickyRaf = 0;
+      this.updateStickyDay(el);
+    });
+  }
+
+  private updateStickyDay(container: HTMLElement): void {
+    const seps = container.querySelectorAll<HTMLElement>('.chat-day-sep');
+    const top = container.getBoundingClientRect().top;
+    let label: string | null = null;
+    for (const sep of Array.from(seps)) {
+      // Vạch chia đã trôi lên quá mép trên → ngày của nó là ngày đang đọc.
+      if (sep.getBoundingClientRect().top - top < 8) label = sep.dataset['label'] ?? null;
+      else break;
+    }
+    this.stickyDay.set(label);
+  }
+
+  scrollChatToBottom(): void {
+    const el = document.querySelector('.chat-messages') as HTMLElement | null;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    this.newChatMessages.set(0);
   }
 
   /** Mỗi người 1 màu ổn định (dựa trên senderId, không đổi giữa các lần
