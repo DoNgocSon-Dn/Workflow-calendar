@@ -37,7 +37,10 @@ describe('EventsService.invite — chặn tự mời + đủ nội dung email', 
         Promise.resolve(
           opts.insertError
             ? { data: null, error: opts.insertError }
-            : { data: { id: 'att-1', user_id: opts.lookupUserId, status: 'pending' }, error: null },
+            : {
+                data: { id: 'att-1', user_id: opts.lookupUserId ?? null, status: 'pending' },
+                error: null,
+              },
         ),
     };
     const rpcCalls: unknown[] = [];
@@ -55,7 +58,13 @@ describe('EventsService.invite — chặn tự mời + đủ nội dung email', 
     const realtimeGateway = { emitToCalendar: jest.fn(), emitToUser: jest.fn() };
     const sendInviteEmail = jest.fn().mockResolvedValue(undefined);
     const mailService = { sendInviteEmail };
-    const configService = { get: jest.fn().mockReturnValue('http://localhost:3000') };
+    const configService = {
+      get: jest.fn((key: string) =>
+        key === 'mail'
+          ? { gmailUser: 'workflow@test.com', gmailAppPassword: 'x' }
+          : 'http://localhost:3000',
+      ),
+    };
     const supabaseService = { getServiceRoleClient: () => admin };
     const service = new EventsService(
       realtimeGateway as never,
@@ -110,6 +119,29 @@ describe('EventsService.invite — chặn tự mời + đủ nội dung email', 
         description: 'Bàn về Q3',
         location: 'Phòng 301',
         meetLink: 'https://meet.jit.si/abc',
+      }),
+    );
+  });
+
+  it('mời email CHƯA có tài khoản Workflow: không throw, tạo dòng attendee (user_id null) và gửi email kèm .ics', async () => {
+    const { service, supabase, sendInviteEmail } = makeService({
+      eventRow: baseEvent,
+      creatorEmail: 'owner@test.com',
+      lookupUserId: null, // find_user_id_by_email không tìm thấy
+    });
+
+    const result = await service.invite(supabase as never, 'evt-1', {
+      email: 'nguoingoai@gmail.com',
+    });
+    expect(result.status).toBe('pending');
+    expect(result.userId).toBeNull();
+
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(sendInviteEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'nguoingoai@gmail.com',
+        ics: expect.stringContaining('METHOD:REQUEST'),
       }),
     );
   });

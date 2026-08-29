@@ -54,10 +54,14 @@ describe('EventsService — báo cho attendee khi sự kiện được sửa/xo�
     const emitToCalendar = jest.fn();
     const emitToUser = jest.fn();
     const realtimeGateway = { emitToCalendar, emitToUser };
+    // gmailUser rỗng → sendIcalLifecycleSafely() thoát sớm, không gửi mail.
+    const configService = {
+      get: jest.fn((key: string) => (key === 'mail' ? { gmailUser: '' } : undefined)),
+    };
     const service = new EventsService(
       realtimeGateway as never,
       {} as never,
-      { get: jest.fn() } as never,
+      configService as never,
       {} as never,
     );
     return { service, supabase, emitToCalendar, emitToUser };

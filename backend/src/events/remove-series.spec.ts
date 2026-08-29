@@ -121,7 +121,8 @@ describe('EventsService.removeSeries — 3 phạm vi xoá chuỗi lặp lại', 
     service = new EventsService(
       realtime as never,
       {} as never,
-      { get: jest.fn() } as never,
+      // gmailUser rỗng → sendIcalLifecycleSafely() thoát sớm.
+      { get: jest.fn((key: string) => (key === 'mail' ? { gmailUser: '' } : undefined)) } as never,
       { getServiceRoleClient: () => ({}) } as never,
     );
   });
