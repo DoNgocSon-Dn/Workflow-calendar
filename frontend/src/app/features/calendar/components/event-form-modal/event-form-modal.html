@@ -108,6 +108,32 @@
             <p class="lunar-hint-badge">🌕 {{ lunarDateHint() }}</p>
           }
 
+          <div class="caltype-row">
+            <span class="caltype-label">{{ i18n.t('event.calendarType') }}:</span>
+            <div class="caltype-seg" role="radiogroup" [attr.aria-label]="i18n.t('event.calendarType')">
+              <button
+                type="button"
+                role="radio"
+                class="caltype-opt"
+                [class.active]="calendarType() === 'solar'"
+                [attr.aria-checked]="calendarType() === 'solar'"
+                (click)="calendarType.set('solar')"
+              >
+                ☀️ {{ i18n.t('event.calendarTypeSolar') }}
+              </button>
+              <button
+                type="button"
+                role="radio"
+                class="caltype-opt"
+                [class.active]="calendarType() === 'lunar'"
+                [attr.aria-checked]="calendarType() === 'lunar'"
+                (click)="calendarType.set('lunar')"
+              >
+                🌕 {{ i18n.t('event.calendarTypeLunar') }}
+              </button>
+            </div>
+          </div>
+
           @if (rangeError()) {
           <p class="field-error">{{ i18n.t('event.rangeError') }}</p>
           }
