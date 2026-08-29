@@ -35,6 +35,7 @@ import { BirthdayPopup } from '../../../shared/components/birthday-popup/birthda
 import { BirthdayPopupService } from '../../../core/services/birthday-popup.service';
 import { consumeOauthRedirect } from '../../../core/auth/oauth-redirect-flag';
 import { DevDatePanel } from '../../../shared/components/dev-date-panel/dev-date-panel';
+import { ServerStatusService } from '../../../core/services/server-status.service';
 
 interface ModalState {
   event: CalendarEvent | null;
@@ -89,6 +90,7 @@ export class CalendarPage {
   private readonly notificationQueue = inject(NotificationQueue);
   private readonly densityService = inject(DensityService);
   private readonly router = inject(Router);
+  protected readonly serverStatus = inject(ServerStatusService);
 
   /**
    * Esc đóng sidebar — nhưng CHỈ khi nó đang là drawer đè lên nội dung.

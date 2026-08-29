@@ -1,4 +1,11 @@
 <div class="calendar-page">
+  @if (serverStatus.waking()) {
+    <div class="server-waking" role="status">
+      <span class="server-waking__spinner" aria-hidden="true"></span>
+      {{ i18n.t('common.serverWaking') }}
+    </div>
+  }
+
   <app-calendar-header
     (openImport)="openImportPage()"
     (openSettings)="settingsModalOpen.set(true)"

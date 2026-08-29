@@ -21,6 +21,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'common.today': 'Hôm nay',
     'common.previous': 'Trước',
     'common.next': 'Sau',
+    'common.serverWaking': 'Đang kết nối tới server… (server có thể đang khởi động, chờ chút)',
 
     // --- onboarding (popup hoàn tất hồ sơ lần đầu) -------------------------
     'onboarding.title': 'Chào mừng bạn đến với Workflow!',
@@ -1120,6 +1121,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'common.today': 'Today',
     'common.previous': 'Previous',
     'common.next': 'Next',
+    'common.serverWaking': 'Connecting to the server… (it may be starting up, hang on)',
 
     // --- onboarding (first-run profile completion popup) ------------------
     'onboarding.title': 'Welcome to Workflow!',

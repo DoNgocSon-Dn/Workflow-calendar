@@ -15,6 +15,44 @@
   font-family: var(--font-sans);
 }
 
+/* Dải "đang kết nối" — hiện khi request tới backend đang bị thử lại (server
+   Render Free ngủ dậy). Đứng trên cùng, không chặn thao tác. */
+.server-waking {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  padding-top: max(0.4rem, env(safe-area-inset-top));
+  background: var(--holiday-accent-soft);
+  color: var(--holiday-accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.server-waking__spinner {
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: serverWakingSpin 0.7s linear infinite;
+}
+
+@keyframes serverWakingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .server-waking__spinner {
+    animation-duration: 2s;
+  }
+}
+
 .body {
   flex: 1;
   display: flex;
