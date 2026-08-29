@@ -14,12 +14,24 @@
  *   SUPABASE_ANON_KEY   mặc định: key hiện tại
  *   VAPID_PUBLIC_KEY    mặc định: key hiện tại
  */
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const target = resolve(here, '../src/environments/environment.prod.ts');
+
+/** Đọc lại giá trị apiUrl đang có trong file (nếu ai đó đã điền cứng) để dùng
+ *  làm fallback khi không có biến API_URL — tránh ghi đè URL đúng bằng origin. */
+function currentApiUrl() {
+  try {
+    const m = readFileSync(target, 'utf8').match(/apiUrl:\s*'([^']+)'/);
+    const v = m?.[1]?.trim();
+    return v && v !== 'https://YOUR_PROD_API_URL' ? v : '';
+  } catch {
+    return '';
+  }
+}
 
 const DEFAULTS = {
   supabaseUrl: 'https://wdiuuhsfflragxuurwpk.supabase.co',
@@ -29,24 +41,24 @@ const DEFAULTS = {
     'BDpf9IsDbrbp1GFqjod7FNtpsUNRYtU3KbMeGDv1XMWgAbCJCugrk5Gw8uo_zvgXUPqtzRH4vezCCVdY_yv52Xo',
 };
 
-const apiUrl = (process.env.API_URL ?? '').trim().replace(/\/+$/, '');
+const envApiUrl = (process.env.API_URL ?? '').trim().replace(/\/+$/, '');
+const apiUrl = envApiUrl || currentApiUrl();
 const supabaseUrl = (process.env.SUPABASE_URL ?? DEFAULTS.supabaseUrl).trim();
 const supabaseAnonKey = (process.env.SUPABASE_ANON_KEY ?? DEFAULTS.supabaseAnonKey).trim();
 const vapidPublicKey = (process.env.VAPID_PUBLIC_KEY ?? DEFAULTS.vapidPublicKey).trim();
 
-// Không có API_URL: quay về dùng chính origin của trang (chỉ đúng khi backend
-// nằm cùng domain). In cảnh báo to để không deploy nhầm mà không biết.
+// Thứ tự: $API_URL  →  giá trị đã điền cứng trong file  →  origin của trang.
 const apiUrlExpr = apiUrl
   ? JSON.stringify(apiUrl)
   : `(typeof window !== 'undefined' ? window.location.origin : '')`;
 
 if (!apiUrl) {
   console.warn(
-    '\n⚠️  set-env.mjs: CHƯA đặt biến API_URL — apiUrl sẽ trỏ về origin của web.\n' +
-      '   Nếu backend deploy ở domain khác (Render/Railway...), app sẽ KHÔNG gọi được API.\n',
+    '\n⚠️  set-env.mjs: CHƯA có API_URL (biến môi trường lẫn file) — apiUrl sẽ trỏ\n' +
+      '   về origin của web. Backend ở domain khác thì app sẽ KHÔNG gọi được API.\n',
   );
 } else {
-  console.log(`set-env.mjs: apiUrl = ${apiUrl}`);
+  console.log(`set-env.mjs: apiUrl = ${apiUrl}${envApiUrl ? '' : '  (từ file, không có $API_URL)'}`);
 }
 
 const contents = `// TỆP NÀY ĐƯỢC SINH TỰ ĐỘNG bởi scripts/set-env.mjs lúc build — đừng sửa tay.
