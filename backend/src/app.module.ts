@@ -19,6 +19,7 @@ import { MailModule } from './mail/mail.module';
 import { NotesModule } from './notes/notes.module';
 import { PushModule } from './push/push.module';
 import { RealtimeModule } from './realtime/realtime.module';
+import { ReminderPreferencesModule } from './reminder-preferences/reminder-preferences.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { SystemNotificationsModule } from './system-notifications/system-notifications.module';
@@ -41,6 +42,7 @@ import { TodosModule } from './todos/todos.module';
     CalendarsModule,
     EventsModule,
     RemindersModule,
+    ReminderPreferencesModule,
     MailModule,
     NotesModule,
     PushModule,

@@ -63,6 +63,8 @@ describe('EventsService — báo cho attendee khi sự kiện được sửa/xo�
       {} as never,
       configService as never,
       {} as never,
+      {} as never,
+      {} as never,
     );
     return { service, supabase, emitToCalendar, emitToUser };
   }

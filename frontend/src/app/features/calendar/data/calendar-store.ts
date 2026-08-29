@@ -1403,13 +1403,14 @@ export class CalendarStore {
     const verb = this.nt(
       payload.attendee.status === 'accepted' ? 'nd.attendeeStatus.accepted' : 'nd.attendeeStatus.declined',
     );
+    const who = payload.attendee.email || this.nt('nq.attendeeGeneric');
+    const eventTitle = this.events().find((e) => e.id === payload.eventId)?.title ?? null;
     this.notificationQueue.push({
       eventId: payload.eventId,
-      title: this.nt('nq.attendeeResponded', { verb }),
-      body: '',
+      title: `${who} ${verb}`,
+      body: eventTitle ?? '',
       kind: 'updated',
     });
-    const eventTitle = this.events().find((e) => e.id === payload.eventId)?.title ?? null;
     this.notifications.ingest(
       attendeeStatusDraft(this.nt, {
         eventId: payload.eventId,
@@ -1499,7 +1500,12 @@ export class CalendarStore {
     const nowMs = Date.now();
     const diffMin = startMs ? Math.round((startMs - nowMs) / 60000) : 0;
 
-    let toastTitle = this.nt('nq.reminder', { title: payload.title });
+    // Mốc "lúc bắt đầu" (offset 0) ⇒ remind_at = start_at ⇒ diffMin ≈ 0/âm:
+    // đổi tiêu đề thành "Đang diễn ra" thay vì "Sắp tới".
+    let toastTitle =
+      startMs && diffMin <= 0
+        ? this.nt('nq.reminderNow', { title: payload.title })
+        : this.nt('nq.reminder', { title: payload.title });
     let toastBody = payload.startAt
       ? formatTimeLabel(new Date(payload.startAt), this.i18n.locale(), this.timeFormatService.format())
       : '';
@@ -1937,6 +1943,15 @@ export class CalendarStore {
       this.http.post<AttendeeApiDto>(`${this.apiUrl}/events/${eventId}/respond`, { status }),
     );
     this.notifications.respond(`event-invite-${eventId}`, status);
+    this.notificationQueue.push({
+      eventId,
+      title:
+        status === 'accepted'
+          ? this.nt('nq.inviteAcceptedConfirmed')
+          : this.nt('nq.inviteDeclined'),
+      body: '',
+      kind: status === 'accepted' ? 'created' : 'updated',
+    });
     // Backend đã ghi nhận phản hồi — nếu làm mới danh sách sự kiện lỗi (mạng,
     // RLS grid chưa apply migration 23...) thì KHÔNG được coi là mời hụt: lịch
     // sẽ tự đồng bộ ở lần tải lại / gói realtime kế tiếp.

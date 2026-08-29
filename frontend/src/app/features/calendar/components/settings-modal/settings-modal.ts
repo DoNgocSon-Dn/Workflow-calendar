@@ -13,6 +13,7 @@ import { Theme, ThemeService } from '../../../../core/theme/theme-service';
 import { HolidayThemeMode, HolidayThemeService } from '../../data/holiday-theme.service';
 import { HOLIDAYS } from '../../../../data/holidays.data';
 import { DevUnlockService } from '../../../../core/services/dev-unlock.service';
+import { ReminderPreferencesService } from '../../../../core/services/reminder-preferences.service';
 
 interface BrandThemeOption {
   readonly value: BrandTheme;
@@ -61,10 +62,25 @@ export class SettingsModal {
   protected readonly devUnlock = inject(DevUnlockService);
   protected readonly authStore = inject(AuthStore);
   protected readonly i18n = inject(TranslationService);
+  protected readonly reminderPrefs = inject(ReminderPreferencesService);
 
   protected readonly brandThemeOptions = BRAND_THEME_OPTIONS;
   protected readonly navItems = SETTINGS_NAV_ITEMS;
   protected readonly activeSection = signal<SettingsSection>('profile');
+
+  /** Các mốc chọn được cho "Nhắc nhở mặc định" (phút; 0 = lúc bắt đầu). */
+  protected readonly reminderOffsetOptions = [0, 5, 15, 30, 60, 1440];
+
+  constructor() {
+    void this.reminderPrefs.load();
+  }
+
+  protected reminderOffsetLabel(min: number): string {
+    if (min === 0) return this.i18n.t('settings.reminderAtStart');
+    if (min < 60) return this.i18n.t('settings.reminderMinutes', { n: min });
+    if (min === 60) return this.i18n.t('settings.reminderHours', { n: 1 });
+    return this.i18n.t('settings.reminderDays', { n: min / 1440 });
+  }
 
   readonly closed = output<void>();
   readonly openTrash = output<void>();

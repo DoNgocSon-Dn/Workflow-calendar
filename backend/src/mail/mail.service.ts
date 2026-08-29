@@ -121,6 +121,36 @@ export class MailService {
     });
   }
 
+  /** Email "đã chốt lịch" gửi cho khách NGAY SAU KHI họ bấm Đồng ý — kèm .ics
+   *  REQUEST + PARTSTAT=ACCEPTED để lịch của họ ghim sự kiện. */
+  async sendAttendeeConfirmationEmail(params: {
+    to: string;
+    eventTitle: string;
+    startAt: string;
+    endAt: string;
+    location?: string;
+    meetLink?: string;
+    ics?: string;
+  }): Promise<void> {
+    const html = `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+        <p style="color:#188038; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; margin:0 0 8px;">Đã xác nhận tham gia ✅</p>
+        <h2 style="margin-bottom: 4px;">${escapeHtml(params.eventTitle)}</h2>
+        <p>Bạn đã đồng ý tham gia. Sự kiện đã được chốt vào lịch.</p>
+        <p><strong>Thời gian:</strong> ${formatRange(params.startAt, params.endAt)}</p>
+        ${params.location ? `<p><strong>Địa điểm:</strong> ${escapeHtml(params.location)}</p>` : ''}
+        ${params.meetLink ? `<p><strong>Link cuộc họp:</strong> <a href="${escapeHtml(params.meetLink)}">${escapeHtml(params.meetLink)}</a></p>` : ''}
+        <p style="color:#888; font-size:12px; margin-top:24px;">Email này được gửi tự động từ ứng dụng Workflow.</p>
+      </div>
+    `;
+    await this.sendMail({
+      to: params.to,
+      subject: `[Workflow] Đã chốt lịch: ${params.eventTitle}`,
+      html,
+      icalEvent: params.ics ? { method: 'REQUEST', content: params.ics } : undefined,
+    });
+  }
+
   /** Email báo sự kiện đã bị huỷ — kèm .ics CANCEL để lịch người nhận gỡ bỏ. */
   async sendEventCancelledEmail(params: {
     to: string;

@@ -422,6 +422,23 @@
                   <span class="toggle-track" aria-hidden="true"></span>
                 </label>
               </div>
+
+              <div class="setting-row" style="flex-wrap: wrap; gap: 0.5rem;">
+                <span class="setting-title" style="width: 100%;">{{ i18n.t('settings.reminders') }}</span>
+                <p class="setting-hint" style="width: 100%; margin: 0 0 0.25rem;">{{ i18n.t('settings.remindersHint') }}</p>
+                <div class="segmented" role="group" style="flex-wrap: wrap;" [attr.aria-label]="i18n.t('settings.reminders')">
+                  @for (min of reminderOffsetOptions; track min) {
+                    <button
+                      type="button"
+                      [attr.aria-pressed]="reminderPrefs.offsets().includes(min)"
+                      [class.active]="reminderPrefs.offsets().includes(min)"
+                      (click)="reminderPrefs.toggle(min)"
+                    >
+                      {{ reminderOffsetLabel(min) }}
+                    </button>
+                  }
+                </div>
+              </div>
             </section>
           }
 

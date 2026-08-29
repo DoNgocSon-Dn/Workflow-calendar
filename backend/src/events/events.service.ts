@@ -11,7 +11,9 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
 import { AppConfig } from '../config/configuration';
 import { MailService } from '../mail/mail.service';
+import { PushService } from '../push/push.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { ReminderPreferencesService } from '../reminder-preferences/reminder-preferences.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AttendeeDto, AttendeeRow, toAttendeeDto } from './attendee.mapper';
 import { CheckConflictsDto } from './dto/check-conflicts.dto';
@@ -53,6 +55,8 @@ export class EventsService {
     private readonly mailService: MailService,
     private readonly configService: ConfigService<AppConfig, true>,
     private readonly supabaseService: SupabaseService,
+    private readonly pushService: PushService,
+    private readonly reminderPrefs: ReminderPreferencesService,
   ) {}
 
   async findAll(
@@ -907,21 +911,183 @@ export class EventsService {
       throw new NotFoundException('Lời mời không tồn tại');
     }
 
-    const { data: eventRow } = await admin
-      .from('events')
-      .select('calendar_id')
-      .eq('id', eventId)
-      .maybeSingle<{ calendar_id: string }>();
-
     const attendeeDto = toAttendeeDto({ ...data[0], email: '' });
-    if (eventRow) {
-      this.realtimeGateway.emitToCalendar(
-        eventRow.calendar_id,
-        'attendee:statusChanged',
-        { eventId, attendee: attendeeDto },
+    // Báo người tổ chức + email chốt lịch + tạo lời nhắc — chạy nền, không chặn.
+    void this.onAttendeeRespondedSafely(eventId, data[0].id, dto.status);
+    return attendeeDto;
+  }
+
+  private async onAttendeeRespondedSafely(
+    eventId: string,
+    attendeeId: string,
+    status: 'accepted' | 'declined',
+  ): Promise<void> {
+    try {
+      await this.onAttendeeResponded(eventId, attendeeId, status);
+    } catch (err) {
+      this.logger.warn(
+        `onAttendeeResponded(${attendeeId}) failed: ${(err as Error).message}`,
       );
     }
-    return attendeeDto;
+  }
+
+  /**
+   * Hệ quả khi một khách Đồng ý / Từ chối — dùng chung cho `respond()` (in-app)
+   * và `PublicRespondController` (link trong email):
+   *  1. Báo người tổ chức realtime (socket) + Web Push (kể cả khi họ đóng app).
+   *  2. Đồng ý ⇒ gửi email "đã chốt lịch" kèm .ics ACCEPTED.
+   *  3. Đồng ý ⇒ tạo lời nhắc popup theo bộ mốc của khách (mặc định 30/15/5/0
+   *     phút). Từ chối ⇒ gỡ lời nhắc đã tạo (nếu trước đó đã đồng ý).
+   */
+  async onAttendeeResponded(
+    eventId: string,
+    attendeeId: string,
+    status: 'accepted' | 'declined',
+  ): Promise<void> {
+    const admin = this.supabaseService.getServiceRoleClient();
+
+    // Cột `email` chỉ có sau migration 37 — nếu chưa, đọc bản rút gọn.
+    let attendee: { user_id: string | null; email: string | null } | null = null;
+    const withEmail = await admin
+      .from('event_attendees')
+      .select('user_id, email')
+      .eq('id', attendeeId)
+      .maybeSingle<{ user_id: string | null; email: string | null }>();
+    if (withEmail.error) {
+      const basic = await admin
+        .from('event_attendees')
+        .select('user_id')
+        .eq('id', attendeeId)
+        .maybeSingle<{ user_id: string | null }>();
+      attendee = basic.data ? { user_id: basic.data.user_id, email: null } : null;
+    } else {
+      attendee = withEmail.data;
+    }
+    if (!attendee) return;
+
+    const { data: event } = await admin
+      .from('events')
+      .select('title, start_at, end_at, location, meet_link, calendar_id, created_by')
+      .eq('id', eventId)
+      .maybeSingle<{
+        title: string;
+        start_at: string;
+        end_at: string;
+        location: string | null;
+        meet_link: string | null;
+        calendar_id: string;
+        created_by: string | null;
+      }>();
+    if (!event) return;
+
+    let attendeeEmail = attendee.email ?? '';
+    if (!attendeeEmail && attendee.user_id) {
+      const { data: resolved } = await admin.rpc('get_user_email_by_id', {
+        p_user_id: attendee.user_id,
+      });
+      attendeeEmail = (resolved as string | null) ?? '';
+    }
+
+    // 1. Báo người tổ chức
+    const attendeeDto: AttendeeDto = {
+      id: attendeeId,
+      userId: attendee.user_id,
+      email: attendeeEmail,
+      status,
+    };
+    this.realtimeGateway.emitToCalendar(event.calendar_id, 'attendee:statusChanged', {
+      eventId,
+      attendee: attendeeDto,
+    });
+    if (event.created_by) {
+      this.realtimeGateway.emitToUser(event.created_by, 'attendee:statusChanged', {
+        eventId,
+        attendee: attendeeDto,
+      });
+      const who = attendeeEmail || 'Một khách';
+      const verb = status === 'accepted' ? 'đã đồng ý tham gia' : 'đã từ chối';
+      void this.pushService
+        .sendToUser(event.created_by, {
+          title: `${who} ${verb}`,
+          body: event.title,
+          url: '/calendar',
+          tag: `attendee:${eventId}`,
+        })
+        .catch(() => undefined);
+    }
+
+    // 2 + 3
+    if (status === 'accepted') {
+      if (attendeeEmail) {
+        const { gmailUser } = this.configService.get('mail', { infer: true });
+        const ics = gmailUser
+          ? buildEventIcs({
+              method: 'REQUEST',
+              uid: attendeeIcsUid(attendeeId),
+              sequence: 1,
+              organizerEmail: gmailUser,
+              organizerName: 'Workflow',
+              attendeeEmail,
+              title: event.title,
+              description: null,
+              location: event.location,
+              startAt: event.start_at,
+              endAt: event.end_at,
+              status: 'CONFIRMED',
+              partstat: 'ACCEPTED',
+            })
+          : undefined;
+        await this.mailService.sendAttendeeConfirmationEmail({
+          to: attendeeEmail,
+          eventTitle: event.title,
+          startAt: event.start_at,
+          endAt: event.end_at,
+          location: event.location ?? undefined,
+          meetLink: event.meet_link ?? undefined,
+          ics,
+        });
+      }
+      if (attendee.user_id) {
+        await this.createAcceptReminders(admin, eventId, attendee.user_id, event.start_at);
+      }
+    } else if (attendee.user_id) {
+      await admin
+        .from('reminders')
+        .delete()
+        .eq('event_id', eventId)
+        .eq('user_id', attendee.user_id);
+    }
+  }
+
+  /** Tạo lời nhắc popup cho khách vừa đồng ý, theo bộ mốc trong Settings của họ
+   *  (mặc định 30/15/5/0 phút). Bỏ mốc đã ở quá khứ; xoá bộ cũ trước để đồng ý
+   *  lại không nhân đôi. */
+  private async createAcceptReminders(
+    admin: SupabaseClient,
+    eventId: string,
+    userId: string,
+    startAtIso: string,
+  ): Promise<void> {
+    const offsets = await this.reminderPrefs.getOffsets(userId);
+    await admin.from('reminders').delete().eq('event_id', eventId).eq('user_id', userId);
+
+    const startMs = new Date(startAtIso).getTime();
+    const now = Date.now();
+    const rows = offsets
+      .map((off) => ({
+        event_id: eventId,
+        user_id: userId,
+        remind_at: new Date(startMs - off * 60_000).toISOString(),
+        remind_type: 'popup' as const,
+      }))
+      .filter((r) => new Date(r.remind_at).getTime() > now);
+
+    if (rows.length > 0) {
+      const { error } = await admin.from('reminders').insert(rows);
+      if (error) {
+        this.logger.warn(`createAcceptReminders insert failed: ${error.message}`);
+      }
+    }
   }
 
   /**

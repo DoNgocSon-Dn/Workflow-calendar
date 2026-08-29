@@ -5,8 +5,9 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { BirthdayPopupService } from '../../../core/services/birthday-popup.service';
+import { BirthdayPopupService, BirthdayWishRecord } from '../../../core/services/birthday-popup.service';
 import { TranslationService } from '../../../core/i18n/translation.service';
+import { FormsModule } from '@angular/forms';
 
 interface BirthdayParticle {
   readonly emoji: string;
@@ -48,11 +49,11 @@ export const BIRTHDAY_WISHES: readonly string[] = [
 ];
 
 function buildParticles(): readonly BirthdayParticle[] {
-  return Array.from({ length: 28 }, (_, i) => ({
+  return Array.from({ length: 32 }, (_, i) => ({
     emoji: PARTICLE_EMOJIS[i % PARTICLE_EMOJIS.length],
     leftPercent: (i * 137.5) % 100,
-    delaySeconds: (i % 6) * 0.35,
-    durationSeconds: 5 + (i % 4),
+    delaySeconds: (i % 6) * 0.25,
+    durationSeconds: 4 + (i % 4),
     sizePx: 18 + (i % 5) * 4,
   }));
 }
@@ -62,18 +63,26 @@ function buildParticles(): readonly BirthdayParticle[] {
   templateUrl: './birthday-popup.html',
   styleUrl: './birthday-popup.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormsModule],
   host: {
     '(document:keydown.escape)': 'onEscape()',
   },
 })
 export class BirthdayPopup {
-  private readonly popupService = inject(BirthdayPopupService);
+  protected readonly popupService = inject(BirthdayPopupService);
   protected readonly i18n = inject(TranslationService);
 
   protected readonly visible = this.popupService.visible;
   protected readonly data = this.popupService.data;
+  protected readonly pendingWish = this.popupService.pendingReviewWish;
+
   protected readonly closing = signal(false);
-  protected readonly wishMade = signal(false);
+  protected readonly viewMode = signal<'greeting' | 'make-wish' | 'review-wish' | 'saved-success' | 'reviewed-feedback'>('greeting');
+
+  protected readonly wishText = signal<string>('');
+  protected readonly submittingWish = signal<boolean>(false);
+  protected readonly feedbackMessage = signal<string>('');
+  protected readonly feedbackEmoji = signal<string>('🎉');
 
   protected readonly currentGifIndex = signal<number>(Math.floor(Math.random() * BIRTHDAY_GIFS.length));
   protected readonly currentWishIndex = signal<number>(Math.floor(Math.random() * BIRTHDAY_WISHES.length));
@@ -82,7 +91,6 @@ export class BirthdayPopup {
   protected readonly gifs = BIRTHDAY_GIFS;
   protected readonly currentGif = computed(() => this.gifs[this.currentGifIndex()]);
   protected readonly currentWish = computed(() => BIRTHDAY_WISHES[this.currentWishIndex()]);
-
   protected readonly particles = computed<readonly BirthdayParticle[]>(() => buildParticles());
 
   nextRandomGifAndWish(): void {
@@ -103,8 +111,54 @@ export class BirthdayPopup {
     }, 150);
   }
 
-  makeWish(): void {
-    this.wishMade.set(true);
+  openMakeWish(): void {
+    this.wishText.set('');
+    this.viewMode.set('make-wish');
+  }
+
+  openReviewWish(): void {
+    this.viewMode.set('review-wish');
+  }
+
+  backToGreeting(): void {
+    this.viewMode.set('greeting');
+  }
+
+  async submitWish(): Promise<void> {
+    const text = this.wishText().trim();
+    if (text.length < 3 || this.submittingWish()) return;
+
+    this.submittingWish.set(true);
+    await this.popupService.saveCurrentYearWish(text);
+    this.submittingWish.set(false);
+
+    this.viewMode.set('saved-success');
+  }
+
+  async respondReview(status: 'completed' | 'in_progress' | 'retry'): Promise<void> {
+    const pWish = this.pendingWish();
+    if (!pWish) return;
+
+    await this.popupService.reviewPastWish(pWish.id, status);
+
+    if (status === 'completed') {
+      this.feedbackEmoji.set('🎉');
+      this.feedbackMessage.set(
+        'Tự hào về bạn rất nhiều! 👏 Bạn đã chứng minh rằng những giấc mơ hoàn toàn có thể trở thành hiện thực.',
+      );
+    } else if (status === 'in_progress') {
+      this.feedbackEmoji.set('💪');
+      this.feedbackMessage.set(
+        'Hành trình vạn dặm luôn bắt đầu từ từng bước nhỏ. Bạn đang đi đúng hướng rồi, tiếp tục giữ vững niềm tin nhé!',
+      );
+    } else {
+      this.feedbackEmoji.set('🚀');
+      this.feedbackMessage.set(
+        'Không sao cả! Mỗi tuổi mới là một trang sách trắng tinh. Hãy lấy đà và cất cánh mạnh mẽ hơn trong năm nay!',
+      );
+    }
+
+    this.viewMode.set('reviewed-feedback');
   }
 
   close(): void {
@@ -113,7 +167,7 @@ export class BirthdayPopup {
     setTimeout(() => {
       this.popupService.dismiss();
       this.closing.set(false);
-      this.wishMade.set(false);
+      this.viewMode.set('greeting');
     }, 280);
   }
 

@@ -71,6 +71,8 @@ describe('EventsService.invite — chặn tự mời + đủ nội dung email', 
       mailService as never,
       configService as never,
       supabaseService as never,
+      { sendToUser: jest.fn() } as never,
+      { getOffsets: jest.fn().mockResolvedValue([30, 15, 5, 0]) } as never,
     );
     return { service, supabase, rpcCalls, sendInviteEmail, getUserById };
   }

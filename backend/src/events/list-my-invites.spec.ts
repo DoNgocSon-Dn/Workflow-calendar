@@ -24,6 +24,8 @@ describe('EventsService.listMyInvites', () => {
       {} as never,
       { get: jest.fn() } as never,
       { getServiceRoleClient: () => admin } as never,
+      {} as never,
+      {} as never,
     );
     return { service, eqCalls };
   }

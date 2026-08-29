@@ -1,77 +1,179 @@
 @if (visible()) {
-  <div
-    class="birthday-backdrop"
-    [class.birthday-backdrop--closing]="closing()"
-    (click)="onBackdropClick($event)"
-    role="dialog"
-    aria-modal="true"
-  >
-    <!-- Floating Particle Shower -->
-    <div class="birthday-particles" aria-hidden="true">
-      @for (p of particles(); track $index) {
-        <span
-          class="birthday-particle"
-          [style.left.%]="p.leftPercent"
-          [style.animation-delay.s]="p.delaySeconds"
-          [style.animation-duration.s]="p.durationSeconds"
-          [style.font-size.px]="p.sizePx"
-        >
-          {{ p.emoji }}
-        </span>
-      }
-    </div>
-
-    <!-- Birthday Card Container -->
-    <div class="birthday-card">
-      <div class="birthday-card__header">
-        <span class="birthday-badge">
-          {{ currentGif().badge }}
-        </span>
-        @if (data()?.isPreview) {
-          <span class="birthday-preview-badge">Chế độ xem thử</span>
-        }
-      </div>
-
-      <!-- GIF Display Container -->
-      <div class="birthday-gif-container" [class]="stageAnimClass()">
-        <div class="gif-stage">
-          <img [src]="currentGif().url" [alt]="currentGif().title" class="birthday-main-gif" />
-        </div>
-
-        <div class="birthday-content">
-          <h1 class="birthday-title">
-            Chúc mừng sinh nhật, <span class="user-highlight">{{ data()?.userName }}</span>! 🎉✨
-          </h1>
-
-          <p class="birthday-wish">
-            {{ currentWish() }}
-          </p>
-
-          @if (wishMade()) {
-            <div class="birthday-sparkle-box">
-              ✨ <strong>Điều ước sinh nhật của bạn đã được ghi lại!</strong> Chúc tuổi mới bứt phá mọi mục tiêu! ✨
-            </div>
-          }
-
-          <div class="birthday-actions">
-            @if (!wishMade()) {
-              <button type="button" class="btn-blow-candle" (click)="makeWish()">
-                🕯️ Ước một điều & Quẩy thôi!
-              </button>
-            }
-
-            <button type="button" class="btn-start-app" (click)="close()">
-              🚀 Cảm ơn! Bắt đầu ngày mới
-            </button>
-
-            @if (!data()?.isPreview) {
-              <button type="button" class="btn-dont-show-again" (click)="dontShowAgain()">
-                🚫 Không hiển thị lại sinh nhật năm nay
-              </button>
-            }
-          </div>
-        </div>
-      </div>
-    </div>
+<div
+  class="birthday-backdrop"
+  [class.closing]="closing()"
+  (click)="onBackdropClick($event)"
+>
+  <!-- Particle Confetti Stream -->
+  <div class="particle-container" aria-hidden="true">
+    @for (p of particles(); track $index) {
+    <span
+      class="particle"
+      [style.left.%]="p.leftPercent"
+      [style.animation-delay.s]="p.delaySeconds"
+      [style.animation-duration.s]="p.durationSeconds"
+      [style.font-size.px]="p.sizePx"
+    >
+      {{ p.emoji }}
+    </span>
+    }
   </div>
+
+  <div class="birthday-card" [class.closing]="closing()">
+    <button
+      type="button"
+      class="close-btn"
+      [attr.aria-label]="i18n.t('common.close')"
+      (click)="close()"
+    >
+      ✕
+    </button>
+
+    @if (viewMode() === 'greeting') {
+      <div class="card-badge">
+        <span>{{ currentGif().badge }}</span>
+      </div>
+
+      <div class="media-frame" (click)="nextRandomGifAndWish()" title="Bấm để đổi thiệp mừng khác">
+        <img
+          [src]="currentGif().url"
+          [alt]="currentGif().title"
+          class="gif-media"
+          [class]="stageAnimClass()"
+        />
+      </div>
+
+      <h2 class="greeting-title">
+        Chúc mừng sinh nhật, <span class="user-name">{{ data()?.userName }}</span>! 🎉✨
+      </h2>
+
+      <p class="greeting-message" [class]="stageAnimClass()">
+        {{ currentWish() }}
+      </p>
+
+      <div class="actions-group">
+        @if (pendingWish(); as pastWish) {
+          <button type="button" class="btn-wish-review" (click)="openReviewWish()">
+            📜 Nhìn lại điều ước năm ngoái
+          </button>
+        }
+
+        <button type="button" class="btn-make-wish" (click)="openMakeWish()">
+          🎂 Ước một điều & Quẩy thôi!
+        </button>
+
+        <button type="button" class="btn-primary" (click)="close()">
+          🚀 Cảm ơn! Bắt đầu ngày mới
+        </button>
+
+        <button type="button" class="btn-subtle" (click)="dontShowAgain()">
+          🚫 Không hiển thị lại sinh nhật năm nay
+        </button>
+      </div>
+    }
+
+    @else if (viewMode() === 'make-wish') {
+      <div class="card-badge badge-solid-gold">
+        <span>🕯️ ĐIỀU ƯỚC TUỔI MỚI</span>
+      </div>
+
+      <h2 class="wish-section-title">Niêm Phong Điều Ước 💌</h2>
+      <p class="wish-section-sub">
+        Hãy tự viết ra điều ước cho tuổi mới. Chiếc Hộp Thư Thời Gian sẽ giữ kín bí mật này và mở lại cho bạn sau đúng 1 năm!
+      </p>
+
+      <div class="wish-input-wrapper">
+        <textarea
+          class="wish-textarea"
+          rows="4"
+          maxlength="200"
+          placeholder="Năm nay bạn ước điều gì cho bản thân? (VD: Đạt IELTS 7.5, tự thưởng chuyến đi Đà Lạt, học kỹ năng mới...)"
+          [ngModel]="wishText()"
+          (ngModelChange)="wishText.set($event)"
+          autofocus
+        ></textarea>
+        <div class="wish-char-counter">
+          {{ wishText().length }}/200
+        </div>
+      </div>
+
+      <div class="actions-group">
+        <button
+          type="button"
+          class="btn-wish-submit"
+          [disabled]="wishText().trim().length < 3 || submittingWish()"
+          (click)="submitWish()"
+        >
+          {{ submittingWish() ? 'Đang lưu...' : '🕯️ Gửi điều ước vào tương lai' }}
+        </button>
+
+        <button type="button" class="btn-subtle" (click)="backToGreeting()">
+          Quay lại
+        </button>
+      </div>
+    }
+
+    @else if (viewMode() === 'saved-success') {
+      <div class="feedback-icon">💌</div>
+      <h2 class="wish-section-title">Đã Niêm Phong Điều Ước! ✨</h2>
+      <p class="wish-section-sub">
+        Điều ước của bạn đã được trao gửi an toàn. Hẹn gặp lại bạn vào sinh nhật năm sau để cùng mở Hộp Thư Thời Gian nhé!
+      </p>
+
+      <div class="actions-group">
+        <button type="button" class="btn-primary" (click)="close()">
+          🚀 Bắt đầu tuổi mới rạng rỡ!
+        </button>
+      </div>
+    }
+
+    @else if (viewMode() === 'review-wish') {
+      <div class="card-badge badge-solid-blue">
+        <span>📜 HỘP THƯ THỜI GIAN (1 NĂM TRƯỚC)</span>
+      </div>
+
+      <h2 class="wish-section-title">Tròn 1 năm trôi qua rồi... ⏳</h2>
+      <p class="wish-section-sub">
+        Vào sinh nhật năm ngoái, bạn đã từng gửi gắm một điều ước:
+      </p>
+
+      <div class="past-wish-card">
+        <p class="past-wish-quote">
+          “{{ pendingWish()?.wishText }}”
+        </p>
+      </div>
+
+      <p class="wish-question">Bạn đã thực hiện được điều ước này chưa?</p>
+
+      <div class="actions-group">
+        <button type="button" class="btn-cta-solid btn-cta-success" (click)="respondReview('completed')">
+          🎉 Mình làm được rồi!
+        </button>
+        <button type="button" class="btn-cta-solid btn-cta-primary" (click)="respondReview('in_progress')">
+          💪 Vẫn đang cố gắng
+        </button>
+        <button type="button" class="btn-cta-solid btn-cta-purple" (click)="respondReview('retry')">
+          🚀 Năm nay sẽ làm lại!
+        </button>
+      </div>
+    }
+
+    @else if (viewMode() === 'reviewed-feedback') {
+      <div class="feedback-icon">{{ feedbackEmoji() }}</div>
+      <h2 class="wish-section-title">Hành Trình Tiếp Nối ✨</h2>
+      <p class="wish-section-sub feedback-text">
+        {{ feedbackMessage() }}
+      </p>
+
+      <div class="actions-group">
+        <button type="button" class="btn-make-wish" (click)="openMakeWish()">
+          🎂 Viết điều ước cho năm nay
+        </button>
+        <button type="button" class="btn-primary" (click)="close()">
+          Đóng
+        </button>
+      </div>
+    }
+  </div>
+</div>
 }

@@ -1,7 +1,7 @@
 import { Controller, Get, Header, Param, Query } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { SupabaseService } from '../supabase/supabase.service';
+import { EventsService } from './events.service';
 
 interface AttendeeTokenRow {
   id: string;
@@ -37,7 +37,7 @@ function renderPage(title: string, message: string, ok: boolean): string {
 export class PublicRespondController {
   constructor(
     private readonly supabaseService: SupabaseService,
-    private readonly realtimeGateway: RealtimeGateway,
+    private readonly eventsService: EventsService,
   ) {}
 
   @Get(':id/respond-via-email')
@@ -106,19 +106,23 @@ export class PublicRespondController {
       );
     }
 
-    const { data: eventRow } = await supabase
-      .from('events')
-      .select('calendar_id')
-      .eq('id', eventId)
-      .maybeSingle<{ calendar_id: string }>();
-    if (eventRow) {
-      this.realtimeGateway.emitToCalendar(eventRow.calendar_id, 'attendee:statusChanged', {
-        eventId,
-        attendee: { id: updated.id, userId: updated.user_id, email: '', status: updated.status },
-      });
-    }
+    // Báo người tổ chức + email chốt lịch + tạo lời nhắc — chạy nền, không để
+    // lỗi phụ làm hỏng trang phản hồi.
+    void this.eventsService
+      .onAttendeeResponded(eventId, updated.id, status)
+      .catch(() => undefined);
 
-    const label = status === 'accepted' ? 'Đã xác nhận tham gia ✅' : 'Đã từ chối tham gia';
-    return renderPage(label, 'Cảm ơn bạn đã phản hồi. Bạn có thể đóng trang này.', true);
+    if (status === 'accepted') {
+      return renderPage(
+        'Đã xác nhận tham gia ✅',
+        'Email chốt lịch đã được gửi tới bạn, kèm lời nhắc trước giờ diễn ra. Bạn có thể đóng trang này.',
+        true,
+      );
+    }
+    return renderPage(
+      'Đã từ chối tham gia',
+      'Cảm ơn bạn đã phản hồi. Bạn có thể đóng trang này.',
+      true,
+    );
   }
 }

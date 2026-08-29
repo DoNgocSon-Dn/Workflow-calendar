@@ -11,6 +11,14 @@ export interface BirthdayPopupData {
   readonly isPreview: boolean;
 }
 
+export interface BirthdayWishRecord {
+  readonly id: string;
+  readonly wishYear: number;
+  readonly wishText: string;
+  readonly status: 'pending' | 'completed' | 'in_progress' | 'retry';
+  readonly createdAt: string;
+}
+
 const DOB_STORAGE_KEY = 'workflow_user_dob';
 const SHOWN_PREFIX = 'workflow_birthday_shown_';
 const DO_NOT_SHOW_YEARLY_KEY = 'workflow_birthday_disabled_year_';
@@ -24,6 +32,7 @@ export class BirthdayPopupService {
 
   readonly visible = signal<boolean>(false);
   readonly data = signal<BirthdayPopupData | null>(null);
+  readonly pendingReviewWish = signal<BirthdayWishRecord | null>(null);
 
   /** Kiểm tra xem chúc mừng sinh nhật năm nay có bị chọn "Không hiển thị lại" hay không */
   isBirthdayDisabledForCurrentYear(): boolean {
@@ -50,11 +59,9 @@ export class BirthdayPopupService {
    * Tự động trích xuất ngày sinh từ tài khoản Google OAuth / Supabase metadata / LocalStorage
    */
   getUserDob(): string {
-    // 1. Nếu người dùng đã thiết lập hoặc lưu từ trước
     const local = localStorage.getItem(DOB_STORAGE_KEY);
     if (local && local.trim()) return local.trim();
 
-    // 2. Trích xuất từ metadata đăng nhập Google / Supabase Auth
     const user = this.authStore.user();
     if (user) {
       const metadata = (user.user_metadata || {}) as Record<string, any>;
@@ -122,9 +129,6 @@ export class BirthdayPopupService {
     return null;
   }
 
-  /**
-   * Trả về định dạng hiển thị ngày sinh kiểu Việt Nam (VD: 15/05/2000 hoặc 15/05)
-   */
   getFormattedDobDisplay(): string {
     const raw = this.getUserDob();
     if (!raw) return '';
@@ -137,9 +141,6 @@ export class BirthdayPopupService {
     return raw;
   }
 
-  /**
-   * Lưu ngày sinh người dùng vào Supabase user_metadata và LocalStorage
-   */
   async setUserDob(dob: string): Promise<void> {
     const cleaned = dob.trim();
     localStorage.setItem(DOB_STORAGE_KEY, cleaned);
@@ -155,9 +156,100 @@ export class BirthdayPopupService {
     }
   }
 
-  /**
-   * Kiểm tra xem hôm nay (hoặc ngày đang giả lập bằng Clock) có phải sinh nhật hay không
-   */
+  async checkPendingWishForReview(): Promise<BirthdayWishRecord | null> {
+    const user = this.authStore.user();
+    const currentYear = todayInVietnam(this.clock.now()).getFullYear();
+
+    // Dùng local storage dự phòng nếu offline
+    const localPastWish = localStorage.getItem(`workflow_wish_${currentYear - 1}`);
+    const localPastStatus = localStorage.getItem(`workflow_wish_status_${currentYear - 1}`);
+
+    if (user) {
+      try {
+        const { data, error } = await this.supabase.rpc('get_pending_wish_for_review', {
+          p_current_year: currentYear,
+        });
+        if (!error && data && data.length > 0) {
+          const item = data[0];
+          const record: BirthdayWishRecord = {
+            id: item.id,
+            wishYear: item.wish_year,
+            wishText: item.wish_text,
+            status: item.status,
+            createdAt: item.created_at,
+          };
+          this.pendingReviewWish.set(record);
+          return record;
+        }
+      } catch (e) {
+        console.warn('Không thể tải điều ước cũ từ Supabase:', e);
+      }
+    }
+
+    if (localPastWish && localPastStatus !== 'reviewed') {
+      const record: BirthdayWishRecord = {
+        id: `local-${currentYear - 1}`,
+        wishYear: currentYear - 1,
+        wishText: localPastWish,
+        status: 'pending',
+        createdAt: `${currentYear - 1}-01-01`,
+      };
+      this.pendingReviewWish.set(record);
+      return record;
+    }
+
+    this.pendingReviewWish.set(null);
+    return null;
+  }
+
+  async saveCurrentYearWish(wishText: string): Promise<boolean> {
+    const cleaned = wishText.trim();
+    if (!cleaned) return false;
+
+    const currentYear = todayInVietnam(this.clock.now()).getFullYear();
+    localStorage.setItem(`workflow_wish_${currentYear}`, cleaned);
+
+    const user = this.authStore.user();
+    if (user) {
+      try {
+        await this.supabase.from('birthday_wishes').upsert(
+          {
+            user_id: user.id,
+            wish_year: currentYear,
+            wish_text: cleaned,
+            status: 'pending',
+            created_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id,wish_year' },
+        );
+      } catch (e) {
+        console.warn('Không thể lưu điều ước lên Supabase:', e);
+      }
+    }
+    return true;
+  }
+
+  async reviewPastWish(wishId: string, status: 'completed' | 'in_progress' | 'retry'): Promise<void> {
+    const currentYear = todayInVietnam(this.clock.now()).getFullYear();
+    localStorage.setItem(`workflow_wish_status_${currentYear - 1}`, 'reviewed');
+    this.pendingReviewWish.set(null);
+
+    const user = this.authStore.user();
+    if (user && wishId && !wishId.startsWith('local-')) {
+      try {
+        await this.supabase
+          .from('birthday_wishes')
+          .update({
+            status,
+            reviewed_at: new Date().toISOString(),
+          })
+          .eq('id', wishId);
+      } catch (e) {
+        console.warn('Không thể cập nhật trạng thái điều ước:', e);
+      }
+    }
+  }
+
   checkAndTriggerBirthday(): void {
     if (this.visible()) return;
 
@@ -171,7 +263,6 @@ export class BirthdayPopupService {
       return;
     }
 
-    // Dùng Clock.now() (hỗ trợ giả lập ngày) thay vì new Date() cứng của máy
     const now = todayInVietnam(this.clock.now());
     const currentMonth = now.getMonth() + 1;
     const currentDay = now.getDate();
@@ -180,20 +271,20 @@ export class BirthdayPopupService {
       const todayKey = `${SHOWN_PREFIX}${now.getFullYear()}-${currentMonth}-${currentDay}`;
       const alreadyShown = localStorage.getItem(todayKey);
 
-      if (!alreadyShown) {
+      if (!alreadyShown || this.clock.devOverride()) {
+        void this.checkPendingWishForReview();
         this.triggerBirthday(dob, false);
       }
     }
   }
 
-  /**
-   * Mở màn hình chúc mừng sinh nhật (có cờ `isPreview` nếu bấm xem thử từ Cài đặt)
-   */
   triggerBirthday(dob?: string, isPreview = false): void {
     if (this.visible()) return;
 
     const finalDob = dob || this.getUserDob() || '2000-01-01';
     const userName = this.authStore.displayName() || this.authStore.user()?.email?.split('@')[0] || 'bạn';
+
+    void this.checkPendingWishForReview();
 
     this.data.set({
       userName,
@@ -214,4 +305,3 @@ export class BirthdayPopupService {
     this.visible.set(false);
   }
 }
-

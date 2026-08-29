@@ -25,6 +25,9 @@ export interface BuildEventIcsInput {
   startAt: string;
   endAt: string;
   status: IcsStatus;
+  /** Trạng thái phản hồi của khách. Mặc định 'NEEDS-ACTION' (lời mời).
+   *  Dùng 'ACCEPTED' cho email chốt lịch sau khi khách đồng ý. */
+  partstat?: 'NEEDS-ACTION' | 'ACCEPTED' | 'DECLINED';
 }
 
 /** `2026-09-01T09:30:00.000Z` -> `20260901T093000Z` (luôn quy về UTC). */
@@ -90,7 +93,7 @@ export function buildEventIcs(input: BuildEventIcsInput): string {
     input.location ? `LOCATION:${escapeText(input.location)}` : null,
     `ORGANIZER;CN=${escapeText(organizerCn)}:mailto:${input.organizerEmail}`,
     `ATTENDEE;CN=${escapeText(input.attendeeEmail)};ROLE=REQ-PARTICIPANT;` +
-      `PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${input.attendeeEmail}`,
+      `PARTSTAT=${input.partstat ?? 'NEEDS-ACTION'};RSVP=TRUE:mailto:${input.attendeeEmail}`,
     `STATUS:${input.status}`,
     'TRANSP:OPAQUE',
     'END:VEVENT',
