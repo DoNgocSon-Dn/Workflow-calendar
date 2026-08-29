@@ -151,7 +151,7 @@ interface ConflictApiDto {
 
 interface AttendeeApiDto {
   id: string;
-  userId: string;
+  userId: string | null;
   email: string;
   status: AttendeeStatus;
 }

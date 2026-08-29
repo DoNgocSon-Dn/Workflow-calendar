@@ -1,13 +1,14 @@
 export interface AttendeeRow {
   id: string;
-  user_id: string;
+  /** NULL khi khách được mời qua email chưa có tài khoản Workflow. */
+  user_id: string | null;
   email: string;
   status: 'pending' | 'accepted' | 'declined';
 }
 
 export interface AttendeeDto {
   id: string;
-  userId: string;
+  userId: string | null;
   email: string;
   status: 'pending' | 'accepted' | 'declined';
 }

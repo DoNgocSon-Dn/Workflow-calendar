@@ -7,6 +7,8 @@ export interface SendMailInput {
   to: string;
   subject: string;
   html: string;
+  /** Đính kèm phần text/calendar (iMIP) — Gmail/Outlook tự thêm vào lịch. */
+  icalEvent?: { method: string; content: string; filename?: string };
 }
 
 @Injectable()
@@ -41,6 +43,15 @@ export class MailService {
       to: input.to,
       subject: input.subject,
       html: input.html,
+      ...(input.icalEvent
+        ? {
+            icalEvent: {
+              method: input.icalEvent.method,
+              filename: input.icalEvent.filename ?? 'invite.ics',
+              content: input.icalEvent.content,
+            },
+          }
+        : {}),
     });
   }
 
@@ -54,6 +65,8 @@ export class MailService {
     meetLink?: string;
     acceptUrl: string;
     declineUrl: string;
+    /** Nội dung .ics (METHOD:REQUEST) để lịch người nhận tự thêm sự kiện. */
+    ics?: string;
   }): Promise<void> {
     const html = `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
@@ -75,6 +88,59 @@ export class MailService {
       to: params.to,
       subject: `[Workflow] Lời mời tham gia: ${params.eventTitle}`,
       html,
+      icalEvent: params.ics
+        ? { method: 'REQUEST', content: params.ics }
+        : undefined,
+    });
+  }
+
+  /** Email báo sự kiện đã đổi thông tin — kèm .ics REQUEST (SEQUENCE mới). */
+  async sendEventUpdatedEmail(params: {
+    to: string;
+    eventTitle: string;
+    startAt: string;
+    endAt: string;
+    location?: string;
+    ics: string;
+  }): Promise<void> {
+    const html = `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+        <p style="color:#5f6368; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; margin:0 0 8px;">Cập nhật từ Workflow</p>
+        <h2 style="margin-bottom: 4px;">${escapeHtml(params.eventTitle)}</h2>
+        <p>Sự kiện này vừa được cập nhật.</p>
+        <p><strong>Thời gian:</strong> ${formatRange(params.startAt, params.endAt)}</p>
+        ${params.location ? `<p><strong>Địa điểm:</strong> ${escapeHtml(params.location)}</p>` : ''}
+        <p style="color:#888; font-size:12px; margin-top:24px;">Lịch của bạn sẽ tự cập nhật theo thay đổi này.</p>
+      </div>
+    `;
+    await this.sendMail({
+      to: params.to,
+      subject: `[Workflow] Cập nhật sự kiện: ${params.eventTitle}`,
+      html,
+      icalEvent: { method: 'REQUEST', content: params.ics },
+    });
+  }
+
+  /** Email báo sự kiện đã bị huỷ — kèm .ics CANCEL để lịch người nhận gỡ bỏ. */
+  async sendEventCancelledEmail(params: {
+    to: string;
+    eventTitle: string;
+    startAt: string;
+    ics: string;
+  }): Promise<void> {
+    const html = `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+        <p style="color:#5f6368; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; margin:0 0 8px;">Huỷ từ Workflow</p>
+        <h2 style="margin-bottom: 4px;">${escapeHtml(params.eventTitle)}</h2>
+        <p>Sự kiện này đã bị huỷ${params.startAt ? ` (dự kiến ${formatDateTime(params.startAt)})` : ''}.</p>
+        <p style="color:#888; font-size:12px; margin-top:24px;">Sự kiện sẽ tự được gỡ khỏi lịch của bạn.</p>
+      </div>
+    `;
+    await this.sendMail({
+      to: params.to,
+      subject: `[Workflow] Huỷ sự kiện: ${params.eventTitle}`,
+      html,
+      icalEvent: { method: 'CANCEL', content: params.ics },
     });
   }
 

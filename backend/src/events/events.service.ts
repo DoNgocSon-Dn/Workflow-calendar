@@ -28,6 +28,7 @@ import {
   toEventInsertRow,
   toEventUpdateRow,
 } from './event.mapper';
+import { attendeeIcsUid, buildEventIcs } from './ics.util';
 import { expandRecurrence } from './recurrence.util';
 
 const INVITE_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -276,6 +277,7 @@ export class EventsService {
     );
     void this.notifyAttendeesSafely(supabase, eventDto.id, 'event:updated', eventDto);
     void this.notifyConflictsSafely(supabase, userId, eventDto);
+    void this.sendIcalLifecycleSafely(eventDto.id, 'update');
     return eventDto;
   }
 
@@ -458,6 +460,7 @@ export class EventsService {
     void this.notifyAttendeesSafely(supabase, data[0].id, 'event:deleted', {
       id: data[0].id,
     });
+    void this.sendIcalLifecycleSafely(data[0].id, 'cancel');
   }
 
   /** Xoá "mềm" một lần lặp và lan ra các lần lặp khác trong cùng chuỗi — luôn
@@ -666,14 +669,15 @@ export class EventsService {
       }
     }
 
+    // Không còn bắt buộc email phải khớp một tài khoản Workflow. Nếu có tài
+    // khoản: gắn user_id để lời mời hiện in-app + realtime. Nếu chưa có: dòng
+    // attendee vẫn được tạo (user_id NULL) và email .ics trong mail là kênh
+    // duy nhất đưa sự kiện vào lịch của họ (Google Calendar, Outlook...).
     const { data: userId, error: lookupError } = await supabase.rpc(
       'find_user_id_by_email',
       { p_email: dto.email },
     );
     if (lookupError) throw new InternalServerErrorException(lookupError.message);
-    if (!userId) {
-      throw new NotFoundException('Không tìm thấy người dùng với email này');
-    }
 
     const respondToken = randomUUID();
     const tokenExpiresAt = new Date(Date.now() + INVITE_TOKEN_TTL_MS).toISOString();
@@ -682,13 +686,14 @@ export class EventsService {
       .from('event_attendees')
       .insert({
         event_id: eventId,
-        user_id: userId,
+        user_id: userId ?? null,
+        email: dto.email,
         status: 'pending',
         respond_token: respondToken,
         token_expires_at: tokenExpiresAt,
       })
       .select('id, user_id, status')
-      .single<{ id: string; user_id: string; status: AttendeeRow['status'] }>();
+      .single<{ id: string; user_id: string | null; status: AttendeeRow['status'] }>();
 
     if (error) {
       if (error.code === '23505') {
@@ -717,14 +722,17 @@ export class EventsService {
       eventId,
       attendee: attendeeDto,
     });
-    this.realtimeGateway.emitToUser(data.user_id, 'attendee:invited', {
-      eventId,
-      attendee: attendeeDto,
-    });
+    // Khách chưa có tài khoản (user_id NULL) không có room riêng để nhận.
+    if (data.user_id) {
+      this.realtimeGateway.emitToUser(data.user_id, 'attendee:invited', {
+        eventId,
+        attendee: attendeeDto,
+      });
+    }
 
     // Không chặn kết quả invite nếu gửi mail lỗi (VD thiếu GMAIL_* trong
     // .env) — lời mời trong app vẫn có giá trị dù email chưa gửi được.
-    void this.sendInviteEmailSafely(eventRow, dto.email, respondToken, eventId);
+    void this.sendInviteEmailSafely(eventRow, dto.email, respondToken, eventId, data.id);
 
     return attendeeDto;
   }
@@ -734,9 +742,27 @@ export class EventsService {
     toEmail: string,
     token: string,
     eventId: string,
+    attendeeId: string,
   ): Promise<void> {
     try {
       const baseUrl = this.configService.get('apiBaseUrl', { infer: true });
+      const { gmailUser } = this.configService.get('mail', { infer: true });
+      const ics = gmailUser
+        ? buildEventIcs({
+            method: 'REQUEST',
+            uid: attendeeIcsUid(attendeeId),
+            sequence: 0,
+            organizerEmail: gmailUser,
+            organizerName: 'Workflow',
+            attendeeEmail: toEmail,
+            title: eventRow.title,
+            description: eventRow.description,
+            location: eventRow.location,
+            startAt: eventRow.start_at,
+            endAt: eventRow.end_at,
+            status: 'CONFIRMED',
+          })
+        : undefined;
       await this.mailService.sendInviteEmail({
         to: toEmail,
         eventTitle: eventRow.title,
@@ -747,9 +773,108 @@ export class EventsService {
         meetLink: eventRow.meet_link ?? undefined,
         acceptUrl: `${baseUrl}/events/${eventId}/respond-via-email?token=${token}&action=accept`,
         declineUrl: `${baseUrl}/events/${eventId}/respond-via-email?token=${token}&action=decline`,
+        ics,
       });
     } catch (err) {
       this.logger.warn(`Failed to send invite email to ${toEmail}: ${(err as Error).message}`);
+    }
+  }
+
+  /**
+   * Gửi email iCalendar cập nhật / huỷ tới các khách mời khi sự kiện đơn bị
+   * sửa hoặc xoá — để lịch bên ngoài (Google Calendar, Outlook...) tự đồng bộ.
+   *
+   * Chỉ áp dụng cho sự kiện ĐƠN: `updateSeries` / `removeSeries` không gọi
+   * hàm này (v1). Nuốt mọi lỗi — không được làm hỏng thao tác sửa/xoá chính.
+   */
+  private async sendIcalLifecycleSafely(
+    eventId: string,
+    kind: 'update' | 'cancel',
+  ): Promise<void> {
+    try {
+      const { gmailUser } = this.configService.get('mail', { infer: true });
+      if (!gmailUser) return;
+      const admin = this.supabaseService.getServiceRoleClient();
+
+      const { data: eventRow, error: eventErr } = await admin
+        .from('events')
+        .select('title, description, location, start_at, end_at')
+        .eq('id', eventId)
+        .maybeSingle<InviteEventContext>();
+      if (eventErr || !eventRow) return;
+
+      const { data: rows, error: rowsErr } = await admin
+        .from('event_attendees')
+        .select('id, user_id, status, ical_sequence, email')
+        .eq('event_id', eventId)
+        .neq('status', 'declined');
+      if (rowsErr) {
+        this.logger.warn(
+          `sendIcalLifecycleSafely: không kéo được khách mời cho ${eventId}: ${rowsErr.message}`,
+        );
+        return;
+      }
+
+      for (const row of (rows ?? []) as {
+        id: string;
+        user_id: string | null;
+        ical_sequence: number | null;
+        email: string | null;
+      }[]) {
+        // Dòng mời mới luôn lưu sẵn `email`. Dòng cũ (trước migration 37) chỉ
+        // có user_id — tra email qua RPC get_user_email_by_id.
+        let toEmail = row.email;
+        if (!toEmail && row.user_id) {
+          const { data: resolved } = await admin.rpc('get_user_email_by_id', {
+            p_user_id: row.user_id,
+          });
+          toEmail = (resolved as string | null) ?? null;
+        }
+        if (!toEmail) continue;
+
+        const nextSeq = (row.ical_sequence ?? 0) + 1;
+        await admin
+          .from('event_attendees')
+          .update({ ical_sequence: nextSeq })
+          .eq('id', row.id);
+
+        const ics = buildEventIcs({
+          method: kind === 'cancel' ? 'CANCEL' : 'REQUEST',
+          uid: attendeeIcsUid(row.id),
+          sequence: nextSeq,
+          organizerEmail: gmailUser,
+          organizerName: 'Workflow',
+          attendeeEmail: toEmail,
+          title: eventRow.title,
+          description: eventRow.description,
+          location: eventRow.location,
+          startAt: eventRow.start_at,
+          endAt: eventRow.end_at,
+          status: kind === 'cancel' ? 'CANCELLED' : 'CONFIRMED',
+        });
+
+        if (kind === 'cancel') {
+          await this.mailService.sendEventCancelledEmail({
+            to: toEmail,
+            eventTitle: eventRow.title,
+            startAt: eventRow.start_at,
+            ics,
+          });
+        } else {
+          await this.mailService.sendEventUpdatedEmail({
+            to: toEmail,
+            eventTitle: eventRow.title,
+            startAt: eventRow.start_at,
+            endAt: eventRow.end_at,
+            location: eventRow.location ?? undefined,
+            ics,
+          });
+        }
+      }
+    } catch (err) {
+      this.logger.warn(
+        `Failed to send iCal ${kind} emails for event ${eventId}: ${(err as Error).message}`,
+      );
     }
   }
 

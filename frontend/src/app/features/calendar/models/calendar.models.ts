@@ -79,7 +79,8 @@ export type AttendeeStatus = 'pending' | 'accepted' | 'declined';
 
 export interface Attendee {
   id: string;
-  userId: string;
+  /** null khi khách được mời qua email chưa có tài khoản Workflow. */
+  userId: string | null;
   email: string;
   status: AttendeeStatus;
 }
