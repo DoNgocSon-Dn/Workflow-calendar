@@ -240,6 +240,15 @@
                   >
                     {{ i18n.t('settings.dark') }}
                   </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    [attr.aria-checked]="themeService.theme() === 'system'"
+                    [class.active]="themeService.theme() === 'system'"
+                    (click)="setTheme('system')"
+                  >
+                    {{ i18n.t('settings.system') }}
+                  </button>
                 </div>
               </div>
 

@@ -9,12 +9,12 @@ import { ThemeService } from '../theme-service';
       type="button"
       class="theme-toggle-btn"
       [attr.aria-label]="
-        themeService.theme() === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'
+        themeService.resolvedTheme() === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'
       "
-      [attr.aria-pressed]="themeService.theme() === 'dark'"
+      [attr.aria-pressed]="themeService.resolvedTheme() === 'dark'"
       (click)="themeService.toggle()"
     >
-      @if (themeService.theme() === 'dark') {
+      @if (themeService.resolvedTheme() === 'dark') {
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
           <path
             stroke="currentColor"

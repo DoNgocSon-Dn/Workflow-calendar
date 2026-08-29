@@ -108,20 +108,26 @@ export class LoginPage implements OnInit, AfterViewInit {
     return raw && /^\/(?!\/)/.test(raw) ? raw : undefined;
   })();
 
+  /** Chưa từng chọn thủ công thì đi theo sáng/tối của thiết bị. */
+  private initialPublicTheme(): 'light' | 'dark' {
+    const saved = localStorage.getItem(THEME_STORAGE_KEY);
+    if (saved === 'light' || saved === 'dark') return saved;
+    return typeof matchMedia === 'function' &&
+      matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light';
+  }
+
   ngOnInit(): void {
     // Chủ đề dùng chung với trang landing nên hai trang không nhấp nháy khi
     // chuyển qua lại.
-    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) ?? 'dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.documentElement.setAttribute('data-theme', this.initialPublicTheme());
 
     this.startSessionNoticeTimer();
   }
 
   ngAfterViewInit(): void {
-    this.page().nativeElement.setAttribute(
-      'data-theme',
-      localStorage.getItem(THEME_STORAGE_KEY) ?? 'dark',
-    );
+    this.page().nativeElement.setAttribute('data-theme', this.initialPublicTheme());
     this.runPreloader();
 
     // Bấm Back từ Google: trình duyệt khôi phục trang từ bfcache KÈM NGUYÊN

@@ -74,8 +74,15 @@ export class LandingPage implements OnInit, AfterViewInit {
   private splashTimeline: gsap.core.Timeline | null = null;
 
   ngOnInit(): void {
-    const savedTheme = localStorage.getItem('workflow-theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
+    const saved = localStorage.getItem('workflow-theme');
+    const theme =
+      saved === 'light' || saved === 'dark'
+        ? saved
+        : typeof matchMedia === 'function' &&
+            matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light';
+    document.documentElement.setAttribute('data-theme', theme);
   }
 
   toggleMobileMenu(): void {
@@ -153,7 +160,7 @@ export class LandingPage implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    const savedTheme = localStorage.getItem('workflow-theme') || 'dark';
+    const savedTheme = document.documentElement.getAttribute('data-theme') || 'dark';
     const container = this.host.nativeElement.querySelector('.landing-container');
     if (container) {
       container.setAttribute('data-theme', savedTheme);

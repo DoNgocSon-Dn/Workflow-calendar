@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg?v=4">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="favicon.svg">
-  
+
   <!-- PWA & Mobile Standalone (Tương tự Google Calendar) -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,7 +19,7 @@
        Open Graph thì link dán vào Zalo/Messenger/Facebook ra một ô trống —
        mất trắng phần lớn giá trị của việc được chia sẻ. -->
   <meta name="description" content="Lịch cá nhân và nhóm với trợ lý AI hiểu tiếng Việt: gõ một câu là có sự kiện, tự phát hiện trùng giờ, đồng bộ real-time, sẵn ngày âm và ngày lễ Việt Nam. Miễn phí, đăng nhập bằng Google.">
-  <meta name="theme-color" content="#060608">
+  <meta name="theme-color" content="#0f1117">
 
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Workflow">
@@ -38,8 +38,95 @@
        Pro — không chỗ nào trong dự án khai báo chúng, mà font là thứ chặn
        đường render đầu tiên của chính trang landing này. -->
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Caveat:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=Kalam:wght@400;700&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- CHỐNG NHÁY SÁNG: chọn sáng/tối NGAY trước khi trang vẽ — theo lựa chọn đã
+       lưu, hoặc theo cài đặt của thiết bị nếu người dùng chưa chọn gì. -->
+  <script>
+    (function () {
+      try {
+        var app = localStorage.getItem('theme');          // light | dark | system
+        var pub = localStorage.getItem('workflow-theme');  // light | dark  (landing/login)
+        var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+        var dark;
+        if (app === 'light' || app === 'dark') dark = app === 'dark';
+        else if (pub === 'light' || pub === 'dark') dark = pub === 'dark';
+        else dark = !!(mq && mq.matches);
+        var r = document.documentElement;
+        r.classList.toggle('dark', dark);
+        r.setAttribute('data-theme', dark ? 'dark' : 'light');
+        var m = document.querySelector('meta[name="theme-color"]');
+        if (m) m.setAttribute('content', dark ? '#0f1117' : '#ffffff');
+      } catch (e) {}
+    })();
+  </script>
+
+  <style>
+    /* Nền trang trước khi CSS ứng dụng kịp nạp — hết cảnh "trắng ngắt". */
+    html { background: #ffffff; }
+    html.dark { background: #0f1117; }
+
+    /* Màn hình chờ hiện tới khi Angular dựng xong (main.ts tự gỡ). */
+    #app-splash {
+      position: fixed;
+      inset: 0;
+      z-index: 2147483000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      background: var(--color-bg, #ffffff);
+      color: var(--color-text, #1a1a2e);
+      font-family: 'Be Vietnam Pro', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      opacity: 1;
+      transition: opacity 0.4s ease;
+    }
+    html.dark #app-splash { background: var(--color-bg, #0f1117); color: var(--color-text, #f3f4f6); }
+    #app-splash.app-splash--hide { opacity: 0; pointer-events: none; }
+
+    .app-splash__mark {
+      width: 60px;
+      height: 60px;
+      border-radius: 16px;
+      background: #2f6bff;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 30px;
+      letter-spacing: -0.02em;
+      box-shadow: 0 10px 30px rgba(47, 107, 255, 0.35);
+    }
+    .app-splash__name {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      opacity: 0.9;
+    }
+    .app-splash__spin {
+      width: 26px;
+      height: 26px;
+      border: 3px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      opacity: 0.45;
+      animation: appSplashSpin 0.75s linear infinite;
+    }
+    @keyframes appSplashSpin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      .app-splash__spin { animation-duration: 2.4s; }
+      #app-splash { transition: none; }
+    }
+  </style>
 </head>
 <body>
+  <div id="app-splash" aria-hidden="true">
+    <div class="app-splash__mark">W</div>
+    <div class="app-splash__name">Workflow</div>
+    <div class="app-splash__spin"></div>
+  </div>
+
   <app-root></app-root>
   <script>
     if ('serviceWorker' in navigator) {
