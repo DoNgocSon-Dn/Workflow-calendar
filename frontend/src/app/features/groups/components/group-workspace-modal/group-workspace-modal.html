@@ -789,6 +789,15 @@
             @if (stickyDay(); as day) {
               <div class="chat-sticky-day"><span>{{ day }}</span></div>
             }
+            @if (store.pinnedMessages().length > 0) {
+              <button type="button" class="chat-pinned-bar" (click)="scrollToMessage(store.pinnedMessages()[0].id)">
+                <app-icon name="pin" class="chat-pinned-bar__icon" />
+                <span class="chat-pinned-bar__text">{{ pinnedPreview(store.pinnedMessages()[0]) }}</span>
+                @if (store.pinnedMessages().length > 1) {
+                  <span class="chat-pinned-bar__count">{{ i18n.t('chat.pinnedCount', { n: store.pinnedMessages().length }) }}</span>
+                }
+              </button>
+            }
             <div class="chat-messages" (scroll)="onChatScroll($event)">
               @for (msg of store.messages(); track msg.clientMessageId ?? msg.id; let i = $index) {
                 @if (daySeparatorBefore(i); as sepLabel) {
@@ -1046,6 +1055,9 @@
                 }
                 @if (canEditMessage(m.msg)) {
                   <button type="button" (click)="startEditMessage(m.msg); closeMsgMenu()"><app-icon name="pencil" /> {{ i18n.t('common.edit') }}</button>
+                }
+                @if (canModerateChat()) {
+                  <button type="button" (click)="togglePin(m.msg)"><app-icon name="pin" /> {{ m.msg.pinnedAt ? i18n.t('chat.unpin') : i18n.t('chat.pin') }}</button>
                 }
                 @if (canDeleteMessage(m.msg)) {
                   <button type="button" class="chat-menu__danger" (click)="deleteMessage(m.msg); closeMsgMenu()"><app-icon name="trash" /> {{ isMyMessage(m.msg) ? i18n.t('chat.revoke') : i18n.t('common.delete') }}</button>

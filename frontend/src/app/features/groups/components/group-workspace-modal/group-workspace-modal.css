@@ -1191,6 +1191,43 @@
   color: var(--holiday-accent);
 }
 
+/* Thanh tin nhắn đã ghim — dính trên khung chat. */
+.chat-pinned-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-left: 3px solid var(--holiday-accent);
+  background: var(--color-surface-hover);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--color-text);
+}
+.chat-pinned-bar__icon {
+  color: var(--holiday-accent);
+  flex: 0 0 auto;
+}
+.chat-pinned-bar__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-pinned-bar__count {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-tertiary);
+}
+
 /* "… đang soạn tin…" trên ô nhập. */
 .chat-typing {
   flex: 0 0 auto;

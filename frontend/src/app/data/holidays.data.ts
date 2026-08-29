@@ -208,7 +208,8 @@ export const HOLIDAYS: readonly Holiday[] = [
   // Valentine's Day — 14/2
   {
     id: 'valentine',
-    name: "Valentine's Day",
+    name: 'Lễ Tình nhân (Valentine)',
+    nameEn: "Valentine's Day",
     priority: 70,
     dateRule: { kind: 'fixed', month: 2, day: 14 },
     theme: {
@@ -219,7 +220,7 @@ export const HOLIDAYS: readonly Holiday[] = [
       composition: { archetype: 'heart-bloom' },
       decoration: { particleEmoji: ['❤️', '💕', '💖'], particleAnimation: 'float', particleCount: 12 },
     },
-    content: { title: "Happy Valentine's Day" },
+    content: { title: 'Lễ Tình nhân Valentine', titleEn: "Happy Valentine's Day" },
   },
 
   // Tết Trung Thu — Rằm tháng 8 âm lịch. New hero theme, solid colors.
@@ -250,7 +251,8 @@ export const HOLIDAYS: readonly Holiday[] = [
   // Christmas — 24-25/12
   {
     id: 'christmas',
-    name: 'Christmas',
+    name: 'Lễ Giáng sinh (Noel)',
+    nameEn: 'Christmas',
     priority: 10,
     popupEnabled: true,
     dateRule: { kind: 'fixed-range', month: 12, day: 24, days: 2 },
@@ -263,7 +265,7 @@ export const HOLIDAYS: readonly Holiday[] = [
       decoration: { particleEmoji: ['❄️', '🎄', '✨'], particleAnimation: 'fall', particleCount: 16 },
     },
     content: {
-      title: 'Merry Christmas',
+      title: 'Giáng sinh an lành',
       subtitle: 'Giáng sinh an lành bên người thân yêu',
       titleEn: 'Merry Christmas',
       subtitleEn: 'A peaceful Christmas with the ones you love',
@@ -273,7 +275,8 @@ export const HOLIDAYS: readonly Holiday[] = [
   // Halloween — 31/10
   {
     id: 'halloween',
-    name: 'Halloween',
+    name: 'Lễ Halloween',
+    nameEn: 'Halloween',
     priority: 70,
     dateRule: { kind: 'fixed', month: 10, day: 31 },
     theme: {
@@ -284,7 +287,7 @@ export const HOLIDAYS: readonly Holiday[] = [
       composition: { archetype: 'moon-scene' },
       decoration: { particleEmoji: ['🎃', '👻', '🕸️'], particleAnimation: 'float', particleCount: 10 },
     },
-    content: { title: 'Happy Halloween' },
+    content: { title: 'Lễ Halloween vui vẻ', titleEn: 'Happy Halloween' },
   },
 
   // ============================================================
@@ -344,7 +347,8 @@ export const HOLIDAYS: readonly Holiday[] = [
   // New Year's Eve (dương lịch) — 31/12
   {
     id: 'new-year-eve',
-    name: "New Year's Eve",
+    name: 'Đêm Giao Thừa',
+    nameEn: "New Year's Eve",
     priority: 20,
     dateRule: { kind: 'fixed', month: 12, day: 31 },
     theme: {
@@ -356,9 +360,9 @@ export const HOLIDAYS: readonly Holiday[] = [
       decoration: { particleEmoji: ['🎆', '🥂', '✨'], particleAnimation: 'burst', particleCount: 16 },
     },
     content: {
-      title: 'Goodbye {year} - Welcome {nextYear}',
+      title: 'Chào đón năm mới {nextYear}!',
       subtitle: 'Cùng đếm ngược chào đón năm mới',
-      subtitleEn: "Let's count down to the new year together",
+      titleEn: "Let's count down to the new year together",
     },
   },
 

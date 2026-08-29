@@ -1156,6 +1156,23 @@ export class GroupWorkspaceModal {
     }
   }
 
+  // --- Ghim tin nhắn ---------------------------------------------------
+  async togglePin(msg: GroupMessage): Promise<void> {
+    const group = this.store.activeGroup();
+    if (!group || !this.canModerateChat()) return;
+    this.msgMenu.set(null);
+    try {
+      await this.store.setMessagePinned(group.id, msg.id, !msg.pinnedAt);
+    } catch (err: any) {
+      await this.dialog.alert(err?.error?.message || this.i18n.t('chat.pinError'));
+    }
+  }
+
+  /** Preview 1 dòng cho thanh ghim. */
+  pinnedPreview(msg: GroupMessage): string {
+    return this.store.previewOf(msg) || this.i18n.t('group.messageDeleted');
+  }
+
   // --- Thả cảm xúc ------------------------------------------------------
   react(msg: GroupMessage, emoji: string): void {
     const group = this.store.activeGroup();
