@@ -2007,12 +2007,15 @@
   .tab-btn {
     position: relative;
     flex: 1 1 0;
+    min-width: 0;
     flex-direction: column;
     gap: 2px;
     padding: 7px 2px;
-    font-size: 0.64rem;
+    font-size: 0.62rem;
     font-weight: 600;
     border-radius: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .tab-btn.active {
