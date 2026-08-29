@@ -159,6 +159,9 @@ export interface GroupMessage {
   replyPreview?: string;
   replySenderName?: string;
   replyDeleted?: boolean;
+  /** Ghim tin nhắn (Phase 11) — Trưởng/Phó nhóm. */
+  pinnedAt?: string;
+  pinnedBy?: string;
   /**
    * Mã do client sinh ra trước khi gọi API, dùng để ghép tin nhắn lạc quan
    * (hiện ngay lúc nhấn Enter) với tin nhắn thật do server trả về / socket

@@ -400,6 +400,19 @@ export class GroupApiService {
     );
   }
 
+  async setMessagePinned(
+    groupId: string,
+    messageId: string,
+    pinned: boolean,
+  ): Promise<void> {
+    const url = `${environment.apiUrl}/groups/${groupId}/messages/${messageId}/pin`;
+    await firstValueFrom(
+      pinned
+        ? this.http.post(url, {}, { headers: this.authHeaders })
+        : this.http.delete(url, { headers: this.authHeaders }),
+    );
+  }
+
   async sendMessage(
     groupId: string,
     message: string,

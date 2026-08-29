@@ -688,6 +688,25 @@ export class GroupStore {
       },
     );
 
+    // Ghim / bỏ ghim một tin nhắn.
+    this.realtime.on<{ groupId: string; messageId: string; pinned: boolean; pinnedBy: string | null }>(
+      'group:messagePinned',
+      (payload) => {
+        if (!payload || !this.isActiveGroup(payload.groupId)) return;
+        this.messages.update((list) =>
+          list.map((m) =>
+            m.id === payload.messageId
+              ? {
+                  ...m,
+                  pinnedAt: payload.pinned ? new Date().toISOString() : undefined,
+                  pinnedBy: payload.pinned ? payload.pinnedBy ?? undefined : undefined,
+                }
+              : m,
+          ),
+        );
+      },
+    );
+
     // "Đã nhận" — người khác báo đã nhận một tin mình gửi.
     this.realtime.on<{ messageId: string; userId: string }>(
       'group:messageDelivered',
@@ -1286,6 +1305,36 @@ export class GroupStore {
       this.reactions.set(map);
     } catch {
       /* migration 44 chưa chạy — ẩn reactions */
+    }
+  }
+
+  /** Tin nhắn đang được ghim của nhóm ĐANG XEM, mới ghim lên đầu. */
+  readonly pinnedMessages = computed(() =>
+    this.messages()
+      .filter((m) => m.pinnedAt && !m.deletedAt)
+      .sort((a, b) => (b.pinnedAt! < a.pinnedAt! ? -1 : 1)),
+  );
+
+  async setMessagePinned(groupId: string, messageId: string, pinned: boolean): Promise<void> {
+    // Lạc quan.
+    this.messages.update((list) =>
+      list.map((m) =>
+        m.id === messageId
+          ? { ...m, pinnedAt: pinned ? new Date().toISOString() : undefined }
+          : m,
+      ),
+    );
+    try {
+      await this.api.setMessagePinned(groupId, messageId, pinned);
+    } catch (err) {
+      this.messages.update((list) =>
+        list.map((m) =>
+          m.id === messageId
+            ? { ...m, pinnedAt: pinned ? undefined : new Date().toISOString() }
+            : m,
+        ),
+      );
+      throw err;
     }
   }
 
