@@ -347,6 +347,17 @@
   transform: translateY(-1px);
 }
 
+/* Task không giao cho mình (và mình không phải trưởng/phó nhóm): không kéo
+   được, không có nút chuyển trạng thái — con trỏ thường để khỏi mời gọi kéo. */
+.task-item.locked {
+  cursor: default;
+}
+
+.task-item.locked:hover {
+  transform: none;
+  border-color: var(--color-border);
+}
+
 /* Thẻ đang bị kéo — mờ đi tại chỗ cũ trong khi trình duyệt vẽ ảnh kéo riêng. */
 .task-item.dragging {
   opacity: 0.4;
@@ -376,6 +387,12 @@
   display: flex;
   gap: 6px;
   margin-top: 8px;
+}
+
+/* Thành viên chỉ xem (task của người khác, không có nút nào) — bỏ luôn khoảng
+   trống thay vì để một dải margin trơ dưới thẻ. */
+.task-actions:empty {
+  display: none;
 }
 
 .action-badge {

@@ -2107,6 +2107,7 @@ export class GroupsService {
 
   async updateTask(
     supabase: SupabaseClient,
+    user: User,
     groupId: string,
     taskId: string,
     dto: UpdateGroupTaskDto,
@@ -2117,6 +2118,34 @@ export class GroupsService {
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.assignedTo !== undefined) updateData.assigned_to = dto.assignedTo;
     if (dto.dueDate !== undefined) updateData.due_date = dto.dueDate;
+
+    // Phân quyền: Trưởng nhóm / Phó nhóm sửa được mọi thứ. Thành viên thường
+    // CHỈ được đổi `status` và CHỈ trên task giao cho chính mình — kéo-thả task
+    // của người khác (hoặc đổi tiêu đề/người phụ trách) bị chặn tại đây, không
+    // chỉ ẩn nút trên giao diện.
+    const role = await this.requireRole(supabase, user, groupId);
+    if (!canManage(role, GroupRole.MEMBER)) {
+      const onlyStatus =
+        Object.keys(updateData).length > 0 &&
+        Object.keys(updateData).every((k) => k === 'status');
+      if (!onlyStatus) {
+        throw new ForbiddenException(
+          'Chỉ Trưởng nhóm hoặc Phó nhóm mới được sửa nội dung hoặc người phụ trách của công việc',
+        );
+      }
+      const { data: current } = await supabase
+        .from('group_tasks')
+        .select('assigned_to')
+        .eq('id', taskId)
+        .eq('group_id', groupId)
+        .maybeSingle<{ assigned_to: string | null }>();
+      if (!current) throw new NotFoundException('Không tìm thấy công việc');
+      if (current.assigned_to !== user.id) {
+        throw new ForbiddenException(
+          'Bạn chỉ được chuyển trạng thái công việc được giao cho mình',
+        );
+      }
+    }
 
     const { data, error } = await supabase
       .from('group_tasks')

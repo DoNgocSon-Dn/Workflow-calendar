@@ -646,10 +646,25 @@ export class GroupWorkspaceModal {
     }
   }
 
+  /**
+   * Ai được chuyển trạng thái task này: Trưởng nhóm / Phó nhóm chuyển được mọi
+   * task; thành viên thường CHỈ chuyển task giao cho chính mình. Khớp đúng luật
+   * ở backend `groups.service.ts` `updateTask()`.
+   */
+  canMoveTask(task: GroupTask): boolean {
+    return this.canManageAnyone() || task.assignedTo === this.currentUserId();
+  }
+
   async setTaskStatus(task: GroupTask, status: 'todo' | 'in_progress' | 'done'): Promise<void> {
     const group = this.store.activeGroup();
-    if (!group || task.status === status) return;
-    await this.store.updateTaskStatus(group.id, task.id, status);
+    if (!group || task.status === status || !this.canMoveTask(task)) return;
+    try {
+      await this.store.updateTaskStatus(group.id, task.id, status);
+    } catch (err: any) {
+      await this.dialog.alert(
+        err?.error?.message || this.i18n.t('group.taskMovePermission'),
+      );
+    }
   }
 
   assigneeName(task: GroupTask): string {
@@ -684,6 +699,10 @@ export class GroupWorkspaceModal {
   protected readonly dragOverStatus = signal<'todo' | 'in_progress' | 'done' | null>(null);
 
   onTaskDragStart(task: GroupTask, event: DragEvent): void {
+    if (!this.canMoveTask(task)) {
+      event.preventDefault();
+      return;
+    }
     this.draggingTaskId.set(task.id);
     event.dataTransfer?.setData('text/plain', task.id);
     if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';

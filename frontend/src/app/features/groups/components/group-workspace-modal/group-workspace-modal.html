@@ -230,7 +230,8 @@
                   @for (t of todoTasks(); track t.id) {
                     <div
                       class="task-item"
-                      draggable="true"
+                      [draggable]="canMoveTask(t)"
+                      [class.locked]="!canMoveTask(t)"
                       [class.dragging]="draggingTaskId() === t.id"
                       (dragstart)="onTaskDragStart(t, $event)"
                       (dragend)="onTaskDragEnd()"
@@ -260,6 +261,7 @@
                         }
                       </select>
                       <div class="task-actions">
+                        @if (canMoveTask(t)) {
                         <button
                           type="button"
                           class="action-badge in-progress"
@@ -274,6 +276,7 @@
                         >
                           <app-icon name="check" /> {{ i18n.t('group.actionDone') }}
                         </button>
+                        }
                         @if (canDeleteTask(t)) {
                           <button
                             type="button"
@@ -306,7 +309,8 @@
                   @for (t of inProgressTasks(); track t.id) {
                     <div
                       class="task-item"
-                      draggable="true"
+                      [draggable]="canMoveTask(t)"
+                      [class.locked]="!canMoveTask(t)"
                       [class.dragging]="draggingTaskId() === t.id"
                       (dragstart)="onTaskDragStart(t, $event)"
                       (dragend)="onTaskDragEnd()"
@@ -336,6 +340,7 @@
                         }
                       </select>
                       <div class="task-actions">
+                        @if (canMoveTask(t)) {
                         <button
                           type="button"
                           class="action-badge todo"
@@ -350,6 +355,7 @@
                         >
                           <app-icon name="check" /> {{ i18n.t('group.actionDone') }}
                         </button>
+                        }
                         @if (canDeleteTask(t)) {
                           <button
                             type="button"
@@ -382,7 +388,8 @@
                   @for (t of doneTasks(); track t.id) {
                     <div
                       class="task-item task-done"
-                      draggable="true"
+                      [draggable]="canMoveTask(t)"
+                      [class.locked]="!canMoveTask(t)"
                       [class.dragging]="draggingTaskId() === t.id"
                       (dragstart)="onTaskDragStart(t, $event)"
                       (dragend)="onTaskDragEnd()"
@@ -394,6 +401,7 @@
                         <p class="task-desc"><app-icon name="user" /> {{ assigneeName(t) }}</p>
                       }
                       <div class="task-actions">
+                        @if (canMoveTask(t)) {
                         <button
                           type="button"
                           class="action-badge todo"
@@ -401,6 +409,7 @@
                         >
                           {{ i18n.t('group.reopen') }}
                         </button>
+                        }
                         @if (canDeleteTask(t)) {
                           <button
                             type="button"

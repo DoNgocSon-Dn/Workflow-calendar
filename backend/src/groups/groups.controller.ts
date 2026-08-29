@@ -275,11 +275,12 @@ export class GroupsController {
   @Patch(':id/tasks/:taskId')
   async updateTask(
     @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
     @Param('id') groupId: string,
     @Param('taskId') taskId: string,
     @Body() dto: UpdateGroupTaskDto,
   ) {
-    return this.groupsService.updateTask(supabase, groupId, taskId, dto);
+    return this.groupsService.updateTask(supabase, user, groupId, taskId, dto);
   }
 
   @Delete(':id/tasks/:taskId')
