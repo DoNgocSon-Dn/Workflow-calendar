@@ -144,7 +144,8 @@
                 [style.left.%]="pe.leftPct"
                 [style.width.%]="pe.widthPct"
                 [style.--chip-color]="colorFor(pe.event)"
-                (mousedown)="onBlockMouseDown($event, pe)"
+                (pointerdown)="onBlockPointerDown($event, pe)"
+                (mousedown)="$event.stopPropagation()"
                 [title]="conflictTooltip(pe.event.id)"
               >
                 <div class="block-content">
@@ -153,7 +154,8 @@
                 </div>
                 <div
                   class="resize-handle"
-                  (mousedown)="onResizeMouseDown($event, pe)"
+                  (pointerdown)="onResizePointerDown($event, pe)"
+                  (mousedown)="$event.stopPropagation()"
                 ></div>
               </div>
             }

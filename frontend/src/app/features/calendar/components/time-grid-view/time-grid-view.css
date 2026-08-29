@@ -355,6 +355,18 @@
   white-space: nowrap;
 }
 
+/* Khối đang được "nhấc" để kéo (chuột nhấn giữ, hoặc chạm giữ ~350ms). Bỏ
+   transition cho transform để khối bám sát ngón tay/con trỏ, không trễ. */
+.event-block.dragging {
+  transform: scale(1.04);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+  border-color: rgba(255, 255, 255, 0.9);
+  z-index: 30;
+  cursor: grabbing;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  opacity: 0.96;
+}
+
 .resize-handle {
   position: absolute;
   left: 0;
@@ -362,6 +374,27 @@
   bottom: 0;
   height: 6px;
   cursor: ns-resize;
+  touch-action: none;
+}
+
+/* Cảm ứng: vùng kéo mép dưới phải to hơn cho vừa ngón tay, và có một vạch mờ
+   để người dùng biết có thể kéo được. */
+@media (hover: none) {
+  .resize-handle {
+    height: 22px;
+  }
+
+  .resize-handle::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 3px;
+    transform: translateX(-50%);
+    width: 28px;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.85);
+  }
 }
 
 .event-chip {

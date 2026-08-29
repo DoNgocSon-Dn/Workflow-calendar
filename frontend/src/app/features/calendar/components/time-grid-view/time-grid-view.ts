@@ -455,78 +455,99 @@ export class TimeGridView {
     document.addEventListener('mouseup', onUp);
   }
 
-  onBlockMouseDown(mouseEvent: MouseEvent, pe: PositionedEvent): void {
-    if (mouseEvent.button !== 0) return;
-    mouseEvent.preventDefault();
-    mouseEvent.stopPropagation();
-
-    const startClientY = mouseEvent.clientY;
-    const startClientX = mouseEvent.clientX;
+  /**
+   * Kéo để DI CHUYỂN sự kiện (đổi giờ + đổi ngày).
+   *
+   * Chuột: vào chế độ kéo ngay khi nhấn (như trước).
+   * Chạm: phải NHẤN GIỮ ~350ms mới "nhấc" sự kiện lên (rung nhẹ + phóng to) —
+   * giống Google Calendar, để chạm-rồi-vuốt vẫn cuộn lịch bình thường. Nhích
+   * quá 10px trong lúc chờ = coi là cuộn, huỷ kéo.
+   */
+  onBlockPointerDown(ev: PointerEvent, pe: PositionedEvent): void {
+    if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+    const el = ev.currentTarget as HTMLElement;
+    const isTouch = ev.pointerType === 'touch';
     const container = this.scrollContainer()?.nativeElement;
 
+    const startX = ev.clientX;
+    const startY = ev.clientY;
+    let lastX = startX;
+    let lastY = startY;
+    let active = false;
     let moved = false;
+    let slid = false;
     let animFrameId: number | null = null;
-    let lastClientY = startClientY;
-    let lastClientX = startClientX;
+    let longPressTimer: number | null = null;
 
-    this.dragMove.set({ eventId: pe.event.id, deltaMin: 0, deltaDays: 0 });
-
-    const updateMove = () => {
+    const updateMove = (): void => {
       animFrameId = null;
-      const deltaY = lastClientY - startClientY;
-      const deltaX = lastClientX - startClientX;
-      if (Math.abs(deltaY) > 3 || Math.abs(deltaX) > 10) moved = true;
+      const dy = lastY - startY;
+      const dx = lastX - startX;
+      if (Math.abs(dy) > 3 || Math.abs(dx) > 10) moved = true;
 
       if (container) {
         const cRect = container.getBoundingClientRect();
-        if (lastClientY < cRect.top + 40) {
-          container.scrollTop -= 12;
-        } else if (lastClientY > cRect.bottom - 40) {
-          container.scrollTop += 12;
-        }
+        if (lastY < cRect.top + 40) container.scrollTop -= 12;
+        else if (lastY > cRect.bottom - 40) container.scrollTop += 12;
       }
 
-      const deltaMin = snapSigned((deltaY / HOUR_HEIGHT) * 60);
+      const deltaMin = snapSigned((dy / HOUR_HEIGHT) * 60);
 
-      // Determine day column under mouse cursor for horizontal dragging
       let deltaDays = 0;
       if (container) {
         const columns = container.querySelectorAll('.day-col');
         let targetDayIndex = -1;
         columns.forEach((col, idx) => {
           const r = col.getBoundingClientRect();
-          if (lastClientX >= r.left && lastClientX <= r.right) {
-            targetDayIndex = idx;
-          }
+          if (lastX >= r.left && lastX <= r.right) targetDayIndex = idx;
         });
         if (targetDayIndex !== -1) {
           const startDayIndex = this.days().findIndex((d) => isSameDay(d, pe.event.start));
-          if (startDayIndex !== -1) {
-            deltaDays = targetDayIndex - startDayIndex;
-          }
+          if (startDayIndex !== -1) deltaDays = targetDayIndex - startDayIndex;
         }
       }
 
       this.dragMove.set({ eventId: pe.event.id, deltaMin, deltaDays });
     };
 
-    const onMove = (e: MouseEvent) => {
-      lastClientY = e.clientY;
-      lastClientX = e.clientX;
-      if (!animFrameId) {
-        animFrameId = requestAnimationFrame(updateMove);
+    const activate = (): void => {
+      active = true;
+      longPressTimer = null;
+      if (isTouch) navigator.vibrate?.(8);
+      try {
+        el.setPointerCapture(ev.pointerId);
+      } catch {
+        /* trình duyệt cũ / phần tử đã bỏ */
       }
+      el.classList.add('dragging');
+      this.dragMove.set({ eventId: pe.event.id, deltaMin: 0, deltaDays: 0 });
     };
 
-    const onUp = () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
+    const cleanup = (commit: boolean): void => {
+      if (longPressTimer !== null) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+      el.removeEventListener('pointermove', onPointerMove);
+      el.removeEventListener('pointerup', onPointerUp);
+      el.removeEventListener('pointercancel', onPointerCancel);
+      try {
+        el.releasePointerCapture(ev.pointerId);
+      } catch {
+        /* noop */
+      }
       if (animFrameId) cancelAnimationFrame(animFrameId);
+      el.classList.remove('dragging');
       const state = this.dragMove();
       this.dragMove.set(null);
 
-      if (!moved || !state) {
-        this.editRequested.emit(pe.event);
+      if (!active) {
+        // Nhấn-giữ chưa kịp kích hoạt: tap thường → mở trình sửa; vuốt → bỏ qua.
+        if (!slid) this.editRequested.emit(pe.event);
+        return;
+      }
+      if (!commit || !moved || !state) {
+        if (!moved) this.editRequested.emit(pe.event);
         return;
       }
 
@@ -536,67 +557,107 @@ export class TimeGridView {
         newStart = addDays(newStart, state.deltaDays);
         newEnd = addDays(newEnd, state.deltaDays);
       }
-
-      this.store.updateEvent(pe.event.id, {
-        start: newStart,
-        end: newEnd,
-      });
+      this.store.updateEvent(pe.event.id, { start: newStart, end: newEnd });
     };
 
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+    const onPointerMove = (e: PointerEvent): void => {
+      lastX = e.clientX;
+      lastY = e.clientY;
+      if (!active) {
+        if (Math.hypot(e.clientX - startX, e.clientY - startY) > 10) {
+          slid = true;
+          cleanup(false);
+        }
+        return;
+      }
+      e.preventDefault();
+      if (!animFrameId) animFrameId = requestAnimationFrame(updateMove);
+    };
+
+    const onPointerUp = (): void => cleanup(true);
+    const onPointerCancel = (): void => cleanup(false);
+
+    el.addEventListener('pointermove', onPointerMove);
+    el.addEventListener('pointerup', onPointerUp);
+    el.addEventListener('pointercancel', onPointerCancel);
+
+    if (isTouch) {
+      longPressTimer = window.setTimeout(activate, 350);
+    } else {
+      ev.preventDefault();
+      ev.stopPropagation();
+      activate();
+    }
   }
 
-  onResizeMouseDown(mouseEvent: MouseEvent, pe: PositionedEvent): void {
-    if (mouseEvent.button !== 0) return;
-    mouseEvent.preventDefault();
-    mouseEvent.stopPropagation();
-
-    const startClientY = mouseEvent.clientY;
-    const originalDuration = diffMinutes(pe.event.start, pe.event.end);
+  /**
+   * Kéo mép dưới để đổi ĐỘ DÀI sự kiện. Vùng tay cầm nhỏ và có chủ đích nên
+   * kích hoạt ngay cả trên chạm (không cần nhấn giữ), nhưng chỉ đổi giờ sau khi
+   * ngón tay đã nhích > 4px để một cú chạm hụt không lỡ làm co sự kiện.
+   */
+  onResizePointerDown(ev: PointerEvent, pe: PositionedEvent): void {
+    if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    const el = ev.currentTarget as HTMLElement;
     const container = this.scrollContainer()?.nativeElement;
+    const startY = ev.clientY;
+    const originalDuration = diffMinutes(pe.event.start, pe.event.end);
 
+    let lastY = startY;
+    let engaged = false;
     let animFrameId: number | null = null;
-    let lastClientY = startClientY;
 
     this.dragResize.set({ eventId: pe.event.id, deltaMin: 0 });
+    try {
+      el.setPointerCapture(ev.pointerId);
+    } catch {
+      /* noop */
+    }
 
-    const updateResize = () => {
+    const updateResize = (): void => {
       animFrameId = null;
       if (container) {
         const cRect = container.getBoundingClientRect();
-        if (lastClientY < cRect.top + 40) {
-          container.scrollTop -= 12;
-        } else if (lastClientY > cRect.bottom - 40) {
-          container.scrollTop += 12;
-        }
+        if (lastY < cRect.top + 40) container.scrollTop -= 12;
+        else if (lastY > cRect.bottom - 40) container.scrollTop += 12;
       }
-
-      const deltaY = lastClientY - startClientY;
-      let deltaMin = snapSigned((deltaY / HOUR_HEIGHT) * 60);
+      let deltaMin = snapSigned(((lastY - startY) / HOUR_HEIGHT) * 60);
       if (originalDuration + deltaMin < SNAP_MINUTES) deltaMin = SNAP_MINUTES - originalDuration;
       this.dragResize.set({ eventId: pe.event.id, deltaMin });
     };
 
-    const onMove = (e: MouseEvent) => {
-      lastClientY = e.clientY;
-      if (!animFrameId) {
-        animFrameId = requestAnimationFrame(updateResize);
-      }
+    const onPointerMove = (e: PointerEvent): void => {
+      lastY = e.clientY;
+      if (!engaged && Math.abs(e.clientY - startY) <= 4) return;
+      engaged = true;
+      e.preventDefault();
+      if (!animFrameId) animFrameId = requestAnimationFrame(updateResize);
     };
 
-    const onUp = () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
+    const cleanup = (commit: boolean): void => {
+      el.removeEventListener('pointermove', onPointerMove);
+      el.removeEventListener('pointerup', onPointerUp);
+      el.removeEventListener('pointercancel', onPointerCancel);
+      try {
+        el.releasePointerCapture(ev.pointerId);
+      } catch {
+        /* noop */
+      }
       if (animFrameId) cancelAnimationFrame(animFrameId);
       const state = this.dragResize();
       this.dragResize.set(null);
-      if (!state || state.deltaMin === 0) return;
-      this.store.updateEvent(pe.event.id, { end: addMinutes(pe.event.end, state.deltaMin) });
+      if (commit && state && state.deltaMin !== 0) {
+        this.store.updateEvent(pe.event.id, { end: addMinutes(pe.event.end, state.deltaMin) });
+      }
     };
 
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+    const onPointerUp = (): void => cleanup(true);
+    const onPointerCancel = (): void => cleanup(false);
+
+    el.addEventListener('pointermove', onPointerMove);
+    el.addEventListener('pointerup', onPointerUp);
+    el.addEventListener('pointercancel', onPointerCancel);
   }
 }
 
