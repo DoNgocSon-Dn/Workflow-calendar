@@ -78,10 +78,19 @@ export class CalendarSidebar implements OnInit {
     localStorage.setItem('workflow_sidebar_particles_enabled', next ? 'true' : 'false');
   }
 
+  /**
+   * Ngày lễ hiện tại: Ưu tiên ngày đang bấm xem trên lịch, hoặc ngày hôm nay
+   */
   protected readonly activeHoliday = computed(() => {
+    const focused = this.store.focusedDate();
+    const holidayOnFocused = resolveTopHolidayForDate(focused);
+    if (holidayOnFocused) return holidayOnFocused;
     return resolveTopHolidayForDate(this.store.today());
   });
 
+  /**
+   * Tra cứu bộ Icon rơi tương ứng cho TẤT CẢ các ngày lễ trong năm (~45 ngày lễ)
+   */
   protected readonly holidayEmojis = computed<readonly string[]>(() => {
     const h = this.activeHoliday();
     if (!h) return [];
@@ -89,16 +98,53 @@ export class CalendarSidebar implements OnInit {
     if (themeEmojis && themeEmojis.length > 0) return themeEmojis;
 
     const id = h.id.toLowerCase();
-    if (id.includes('christmas')) return ['❄️', '🎄', '✨'];
-    if (id.includes('tet')) return ['🌸', '✨', '🧧'];
-    if (id.includes('new-year')) return ['🎆', '✨', '🎉'];
-    if (id.includes('national')) return ['⭐', '🎆'];
-    if (id.includes('halloween')) return ['🎃', '👻', '🕸️'];
-    if (id.includes('valentine')) return ['❤️', '💕', '💖'];
-    if (id.includes('women')) return ['🌷', '🌸', '💐'];
+
+    // Tết & Lễ Âm lịch
+    if (id.includes('tet-nguyen-dan') || id.includes('tat-nien')) return ['🌸', '✨', '🧧', '🌼'];
+    if (id.includes('tao-quan')) return ['🐟', '✨', '🏮'];
+    if (id.includes('than-tai')) return ['💰', '✨', '🏮', '🪙'];
+    if (id.includes('nguyen-tieu')) return ['🏮', '🌕', '✨'];
+    if (id.includes('han-thuc')) return ['🍡', '✨'];
+    if (id.includes('hung-kings')) return ['🥁', '⭐', '✨'];
+    if (id.includes('vesak')) return ['🪷', '🕯️', '✨'];
+    if (id.includes('doan-ngo')) return ['🥭', '🌿', '✨'];
+    if (id.includes('vu-lan')) return ['🪷', '💖', '✨'];
+    if (id.includes('mid-autumn')) return ['🌕', '🏮', '⭐', '🥮'];
+
+    // Lễ Quốc gia & Lịch sử Việt Nam
+    if (
+      id.includes('national') ||
+      id.includes('reunification') ||
+      id.includes('august') ||
+      id.includes('dien-bien') ||
+      id.includes('hanoi')
+    ) {
+      return ['⭐', '🎆', '🇻🇳', '🎉'];
+    }
+    if (id.includes('army')) return ['⭐', '🎖️', '✨'];
+    if (id.includes('party')) return ['⭐', '🚩', '✨'];
+
+    // Ngày Ngành Nghề & Kỷ Niệm
     if (id.includes('teacher')) return ['📚', '✏️', '🌻'];
-    if (id.includes('autumn')) return ['🌕', '🏮', '⭐'];
-    return ['✨', '⭐', '🎉'];
+    if (id.includes('doctor')) return ['🩺', '💊', '💖'];
+    if (id.includes('press')) return ['📰', '✒️', '✨'];
+    if (id.includes('entrepreneur')) return ['💼', '🤝', '✨'];
+    if (id.includes('family')) return ['🏡', '❤️', '👨‍👩‍👧‍👦'];
+    if (id.includes('women')) return ['🌷', '🌸', '💐'];
+    if (id.includes('children')) return ['🎈', '🎉', '🧸'];
+    if (id.includes('student') || id.includes('youth') || id.includes('team')) return ['🎓', '📚', '✨', '🚩'];
+    if (id.includes('book')) return ['📖', '📚', '✨'];
+    if (id.includes('invalids')) return ['🕯️', '🌹', '⭐'];
+
+    // Quốc tế & Lễ hội
+    if (id.includes('christmas')) return ['❄️', '🎄', '✨', '🎁'];
+    if (id.includes('new-year')) return ['🎆', '🥂', '🎉', '✨'];
+    if (id.includes('halloween')) return ['🎃', '👻', '🕸️', '🦇'];
+    if (id.includes('valentine')) return ['❤️', '💕', '💖', '🌹'];
+    if (id.includes('april-fools')) return ['🤡', '🎈', '✨'];
+    if (id.includes('labor')) return ['🛠️', '✨', '🎉'];
+
+    return ['✨', '⭐', '🎉', '🌟'];
   });
 
   protected readonly sidebarParticles = computed<readonly SidebarParticle[]>(() => {
