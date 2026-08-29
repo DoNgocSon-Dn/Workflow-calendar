@@ -179,9 +179,15 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 function defaultPos(): HubPos {
+  // Trên điện thoại góc dưới-phải đã có nút "Tạo sự kiện" (create-fab, ~56px +
+  // lề). Đặt trợ lý AI NGAY TRÊN nó để hai FAB không chồng nhau. Người dùng vẫn
+  // kéo đi chỗ khác được (vị trí sau đó lưu vào localStorage).
+  const isPhone =
+    typeof matchMedia === 'function' && matchMedia('(max-width: 767.98px)').matches;
+  const bottomReserve = isPhone ? FAB_SIZE + EDGE_MARGIN + 20 : EDGE_MARGIN;
   return {
     x: window.innerWidth - FAB_SIZE - EDGE_MARGIN,
-    y: window.innerHeight - FAB_SIZE - EDGE_MARGIN,
+    y: window.innerHeight - FAB_SIZE - bottomReserve,
   };
 }
 

@@ -107,6 +107,39 @@ export class CalendarPage {
   protected readonly weekDays = computed(() => buildWeekDays(this.store.focusedDate()));
   protected readonly dayViewDays = computed(() => [this.store.focusedDate()]);
 
+  // --- Vuốt ngang đổi kỳ (chỉ điện thoại) --------------------------------
+  // Giống Google Calendar: vuốt trái = kỳ sau, vuốt phải = kỳ trước. Chỉ tính
+  // là "vuốt" khi đủ ngang và đủ nhanh — cuộn dọc trong lưới/agenda không đụng.
+  private swipeStart: { x: number; y: number; t: number } | null = null;
+
+  protected onViewTouchStart(e: TouchEvent): void {
+    if (!this.store.isPhone() || e.touches.length !== 1) {
+      this.swipeStart = null;
+      return;
+    }
+    const t = e.touches[0];
+    this.swipeStart = { x: t.clientX, y: t.clientY, t: Date.now() };
+  }
+
+  protected onViewTouchEnd(e: TouchEvent): void {
+    const start = this.swipeStart;
+    this.swipeStart = null;
+    if (!start || e.changedTouches.length !== 1) return;
+
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    const elapsed = Date.now() - start.t;
+
+    if (
+      elapsed <= 600 &&
+      Math.abs(dx) >= 60 &&
+      Math.abs(dx) > Math.abs(dy) * 1.5
+    ) {
+      this.store.step(dx < 0 ? 1 : -1);
+    }
+  }
+
   protected readonly modalState = signal<ModalState | null>(null);
   protected readonly holidayInfoEvent = signal<CalendarEvent | null>(null);
   /**

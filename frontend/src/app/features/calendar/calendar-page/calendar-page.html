@@ -25,6 +25,8 @@
       class="view-area"
       [class.nav-next]="store.navDirection() === 'next'"
       [class.nav-prev]="store.navDirection() === 'prev'"
+      (touchstart)="onViewTouchStart($event)"
+      (touchend)="onViewTouchEnd($event)"
     >
       <app-calendar-holiday-backdrop />
 
@@ -180,6 +182,22 @@
 <app-holiday-popup />
 <app-birthday-popup />
 <app-floating-hub (openManualForm)="openManualFormFromAi($event)" />
+
+@if (store.isPhone()) {
+  <!-- Nút tạo sự kiện kiểu Google Calendar — chỉ trên điện thoại, nơi nút "Tạo"
+       ở sidebar bị giấu trong drawer. Neo góc dưới-phải; trợ lý AI (cũng FAB,
+       kéo được) mặc định đã dời lên trên ở khổ này (floating-hub.ts). -->
+  <button
+    type="button"
+    class="create-fab"
+    [attr.aria-label]="i18n.t('sidebar.createEvent')"
+    (click)="openCreateBlank()"
+  >
+    <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+      <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z" />
+    </svg>
+  </button>
+}
 <app-screen-notes />
 <app-dev-date-panel />
 

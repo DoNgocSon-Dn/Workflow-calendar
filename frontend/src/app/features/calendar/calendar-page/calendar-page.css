@@ -355,3 +355,38 @@ app-calendar-sidebar:not(.active) {
 .name-prompt-skip-btn:hover {
   color: var(--color-text);
 }
+
+/* ============================================================
+   FAB "Tạo sự kiện" — chỉ điện thoại (xem @if store.isPhone() trong template).
+   Neo góc dưới-phải theo lề an toàn; trợ lý AI (FAB kéo được) mặc định đã lùi
+   lên trên ở khổ này.
+   ============================================================ */
+.create-fab {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 140;
+  width: 3.5rem;
+  height: 3.5rem;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
+  box-shadow: var(--shadow-modal);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease;
+}
+
+.create-fab:active {
+  transform: scale(0.92);
+  background: var(--holiday-accent-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .create-fab {
+    transition: none;
+  }
+}

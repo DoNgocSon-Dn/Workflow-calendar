@@ -17,25 +17,55 @@
     <span class="brand">
       <app-brand-logo [dayNumber]="store.today().getDate()" />
     </span>
+
+    @if (store.isPhone()) {
+      <!-- Điện thoại: gộp "kỳ đang xem" + "đổi view" thành một nút như GG Calendar. -->
+      <button
+        type="button"
+        class="mobile-period-btn"
+        aria-haspopup="true"
+        [attr.aria-expanded]="viewMenuOpen()"
+        (click)="toggleViewMenu()"
+      >
+        <span class="mobile-period-label">{{ periodLabel() }}</span>
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+          <path fill="currentColor" d="M7 10l5 5 5-5z" />
+        </svg>
+      </button>
+    }
   </div>
 
   <div class="center">
-    <button type="button" class="today-btn" (click)="store.goToday()">{{ i18n.t('common.today') }}</button>
-    <button type="button" class="icon-btn" [attr.aria-label]="i18n.t('common.previous')" (click)="store.step(-1)">
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        <path fill="currentColor" d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-      </svg>
-    </button>
-    <button type="button" class="icon-btn" [attr.aria-label]="i18n.t('common.next')" (click)="store.step(1)">
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        <path fill="currentColor" d="M8.59 16.59 10 18l6-6-6-6-1.41 1.41L13.17 12z" />
-      </svg>
-    </button>
-    <h1 class="period-label">{{ periodLabel() }}</h1>
+    @if (!store.isPhone()) {
+      <button type="button" class="today-btn" (click)="store.goToday()">{{ i18n.t('common.today') }}</button>
+      <button type="button" class="icon-btn" [attr.aria-label]="i18n.t('common.previous')" (click)="store.step(-1)">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor" d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+        </svg>
+      </button>
+      <button type="button" class="icon-btn" [attr.aria-label]="i18n.t('common.next')" (click)="store.step(1)">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor" d="M8.59 16.59 10 18l6-6-6-6-1.41 1.41L13.17 12z" />
+        </svg>
+      </button>
+      <h1 class="period-label">{{ periodLabel() }}</h1>
+    }
   </div>
 
   <div class="right">
-    <div class="search-box">
+    @if (store.isPhone()) {
+      <button
+        type="button"
+        class="icon-btn"
+        [attr.aria-label]="i18n.t('header.searchPlaceholder')"
+        (click)="openSearchOverlay()"
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path fill="currentColor" d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z" />
+        </svg>
+      </button>
+    }
+    <div class="search-box" [class.is-hidden-phone]="store.isPhone()">
       <input
         type="text"
         class="search-input"
@@ -74,24 +104,23 @@
       }
     </div>
 
-    <button type="button" class="icon-btn" [attr.aria-label]="i18n.t('header.import')" [title]="i18n.t('header.import')" (click)="openImport.emit()">
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        <path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z" />
-      </svg>
-    </button>
+    @if (!store.isPhone()) {
+      <button type="button" class="icon-btn" [attr.aria-label]="i18n.t('header.import')" [title]="i18n.t('header.import')" (click)="openImport.emit()">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z" />
+        </svg>
+      </button>
 
-    <!-- Trước đây chỉ có trong menu thả xuống của avatar, khá khuất — nhiều
-         người dùng không biết bấm vào đâu để vào Cài đặt. Đưa hẳn ra ngoài
-         thanh công cụ cho dễ thấy, giữ nguyên mục trong menu avatar cho ai
-         đã quen thao tác cũ. -->
-    <button type="button" class="icon-btn" [attr.aria-label]="i18n.t('header.settings')" [title]="i18n.t('header.settings')" (click)="openSettings.emit()">
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        <path
-          fill="currentColor"
-          d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.5.5 0 0 0 .12-.61l-1.92-3.32a.5.5 0 0 0-.59-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.49.49 0 0 0-.48-.41h-3.84a.49.49 0 0 0-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.5.5 0 0 0-.59.22L2.74 8.87a.5.5 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.5.5 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.5.5 0 0 0-.12-.61l-2.01-1.58ZM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2Z"
-        />
-      </svg>
-    </button>
+      <!-- Trên điện thoại nút này chuyển vào menu avatar cho gọn thanh trên. -->
+      <button type="button" class="icon-btn" [attr.aria-label]="i18n.t('header.settings')" [title]="i18n.t('header.settings')" (click)="openSettings.emit()">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path
+            fill="currentColor"
+            d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.5.5 0 0 0 .12-.61l-1.92-3.32a.5.5 0 0 0-.59-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.49.49 0 0 0-.48-.41h-3.84a.49.49 0 0 0-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.5.5 0 0 0-.59.22L2.74 8.87a.5.5 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.5.5 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.5.5 0 0 0-.12-.61l-2.01-1.58ZM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2Z"
+          />
+        </svg>
+      </button>
+    }
 
     <app-notification-button
       (openEvent)="onNotificationOpenEvent($event)"
@@ -162,6 +191,15 @@
             @if (authStore.displayName()) {
               <p class="user-dropdown-email">{{ userEmail() }}</p>
             }
+            @if (store.isPhone()) {
+              <!-- Trên điện thoại các nút này đã ẩn khỏi thanh trên. -->
+              <button type="button" class="dropdown-item" role="menuitem" (click)="closeUserMenu(); openSettings.emit()">
+                {{ i18n.t('header.settings') }}
+              </button>
+              <button type="button" class="dropdown-item" role="menuitem" (click)="closeUserMenu(); openImport.emit()">
+                {{ i18n.t('header.import') }}
+              </button>
+            }
             <button type="button" class="dropdown-item" role="menuitem" (click)="logout()">
               {{ i18n.t('header.logout') }}
             </button>
@@ -171,3 +209,46 @@
     }
   </div>
 </header>
+
+@if (searchOverlayOpen()) {
+  <div class="search-overlay" role="dialog" aria-modal="true">
+    <div class="search-overlay__bar">
+      <button
+        type="button"
+        class="icon-btn"
+        [attr.aria-label]="i18n.t('common.close')"
+        (click)="closeSearchOverlay()"
+      >
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z" />
+        </svg>
+      </button>
+      <input
+        #searchOverlayInput
+        type="text"
+        class="search-overlay__input"
+        maxlength="100"
+        autocomplete="off"
+        [placeholder]="i18n.t('header.searchPlaceholder')"
+        [value]="store.searchInput()"
+        (input)="store.setSearchQuery($any($event.target).value)"
+      />
+    </div>
+
+    <div class="search-overlay__results">
+      @if (searchOverlayHasQuery()) {
+        @if (searchResults().length) {
+          @for (result of searchResults(); track result.id) {
+            <button type="button" class="search-result" (click)="selectSearchResult(result)">
+              <span class="search-result__dot" [style.background]="colorHex[store.calendarColor().get(result.calendarId) ?? 'blue']"></span>
+              <span class="search-result__title" appOverflowTooltip>{{ result.title }}</span>
+              <span class="search-result__date">{{ searchResultDateLabel(result) }}</span>
+            </button>
+          }
+        } @else {
+          <p class="search-overlay__empty">{{ i18n.t('header.searchNoResults') }}</p>
+        }
+      }
+    </div>
+  </div>
+}

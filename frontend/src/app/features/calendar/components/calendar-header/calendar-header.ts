@@ -1,10 +1,13 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   computed,
+  effect,
   inject,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthStore } from '../../../../core/auth/auth-store';
@@ -66,6 +69,34 @@ export class CalendarHeader {
     () => this.searchFocused() && this.store.searchQuery().trim().length > 0,
   );
   protected readonly searchResults = computed(() => this.store.searchResults());
+
+  /** Điện thoại: ô tìm kiếm inline không có chỗ trên thanh trên, nên thay bằng
+   *  một nút 🔍 mở lớp phủ tìm kiếm toàn màn. Kết quả vẫn là `searchResults()`. */
+  protected readonly searchOverlayOpen = signal(false);
+  protected readonly searchOverlayHasQuery = computed(
+    () => this.store.searchQuery().trim().length > 0,
+  );
+  private readonly searchOverlayInput =
+    viewChild<ElementRef<HTMLInputElement>>('searchOverlayInput');
+
+  constructor() {
+    // Mở lớp phủ tìm kiếm thì đưa con trỏ vào ô nhập ngay (autofocus không đáng
+    // tin với phần tử render qua @if).
+    effect(() => {
+      if (this.searchOverlayOpen()) {
+        queueMicrotask(() => this.searchOverlayInput()?.nativeElement.focus());
+      }
+    });
+  }
+
+  openSearchOverlay(): void {
+    this.searchOverlayOpen.set(true);
+  }
+
+  closeSearchOverlay(): void {
+    this.searchOverlayOpen.set(false);
+    this.store.clearSearch();
+  }
 
   readonly viewModes: { mode: CalendarViewMode; labelKey: string }[] = [
     { mode: 'day', labelKey: 'header.viewDay' },
@@ -159,6 +190,7 @@ export class CalendarHeader {
     // Xoa NGAY, khong cho debounce: nguoi dung da chon xong.
     this.store.clearSearch();
     this.searchFocused.set(false);
+    this.searchOverlayOpen.set(false);
   }
 
   onSearchBlur(): void {
