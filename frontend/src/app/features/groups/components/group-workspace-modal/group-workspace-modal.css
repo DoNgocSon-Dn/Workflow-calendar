@@ -973,8 +973,8 @@
 }
 
 .chat-msg-row.mine .chat-msg-body {
-  background: color-mix(in srgb, var(--color-primary) 20%, var(--color-surface));
-  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  background: var(--holiday-accent-soft);
+  border-color: color-mix(in srgb, var(--holiday-accent) 30%, transparent);
 }
 
 /* Đuôi bong bóng: bo góc dưới ở phía người gửi cho có hướng. */
@@ -1497,21 +1497,21 @@
 }
 
 .btn-header--live {
-  color: var(--color-primary);
-  border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
+  color: var(--holiday-accent);
+  border-color: color-mix(in srgb, var(--holiday-accent) 45%, transparent);
 }
 
 .live-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--color-primary);
-  box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 60%, transparent);
+  background: var(--holiday-accent);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--holiday-accent) 60%, transparent);
   animation: live-pulse 2s ease-out infinite;
 }
 
 @keyframes live-pulse {
-  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 55%, transparent); }
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--holiday-accent) 55%, transparent); }
   70% { box-shadow: 0 0 0 6px transparent; }
   100% { box-shadow: 0 0 0 0 transparent; }
 }
@@ -1523,12 +1523,12 @@
   align-items: center;
   gap: 10px;
   padding: 8px 24px;
-  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  background: var(--holiday-accent-soft);
   border-bottom: 1px solid var(--color-border);
 }
 
 .meeting-bar__icon {
-  color: var(--color-primary);
+  color: var(--holiday-accent);
   flex: 0 0 auto;
 }
 
@@ -1549,8 +1549,8 @@
   align-items: center;
   padding: 6px 14px;
   border-radius: var(--radius-xs);
-  background: var(--color-primary);
-  color: #fff;
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
   font-size: 0.8rem;
   font-weight: 600;
   text-decoration: none;
@@ -1570,7 +1570,7 @@
 .meet-room-link {
   display: block;
   font-size: 0.82rem;
-  color: var(--color-primary);
+  color: var(--holiday-accent);
   word-break: break-all;
   margin-bottom: 10px;
 }
