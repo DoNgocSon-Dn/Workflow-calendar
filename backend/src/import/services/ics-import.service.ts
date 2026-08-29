@@ -12,6 +12,30 @@ export interface ParsedImportEvent {
   needsReview?: boolean;
 }
 
+/**
+ * Bỏ phần "rác" Google Calendar chèn vào mô tả sự kiện Meet: khối giữa hai
+ * dòng phân cách `-::~ … ~::-`, và các dòng "Join with Google Meet: …",
+ * "Learn more about Meet at: …", "Or dial: …", "PIN: …".
+ */
+function cleanImportedDescription(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  let text = raw
+    .replace(/-::~[~:]*::-[\s\S]*?-::~[~:]*::-/g, '')
+    .replace(/-::~[~:]*::-[\s\S]*$/g, '');
+  text = text
+    .split('\n')
+    .filter(
+      (line) =>
+        !/^\s*(join with google meet|or dial|learn more about meet at|please do not edit this section|pin:)/i.test(
+          line,
+        ),
+    )
+    .join('\n')
+    .replace(/\n\s*\n\s*\n+/g, '\n\n')
+    .trim();
+  return text || undefined;
+}
+
 @Injectable()
 export class IcsImportService {
   parseIcs(content: string): ParsedImportEvent[] {
@@ -27,7 +51,7 @@ export class IcsImportService {
         const end = event.endDate ? event.endDate.toJSDate() : new Date(start.getTime() + 3600000);
         const allDay = event.startDate ? event.startDate.isDate : false;
         const location = event.location || undefined;
-        const description = event.description || undefined;
+        const description = cleanImportedDescription(event.description || undefined);
 
         return {
           title,

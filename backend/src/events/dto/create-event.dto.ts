@@ -23,12 +23,14 @@ export class CreateEventDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(200)
+  @MaxLength(500)
   location?: string;
 
+  // Nới rộng: mô tả sự kiện import (Google Calendar…) hay kèm link họp + chỉ
+  // dẫn, thường vài nghìn ký tự. Cột DB là `text` nên không có trần cứng.
   @IsOptional()
   @IsString()
-  @MaxLength(2000)
+  @MaxLength(5000)
   description?: string;
 
   @IsISO8601()

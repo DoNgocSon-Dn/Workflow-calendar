@@ -3,9 +3,9 @@
     (ngSubmit)="onSubmit()">
     <header class="modal-header">
       <textarea id="event-modal-title" class="title-input" formControlName="title" [placeholder]="i18n.t('event.addTitle')"
-        maxlength="50" rows="1" (keydown.enter)="$event.preventDefault(); onSubmit()" autofocus></textarea>
+        [attr.maxlength]="TITLE_MAX" rows="1" (keydown.enter)="$event.preventDefault(); onSubmit()" autofocus></textarea>
       <div class="modal-header-actions">
-        <app-char-counter [current]="form.controls.title.value.length" [max]="50" />
+        <app-char-counter [current]="form.controls.title.value.length" [max]="TITLE_MAX" />
         @if (event() && canEditCurrentEvent()) {
           <button type="button" class="icon-btn danger" [attr.aria-label]="i18n.t('common.delete')" [title]="i18n.t('common.delete')" (click)="remove()">
             <svg viewBox="0 0 24 24" width="20" height="20">
@@ -362,9 +362,9 @@
         </svg>
         @if (locationOpen()) {
         <div class="field-content">
-          <input class="text-input" type="text" formControlName="location" maxlength="200"
+          <input class="text-input" type="text" formControlName="location" [attr.maxlength]="LOCATION_MAX"
             [placeholder]="i18n.t('event.addLocation')" />
-          <app-char-counter class="field-counter" [current]="form.controls.location.value.length" [max]="200" />
+          <app-char-counter class="field-counter" [current]="form.controls.location.value.length" [max]="LOCATION_MAX" />
         </div>
         } @else {
         <button type="button" class="field-toggle" [class.has-value]="!!form.controls.location.value"
@@ -382,8 +382,8 @@
         </svg>
         @if (descriptionOpen()) {
         <div class="field-content">
-          <textarea class="text-input" rows="3" formControlName="description" maxlength="200" [placeholder]="i18n.t('event.addDescription')"></textarea>
-          <app-char-counter class="field-counter" [current]="form.controls.description.value.length" [max]="200" />
+          <textarea class="text-input text-input--grow" appAutoGrow rows="4" formControlName="description" [attr.maxlength]="DESCRIPTION_MAX" [placeholder]="i18n.t('event.addDescription')"></textarea>
+          <app-char-counter class="field-counter" [current]="form.controls.description.value.length" [max]="DESCRIPTION_MAX" />
         </div>
         } @else {
         <button type="button" class="field-toggle" [class.has-value]="!!form.controls.description.value"
@@ -520,8 +520,8 @@
         </svg>
         @if (descriptionOpen()) {
         <div class="field-content">
-          <textarea class="text-input" rows="3" formControlName="description" maxlength="200" [placeholder]="i18n.t('event.addDescription')"></textarea>
-          <app-char-counter class="field-counter" [current]="form.controls.description.value.length" [max]="200" />
+          <textarea class="text-input text-input--grow" appAutoGrow rows="4" formControlName="description" [attr.maxlength]="DESCRIPTION_MAX" [placeholder]="i18n.t('event.addDescription')"></textarea>
+          <app-char-counter class="field-counter" [current]="form.controls.description.value.length" [max]="DESCRIPTION_MAX" />
         </div>
         } @else {
         <button type="button" class="field-toggle" [class.has-value]="!!form.controls.description.value"

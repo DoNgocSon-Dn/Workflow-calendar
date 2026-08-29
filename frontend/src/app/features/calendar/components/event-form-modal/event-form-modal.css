@@ -637,6 +637,15 @@
   resize: vertical;
 }
 
+/* Ô mô tả: tự cao dần theo nội dung (appAutoGrow), trần 45% chiều cao màn rồi
+   cuộn nội bộ — đủ rộng để đọc nội dung dài mà không chiếm hết modal. Vẫn kéo
+   góc tay được. */
+.text-input--grow {
+  min-height: 5rem;
+  max-height: 45dvh;
+  line-height: 1.5;
+}
+
 .calendar-swatches {
   display: flex;
   flex-direction: column;

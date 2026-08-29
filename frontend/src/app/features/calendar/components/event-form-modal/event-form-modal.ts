@@ -50,7 +50,12 @@ import {
   utcToZonedWall,
   zonedWallTimeToUtc,
 } from '../../utils/tz-utils';
-import { stripHtmlTags } from '../../../../shared/utils/text.util';
+import {
+  cleanImportedDescription,
+  extractConferenceLink,
+  isConferenceLinkOnly,
+} from '../../../../shared/utils/text.util';
+import { AutoGrow } from '../../../../shared/directives/auto-grow';
 import { TimePicker } from '../time-picker/time-picker';
 import { DatePicker } from '../date-picker/date-picker';
 import { CharCounter } from '../../../../shared/components/char-counter/char-counter';
@@ -71,6 +76,13 @@ function extractErrorMessage(err: unknown, fallback: string, netFallback = fallb
 
 import { convertSolarToLunar } from '../../utils/lunar-calendar';
 import { createMeetingRoomLink } from '../../../../shared/utils/meeting-link.util';
+
+// Giới hạn ký tự — nới rộng để mô tả sự kiện import (thường ~1-2k ký tự,
+// kèm link họp + chỉ dẫn) không bị chặn. Cột DB là `text` nên không có trần
+// cứng; đây chỉ là hàng rào chống dán nhầm cả cuốn sách.
+const TITLE_MAX = 200;
+const LOCATION_MAX = 500;
+const DESCRIPTION_MAX = 5000;
 
 interface DurationPreset {
   labelKey: string;
@@ -105,7 +117,7 @@ import { Icon } from '../../../../shared/components/icon/icon';
   templateUrl: './event-form-modal.html',
   styleUrl: './event-form-modal.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, TimePicker, DatePicker, CharCounter, Icon],
+  imports: [ReactiveFormsModule, TimePicker, DatePicker, CharCounter, Icon, AutoGrow],
 })
 export class EventFormModal {
   private readonly fb = inject(FormBuilder);
@@ -343,7 +355,7 @@ export class EventFormModal {
   });
 
   readonly form = this.fb.nonNullable.group({
-    title: ['', [Validators.required, Validators.maxLength(50)]],
+    title: ['', [Validators.required, Validators.maxLength(TITLE_MAX)]],
     calendarId: [this.store.defaultWritableCalendar()?.id ?? '', Validators.required],
     allDay: [false],
     startDate: [toDateInputValue(this.store.today())],
@@ -351,10 +363,15 @@ export class EventFormModal {
     endDate: [toDateInputValue(this.store.today())],
     endTime: ['10:00'],
     timeZone: [deviceTimeZone()],
-    location: ['', Validators.maxLength(200)],
-    description: ['', Validators.maxLength(200)],
+    location: ['', Validators.maxLength(LOCATION_MAX)],
+    description: ['', Validators.maxLength(DESCRIPTION_MAX)],
     meetLink: [''],
   });
+
+  /** Cho template dùng làm `[max]` của bộ đếm ký tự. */
+  protected readonly TITLE_MAX = TITLE_MAX;
+  protected readonly LOCATION_MAX = LOCATION_MAX;
+  protected readonly DESCRIPTION_MAX = DESCRIPTION_MAX;
 
   constructor() {
     effect(() => {
@@ -402,8 +419,17 @@ export class EventFormModal {
       }
 
       if (evt) {
-        const cleanDesc = stripHtmlTags(evt.description);
-        this.locationOpen.set(!!evt.location);
+        // Dọn mô tả import (bỏ HTML + phần rác Google Meet), và tự tách link
+        // phòng họp ra ô riêng nếu ô "Phòng họp" đang trống.
+        const cleanDesc = cleanImportedDescription(evt.description);
+        let meet = evt.meetLink ?? '';
+        let loc = evt.location ?? '';
+        if (!meet) {
+          meet = extractConferenceLink(loc) ?? extractConferenceLink(cleanDesc) ?? '';
+        }
+        if (meet && isConferenceLinkOnly(loc)) loc = '';
+
+        this.locationOpen.set(!!loc);
         this.descriptionOpen.set(!!cleanDesc);
         // Stored allDay end is exclusive (day after the last day); the date
         // input shows/edits it inclusively, and save() adds the day back.
@@ -431,9 +457,9 @@ export class EventFormModal {
           endDate: ew ? ew.date : toDateInputValue(displayEnd),
           endTime: ew ? ew.time : hhmm(evt.end),
           timeZone: tz,
-          location: evt.location ?? '',
+          location: loc,
           description: cleanDesc,
-          meetLink: evt.meetLink ?? '',
+          meetLink: meet,
         });
         return;
       }
