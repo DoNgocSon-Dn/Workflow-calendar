@@ -8,7 +8,7 @@
   "lang": "vi-VN",
   "dir": "ltr",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "display_override": ["tabbed", "window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "portrait-primary",
   "background_color": "#060608",
   "theme_color": "#2563eb",
@@ -23,10 +23,10 @@
   ],
   "scope_extensions": [
     {
-      "origin": "*.vercel.app"
+      "origin": "workflow-calendar.vercel.app"
     },
     {
-      "origin": "workflow-calendar.vercel.app"
+      "origin": "*.vercel.app"
     }
   ],
   "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
@@ -80,6 +80,25 @@
       "description": "Xem danh sách việc cần làm",
       "url": "/tasks",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Lịch Hôm Nay",
+      "short_name": "Lịch",
+      "description": "Xem các sự kiện trong ngày hôm nay",
+      "tag": "today-calendar-widget",
+      "template": "today-calendar-widget",
+      "ms_ac_template": "/widgets/template.json",
+      "data": "/widgets/data.json",
+      "type": "application/json",
+      "screenshots": [
+        {
+          "src": "/screenshot-1.png",
+          "sizes": "1280x720",
+          "label": "Xem lịch hôm nay"
+        }
+      ]
     }
   ],
   "icons": [
