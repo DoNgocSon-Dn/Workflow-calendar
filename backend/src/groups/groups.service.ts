@@ -2577,6 +2577,51 @@ export class GroupsService {
     });
   }
 
+  // ---- "Đã xem" cho chat nhóm (bảng group_message_reads, migration 42) ----
+
+  async getMessageReads(
+    supabase: SupabaseClient,
+    groupId: string,
+  ): Promise<{ userId: string; at: string }[]> {
+    const { data, error } = await supabase
+      .from('group_message_reads')
+      .select('user_id, last_read_at')
+      .eq('group_id', groupId);
+    if (error) {
+      if (error.code === '42P01') return []; // migration 42 chưa chạy
+      throw new InternalServerErrorException(error.message);
+    }
+    return ((data ?? []) as { user_id: string; last_read_at: string }[]).map((r) => ({
+      userId: r.user_id,
+      at: r.last_read_at,
+    }));
+  }
+
+  async markMessagesRead(
+    supabase: SupabaseClient,
+    user: User,
+    groupId: string,
+  ): Promise<{ at: string }> {
+    await this.requireRole(supabase, user, groupId);
+    const at = new Date().toISOString();
+    const { error } = await supabase
+      .from('group_message_reads')
+      .upsert(
+        { group_id: groupId, user_id: user.id, last_read_at: at },
+        { onConflict: 'group_id,user_id' },
+      );
+    if (error) {
+      if (error.code === '42P01') return { at }; // degrade: migration chưa chạy
+      throw new InternalServerErrorException(error.message);
+    }
+    await this.emitToGroupRooms(supabase, groupId, 'group:messageRead', {
+      groupId,
+      userId: user.id,
+      at,
+    });
+    return { at };
+  }
+
   // Realtime Group Messages
   async getMessages(
     supabase: SupabaseClient,

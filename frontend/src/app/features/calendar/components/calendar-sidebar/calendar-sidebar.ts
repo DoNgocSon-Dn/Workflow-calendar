@@ -17,6 +17,7 @@ import { CALENDAR_COLOR_HEX, NOTE_COLOR_HEX, CalendarColor } from '../../models/
 import { Icon } from '../../../../shared/components/icon/icon';
 import { MiniCalendar } from '../mini-calendar/mini-calendar';
 import { resolveTopHolidayForDate } from '../../utils/holiday-resolver';
+import { HolidayThemeService } from '../../data/holiday-theme.service';
 
 interface SidebarParticle {
   readonly emoji: string;
@@ -55,6 +56,8 @@ export class CalendarSidebar implements OnInit {
   protected readonly i18n = inject(TranslationService);
   protected readonly screenNotes = inject(ScreenNotesService);
   private readonly dialog = inject(DialogService);
+  private readonly holidayThemeService = inject(HolidayThemeService);
+
   protected readonly colorHex = CALENDAR_COLOR_HEX;
   protected readonly noteColorHex = NOTE_COLOR_HEX;
 
@@ -68,15 +71,10 @@ export class CalendarSidebar implements OnInit {
     'teal',
   ];
 
-  protected readonly particlesEnabled = signal<boolean>(
-    localStorage.getItem('workflow_sidebar_particles_enabled') !== 'false',
-  );
-
-  toggleParticles(): void {
-    const next = !this.particlesEnabled();
-    this.particlesEnabled.set(next);
-    localStorage.setItem('workflow_sidebar_particles_enabled', next ? 'true' : 'false');
-  }
+  /**
+   * Bật/tắt hiệu ứng icon rơi theo cài đặt "Giao diện & Hiệu ứng ngày lễ" trong Settings
+   */
+  protected readonly particlesEnabled = computed(() => this.holidayThemeService.mode() === 'auto');
 
   /**
    * Ngày lễ hiện tại: Ưu tiên ngày đang bấm xem trên lịch, hoặc ngày hôm nay
@@ -151,12 +149,12 @@ export class CalendarSidebar implements OnInit {
     const emojis = this.holidayEmojis();
     if (!this.particlesEnabled() || emojis.length === 0) return [];
 
-    return Array.from({ length: 18 }, (_, i) => ({
+    return Array.from({ length: 22 }, (_, i) => ({
       emoji: emojis[i % emojis.length],
       leftPercent: (i * 137.5) % 94,
-      delaySeconds: (i % 5) * 0.35,
-      durationSeconds: 4.2 + (i % 4) * 0.8,
-      sizePx: 15 + (i % 4) * 3,
+      delaySeconds: (i % 6) * 0.4,
+      durationSeconds: 5.5 + (i % 5) * 0.9,
+      sizePx: 14 + (i % 5) * 3,
     }));
   });
 

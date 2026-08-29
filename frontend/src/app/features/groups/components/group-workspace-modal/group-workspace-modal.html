@@ -787,14 +787,24 @@
         @if (activeTab() === 'chat' && canUserSeeChat()) {
           <div class="chat-section">
             <div class="chat-messages">
-              @for (msg of store.messages(); track msg.clientMessageId ?? msg.id) {
-                <div class="chat-msg-row" [id]="'chat-msg-' + msg.id" [class.deleted]="msg.deletedAt">
-                  <div class="chat-avatar" [style.background-color]="senderColor(msg)">
-                    {{ senderAvatarInitial(msg) }}
-                  </div>
+              @for (msg of store.messages(); track msg.clientMessageId ?? msg.id; let i = $index) {
+                <div
+                  class="chat-msg-row"
+                  [id]="'chat-msg-' + msg.id"
+                  [class.deleted]="msg.deletedAt"
+                  [class.mine]="isMyMessage(msg)"
+                  [class.grouped]="!showMessageHeader(msg, i)"
+                >
+                  @if (!isMyMessage(msg)) {
+                    <div class="chat-avatar" [style.background-color]="senderColor(msg)" [class.chat-avatar--hidden]="!showMessageHeader(msg, i)">
+                      {{ senderAvatarInitial(msg) }}
+                    </div>
+                  }
                   <div class="chat-msg-body">
                     <div class="chat-msg-header">
-                      <span class="chat-sender" [style.color]="senderColor(msg)">{{ senderDisplayName(msg) }}</span>
+                      @if (!isMyMessage(msg) && showMessageHeader(msg, i)) {
+                        <span class="chat-sender" [style.color]="senderColor(msg)">{{ senderDisplayName(msg) }}</span>
+                      }
                       <span class="chat-time">{{ msg.createdAt | date: 'HH:mm dd/MM' }}</span>
                       @if (!msg.deletedAt && editingMessageId() !== msg.id && (canEditMessage(msg) || canDeleteMessage(msg))) {
                         <div class="chat-msg-actions">

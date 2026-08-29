@@ -880,15 +880,26 @@
   scrollbar-color: var(--color-border-strong) transparent;
 }
 
+/* Bong bóng chat kiểu Zalo: tin của mình dồn PHẢI (màu nhấn), tin người khác
+   dồn TRÁI kèm avatar. .chat-msg-row chỉ còn là vỏ căn lề — nền/đệm chuyển
+   xuống .chat-msg-body để bong bóng ôm sát nội dung. */
 .chat-msg-row {
   position: relative;
-  background: var(--color-surface-hover);
-  padding: 10px 14px;
-  border-radius: var(--radius-sm);
   display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  transition: background 0.15s ease;
+  gap: 8px;
+  align-items: flex-end;
+  max-width: 82%;
+  align-self: flex-start;
+}
+
+.chat-msg-row.mine {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+/* Tin gom cụm (cùng người, sát giờ) — thu hẹp khoảng cách với tin trước. */
+.chat-messages > .chat-msg-row.grouped {
+  margin-top: -4px;
 }
 
 .chat-msg-row.deleted {
@@ -903,32 +914,62 @@
 }
 
 .chat-avatar {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   flex-shrink: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
   user-select: none;
 }
 
+/* Tin gom cụm: giữ chỗ avatar nhưng để trống, các bong bóng vẫn thẳng cột. */
+.chat-avatar--hidden {
+  visibility: hidden;
+}
+
 .chat-msg-body {
-  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
+  padding: 7px 12px;
+  border-radius: 14px;
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+}
+
+.chat-msg-row.mine .chat-msg-body {
+  background: color-mix(in srgb, var(--color-primary) 20%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+/* Đuôi bong bóng: bo góc dưới ở phía người gửi cho có hướng. */
+.chat-msg-row:not(.mine) .chat-msg-body {
+  border-bottom-left-radius: 4px;
+}
+.chat-msg-row.mine .chat-msg-body {
+  border-bottom-right-radius: 4px;
 }
 
 .chat-msg-header {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.chat-msg-row.mine .chat-msg-header {
+  justify-content: flex-end;
+}
+
+/* Header rỗng (tin gom cụm, không tên) — bỏ luôn để bong bóng gọn. */
+.chat-msg-header:empty {
+  display: none;
 }
 
 .chat-sender {

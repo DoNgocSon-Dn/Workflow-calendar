@@ -852,6 +852,21 @@ export class GroupWorkspaceModal {
     return (name ? name[0] : 'U').toUpperCase();
   }
 
+  /** Tin do chính người đang xem gửi — căn phải, bong bóng màu, không avatar. */
+  isMyMessage(msg: GroupMessage): boolean {
+    return msg.senderId === this.currentUserId();
+  }
+
+  /** Ẩn header (tên + giờ lặp lại) khi tin liền trước cùng người gửi và cách
+   *  nhau dưới 5 phút — gom cụm cho giống Zalo. */
+  showMessageHeader(msg: GroupMessage, index: number): boolean {
+    if (index <= 0) return true;
+    const prev = this.store.messages()[index - 1];
+    if (!prev || prev.senderId !== msg.senderId) return true;
+    if (prev.deletedAt || msg.deletedAt) return true;
+    return new Date(msg.createdAt).getTime() - new Date(prev.createdAt).getTime() > 5 * 60_000;
+  }
+
   /** Mỗi người 1 màu ổn định (dựa trên senderId, không đổi giữa các lần
    *  render) để phân biệt người gửi trong chat nhiều thành viên bằng mắt,
    *  không cần đọc tên. Palette lấy từ cùng bộ màu nhóm (GROUP_COLOR_HEX) để

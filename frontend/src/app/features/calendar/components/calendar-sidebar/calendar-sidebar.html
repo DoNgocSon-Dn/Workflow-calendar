@@ -33,21 +33,6 @@
     </button>
   </div>
 
-  @if (!store.sidebarCollapsed() && activeHoliday()) {
-    <div class="sidebar-holiday-banner">
-      <span class="holiday-banner-title">✨ {{ activeHoliday()?.name }}</span>
-      <button
-        type="button"
-        class="toggle-particles-btn"
-        [class.active]="particlesEnabled()"
-        [title]="particlesEnabled() ? 'Tắt hiệu ứng rơi icon ngày lễ' : 'Bật hiệu ứng rơi icon ngày lễ'"
-        (click)="toggleParticles()"
-      >
-        {{ particlesEnabled() ? '🎆 Icon: Bật' : '🎆 Icon: Tắt' }}
-      </button>
-    </div>
-  }
-
   @if (!store.sidebarCollapsed()) {
     <app-mini-calendar
       [focusedDate]="store.focusedDate()"
