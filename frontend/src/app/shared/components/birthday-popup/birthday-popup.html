@@ -51,6 +51,14 @@
         {{ currentWish() }}
       </p>
 
+      @if (!pendingWish()) {
+        <div class="companion-timer-box">
+          <p class="companion-timer-text">
+            ⏳ Đã <strong>{{ liveCompanionString() }}</strong> bạn đồng hành cùng chúng tôi. Năm ngoái bạn chưa kịp viết điều ước, năm nay hãy cùng lưu lại một mong muốn nhé!
+          </p>
+        </div>
+      }
+
       <div class="actions-group">
         @if (pendingWish(); as pastWish) {
           <button type="button" class="btn-wish-review" (click)="openReviewWish()">

@@ -5,9 +5,49 @@ import { NotificationSoundService } from './notification-sound.service';
 import { Clock } from '../clock';
 import { todayInVietnam } from '../utils/vietnam-time';
 
+export interface CompanionDuration {
+  readonly years: number;
+  readonly days: number;
+  readonly hours: number;
+  readonly minutes: number;
+  readonly seconds: number;
+  readonly formattedString: string;
+}
+
+export function computeCompanionDuration(startDate: Date, endDate: Date): CompanionDuration {
+  const diffMs = Math.max(0, endDate.getTime() - startDate.getTime());
+  const totalSec = Math.floor(diffMs / 1000);
+
+  const sec = totalSec % 60;
+  const totalMin = Math.floor(totalSec / 60);
+  const min = totalMin % 60;
+  const totalHours = Math.floor(totalMin / 60);
+  const hours = totalHours % 24;
+  const totalDays = Math.floor(totalHours / 24);
+  const years = Math.floor(totalDays / 365);
+  const days = totalDays % 365;
+
+  const parts: string[] = [];
+  if (years > 0) parts.push(`${years} năm`);
+  if (days > 0 || years > 0) parts.push(`${days} ngày`);
+  parts.push(`${hours} giờ`);
+  parts.push(`${min} phút`);
+  parts.push(`${sec} giây`);
+
+  return {
+    years,
+    days,
+    hours,
+    minutes: min,
+    seconds: sec,
+    formattedString: parts.join(' '),
+  };
+}
+
 export interface BirthdayPopupData {
   readonly userName: string;
   readonly dateOfBirth: string; // YYYY-MM-DD or MM-DD
+  readonly accountCreatedAt: Date;
   readonly isPreview: boolean;
 }
 
@@ -20,7 +60,6 @@ export interface BirthdayWishRecord {
 }
 
 const DOB_STORAGE_KEY = 'workflow_user_dob';
-const SHOWN_PREFIX = 'workflow_birthday_shown_';
 const DO_NOT_SHOW_YEARLY_KEY = 'workflow_birthday_disabled_year_';
 
 @Injectable({ providedIn: 'root' })
@@ -34,7 +73,7 @@ export class BirthdayPopupService {
   readonly data = signal<BirthdayPopupData | null>(null);
   readonly pendingReviewWish = signal<BirthdayWishRecord | null>(null);
 
-  /** Kiểm tra xem chúc mừng sinh nhật năm nay có bị chọn "Không hiển thị lại" hay không */
+  /** Kiểm tra xem chúc mừng sinh nhật năm nay có bị chọn "Không hiển thị lại" hay đã hoàn thành */
   isBirthdayDisabledForCurrentYear(): boolean {
     const now = todayInVietnam(this.clock.now());
     const yearKey = `${DO_NOT_SHOW_YEARLY_KEY}${now.getFullYear()}`;
@@ -92,6 +131,20 @@ export class BirthdayPopupService {
     }
 
     return '';
+  }
+
+  /**
+   * Trích xuất ngày tạo tài khoản từ Auth Store
+   */
+  getAccountCreatedAt(): Date {
+    const user = this.authStore.user();
+    if (user?.created_at) {
+      const d = new Date(user.created_at);
+      if (!isNaN(d.getTime())) return d;
+    }
+    // Mặc định 1 năm 3 ngày trước nếu không tìm thấy
+    const now = this.clock.now();
+    return new Date(now.getTime() - (368 * 86400 * 1000 + 7320 * 1000));
   }
 
   /**
@@ -160,7 +213,6 @@ export class BirthdayPopupService {
     const user = this.authStore.user();
     const currentYear = todayInVietnam(this.clock.now()).getFullYear();
 
-    // Dùng local storage dự phòng nếu offline
     const localPastWish = localStorage.getItem(`workflow_wish_${currentYear - 1}`);
     const localPastStatus = localStorage.getItem(`workflow_wish_status_${currentYear - 1}`);
 
@@ -208,6 +260,7 @@ export class BirthdayPopupService {
 
     const currentYear = todayInVietnam(this.clock.now()).getFullYear();
     localStorage.setItem(`workflow_wish_${currentYear}`, cleaned);
+    this.disableForCurrentYear();
 
     const user = this.authStore.user();
     if (user) {
@@ -268,13 +321,8 @@ export class BirthdayPopupService {
     const currentDay = now.getDate();
 
     if (parsed.month === currentMonth && parsed.day === currentDay) {
-      const todayKey = `${SHOWN_PREFIX}${now.getFullYear()}-${currentMonth}-${currentDay}`;
-      const alreadyShown = localStorage.getItem(todayKey);
-
-      if (!alreadyShown || this.clock.devOverride()) {
-        void this.checkPendingWishForReview();
-        this.triggerBirthday(dob, false);
-      }
+      void this.checkPendingWishForReview();
+      this.triggerBirthday(dob, false);
     }
   }
 
@@ -283,22 +331,18 @@ export class BirthdayPopupService {
 
     const finalDob = dob || this.getUserDob() || '2000-01-01';
     const userName = this.authStore.displayName() || this.authStore.user()?.email?.split('@')[0] || 'bạn';
+    const accountCreatedAt = this.getAccountCreatedAt();
 
     void this.checkPendingWishForReview();
 
     this.data.set({
       userName,
       dateOfBirth: finalDob,
+      accountCreatedAt,
       isPreview,
     });
     this.visible.set(true);
     this.sound.notifyKind('birthday');
-
-    if (!isPreview) {
-      const now = todayInVietnam(this.clock.now());
-      const todayKey = `${SHOWN_PREFIX}${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
-      localStorage.setItem(todayKey, 'true');
-    }
   }
 
   dismiss(): void {

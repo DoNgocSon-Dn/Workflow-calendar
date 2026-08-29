@@ -2,10 +2,15 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
+  OnDestroy,
   signal,
 } from '@angular/core';
-import { BirthdayPopupService, BirthdayWishRecord } from '../../../core/services/birthday-popup.service';
+import {
+  BirthdayPopupService,
+  computeCompanionDuration,
+} from '../../../core/services/birthday-popup.service';
 import { TranslationService } from '../../../core/i18n/translation.service';
 import { FormsModule } from '@angular/forms';
 
@@ -68,7 +73,7 @@ function buildParticles(): readonly BirthdayParticle[] {
     '(document:keydown.escape)': 'onEscape()',
   },
 })
-export class BirthdayPopup {
+export class BirthdayPopup implements OnDestroy {
   protected readonly popupService = inject(BirthdayPopupService);
   protected readonly i18n = inject(TranslationService);
 
@@ -83,6 +88,9 @@ export class BirthdayPopup {
   protected readonly submittingWish = signal<boolean>(false);
   protected readonly feedbackMessage = signal<string>('');
   protected readonly feedbackEmoji = signal<string>('🎉');
+  protected readonly liveCompanionString = signal<string>('');
+
+  private timerInterval: any = null;
 
   protected readonly currentGifIndex = signal<number>(Math.floor(Math.random() * BIRTHDAY_GIFS.length));
   protected readonly currentWishIndex = signal<number>(Math.floor(Math.random() * BIRTHDAY_WISHES.length));
@@ -92,6 +100,37 @@ export class BirthdayPopup {
   protected readonly currentGif = computed(() => this.gifs[this.currentGifIndex()]);
   protected readonly currentWish = computed(() => BIRTHDAY_WISHES[this.currentWishIndex()]);
   protected readonly particles = computed<readonly BirthdayParticle[]>(() => buildParticles());
+
+  constructor() {
+    effect(() => {
+      if (this.visible()) {
+        this.updateCompanionTimer();
+        if (!this.timerInterval) {
+          this.timerInterval = setInterval(() => this.updateCompanionTimer(), 1000);
+        }
+      } else {
+        this.stopCompanionTimer();
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.stopCompanionTimer();
+  }
+
+  private stopCompanionTimer(): void {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+  }
+
+  private updateCompanionTimer(): void {
+    const created = this.data()?.accountCreatedAt || new Date(Date.now() - (368 * 86400 * 1000 + 7320 * 1000));
+    const now = new Date();
+    const dur = computeCompanionDuration(created, now);
+    this.liveCompanionString.set(dur.formattedString);
+  }
 
   nextRandomGifAndWish(): void {
     this.stageAnimClass.set('pop-out');
