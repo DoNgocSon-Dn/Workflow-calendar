@@ -29,6 +29,7 @@ import { CreateInviteLinkDto } from './dto/create-invite-link.dto';
 import { RequestJoinGroupDto } from './dto/request-join-group.dto';
 import { DecideJoinRequestDto } from './dto/decide-join-request.dto';
 import { JoinByCodeDto } from './dto/join-by-code.dto';
+import { ToggleReactionDto } from './dto/toggle-reaction.dto';
 import { GroupsService } from './groups.service';
 
 @Controller('groups')
@@ -373,6 +374,25 @@ export class GroupsController {
     @Param('id') groupId: string,
   ) {
     return this.groupsService.markMessagesRead(supabase, user, groupId);
+  }
+
+  @Get(':id/message-reactions')
+  async listReactions(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @Param('id') groupId: string,
+  ) {
+    return this.groupsService.listReactions(supabase, groupId);
+  }
+
+  @Post(':id/messages/:messageId/reactions')
+  async toggleReaction(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('id') groupId: string,
+    @Param('messageId') messageId: string,
+    @Body() dto: ToggleReactionDto,
+  ) {
+    return this.groupsService.toggleReaction(supabase, user, groupId, messageId, dto.emoji);
   }
 
   @Post(':id/messages')

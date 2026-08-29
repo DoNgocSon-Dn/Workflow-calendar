@@ -2675,6 +2675,91 @@ export class GroupsService {
     return { at };
   }
 
+  // ---- Thả cảm xúc / reactions (bảng group_message_reactions, migration 44) ----
+
+  private static readonly ALLOWED_REACTIONS = ['❤️', '😆', '👍', '😮', '😢', '🙏'];
+
+  async listReactions(
+    supabase: SupabaseClient,
+    groupId: string,
+  ): Promise<{ messageId: string; emoji: string; userIds: string[] }[]> {
+    const { data, error } = await supabase.rpc('list_group_message_reactions', {
+      p_group_id: groupId,
+    });
+    if (error) {
+      if (error.code === '42P01' || error.code === '42883') return [];
+      throw new InternalServerErrorException(error.message);
+    }
+    return ((data ?? []) as { message_id: string; emoji: string; user_ids: string[] }[]).map(
+      (r) => ({ messageId: r.message_id, emoji: r.emoji, userIds: r.user_ids }),
+    );
+  }
+
+  async toggleReaction(
+    supabase: SupabaseClient,
+    user: User,
+    groupId: string,
+    messageId: string,
+    emoji: string,
+  ): Promise<{ added: boolean }> {
+    await this.requireRole(supabase, user, groupId);
+    if (!GroupsService.ALLOWED_REACTIONS.includes(emoji)) {
+      throw new BadRequestException('Biểu cảm không hợp lệ');
+    }
+
+    // Tin nhắn phải thuộc đúng nhóm này.
+    const { data: msg } = await supabase
+      .from('group_messages')
+      .select('id, group_id')
+      .eq('id', messageId)
+      .maybeSingle<{ id: string; group_id: string }>();
+    if (!msg || msg.group_id !== groupId) {
+      throw new NotFoundException('Không tìm thấy tin nhắn');
+    }
+
+    const { data: existing } = await supabase
+      .from('group_message_reactions')
+      .select('emoji')
+      .eq('message_id', messageId)
+      .eq('user_id', user.id)
+      .eq('emoji', emoji)
+      .maybeSingle();
+
+    let added: boolean;
+    if (existing) {
+      const { error } = await supabase
+        .from('group_message_reactions')
+        .delete()
+        .eq('message_id', messageId)
+        .eq('user_id', user.id)
+        .eq('emoji', emoji);
+      if (error) throw new InternalServerErrorException(error.message);
+      added = false;
+    } else {
+      const { error } = await supabase
+        .from('group_message_reactions')
+        .insert({ message_id: messageId, user_id: user.id, emoji });
+      if (error) {
+        if (error.code === '42P01') {
+          throw new InternalServerErrorException(
+            'Tính năng thả cảm xúc cần chạy migration 44_group_message_reactions.sql',
+          );
+        }
+        throw new InternalServerErrorException(error.message);
+      }
+      added = true;
+    }
+
+    await this.emitToGroupRooms(supabase, groupId, 'group:messageReaction', {
+      groupId,
+      messageId,
+      emoji,
+      userId: user.id,
+      added,
+    });
+    return { added };
+  }
+
   // Realtime Group Messages
   async getMessages(
     supabase: SupabaseClient,

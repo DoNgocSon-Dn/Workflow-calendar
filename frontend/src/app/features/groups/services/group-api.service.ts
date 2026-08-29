@@ -375,6 +375,31 @@ export class GroupApiService {
     );
   }
 
+  async listReactions(
+    groupId: string,
+  ): Promise<{ messageId: string; emoji: string; userIds: string[] }[]> {
+    return firstValueFrom(
+      this.http.get<{ messageId: string; emoji: string; userIds: string[] }[]>(
+        `${environment.apiUrl}/groups/${groupId}/message-reactions`,
+        { headers: this.authHeaders },
+      ),
+    );
+  }
+
+  async toggleReaction(
+    groupId: string,
+    messageId: string,
+    emoji: string,
+  ): Promise<{ added: boolean }> {
+    return firstValueFrom(
+      this.http.post<{ added: boolean }>(
+        `${environment.apiUrl}/groups/${groupId}/messages/${messageId}/reactions`,
+        { emoji },
+        { headers: this.authHeaders },
+      ),
+    );
+  }
+
   async sendMessage(
     groupId: string,
     message: string,

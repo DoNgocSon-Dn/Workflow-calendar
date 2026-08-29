@@ -827,6 +827,9 @@
                       <span class="chat-time">{{ msg.createdAt | date: 'HH:mm dd/MM' }}</span>
                       @if (!msg.deletedAt && editingMessageId() !== msg.id) {
                         <div class="chat-msg-actions">
+                          <button type="button" class="btn-icon" (click)="openMsgMenuFromButton($event, msg)" aria-label="Thả cảm xúc">
+                            <span aria-hidden="true">☺</span>
+                          </button>
                           <button type="button" class="btn-icon" (click)="startReply(msg)" [attr.aria-label]="i18n.t('chat.reply')">
                             <app-icon name="arrow-left" />
                           </button>
@@ -901,6 +904,22 @@
                         }
                       }
                     </div>
+                    @if (reactionChips(msg); as chips) {
+                      @if (chips.length > 0) {
+                        <div class="chat-reactions">
+                          @for (c of chips; track c.emoji) {
+                            <button
+                              type="button"
+                              class="chat-reaction"
+                              [class.mine]="c.mine"
+                              (click)="react(msg, c.emoji)"
+                            >
+                              {{ c.emoji }} {{ c.count }}
+                            </button>
+                          }
+                        </div>
+                      }
+                    }
                   </div>
                 </div>
                 @if (isMyMessage(msg) && isLastOwnMessage(i) && !msg.deletedAt) {
@@ -1007,6 +1026,11 @@
             @if (msgMenu(); as m) {
               <div class="chat-menu-backdrop" (click)="closeMsgMenu()" (contextmenu)="$event.preventDefault(); closeMsgMenu()"></div>
               <div class="chat-menu" [style.left.px]="m.x" [style.top.px]="m.y">
+                <div class="chat-menu__emojis">
+                  @for (e of REACTION_EMOJIS; track e) {
+                    <button type="button" class="chat-menu__emoji" (click)="react(m.msg, e)">{{ e }}</button>
+                  }
+                </div>
                 <button type="button" (click)="startReply(m.msg)"><app-icon name="arrow-left" /> {{ i18n.t('chat.reply') }}</button>
                 @if (m.msg.message) {
                   <button type="button" (click)="copyMessageText(m.msg)"><app-icon name="paperclip" /> {{ i18n.t('chat.copy') }}</button>

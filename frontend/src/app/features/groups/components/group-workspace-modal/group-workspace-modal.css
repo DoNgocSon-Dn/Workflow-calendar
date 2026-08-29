@@ -1145,6 +1145,52 @@
   color: var(--color-danger) !important;
 }
 
+.chat-menu__emojis {
+  display: flex;
+  gap: 2px;
+  padding: 2px 2px 4px;
+  margin-bottom: 3px;
+  border-bottom: 1px solid var(--color-border);
+}
+.chat-menu__emoji {
+  flex: 1;
+  width: auto !important;
+  justify-content: center !important;
+  font-size: 1.1rem;
+  padding: 6px 4px !important;
+}
+.chat-menu__emoji:hover {
+  transform: scale(1.2);
+}
+
+/* Chip biểu cảm dưới bong bóng. */
+.chat-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 3px;
+}
+.chat-reaction {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  line-height: 1.5;
+}
+.chat-reaction.mine {
+  border-color: var(--holiday-accent);
+  background: var(--holiday-accent-soft);
+  color: var(--holiday-accent);
+}
+
 .chat-msg-header {
   display: flex;
   align-items: center;

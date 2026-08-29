@@ -108,6 +108,9 @@ export class GroupStore {
   /** userId → mốc ISO "đã đọc tới đâu" của nhóm ĐANG XEM (cho "Đã xem"). */
   readonly messageReads = signal<Record<string, string>>({});
   private lastMarkReadAt = 0;
+
+  /** messageId → emoji → danh sách userId đã thả (nhóm ĐANG XEM). */
+  readonly reactions = signal<Record<string, Record<string, string[]>>>({});
   /** Tin nhắn cần cuộn tới sau khi mở tab Trò chuyện. */
   readonly pendingChatMessageId = signal<string | null>(null);
   /** ID các nhóm có tin nhắn chưa đọc — cho sidebar "sáng lên" kiểu Messenger
@@ -332,6 +335,7 @@ export class GroupStore {
           void this.loadTasks(activeId);
           if (this.activeWorkspaceTab() === 'chat') {
             void this.loadMessages(activeId);
+            void this.loadReactions(activeId);
           }
         }
       }, 3000);
@@ -651,6 +655,18 @@ export class GroupStore {
         });
       },
     );
+
+    // Ai đó thả / gỡ một biểu cảm.
+    this.realtime.on<{
+      groupId: string;
+      messageId: string;
+      emoji: string;
+      userId: string;
+      added: boolean;
+    }>('group:messageReaction', (payload) => {
+      if (!payload || !this.isActiveGroup(payload.groupId)) return;
+      this.applyReaction(payload.messageId, payload.emoji, payload.userId, payload.added);
+    });
 
     // Yêu cầu vừa được duyệt: thành viên hiện có refresh danh sách ngay.
     this.realtime.on<{ groupId: string; member: GroupMember }>(
@@ -1128,6 +1144,7 @@ export class GroupStore {
     this.members.set([]);
     this.meeting.set(null);
     this.messageReads.set({});
+    this.reactions.set({});
     this.lastMarkReadAt = 0;
     this.activeWorkspaceModalOpen.set(true);
     this.clearGroupUnread(group.id);
@@ -1151,6 +1168,54 @@ export class GroupStore {
     await Promise.all([this.loadMembers(group.id), this.loadTasks(group.id), this.loadMessages(group.id)]);
     void this.loadMeeting(group.id);
     void this.loadMessageReads(group.id);
+    void this.loadReactions(group.id);
+  }
+
+  private applyReaction(
+    messageId: string,
+    emoji: string,
+    userId: string,
+    added: boolean,
+  ): void {
+    this.reactions.update((prev) => {
+      const forMsg = { ...(prev[messageId] ?? {}) };
+      const users = new Set(forMsg[emoji] ?? []);
+      if (added) users.add(userId);
+      else users.delete(userId);
+      if (users.size === 0) delete forMsg[emoji];
+      else forMsg[emoji] = [...users];
+      const next = { ...prev };
+      if (Object.keys(forMsg).length === 0) delete next[messageId];
+      else next[messageId] = forMsg;
+      return next;
+    });
+  }
+
+  async loadReactions(groupId: string): Promise<void> {
+    try {
+      const rows = await this.api.listReactions(groupId);
+      if (this.activeGroupId() !== groupId) return;
+      const map: Record<string, Record<string, string[]>> = {};
+      for (const r of rows) {
+        (map[r.messageId] ??= {})[r.emoji] = r.userIds;
+      }
+      this.reactions.set(map);
+    } catch {
+      /* migration 44 chưa chạy — ẩn reactions */
+    }
+  }
+
+  /** Thả / gỡ biểu cảm — cập nhật lạc quan rồi gọi API, hoàn tác nếu lỗi. */
+  async toggleReaction(groupId: string, messageId: string, emoji: string): Promise<void> {
+    const me = this.authStore.user()?.id;
+    if (!me) return;
+    const has = (this.reactions()[messageId]?.[emoji] ?? []).includes(me);
+    this.applyReaction(messageId, emoji, me, !has);
+    try {
+      await this.api.toggleReaction(groupId, messageId, emoji);
+    } catch {
+      this.applyReaction(messageId, emoji, me, has); // hoàn tác
+    }
   }
 
   async loadMessageReads(groupId: string): Promise<void> {

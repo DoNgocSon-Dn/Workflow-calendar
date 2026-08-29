@@ -268,13 +268,22 @@ export class GroupWorkspaceModal {
   protected readonly editingMessageId = signal<string | null>(null);
   protected readonly editingText = signal('');
 
-  // Chat: trả lời / trích dẫn + menu chuột phải
+  // Chat: trả lời / trích dẫn + menu chuột phải + thả cảm xúc
   protected readonly replyingTo = signal<GroupMessage | null>(null);
-  /** Menu ngữ cảnh khi chuột phải một tin nhắn (desktop). */
+  /** Menu ngữ cảnh: chuột phải (desktop) hoặc nhấn giữ (mobile) một tin nhắn. */
   protected readonly msgMenu = signal<{ msg: GroupMessage; x: number; y: number } | null>(null);
   /** Độ dịch ngang khi đang vuốt-để-trả-lời (mobile). */
   protected readonly swipeDx = signal<{ id: string; dx: number } | null>(null);
-  private swipeState: { id: string; startX: number; startY: number; active: boolean } | null = null;
+  private swipeState: {
+    id: string;
+    startX: number;
+    startY: number;
+    active: boolean;
+    holdTimer: number | null;
+  } | null = null;
+
+  /** Bộ biểu cảm cố định — khớp danh sách backend (ALLOWED_REACTIONS). */
+  protected readonly REACTION_EMOJIS = ['❤️', '😆', '👍', '😮', '😢', '🙏'] as const;
 
   // Chat: cuộn thông minh + vạch chia ngày
   private prevChatMsgCount = 0;
@@ -1064,6 +1073,18 @@ export class GroupWorkspaceModal {
     this.msgMenu.set(null);
   }
 
+  /** Mở menu từ nút ☺ khi rê chuột (desktop) — canh ngay dưới nút. */
+  openMsgMenuFromButton(ev: MouseEvent, msg: GroupMessage): void {
+    if (msg.deletedAt) return;
+    ev.stopPropagation();
+    const r = (ev.currentTarget as HTMLElement).getBoundingClientRect();
+    this.msgMenu.set({
+      msg,
+      x: Math.max(12, Math.min(r.left - 60, window.innerWidth - 200)),
+      y: Math.min(r.bottom + 4, window.innerHeight - 240),
+    });
+  }
+
   async copyMessageText(msg: GroupMessage): Promise<void> {
     this.msgMenu.set(null);
     if (!msg.message) return;
@@ -1074,10 +1095,29 @@ export class GroupWorkspaceModal {
     }
   }
 
-  // --- Vuốt để trả lời (mobile) ----------------------------------------
+  // --- Vuốt để trả lời + nhấn giữ mở menu (mobile) --------------------
   onMsgSwipeStart(ev: PointerEvent, msg: GroupMessage): void {
     if (ev.pointerType === 'mouse' || msg.deletedAt) return;
-    this.swipeState = { id: msg.id, startX: ev.clientX, startY: ev.clientY, active: false };
+    const holdTimer = window.setTimeout(() => {
+      // Nhấn giữ tại chỗ → mở menu (kèm hàng biểu cảm) ngay giữa màn hình dưới.
+      if (this.swipeState?.id === msg.id && !this.swipeState.active) {
+        this.swipeState = null;
+        this.swipeDx.set(null);
+        navigator.vibrate?.(10);
+        this.msgMenu.set({
+          msg,
+          x: Math.max(12, Math.min(ev.clientX - 90, window.innerWidth - 200)),
+          y: Math.max(12, Math.min(ev.clientY, window.innerHeight - 240)),
+        });
+      }
+    }, 450);
+    this.swipeState = {
+      id: msg.id,
+      startX: ev.clientX,
+      startY: ev.clientY,
+      active: false,
+      holdTimer,
+    };
   }
 
   onMsgSwipeMove(ev: PointerEvent, msg: GroupMessage): void {
@@ -1086,10 +1126,20 @@ export class GroupWorkspaceModal {
     const dx = ev.clientX - s.startX;
     const dy = ev.clientY - s.startY;
     if (!s.active) {
-      if (Math.abs(dx) < 12 || Math.abs(dx) < Math.abs(dy)) return; // để cuộn dọc yên
+      if (Math.abs(dx) < 12 || Math.abs(dx) < Math.abs(dy)) {
+        // Nhích nhiều (cuộn) → huỷ nhấn-giữ.
+        if (Math.abs(dy) > 12 && s.holdTimer) {
+          clearTimeout(s.holdTimer);
+          s.holdTimer = null;
+        }
+        return;
+      }
       s.active = true;
+      if (s.holdTimer) {
+        clearTimeout(s.holdTimer);
+        s.holdTimer = null;
+      }
     }
-    // Chỉ cho kéo về phía "vào trong" (trái với tin người khác, phải với tin mình).
     const dir = this.isMyMessage(msg) ? 1 : -1;
     const clamped = Math.max(0, dx * dir) * dir;
     this.swipeDx.set({ id: msg.id, dx: Math.max(-80, Math.min(80, clamped)) });
@@ -1098,11 +1148,31 @@ export class GroupWorkspaceModal {
   onMsgSwipeEnd(msg: GroupMessage): void {
     const s = this.swipeState;
     const moved = this.swipeDx();
+    if (s?.holdTimer) clearTimeout(s.holdTimer);
     this.swipeState = null;
     this.swipeDx.set(null);
     if (s?.active && moved && moved.id === msg.id && Math.abs(moved.dx) > 55) {
       this.startReply(msg);
     }
+  }
+
+  // --- Thả cảm xúc ------------------------------------------------------
+  react(msg: GroupMessage, emoji: string): void {
+    const group = this.store.activeGroup();
+    if (!group || msg.deletedAt) return;
+    this.msgMenu.set(null);
+    void this.store.toggleReaction(group.id, msg.id, emoji);
+  }
+
+  /** Danh sách chip biểu cảm dưới bong bóng: emoji + số + mình đã thả chưa. */
+  reactionChips(msg: GroupMessage): { emoji: string; count: number; mine: boolean }[] {
+    const forMsg = this.store.reactions()[msg.id];
+    if (!forMsg) return [];
+    const me = this.currentUserId();
+    return Object.entries(forMsg)
+      .map(([emoji, users]) => ({ emoji, count: users.length, mine: !!me && users.includes(me) }))
+      .filter((c) => c.count > 0)
+      .sort((a, b) => b.count - a.count);
   }
 
   /** Mỗi người 1 màu ổn định (dựa trên senderId, không đổi giữa các lần
