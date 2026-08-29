@@ -347,8 +347,17 @@
             </button>
           </div>
         </div>
+        } @else if (meetLinkEditing()) {
+        <div class="field-content">
+          <input class="text-input" type="url" formControlName="meetLink" inputmode="url"
+            [placeholder]="i18n.t('event.meetPastePlaceholder')" />
+          <p class="hint-text">{{ i18n.t('event.meetOpenHint') }}</p>
+          <button type="button" class="text-btn compact" (click)="generateVideoCallLink()">
+            {{ i18n.t('event.meetQuickRoom') }}
+          </button>
+        </div>
         } @else {
-        <button type="button" class="field-toggle" (click)="generateVideoCallLink()">
+        <button type="button" class="field-toggle" (click)="openGoogleMeet()">
           {{ i18n.t('event.addMeetLink') }}
         </button>
         }

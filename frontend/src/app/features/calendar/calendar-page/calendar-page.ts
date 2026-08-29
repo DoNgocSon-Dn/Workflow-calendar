@@ -222,6 +222,10 @@ export class CalendarPage {
     }
   }
 
+  onRespondInvite(payload: { eventId: string; status: 'accepted' | 'declined' }): void {
+    void this.store.respondToInvite(payload.eventId, payload.status);
+  }
+
   onViewDetail(eventId: string): void {
     // Must search visibleEvents (not just events), since agenda items can be
     // read-only holiday entries that live in a separate static list. Fallback

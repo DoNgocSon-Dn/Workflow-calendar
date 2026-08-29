@@ -32,6 +32,14 @@ export class NotificationPopup {
 
   readonly viewDetail = output<string>();
   readonly openGroup = output<OpenGroupChatRequest>();
+  readonly respondInvite = output<{ eventId: string; status: 'accepted' | 'declined' }>();
+
+  /** Đồng ý / Từ chối ngay trên popup lời mời — khỏi phải mở chi tiết. */
+  onRespondInvite(item: NotificationItem, status: 'accepted' | 'declined'): void {
+    if (!item.eventId) return;
+    this.respondInvite.emit({ eventId: item.eventId, status });
+    this.beginExit(item.id, () => this.notificationQueue.dismiss(item.id));
+  }
 
   onItemClick(item: NotificationItem): void {
     if (item.eventId) {

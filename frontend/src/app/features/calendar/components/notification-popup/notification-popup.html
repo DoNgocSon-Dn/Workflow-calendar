@@ -41,6 +41,14 @@
              .toast__actions vẫn để lại một khoảng trống trơ dưới nội dung. -->
         @if (item.kind !== 'success') {
           <div class="toast__actions">
+            @if (item.kind === 'invite' && item.eventId) {
+              <button type="button" class="toast__btn toast__btn--primary" (click)="onRespondInvite(item, 'accepted')">
+                {{ i18n.t('notif.agree') }}
+              </button>
+              <button type="button" class="toast__btn toast__btn--ghost" (click)="onRespondInvite(item, 'declined')">
+                {{ i18n.t('notif.decline') }}
+              </button>
+            }
             <!-- Nút đầu tiên vì đây là việc cần làm NGAY: nhắc tới giờ họp mà
                  phải bấm "Xem chi tiết" rồi mới tìm được link thì buổi họp đã
                  bắt đầu. Là <a href> chứ không phải <button>: người dùng còn
@@ -73,6 +81,7 @@
               </button>
             }
 
+            @if (item.kind !== 'invite') {
             <div class="toast__snooze">
               <button
                 type="button"
@@ -104,6 +113,7 @@
                 </div>
               }
             </div>
+            }
 
             <button type="button" class="toast__btn toast__btn--ghost" (click)="dismiss(item.id)">
               {{ i18n.t('notifPopup.dismiss') }}

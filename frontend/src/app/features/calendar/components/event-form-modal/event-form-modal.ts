@@ -431,6 +431,7 @@ export class EventFormModal {
 
         this.locationOpen.set(!!loc);
         this.descriptionOpen.set(!!cleanDesc);
+        this.meetLinkEditing.set(false);
         // Stored allDay end is exclusive (day after the last day); the date
         // input shows/edits it inclusively, and save() adds the day back.
         const displayEnd = evt.allDay ? addDays(evt.end, -1) : evt.end;
@@ -466,6 +467,7 @@ export class EventFormModal {
 
       this.locationOpen.set(false);
       this.descriptionOpen.set(false);
+      this.meetLinkEditing.set(false);
       const start = defStart ?? this.store.today();
       const end = defEnd ?? addMinutes(start, 60);
       this.form.reset({
@@ -667,17 +669,31 @@ export class EventFormModal {
     });
   }
 
-  /** Dùng chung `createMeetingRoomLink()` với nút tạo phòng họp bên tab Lịch
-   *  Nhóm — hai chỗ cùng sinh ra một dạng link thì người dùng không phải đoán
-   *  chỗ nào cho ra loại phòng gì. Bản cũ tự ghép chuỗi bằng `Math.random()`,
-   *  vừa lệch định dạng vừa không đủ ngẫu nhiên cho một link ai có cũng vào
-   *  được (xem chú thích trong util). */
+  /** Đang ở chế độ dán link cuộc họp (sau khi bấm "Thêm Google Meet"). */
+  readonly meetLinkEditing = signal(false);
+
+  /**
+   * Mở Google Meet tab mới để người dùng lấy link THẬT.
+   *
+   * Không tự sinh được `meet.google.com/xxx` ở client (Google cấp mã qua
+   * Calendar API, app chỉ có scope đăng nhập — xem meeting-link.util.ts). Mở
+   * `meet.google.com/new`: nếu đã đăng nhập Google, nó tạo phòng ngay và hiện
+   * link để chép về ô bên cạnh.
+   */
+  openGoogleMeet(): void {
+    window.open('https://meet.google.com/new', '_blank', 'noopener');
+    this.meetLinkEditing.set(true);
+  }
+
+  /** Phòng Jitsi tạo tức thì (không cần tài khoản) — phương án nhanh. */
   generateVideoCallLink(): void {
     this.form.patchValue({ meetLink: createMeetingRoomLink() });
+    this.meetLinkEditing.set(false);
   }
 
   removeMeetLink(): void {
     this.form.patchValue({ meetLink: '' });
+    this.meetLinkEditing.set(false);
   }
 
   /** Đọc trực tiếp FormControl thay vì computed() — xem lý do ở selectedCalendar(). */

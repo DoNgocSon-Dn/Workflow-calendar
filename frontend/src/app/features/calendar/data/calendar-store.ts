@@ -481,6 +481,10 @@ export class CalendarStore {
    *  tra được SAU khi refreshEvents() hoàn tất (trước đó sự kiện chưa có
    *  trong `events()`, vì người dùng vừa được thêm làm khách mời). */
   private pendingAttendeeInviteEventIds: string[] = [];
+  /** Đã bật popup "Bạn được mời" cho eventId nào trong phiên này rồi — để lời
+   *  mời cũ (kéo lại lúc mở app) không nhảy popup lại mỗi lần chuyển màn/tải
+   *  lại. Chuông thông báo vẫn giữ mục đó làm bản lưu lâu dài. */
+  private readonly invitePopupsShown = new Set<string>();
 
   readonly todos = signal<Todo[]>([]);
   readonly todoLists = signal<TodoList[]>([]);
@@ -1372,16 +1376,28 @@ export class CalendarStore {
     attendee: AttendeeApiDto;
   }): void {
     if (payload.attendee.userId !== this.authStore.user()?.id) return;
-    // Toast báo ngay — nó không cần biết tên sự kiện (body rỗng) nên không
-    // phải chờ refreshEvents(). Chỉ phần TẢI LẠI DANH SÁCH mới gộp lại.
-    this.notificationQueue.push({
-      eventId: payload.eventId,
-      title: this.nt('nq.eventInvited'),
-      body: '',
-      kind: 'created',
-    });
+    // Popup + chuông đều đợi flushAttendeeInviteNotifications() (sau ~500ms):
+    // lúc đó refreshEvents() xong nên đã biết tên sự kiện để hiện trong toast.
     this.pendingAttendeeInviteEventIds.push(payload.eventId);
     this.attendeeInviteRefresh$.next();
+  }
+
+  /**
+   * Bật popup "Bạn được mời tham gia sự kiện" — dùng chung cho lời mời realtime
+   * lẫn lời mời cũ kéo lại lúc mở app. Chỉ bật một lần / eventId mỗi phiên
+   * (xem invitePopupsShown); id ổn định nên nếu vẫn còn trong hàng đợi thì
+   * không nhân đôi.
+   */
+  private pushInvitePopup(eventId: string, title: string | null): void {
+    if (this.invitePopupsShown.has(eventId)) return;
+    this.invitePopupsShown.add(eventId);
+    this.notificationQueue.push({
+      id: `invite-popup-${eventId}`,
+      eventId,
+      title: this.nt('nq.eventInvited'),
+      body: title ?? '',
+      kind: 'invite',
+    });
   }
 
   /**
@@ -1400,6 +1416,7 @@ export class CalendarStore {
     for (const eventId of eventIds) {
       const title = this.events().find((e) => e.id === eventId)?.title ?? null;
       this.notifications.ingest(eventInvitationDraft(this.nt, eventId, title));
+      this.pushInvitePopup(eventId, title);
     }
   }
 
@@ -2038,6 +2055,7 @@ export class CalendarStore {
       );
       for (const invite of result) {
         this.notifications.ingest(eventInvitationDraft(this.nt, invite.eventId, invite.title ?? null));
+        this.pushInvitePopup(invite.eventId, invite.title ?? null);
       }
     } catch (err) {
       console.error('Không kéo được lời mời sự kiện:', err);
