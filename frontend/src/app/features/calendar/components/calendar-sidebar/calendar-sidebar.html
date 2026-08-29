@@ -3,15 +3,23 @@
   @if (particlesEnabled() && activeHoliday()) {
     <div class="sidebar-particle-container" aria-hidden="true">
       @for (p of sidebarParticles(); track $index) {
-        <span
+        <div
           class="sidebar-particle"
           [style.left.%]="p.leftPercent"
           [style.animation-delay.s]="p.delaySeconds"
           [style.animation-duration.s]="p.durationSeconds"
-          [style.font-size.px]="p.sizePx"
+          [style.width.px]="p.sizePx"
+          [style.height.px]="p.sizePx"
+          [style.color]="p.color"
         >
-          {{ p.emoji }}
-        </span>
+          <svg viewBox="0 0 24 24" width="100%" height="100%">
+            @if (p.isStroke) {
+              <path [attr.d]="p.path" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+            } @else {
+              <path [attr.d]="p.path" fill="currentColor" />
+            }
+          </svg>
+        </div>
       }
     </div>
   }

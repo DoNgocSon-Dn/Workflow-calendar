@@ -32,22 +32,22 @@
   animation: sidebar-particle-fall linear infinite;
   user-select: none;
   z-index: 0;
-  opacity: 0.22;
-  filter: saturate(0.85);
+  opacity: 0.35;
+  filter: drop-shadow(0 0 5px currentColor);
   pointer-events: none;
 }
 
 @keyframes sidebar-particle-fall {
   0% {
     transform: translateY(0) rotate(0deg);
-    opacity: 0.25;
+    opacity: 0.4;
   }
   50% {
-    opacity: 0.18;
+    opacity: 0.25;
   }
   100% {
-    transform: translateY(calc(100vh + 50px)) rotate(120deg);
-    opacity: 0.04;
+    transform: translateY(calc(100vh + 40px)) rotate(180deg);
+    opacity: 0.05;
   }
 }
 

@@ -19,12 +19,24 @@ import { MiniCalendar } from '../mini-calendar/mini-calendar';
 import { resolveTopHolidayForDate } from '../../utils/holiday-resolver';
 import { HolidayThemeService } from '../../data/holiday-theme.service';
 
-interface SidebarParticle {
-  readonly emoji: string;
+/** Các đường dẫn SVG hạt hiệu ứng tối giản & tinh tế (Anti-slop) */
+const PARTICLE_SVG_PATHS = {
+  sparkle: 'M12 0L14.8 9.2L24 12L14.8 14.8L12 24L9.2 14.8L0 12L9.2 9.2Z',
+  star: 'M12 2l2.9 6.8 7.1.6-5.3 4.7 1.6 7-6.3-3.7-6.3 3.7 1.6-7-5.3-4.7 7.1-.6z',
+  dot: 'M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0',
+  petal: 'M12 2C17 8 21 14 12 22C3 14 7 8 12 2Z',
+  snowflake: 'M12 2v20M2 12h20M4.93 4.93l14.14 14.14M4.93 19.07l14.14-14.14',
+  heart: 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z',
+};
+
+interface SidebarSvgParticle {
+  readonly path: string;
+  readonly color: string;
   readonly leftPercent: number;
   readonly delaySeconds: number;
   readonly durationSeconds: number;
   readonly sizePx: number;
+  readonly isStroke?: boolean;
 }
 
 /** Cùng một nhóm có thể về từ nhiều membership; sidebar chỉ hiện một dòng. */
@@ -87,76 +99,57 @@ export class CalendarSidebar implements OnInit {
   });
 
   /**
-   * Tra cứu bộ Icon rơi tương ứng cho TẤT CẢ các ngày lễ trong năm (~45 ngày lễ)
+   * Tạo các hạt hiệu ứng SVG Vector tinh tế & sang trọng thay cho Emoji hệ thống
    */
-  protected readonly holidayEmojis = computed<readonly string[]>(() => {
+  protected readonly sidebarParticles = computed<readonly SidebarSvgParticle[]>(() => {
     const h = this.activeHoliday();
-    if (!h) return [];
-    const themeEmojis = h.theme?.decoration?.particleEmoji;
-    if (themeEmojis && themeEmojis.length > 0) return themeEmojis;
+    if (!this.particlesEnabled() || !h) return [];
 
     const id = h.id.toLowerCase();
 
-    // Tết & Lễ Âm lịch
-    if (id.includes('tet-nguyen-dan') || id.includes('tat-nien')) return ['🌸', '✨', '🧧', '🌼'];
-    if (id.includes('tao-quan')) return ['🐟', '✨', '🏮'];
-    if (id.includes('than-tai')) return ['💰', '✨', '🏮', '🪙'];
-    if (id.includes('nguyen-tieu')) return ['🏮', '🌕', '✨'];
-    if (id.includes('han-thuc')) return ['🍡', '✨'];
-    if (id.includes('hung-kings')) return ['🥁', '⭐', '✨'];
-    if (id.includes('vesak')) return ['🪷', '🕯️', '✨'];
-    if (id.includes('doan-ngo')) return ['🥭', '🌿', '✨'];
-    if (id.includes('vu-lan')) return ['🪷', '💖', '✨'];
-    if (id.includes('mid-autumn')) return ['🌕', '🏮', '⭐', '🥮'];
+    let specs: Array<{ path: string; color: string; isStroke?: boolean }>;
 
-    // Lễ Quốc gia & Lịch sử Việt Nam
-    if (
-      id.includes('national') ||
-      id.includes('reunification') ||
-      id.includes('august') ||
-      id.includes('dien-bien') ||
-      id.includes('hanoi')
-    ) {
-      return ['⭐', '🎆', '🇻🇳', '🎉'];
+    // Phân loại kiểu hạt SVG tinh tế theo chủ đề ngày lễ
+    if (id.includes('christmas')) {
+      specs = [
+        { path: PARTICLE_SVG_PATHS.snowflake, color: '#38bdf8', isStroke: true },
+        { path: PARTICLE_SVG_PATHS.sparkle, color: '#bae6fd' },
+        { path: PARTICLE_SVG_PATHS.dot, color: '#e0f2fe' },
+      ];
+    } else if (id.includes('tet-nguyen-dan') || id.includes('tat-nien') || id.includes('women')) {
+      specs = [
+        { path: PARTICLE_SVG_PATHS.petal, color: '#fb7185' },
+        { path: PARTICLE_SVG_PATHS.sparkle, color: '#fbbf24' },
+        { path: PARTICLE_SVG_PATHS.dot, color: '#fda4af' },
+      ];
+    } else if (id.includes('valentine')) {
+      specs = [
+        { path: PARTICLE_SVG_PATHS.heart, color: '#f472b6' },
+        { path: PARTICLE_SVG_PATHS.sparkle, color: '#fb7185' },
+        { path: PARTICLE_SVG_PATHS.dot, color: '#fbcfe8' },
+      ];
+    } else {
+      // Mặc định tinh tế cho tất cả các ngày lễ khác (Giỗ Tổ Hùng Vương, Quốc Khánh, 20/11, 27/2, v.v.)
+      specs = [
+        { path: PARTICLE_SVG_PATHS.sparkle, color: '#fbbf24' },
+        { path: PARTICLE_SVG_PATHS.star, color: '#f59e0b' },
+        { path: PARTICLE_SVG_PATHS.dot, color: '#fef08a' },
+      ];
     }
-    if (id.includes('army')) return ['⭐', '🎖️', '✨'];
-    if (id.includes('party')) return ['⭐', '🚩', '✨'];
 
-    // Ngày Ngành Nghề & Kỷ Niệm
-    if (id.includes('teacher')) return ['📚', '✏️', '🌻'];
-    if (id.includes('doctor')) return ['🩺', '💊', '💖'];
-    if (id.includes('press')) return ['📰', '✒️', '✨'];
-    if (id.includes('entrepreneur')) return ['💼', '🤝', '✨'];
-    if (id.includes('family')) return ['🏡', '❤️', '👨‍👩‍👧‍👦'];
-    if (id.includes('women')) return ['🌷', '🌸', '💐'];
-    if (id.includes('children')) return ['🎈', '🎉', '🧸'];
-    if (id.includes('student') || id.includes('youth') || id.includes('team')) return ['🎓', '📚', '✨', '🚩'];
-    if (id.includes('book')) return ['📖', '📚', '✨'];
-    if (id.includes('invalids')) return ['🕯️', '🌹', '⭐'];
-
-    // Quốc tế & Lễ hội
-    if (id.includes('christmas')) return ['❄️', '🎄', '✨', '🎁'];
-    if (id.includes('new-year')) return ['🎆', '🥂', '🎉', '✨'];
-    if (id.includes('halloween')) return ['🎃', '👻', '🕸️', '🦇'];
-    if (id.includes('valentine')) return ['❤️', '💕', '💖', '🌹'];
-    if (id.includes('april-fools')) return ['🤡', '🎈', '✨'];
-    if (id.includes('labor')) return ['🛠️', '✨', '🎉'];
-
-    return ['✨', '⭐', '🎉', '🌟'];
-  });
-
-  protected readonly sidebarParticles = computed<readonly SidebarParticle[]>(() => {
-    const emojis = this.holidayEmojis();
-    if (!this.particlesEnabled() || emojis.length === 0) return [];
-
-    // 7 icon nhỏ xinh trôi siêu chậm (16s - 26s) tự nhiên dịu mắt
-    return Array.from({ length: 7 }, (_, i) => ({
-      emoji: emojis[i % emojis.length],
-      leftPercent: ((i * 13) + 7) % 86,
-      delaySeconds: i * 1.8,
-      durationSeconds: 16.0 + (i % 4) * 2.5,
-      sizePx: 11 + (i % 3) * 2,
-    }));
+    // Sinh 7 hạt hiệu ứng trôi siêu nhẹ nhàng & thanh lịch
+    return Array.from({ length: 7 }, (_, i) => {
+      const spec = specs[i % specs.length]!;
+      return {
+        path: spec.path,
+        color: spec.color,
+        isStroke: spec.isStroke,
+        leftPercent: ((i * 13) + 7) % 86,
+        delaySeconds: i * 1.9,
+        durationSeconds: 16.0 + (i % 4) * 2.8,
+        sizePx: 12 + (i % 3) * 3,
+      };
+    });
   });
 
   toggleColorPicker(event: Event, calendarId: string): void {
