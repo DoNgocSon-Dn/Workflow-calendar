@@ -45,6 +45,21 @@ Repo đã có sẵn `render.yaml` và script build.
 > Gói Free: service ngủ sau ~15 phút không request, lần gọi kế mất ~30–50s để dậy.
 > Muốn luôn sẵn sàng thì nâng gói hoặc ping định kỳ.
 
+### ⚠️ Nếu tạo service THỦ CÔNG (không qua Blueprint)
+
+`render.yaml` chỉ được đọc khi deploy qua **New → Blueprint**. Nếu bạn tự tạo
+"New → Web Service", phải điền tay trong **Settings**:
+
+| Field | Giá trị ĐÚNG |
+|---|---|
+| **Root Directory** | `backend`  ← **KHÔNG** phải `calendar/backend` hay `/backend`. Trong repo GitHub `Workflow-calendar`, thư mục backend nằm ngay gốc. |
+| **Build Command** | `npm ci --include=dev && npm run build` |
+| **Start Command** | `npm run start:prod` |
+| **Branch** | `master` |
+
+Lỗi `Root directory "backend" does not exist` = field Root Directory đang sai
+(thường bị điền thành `calendar/backend` theo đường dẫn trên máy).
+
 ---
 
 ## 2. Frontend → Vercel
