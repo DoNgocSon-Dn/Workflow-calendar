@@ -418,7 +418,22 @@ export class CalendarStore {
 
   readonly today = signal(startOfDay(this.clock.now()));
   readonly focusedDate = signal(startOfDay(this.clock.now()));
-  readonly viewMode = signal<CalendarViewMode>('week');
+  // Lần đầu vào trên điện thoại: mở view "Lịch biểu" (agenda) như GG Calendar —
+  // lưới tuần dày cột không đọc nổi trên màn hẹp. Chỉ là giá trị KHỞI TẠO
+  // (giống sidebarOpen bên dưới), không ép đổi khi xoay/kéo màn hình.
+  readonly viewMode = signal<CalendarViewMode>(
+    isSidebarDrawerViewport() ? 'agenda' : 'week',
+  );
+
+  /**
+   * Màn hình đang ở khổ điện thoại (≤767.98px) hay không — dạng REACTIVE.
+   *
+   * Khác `sidebarOpen` (chỉ đọc 1 lần lúc khởi tạo): các thành phần chỉ dành
+   * cho điện thoại (FAB tạo, thanh trên rút gọn, vuốt đổi kỳ) phải xuất hiện /
+   * biến mất ngay khi xoay ngang máy hoặc mở DevTools, nên signal này nghe
+   * `matchMedia` và cập nhật liên tục (xem startPhoneWatch()).
+   */
+  readonly isPhone = signal<boolean>(isSidebarDrawerViewport());
   /**
    * Mở sẵn trên desktop, đóng sẵn ở khổ drawer.
    *
@@ -720,6 +735,7 @@ export class CalendarStore {
     this.bindRealtimeListenersOnce();
     this.startBackgroundSyncOnce();
     this.startSidebarAutoCollapse();
+    this.startPhoneWatch();
     void this.checkMissedReminders();
   }
 
@@ -1663,6 +1679,16 @@ export class CalendarStore {
   }
 
   private sidebarAutoCollapseBound = false;
+
+  /** Giữ `isPhone` khớp `matchMedia('(max-width: 767.98px)')` theo thời gian thực. */
+  private startPhoneWatch(): void {
+    if (typeof matchMedia !== 'function') return;
+    const mq = window.matchMedia('(max-width: 767.98px)');
+    const onChange = (e: MediaQueryListEvent): void => this.isPhone.set(e.matches);
+    mq.addEventListener('change', onChange);
+    this.isPhone.set(mq.matches);
+    this.destroyRef.onDestroy(() => mq.removeEventListener('change', onChange));
+  }
 
   toggleSidebarCollapsed(): void {
     this.sidebarCollapsed.update((v) => !v);

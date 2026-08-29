@@ -550,3 +550,36 @@ h1, h2, h3, h4, .font-heading {
     z-index: 1 !important;
   }
 }
+
+/* ============================================================
+   ĐIỆN THOẠI (≤767.98px) — sàn thao tác chạm + lề safe-area
+
+   Các nút chỉ-icon rải khắp app (`.icon-btn`) mặc định ~34-36px:
+   trên ngón tay là quá bé, hay bấm trượt. Ở khổ điện thoại nâng
+   sàn lên `--touch-target` (44px). Đây là stylesheet TOÀN CỤC nên
+   với tới cả class trong component (không bị Angular scope lại).
+   ============================================================ */
+@media (max-width: 767.98px) {
+  .icon-btn,
+  button.icon-btn,
+  .view-dropdown-btn,
+  .today-btn {
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
+  }
+
+  /* Menu thả xuống / danh sách chọn: mỗi dòng đủ cao để chạm không trượt. */
+  [role='menuitem'],
+  [role='menuitemradio'],
+  .view-dropdown-item {
+    min-height: var(--touch-target);
+  }
+
+  /* Notch + thanh gạt home của điện thoại: chừa lề an toàn cho thanh trên
+     và mép dưới (viewport đã khai báo viewport-fit=cover trong index.html). */
+  .calendar-page .topbar {
+    padding-left: max(0.6rem, env(safe-area-inset-left));
+    padding-right: max(0.6rem, env(safe-area-inset-right));
+    padding-top: max(0.4rem, env(safe-area-inset-top));
+  }
+}
