@@ -7,6 +7,8 @@ import { AuthStore } from '../../../core/auth/auth-store';
 import { Clock } from '../../../core/clock';
 import { NotificationKind, NotificationQueue } from '../../../core/realtime/notification-queue';
 import { NotificationService } from '../../../core/services/notification.service';
+import { DialogService } from '../../../core/services/dialog.service';
+import { ReminderPreferencesService } from '../../../core/services/reminder-preferences.service';
 import {
   attendeeStatusDraft,
   calendarDeletedDraft,
@@ -405,6 +407,8 @@ export class CalendarStore {
   private readonly groupStore = inject(GroupStore);
   private readonly timeFormatService = inject(TimeFormatService);
   private readonly i18n = inject(TranslationService);
+  private readonly dialog = inject(DialogService);
+  private readonly reminderPrefs = inject(ReminderPreferencesService);
   /** Hàm dịch truyền cho các notification-draft (xem notification-drafts.ts). */
   private readonly nt = (key: string, vars?: Readonly<Record<string, string | number>>) =>
     this.i18n.t(key, vars);
@@ -1943,15 +1947,7 @@ export class CalendarStore {
       this.http.post<AttendeeApiDto>(`${this.apiUrl}/events/${eventId}/respond`, { status }),
     );
     this.notifications.respond(`event-invite-${eventId}`, status);
-    this.notificationQueue.push({
-      eventId,
-      title:
-        status === 'accepted'
-          ? this.nt('nq.inviteAcceptedConfirmed')
-          : this.nt('nq.inviteDeclined'),
-      body: '',
-      kind: status === 'accepted' ? 'created' : 'updated',
-    });
+
     // Backend đã ghi nhận phản hồi — nếu làm mới danh sách sự kiện lỗi (mạng,
     // RLS grid chưa apply migration 23...) thì KHÔNG được coi là mời hụt: lịch
     // sẽ tự đồng bộ ở lần tải lại / gói realtime kế tiếp.
@@ -1960,6 +1956,45 @@ export class CalendarStore {
     } catch (err) {
       console.warn('respondToInvite: refreshEvents lỗi (bỏ qua):', err);
     }
+
+    if (status === 'declined') {
+      this.notificationQueue.push({
+        eventId,
+        title: this.nt('nq.inviteDeclined'),
+        body: '',
+        kind: 'updated',
+      });
+      return toAttendee(result);
+    }
+
+    // Đồng ý: hiện HỘP THÔNG TIN sự kiện + lịch đã thêm vào + các mốc nhắc.
+    void this.reminderPrefs.load();
+    const ev = this.events().find((e) => e.id === eventId);
+    const calName =
+      (ev && this.calendars().find((c) => c.id === ev.calendarId)?.name) || null;
+    const fmt = (d: Date) =>
+      formatTimeLabel(d, this.i18n.locale(), this.timeFormatService.format());
+    const lines: string[] = [];
+    if (ev) {
+      lines.push(`«${ev.title}»`);
+      lines.push('');
+      lines.push(`🗓 ${ev.start.toLocaleDateString(this.i18n.locale())} · ${fmt(ev.start)}–${fmt(ev.end)}`);
+      if (ev.location) lines.push(`📍 ${ev.location}`);
+      if (ev.meetLink) lines.push(`🎥 ${ev.meetLink}`);
+    }
+    if (calName) lines.push(`📁 ${this.nt('nq.addedToCalendar', { name: calName })}`);
+    const offs = this.reminderPrefs.offsets();
+    if (offs.length) {
+      const labels = offs.map((m) => {
+        if (m === 0) return this.nt('settings.reminderAtStart');
+        if (m >= 1440) return this.nt('settings.reminderDays', { n: m / 1440 });
+        if (m >= 60) return this.nt('settings.reminderHours', { n: m / 60 });
+        return this.nt('settings.reminderMinutes', { n: m });
+      });
+      lines.push(`🔔 ${this.nt('nq.remindBefore', { list: labels.join(', ') })}`);
+    }
+    void this.dialog.alert(lines.join('\n'), { title: this.nt('nq.inviteAcceptedTitle') });
+
     return toAttendee(result);
   }
 

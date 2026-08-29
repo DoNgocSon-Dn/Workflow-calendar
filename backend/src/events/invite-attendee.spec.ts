@@ -103,7 +103,7 @@ describe('EventsService.invite — chặn tự mời + đủ nội dung email', 
     expect(rpcCalls.length).toBe(0);
   });
 
-  it('mời người khác bình thường: tạo attendee và gửi email đủ mô tả + link họp', async () => {
+  it('mời người ĐÃ có tài khoản: tạo attendee pending, KHÔNG gửi email (họ thấy lời mời trong app)', async () => {
     const { service, supabase, sendInviteEmail } = makeService({
       eventRow: baseEvent,
       creatorEmail: 'owner@test.com',
@@ -113,16 +113,9 @@ describe('EventsService.invite — chặn tự mời + đủ nội dung email', 
     const result = await service.invite(supabase as never, 'evt-1', { email: 'guest@test.com' });
     expect(result.status).toBe('pending');
 
-    await Promise.resolve(); // sendInviteEmailSafely() chạy "void" — nhường 1 vòng microtask.
-    expect(sendInviteEmail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        to: 'guest@test.com',
-        eventTitle: 'Họp nhóm',
-        description: 'Bàn về Q3',
-        location: 'Phòng 301',
-        meetLink: 'https://meet.jit.si/abc',
-      }),
-    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(sendInviteEmail).not.toHaveBeenCalled();
   });
 
   it('mời email CHƯA có tài khoản Workflow: không throw, tạo dòng attendee (user_id null) và gửi email kèm .ics', async () => {

@@ -734,9 +734,12 @@ export class EventsService {
       });
     }
 
-    // Không chặn kết quả invite nếu gửi mail lỗi (VD thiếu GMAIL_* trong
-    // .env) — lời mời trong app vẫn có giá trị dù email chưa gửi được.
-    void this.sendInviteEmailSafely(eventRow, dto.email, respondToken, eventId, data.id);
+    // Email CHỈ gửi cho người CHƯA có tài khoản Workflow — người có tài khoản
+    // đã thấy lời mời ngay trong app (realtime + notification), không cần mail.
+    if (!data.user_id) {
+      // Không chặn kết quả invite nếu gửi mail lỗi (VD thiếu GMAIL_* trong .env).
+      void this.sendInviteEmailSafely(eventRow, dto.email, respondToken, eventId, data.id);
+    }
 
     return attendeeDto;
   }
@@ -1018,7 +1021,9 @@ export class EventsService {
 
     // 2 + 3
     if (status === 'accepted') {
-      if (attendeeEmail) {
+      // Email chốt lịch CHỈ cho khách CHƯA có tài khoản — người có tài khoản
+      // thấy hộp xác nhận + lời nhắc ngay trong app.
+      if (attendeeEmail && !attendee.user_id) {
         const { gmailUser } = this.configService.get('mail', { infer: true });
         const ics = gmailUser
           ? buildEventIcs({
