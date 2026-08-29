@@ -81,31 +81,38 @@
 }
 
 .segmented {
-  display: flex;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  background: var(--color-surface-input, #0f172a);
+  padding: 3px;
+  border: 1px solid var(--color-border, #1e293b);
+  border-radius: 10px;
+  gap: 3px;
   align-self: flex-start;
 }
 
 .segmented button {
   border: none;
-  background: var(--color-surface);
-  padding: 0.4rem 0.85rem;
-  font-size: 0.8rem;
-  color: var(--color-text-secondary);
+  background: transparent;
+  padding: 0.42rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-text-secondary, #94a3b8);
   cursor: pointer;
-  border-left: 1px solid var(--color-border-strong);
+  border-radius: 7px;
+  border-left: none !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .segmented button:first-child {
-  border-left: none;
+  border-left: none !important;
 }
 
 .segmented button.active {
-  background: var(--holiday-accent-soft);
-  color: var(--holiday-accent);
+  background: #2563eb !important;
+  color: #ffffff !important;
   font-weight: 600;
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.35);
 }
 
 .error-text {
