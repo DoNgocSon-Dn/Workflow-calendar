@@ -62,4 +62,9 @@ export class SendGroupMessageDto {
   @IsInt()
   @Min(0)
   attachmentSize?: number;
+
+  /** Trả lời / trích dẫn một tin nhắn khác trong cùng nhóm. */
+  @IsOptional()
+  @IsUUID()
+  replyToId?: string;
 }

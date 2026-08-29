@@ -206,6 +206,10 @@ export interface GroupMessageDto {
   attachmentSize?: number;
   senderEmail?: string;
   senderName?: string;
+  replyToId?: string;
+  replyPreview?: string;
+  replySenderName?: string;
+  replyDeleted?: boolean;
 }
 
 @Injectable()
@@ -512,6 +516,51 @@ export class GroupsService {
     return group;
   }
 
+  /** Dựng phần "reply_*" cho payload realtime của tin vừa gửi — hàng insert
+   *  không có sẵn (đến từ JOIN trong RPC). Trả rỗng nếu không trả lời ai / cột
+   *  chưa có (migration 43 chưa chạy). */
+  private async buildReplySnippet(
+    supabase: SupabaseClient,
+    replyToId?: string,
+  ): Promise<Partial<GroupMessageDto>> {
+    if (!replyToId) return {};
+    const { data } = await supabase
+      .from('group_messages')
+      .select('message, attachment_type, attachment_url, deleted_at, sender_id')
+      .eq('id', replyToId)
+      .maybeSingle<{
+        message: string | null;
+        attachment_type: string | null;
+        attachment_url: string | null;
+        deleted_at: string | null;
+        sender_id: string;
+      }>();
+    if (!data) return { replyToId };
+
+    let preview: string | undefined;
+    if (data.deleted_at) preview = undefined;
+    else if (data.message?.trim()) preview = data.message.slice(0, 90);
+    else if (data.attachment_type?.startsWith('image/')) preview = '[Hình ảnh]';
+    else if (data.attachment_type?.startsWith('audio/')) preview = '[Tin nhắn thoại]';
+    else if (data.attachment_url) preview = '[Tệp đính kèm]';
+
+    let replySenderName: string | undefined;
+    const admin = this.supabaseService.getServiceRoleClient();
+    const { data: u } = await admin.auth.admin.getUserById(data.sender_id);
+    const meta = u?.user?.user_metadata as Record<string, unknown> | undefined;
+    replySenderName =
+      (meta?.['full_name'] as string | undefined) ||
+      u?.user?.email?.split('@')[0] ||
+      undefined;
+
+    return {
+      replyToId,
+      replyPreview: preview,
+      replySenderName,
+      replyDeleted: !!data.deleted_at,
+    };
+  }
+
   private mapMessageRow(row: any): GroupMessageDto {
     return {
       id: row.id,
@@ -528,6 +577,10 @@ export class GroupsService {
       attachmentSize: row.attachment_size ?? undefined,
       senderEmail: row.sender_email,
       senderName: row.sender_name ?? undefined,
+      replyToId: row.reply_to_id ?? undefined,
+      replyPreview: row.reply_preview ?? undefined,
+      replySenderName: row.reply_sender_name ?? undefined,
+      replyDeleted: row.reply_deleted ?? undefined,
     };
   }
 
@@ -2671,18 +2724,23 @@ export class GroupsService {
       dto.mentions,
     );
 
+    const insertRow: Record<string, unknown> = {
+      group_id: groupId,
+      sender_id: user.id,
+      message: text || null,
+      mentions: mentions ?? null,
+      attachment_url: dto.attachmentUrl || null,
+      attachment_name: dto.attachmentName || null,
+      attachment_type: dto.attachmentType || null,
+      attachment_size: dto.attachmentSize ?? null,
+    };
+    // Cột chỉ có sau migration 43 — gửi kèm chỉ khi có replyToId, để DB cũ vẫn
+    // gửi tin thường được (PostgREST báo lỗi nếu key trỏ cột không tồn tại).
+    if (dto.replyToId) insertRow['reply_to_id'] = dto.replyToId;
+
     const { data, error } = await supabase
       .from('group_messages')
-      .insert({
-        group_id: groupId,
-        sender_id: user.id,
-        message: text || null,
-        mentions: mentions ?? null,
-        attachment_url: dto.attachmentUrl || null,
-        attachment_name: dto.attachmentName || null,
-        attachment_type: dto.attachmentType || null,
-        attachment_size: dto.attachmentSize ?? null,
-      })
+      .insert(insertRow)
       .select('*')
       .single();
 
@@ -2698,6 +2756,7 @@ export class GroupsService {
       senderName: (user.user_metadata as Record<string, unknown> | undefined)?.[
         'full_name'
       ] as string | undefined,
+      ...(await this.buildReplySnippet(supabase, dto.replyToId)),
     };
 
     await this.emitToGroupRooms(supabase, groupId, 'group:messageSent', {

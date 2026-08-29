@@ -268,6 +268,14 @@ export class GroupWorkspaceModal {
   protected readonly editingMessageId = signal<string | null>(null);
   protected readonly editingText = signal('');
 
+  // Chat: trả lời / trích dẫn + menu chuột phải
+  protected readonly replyingTo = signal<GroupMessage | null>(null);
+  /** Menu ngữ cảnh khi chuột phải một tin nhắn (desktop). */
+  protected readonly msgMenu = signal<{ msg: GroupMessage; x: number; y: number } | null>(null);
+  /** Độ dịch ngang khi đang vuốt-để-trả-lời (mobile). */
+  protected readonly swipeDx = signal<{ id: string; dx: number } | null>(null);
+  private swipeState: { id: string; startX: number; startY: number; active: boolean } | null = null;
+
   // Chat: cuộn thông minh + vạch chia ngày
   private prevChatMsgCount = 0;
   /** Số tin mới tới trong lúc người dùng đang cuộn lên đọc tin cũ. */
@@ -1009,6 +1017,94 @@ export class GroupWorkspaceModal {
     this.newChatMessages.set(0);
   }
 
+  // --- Trả lời / trích dẫn ------------------------------------------------
+  startReply(msg: GroupMessage): void {
+    if (msg.deletedAt) return;
+    this.msgMenu.set(null);
+    this.replyingTo.set(msg);
+    setTimeout(() => this.chatInput()?.nativeElement.focus(), 0);
+  }
+
+  cancelReply(): void {
+    this.replyingTo.set(null);
+  }
+
+  replyLabelFor(msg: GroupMessage): string {
+    return msg.replySenderName || this.i18n.t('group.memberFallback');
+  }
+
+  /** Preview khối trích dẫn trong bong bóng — ưu tiên server, rồi tra tin đã nạp. */
+  replyPreviewFor(msg: GroupMessage): string {
+    if (msg.replyDeleted) return this.i18n.t('group.messageDeleted');
+    if (msg.replyPreview) return msg.replyPreview;
+    const src = this.store.messages().find((m) => m.id === msg.replyToId);
+    return src ? this.store.previewOf(src) : '';
+  }
+
+  scrollToMessage(id: string | undefined): void {
+    if (!id) return;
+    const el = document.getElementById(`chat-msg-${id}`);
+    if (!el) return;
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    el.classList.add('chat-msg-row--focused');
+    setTimeout(() => el.classList.remove('chat-msg-row--focused'), 1800);
+  }
+
+  // --- Menu chuột phải (desktop) ----------------------------------------
+  onMsgContextMenu(ev: MouseEvent, msg: GroupMessage): void {
+    if (msg.deletedAt || this.editingMessageId() === msg.id) return;
+    ev.preventDefault();
+    // Kẹp trong khung nhìn để menu không tràn ra ngoài.
+    const x = Math.min(ev.clientX, window.innerWidth - 190);
+    const y = Math.min(ev.clientY, window.innerHeight - 200);
+    this.msgMenu.set({ msg, x, y });
+  }
+
+  closeMsgMenu(): void {
+    this.msgMenu.set(null);
+  }
+
+  async copyMessageText(msg: GroupMessage): Promise<void> {
+    this.msgMenu.set(null);
+    if (!msg.message) return;
+    try {
+      await navigator.clipboard.writeText(msg.message);
+    } catch {
+      /* trình duyệt chặn — bỏ qua */
+    }
+  }
+
+  // --- Vuốt để trả lời (mobile) ----------------------------------------
+  onMsgSwipeStart(ev: PointerEvent, msg: GroupMessage): void {
+    if (ev.pointerType === 'mouse' || msg.deletedAt) return;
+    this.swipeState = { id: msg.id, startX: ev.clientX, startY: ev.clientY, active: false };
+  }
+
+  onMsgSwipeMove(ev: PointerEvent, msg: GroupMessage): void {
+    const s = this.swipeState;
+    if (!s || s.id !== msg.id) return;
+    const dx = ev.clientX - s.startX;
+    const dy = ev.clientY - s.startY;
+    if (!s.active) {
+      if (Math.abs(dx) < 12 || Math.abs(dx) < Math.abs(dy)) return; // để cuộn dọc yên
+      s.active = true;
+    }
+    // Chỉ cho kéo về phía "vào trong" (trái với tin người khác, phải với tin mình).
+    const dir = this.isMyMessage(msg) ? 1 : -1;
+    const clamped = Math.max(0, dx * dir) * dir;
+    this.swipeDx.set({ id: msg.id, dx: Math.max(-80, Math.min(80, clamped)) });
+  }
+
+  onMsgSwipeEnd(msg: GroupMessage): void {
+    const s = this.swipeState;
+    const moved = this.swipeDx();
+    this.swipeState = null;
+    this.swipeDx.set(null);
+    if (s?.active && moved && moved.id === msg.id && Math.abs(moved.dx) > 55) {
+      this.startReply(msg);
+    }
+  }
+
   /** Mỗi người 1 màu ổn định (dựa trên senderId, không đổi giữa các lần
    *  render) để phân biệt người gửi trong chat nhiều thành viên bằng mắt,
    *  không cần đọc tên. Palette lấy từ cùng bộ màu nhóm (GROUP_COLOR_HEX) để
@@ -1341,6 +1437,8 @@ export class GroupWorkspaceModal {
     if (file && this.sendingChat()) return;
 
     const mentions = this.resolveMentions(text);
+    const replyTo = this.replyingTo();
+    this.replyingTo.set(null);
 
     this.chatMessage.set('');
     // [value] chỉ đồng bộ nội dung, không đụng tới style.height mà
@@ -1353,7 +1451,7 @@ export class GroupWorkspaceModal {
     this.attachmentError.set(null);
     this.attachmentFile.set(null);
 
-    void this.deliverChat(group.id, text, mentions, file);
+    void this.deliverChat(group.id, text, mentions, file, replyTo);
   }
 
   /** Phần chạy nền của sendChat. Hỏng thì trả nội dung về ô nhập để người
@@ -1364,6 +1462,7 @@ export class GroupWorkspaceModal {
     text: string,
     mentions: GroupMessageMention[],
     file: File | null,
+    replyTo?: GroupMessage | null,
   ): Promise<void> {
     try {
       let attachment: GroupMessageAttachment | undefined;
@@ -1372,7 +1471,7 @@ export class GroupWorkspaceModal {
         this.sendingChat.set(true);
         attachment = await this.store.uploadAttachment(groupId, file);
       }
-      await this.store.sendMessage(groupId, text, attachment, mentions);
+      await this.store.sendMessage(groupId, text, attachment, mentions, replyTo ?? undefined);
     } catch (err: any) {
       this.attachmentError.set(
         err?.error?.message || err?.message || this.i18n.t('group.sendMessageError'),

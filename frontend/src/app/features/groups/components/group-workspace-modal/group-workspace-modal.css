@@ -1041,6 +1041,110 @@
   animation: fadeInPanel 0.16s ease-out;
 }
 
+/* --- Trả lời / trích dẫn --- */
+.chat-msg-row {
+  touch-action: pan-y;
+}
+
+/* Khối trích dẫn trong bong bóng — bấm để nhảy tới tin gốc. */
+.chat-quote {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-left: 3px solid currentColor;
+  background: rgba(127, 127, 127, 0.14);
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin-bottom: 3px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  opacity: 0.85;
+}
+.chat-quote__name {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.chat-quote__text {
+  display: block;
+  font-size: 0.76rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.8;
+}
+
+/* Thanh "Đang trả lời …" trên ô nhập. */
+.chat-reply-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  margin-top: 6px;
+  border-left: 3px solid var(--holiday-accent);
+  background: var(--color-surface-hover);
+  border-radius: 6px;
+}
+.chat-reply-bar__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.chat-reply-bar__name {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--holiday-accent);
+}
+.chat-reply-bar__text {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--color-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Menu chuột phải trên tin nhắn. */
+.chat-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+.chat-menu {
+  position: fixed;
+  z-index: 61;
+  min-width: 170px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+  animation: fadeInPanel 0.12s ease-out;
+}
+.chat-menu button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.chat-menu button:hover {
+  background: var(--color-surface-hover);
+}
+.chat-menu__danger {
+  color: var(--color-danger) !important;
+}
+
 .chat-msg-header {
   display: flex;
   align-items: center;

@@ -153,6 +153,12 @@ export interface GroupMessage {
   attachmentSize?: number;
   senderEmail?: string;
   senderName?: string;
+  /** Tin nhắn này trả lời tin nào (Phase 8). `replyPreview` rỗng nếu tin gốc đã
+   *  bị thu hồi (`replyDeleted`). */
+  replyToId?: string;
+  replyPreview?: string;
+  replySenderName?: string;
+  replyDeleted?: boolean;
   /**
    * Mã do client sinh ra trước khi gọi API, dùng để ghép tin nhắn lạc quan
    * (hiện ngay lúc nhấn Enter) với tin nhắn thật do server trả về / socket

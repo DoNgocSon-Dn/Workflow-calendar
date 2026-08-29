@@ -1405,11 +1405,22 @@ export class GroupStore {
    * Gửi hỏng thì bản lạc quan bị gỡ đi và lỗi được ném lên cho phía gọi hiển
    * thị — KHÔNG để lại một tin nhắn ma mà server chưa từng nhận.
    */
+  /** Đoạn xem trước 1 dòng của một tin (cho khối trích dẫn khi trả lời). */
+  previewOf(m: GroupMessage): string {
+    if (m.deletedAt) return '';
+    if (m.message?.trim()) return m.message.slice(0, 90);
+    if (m.attachmentType?.startsWith('image/')) return '[Hình ảnh]';
+    if (m.attachmentType?.startsWith('audio/')) return '[Tin nhắn thoại]';
+    if (m.attachmentUrl) return '[Tệp đính kèm]';
+    return '';
+  }
+
   async sendMessage(
     groupId: string,
     text: string,
     attachment?: GroupMessageAttachment,
     mentions?: readonly GroupMessageMention[],
+    replyTo?: GroupMessage,
   ): Promise<GroupMessage> {
     const clientMessageId = crypto.randomUUID();
     const user = this.authStore.user();
@@ -1431,11 +1442,15 @@ export class GroupStore {
       senderName: (user?.user_metadata as Record<string, unknown> | undefined)?.[
         'full_name'
       ] as string | undefined,
+      replyToId: replyTo?.id,
+      replyPreview: replyTo ? this.previewOf(replyTo) : undefined,
+      replySenderName: replyTo?.senderName || replyTo?.senderEmail?.split('@')[0],
+      replyDeleted: replyTo?.deletedAt ? true : undefined,
     };
     this.messages.update((prev) => [...prev, optimistic]);
 
     try {
-      const saved = await this.api.sendMessage(groupId, text, attachment, mentions);
+      const saved = await this.api.sendMessage(groupId, text, attachment, mentions, replyTo?.id);
       this.replaceOptimistic(clientMessageId, saved);
       return saved;
     } catch (err) {

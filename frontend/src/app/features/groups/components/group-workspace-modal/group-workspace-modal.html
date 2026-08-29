@@ -801,6 +801,12 @@
                   [class.mine]="isMyMessage(msg)"
                   [class.grouped]="!showMessageHeader(msg, i)"
                   [class.group-end]="isGroupEnd(i)"
+                  [style.transform]="swipeDx()?.id === msg.id ? 'translateX(' + swipeDx()!.dx + 'px)' : null"
+                  (contextmenu)="onMsgContextMenu($event, msg)"
+                  (pointerdown)="onMsgSwipeStart($event, msg)"
+                  (pointermove)="onMsgSwipeMove($event, msg)"
+                  (pointerup)="onMsgSwipeEnd(msg)"
+                  (pointercancel)="onMsgSwipeEnd(msg)"
                 >
                   @if (!isMyMessage(msg)) {
                     <div class="chat-avatar" [style.background-color]="senderColor(msg)" [class.chat-avatar--hidden]="!showMessageHeader(msg, i)">
@@ -808,13 +814,22 @@
                     </div>
                   }
                   <div class="chat-msg-body">
+                    @if (msg.replyToId && !msg.deletedAt) {
+                      <button type="button" class="chat-quote" (click)="scrollToMessage(msg.replyToId)">
+                        <span class="chat-quote__name">{{ replyLabelFor(msg) }}</span>
+                        <span class="chat-quote__text">{{ replyPreviewFor(msg) }}</span>
+                      </button>
+                    }
                     <div class="chat-msg-header">
                       @if (!isMyMessage(msg) && showMessageHeader(msg, i)) {
                         <span class="chat-sender" [style.color]="senderColor(msg)">{{ senderDisplayName(msg) }}</span>
                       }
                       <span class="chat-time">{{ msg.createdAt | date: 'HH:mm dd/MM' }}</span>
-                      @if (!msg.deletedAt && editingMessageId() !== msg.id && (canEditMessage(msg) || canDeleteMessage(msg))) {
+                      @if (!msg.deletedAt && editingMessageId() !== msg.id) {
                         <div class="chat-msg-actions">
+                          <button type="button" class="btn-icon" (click)="startReply(msg)" [attr.aria-label]="i18n.t('chat.reply')">
+                            <app-icon name="arrow-left" />
+                          </button>
                           @if (canEditMessage(msg)) {
                             <button type="button" class="btn-icon" (click)="startEditMessage(msg)" [attr.aria-label]="i18n.t('group.editMessageAria')">
                               <app-icon name="pencil" />
@@ -918,6 +933,17 @@
             @if (attachmentError(); as err) {
               <p class="error-msg">{{ err }}</p>
             }
+            @if (replyingTo(); as rt) {
+              <div class="chat-reply-bar">
+                <div class="chat-reply-bar__body">
+                  <span class="chat-reply-bar__name">{{ i18n.t('chat.replyingTo', { name: rt.senderName || senderDisplayName(rt) }) }}</span>
+                  <span class="chat-reply-bar__text">{{ store.previewOf(rt) }}</span>
+                </div>
+                <button type="button" class="btn-icon" (click)="cancelReply()" [attr.aria-label]="i18n.t('common.cancel')">
+                  <app-icon name="close" />
+                </button>
+              </div>
+            }
             @if (canUserChat()) {
               <div class="chat-input-bar">
                 <label class="btn-attach" [title]="i18n.t('group.attachFileTooltip')">
@@ -975,6 +1001,22 @@
               <div class="chat-disabled-banner">
                 <app-icon name="eye-off" />
                 <span>{{ i18n.t('groupRole.guestChatDisabled') }}</span>
+              </div>
+            }
+
+            @if (msgMenu(); as m) {
+              <div class="chat-menu-backdrop" (click)="closeMsgMenu()" (contextmenu)="$event.preventDefault(); closeMsgMenu()"></div>
+              <div class="chat-menu" [style.left.px]="m.x" [style.top.px]="m.y">
+                <button type="button" (click)="startReply(m.msg)"><app-icon name="arrow-left" /> {{ i18n.t('chat.reply') }}</button>
+                @if (m.msg.message) {
+                  <button type="button" (click)="copyMessageText(m.msg)"><app-icon name="paperclip" /> {{ i18n.t('chat.copy') }}</button>
+                }
+                @if (canEditMessage(m.msg)) {
+                  <button type="button" (click)="startEditMessage(m.msg); closeMsgMenu()"><app-icon name="pencil" /> {{ i18n.t('common.edit') }}</button>
+                }
+                @if (canDeleteMessage(m.msg)) {
+                  <button type="button" class="chat-menu__danger" (click)="deleteMessage(m.msg); closeMsgMenu()"><app-icon name="trash" /> {{ isMyMessage(m.msg) ? i18n.t('chat.revoke') : i18n.t('common.delete') }}</button>
+                }
               </div>
             }
           </div>

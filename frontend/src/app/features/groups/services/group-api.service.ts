@@ -380,6 +380,7 @@ export class GroupApiService {
     message: string,
     attachment?: GroupMessageAttachment,
     mentions?: readonly GroupMessageMention[],
+    replyToId?: string,
   ): Promise<GroupMessage> {
     return firstValueFrom(
       this.http.post<GroupMessage>(
@@ -394,6 +395,7 @@ export class GroupApiService {
           attachmentName: attachment?.name,
           attachmentType: attachment?.type,
           attachmentSize: attachment?.size,
+          replyToId: replyToId || undefined,
         },
         { headers: this.authHeaders },
       ),
