@@ -5,14 +5,83 @@
   "description": "Lịch cá nhân và nhóm với trợ lý AI thông minh",
   "start_url": "/",
   "scope": "/",
+  "lang": "vi-VN",
+  "dir": "ltr",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "portrait-primary",
   "background_color": "#060608",
   "theme_color": "#2563eb",
   "categories": ["productivity", "utilities", "lifestyle"],
   "prefer_related_applications": false,
-  "related_applications": [],
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.workflow.calendar",
+      "id": "com.workflow.calendar"
+    }
+  ],
+  "scope_extensions": [
+    {
+      "origin": "*.vercel.app"
+    },
+    {
+      "origin": "workflow-calendar.vercel.app"
+    }
+  ],
   "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "handle_links": "preferred",
+  "note_taking": {
+    "new_note_url": "/notes"
+  },
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+calendar",
+      "url": "/calendar?event=%s"
+    }
+  ],
+  "share_target": {
+    "action": "/calendar",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "file_handlers": [
+    {
+      "action": "/calendar/import",
+      "accept": {
+        "text/calendar": [".ics"],
+        "application/pdf": [".pdf"],
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"]
+      }
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Tạo sự kiện mới",
+      "short_name": "Tạo sự kiện",
+      "description": "Mở ứng dụng và tạo sự kiện lịch mới",
+      "url": "/calendar?action=create",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Danh sách công việc",
+      "short_name": "Công việc",
+      "description": "Xem danh sách việc cần làm",
+      "url": "/tasks",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "/icon-192.png",
