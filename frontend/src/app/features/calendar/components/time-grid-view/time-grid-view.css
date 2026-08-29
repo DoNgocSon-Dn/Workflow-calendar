@@ -314,20 +314,15 @@
 }
 
 /*
- * Quy ước chung: mọi sự kiện đang trùng giờ đều mang MỘT màu hồng cố định,
- * bất kể thuộc lịch nào.
+ * Trùng giờ: GIỮ NGUYÊN màu lịch, chỉ thêm một vạch cảnh báo mảnh ở mép trái.
  *
- * Vẫn là một mã hex ĐỤC, không color-mix với --chip-color như cách cũ
- * (danger 55% + chip). Trộn thì mỗi lịch cho ra một màu khác nhau — xanh lá
- * thành rgb(131, 94, 54) tức màu nâu, xanh dương thành tím — nên "đang trùng
- * giờ" không còn là tín hiệu đọc được, mà chỉ giống một lỗi hoà màu. Dùng
- * chung đúng một màu thì liếc qua là nhận ra ngay.
+ * Trước đây tô đè cả khối thành hồng — một ngày bận vài cuộc chồng giờ là hồng
+ * gần hết lưới, vừa rối vừa mất luôn màu lịch để phân biệt. Việc "trùng giờ"
+ * đã được thể hiện bằng cách XẾP CẠNH NHAU (leftPct/widthPct) rồi; vạch mép
+ * trái + tooltip là đủ để nhắc, không cần đổi màu nền.
  */
 .event-block.conflict {
-  /* Đổi qua --block-bg chứ không ghi đè background-color: nền của khối chỉ có
-     MỘT nguồn duy nhất, nên sau này thêm trạng thái nào cũng không thể lỡ tay
-     dựng hai lớp nền chồng lên nhau. */
-  --block-bg: var(--color-conflict);
+  border-left: 3px solid var(--color-conflict);
 }
 
 .block-content {
@@ -358,13 +353,22 @@
 /* Khối đang được "nhấc" để kéo (chuột nhấn giữ, hoặc chạm giữ ~350ms). Bỏ
    transition cho transform để khối bám sát ngón tay/con trỏ, không trễ. */
 .event-block.dragging {
-  transform: scale(1.04);
+  /* Vị trí (top/left) đổi qua style binding, KHÔNG qua transform — nên cho
+     transform một transition ngắn để cú "nhấc" nở ra mượt, không giật, mà vẫn
+     bám sát ngón tay. */
+  transform: scale(1.025);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
   border-color: rgba(255, 255, 255, 0.9);
   z-index: 30;
   cursor: grabbing;
-  transition: box-shadow 0.15s ease, border-color 0.15s ease;
-  opacity: 0.96;
+  transition: transform 0.12s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  opacity: 0.97;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event-block.dragging {
+    transition: none;
+  }
 }
 
 .resize-handle {

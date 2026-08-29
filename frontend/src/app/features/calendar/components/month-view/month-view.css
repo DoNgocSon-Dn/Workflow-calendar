@@ -340,8 +340,10 @@
 }
 
 .event-chip.conflict.all-day {
-  background: var(--color-conflict);
-  color: #fff;
+  /* Giữ màu lịch (như chip thường ở trên), chỉ thêm dấu cảnh báo. */
+  border-left: 3px solid var(--color-conflict);
+  outline: 1px dashed var(--color-conflict);
+  outline-offset: -1px;
 }
 
 /* ============================================================
@@ -740,9 +742,10 @@
     background: var(--chip-color);
   }
 
-  /* Trùng giờ vẫn phải nhận ra được — cùng quy ước hồng với các view khác. */
+  /* Chấm 6px: giữ màu lịch, chỉ thêm vòng cảnh báo mảnh cho "trùng giờ". */
   .event-chip.conflict {
-    background: var(--color-conflict);
+    background: var(--chip-color);
+    box-shadow: 0 0 0 1.5px var(--color-conflict);
     outline: none;
   }
 

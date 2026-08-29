@@ -487,8 +487,12 @@ export class TimeGridView {
     // capture/listener gắn trên khối cũ sẽ mất, đứng kéo giữa chừng.
     const capEl: HTMLElement = container ?? el;
 
-    const startX = ev.clientX;
-    const startY = ev.clientY;
+    // startX/startY được ĐẶT LẠI ngay lúc "nhấc" (activate) — nếu giữ mốc từ
+    // pointerdown thì phần ngón tay lỡ trôi trong 260ms chờ sẽ bị tính thành
+    // một bước nhảy 15 phút ngay khi bắt đầu kéo ("giật 1 cái").
+    let startX = ev.clientX;
+    let startY = ev.clientY;
+    let startScrollTop = container?.scrollTop ?? 0;
     let lastX = startX;
     let lastY = startY;
     let preLastX = startX;
@@ -509,15 +513,19 @@ export class TimeGridView {
 
     const updateMove = (): void => {
       animFrameId = null;
-      const dy = lastY - startY;
-      const dx = lastX - startX;
-      if (Math.abs(dy) > 3 || Math.abs(dx) > 10) moved = true;
 
       if (container) {
         const cRect = container.getBoundingClientRect();
         if (lastY < cRect.top + 40) container.scrollTop -= 12;
         else if (lastY > cRect.bottom - 40) container.scrollTop += 12;
       }
+
+      // Cộng bù phần lưới đã tự cuộn từ lúc nhấc, để khối bám đúng ngón tay
+      // trong "toạ độ lưới" chứ không lệch dần khi auto-scroll.
+      const scrolled = (container?.scrollTop ?? 0) - startScrollTop;
+      const dy = lastY - startY + scrolled;
+      const dx = lastX - startX;
+      if (Math.abs(dy) > 3 || Math.abs(dx) > 10) moved = true;
 
       const deltaMin = snapSigned((dy / HOUR_HEIGHT) * 60);
 
@@ -541,6 +549,11 @@ export class TimeGridView {
     const activate = (): void => {
       active = true;
       longPressTimer = null;
+      // Mốc 0 = đúng vị trí ngón tay lúc nhấc (bỏ phần trôi trong lúc chờ).
+      startX = lastX;
+      startY = lastY;
+      startScrollTop = container?.scrollTop ?? 0;
+      moved = false;
       if (isTouch) navigator.vibrate?.(8);
       try {
         capEl.setPointerCapture(ev.pointerId);
@@ -653,6 +666,7 @@ export class TimeGridView {
     // khối (và tay cầm resize con của nó) bị render lại khi đổi độ dài.
     const capEl: HTMLElement = container ?? el;
     const startY = ev.clientY;
+    const startScrollTop = container?.scrollTop ?? 0;
     const originalDuration = diffMinutes(pe.event.start, pe.event.end);
 
     let lastY = startY;
@@ -673,7 +687,8 @@ export class TimeGridView {
         if (lastY < cRect.top + 44) container.scrollTop -= 14;
         else if (lastY > cRect.bottom - 44) container.scrollTop += 14;
       }
-      let deltaMin = snapSigned(((lastY - startY) / HOUR_HEIGHT) * 60);
+      const scrolled = (container?.scrollTop ?? 0) - startScrollTop;
+      let deltaMin = snapSigned(((lastY - startY + scrolled) / HOUR_HEIGHT) * 60);
       if (edge === 'bottom') {
         if (originalDuration + deltaMin < SNAP_MINUTES) deltaMin = SNAP_MINUTES - originalDuration;
       } else {
