@@ -1,4 +1,9 @@
-<div class="time-grid" [class.single-day]="days().length === 1" [class.multi-day]="days().length > 1">
+<div
+  class="time-grid"
+  [class.single-day]="days().length === 1"
+  [class.multi-day]="days().length > 1"
+  [attr.data-cols]="days().length"
+>
   <div class="day-header-row" #dayHeaderRow [style.padding-right.px]="scrollbarWidth()">
     <div class="gutter-spacer gutter-spacer--lunar">{{ i18n.t('calendar.lunarShort') }}</div>
     @for (day of days(); track day.getTime()) {
@@ -139,6 +144,7 @@
               <div
                 class="event-block"
                 [class.conflict]="store.conflictingEventIds().has(pe.event.id)"
+                [class.dragging]="isDragging(pe.event.id)"
                 [style.top.px]="blockTop(pe)"
                 [style.height.px]="blockHeight(pe)"
                 [style.left.%]="pe.leftPct"
@@ -148,13 +154,18 @@
                 (mousedown)="$event.stopPropagation()"
                 [title]="conflictTooltip(pe.event.id)"
               >
+                <div
+                  class="resize-handle resize-handle--top"
+                  (pointerdown)="onResizePointerDown($event, pe, 'top')"
+                  (mousedown)="$event.stopPropagation()"
+                ></div>
                 <div class="block-content">
                   <span class="block-title">{{ pe.event.title }}</span>
                   <span class="block-time">{{ formatTimeLabel(pe.event.start) }}</span>
                 </div>
                 <div
-                  class="resize-handle"
-                  (pointerdown)="onResizePointerDown($event, pe)"
+                  class="resize-handle resize-handle--bottom"
+                  (pointerdown)="onResizePointerDown($event, pe, 'bottom')"
                   (mousedown)="$event.stopPropagation()"
                 ></div>
               </div>

@@ -63,6 +63,13 @@
               (editRequested)="openEdit($event)"
             />
           }
+          @case ('3day') {
+            <app-time-grid-view
+              [days]="threeDayViews()"
+              (createRequested)="openCreate($event)"
+              (editRequested)="openEdit($event)"
+            />
+          }
           @case ('day') {
             <app-time-grid-view
               [days]="dayViewDays()"

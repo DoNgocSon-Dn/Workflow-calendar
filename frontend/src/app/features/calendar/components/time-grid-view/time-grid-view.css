@@ -371,29 +371,51 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
   height: 6px;
   cursor: ns-resize;
   touch-action: none;
+  z-index: 2;
 }
 
-/* Cảm ứng: vùng kéo mép dưới phải to hơn cho vừa ngón tay, và có một vạch mờ
-   để người dùng biết có thể kéo được. */
+.resize-handle--bottom {
+  bottom: 0;
+}
+
+.resize-handle--top {
+  top: 0;
+}
+
+/* Cảm ứng: vùng kéo hai mép phải to hơn cho vừa ngón tay, và có vạch mờ để
+   người dùng biết kéo được. */
 @media (hover: none) {
   .resize-handle {
-    height: 22px;
+    height: 20px;
   }
 
   .resize-handle::after {
     content: '';
     position: absolute;
     left: 50%;
-    bottom: 3px;
     transform: translateX(-50%);
-    width: 28px;
+    width: 26px;
     height: 3px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.85);
+  }
+
+  .resize-handle--bottom::after {
+    bottom: 3px;
+  }
+
+  .resize-handle--top::after {
+    top: 3px;
+  }
+
+  /* Chặn cuộn tự nhiên của trình duyệt trên khối sự kiện — component tự đẩy
+     cuộn cho lưới trong lúc chờ nhấn-giữ (xem onBlockPointerDown), nhờ đó
+     nhấn-giữ-rồi-kéo mới hoạt động ổn định. */
+  .event-block {
+    touch-action: none;
   }
 }
 
@@ -501,5 +523,40 @@
   .time-grid:not(.single-day) .day-header-row,
   .time-grid:not(.single-day) .all-day-row {
     overflow-x: hidden;
+  }
+}
+
+/* Điện thoại: KHÔNG cuộn ngang — các cột chia đều bề rộng màn hình.
+   Chế độ "Tuần" (7 cột) khá chật nhưng thấy hết; muốn rộng rãi thì dùng chế
+   độ "3 ngày". */
+@media (max-width: 767.98px) {
+  .time-grid:not(.single-day) .day-header-cell,
+  .time-grid:not(.single-day) .all-day-cell,
+  .time-grid:not(.single-day) .day-col {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .time-grid[data-cols='7'] .day-header-cell .wd,
+  .time-grid[data-cols='7'] .day-header-cell .lunar-dn {
+    font-size: 0.62rem;
+  }
+
+  .time-grid[data-cols='7'] .event-block {
+    padding: 0.1rem 0.15rem;
+    font-size: 0.6rem;
+  }
+
+  .time-grid[data-cols='7'] .block-time {
+    display: none;
+  }
+
+  .gutter,
+  .gutter-spacer {
+    width: 2.5rem;
+  }
+
+  .hour-label {
+    font-size: 0.6rem;
   }
 }

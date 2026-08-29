@@ -22,7 +22,7 @@ import { CalendarStore, isSidebarDrawerViewport } from '../data/calendar-store';
 import { HolidayThemeService } from '../data/holiday-theme.service';
 import { VN_HOLIDAY_CALENDAR_ID } from '../data/vietnam-holidays';
 import { CalendarEvent } from '../models/calendar.models';
-import { addMinutes, buildWeekDays, dateInputValue } from '../utils/date-utils';
+import { addDays, addMinutes, buildWeekDays, dateInputValue } from '../utils/date-utils';
 import { CreateGroupModal } from '../../groups/components/create-group-modal/create-group-modal';
 import { GroupWorkspaceModal } from '../../groups/components/group-workspace-modal/group-workspace-modal';
 import { GroupStore } from '../../groups/data/group-store';
@@ -108,6 +108,10 @@ export class CalendarPage {
 
   protected readonly weekDays = computed(() => buildWeekDays(this.store.focusedDate()));
   protected readonly dayViewDays = computed(() => [this.store.focusedDate()]);
+  protected readonly threeDayViews = computed(() => {
+    const d = this.store.focusedDate();
+    return [d, addDays(d, 1), addDays(d, 2)];
+  });
 
   // --- Vuốt ngang đổi kỳ (chỉ điện thoại) --------------------------------
   // Giống Google Calendar: vuốt trái = kỳ sau, vuốt phải = kỳ trước. Chỉ tính

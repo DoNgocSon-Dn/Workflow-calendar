@@ -56,6 +56,8 @@ interface DragDeltaState {
   eventId: string;
   deltaMin: number;
   deltaDays?: number;
+  /** Chỉ dùng cho resize: mép nào đang bị kéo. */
+  edge?: 'top' | 'bottom';
 }
 
 function snap(min: number): number {
@@ -183,6 +185,12 @@ export class TimeGridView {
   protected readonly dragMove = signal<DragDeltaState | null>(null);
   protected readonly dragResize = signal<DragDeltaState | null>(null);
 
+  /** Khối đang bị kéo/đổi độ dài — để template gắn class `.dragging` (không
+   *  dùng classList vì khối bị render lại khi đổi cột / đổi độ dài). */
+  protected isDragging(eventId: string): boolean {
+    return this.dragMove()?.eventId === eventId || this.dragResize()?.eventId === eventId;
+  }
+
   protected readonly Math = Math;
 
   protected readonly timedEventsByDay = computed(() => {
@@ -193,12 +201,17 @@ export class TimeGridView {
     // Map events with active drag modifications so multi-day clipping works dynamically during live dragging
     const events = this.store.visibleEvents().map((e) => {
       if (resizeState && resizeState.eventId === e.id) {
-        const newEnd = addMinutes(e.end, resizeState.deltaMin);
-        return { ...e, end: newEnd };
+        return resizeState.edge === 'top'
+          ? { ...e, start: addMinutes(e.start, resizeState.deltaMin) }
+          : { ...e, end: addMinutes(e.end, resizeState.deltaMin) };
       }
       if (moveState && moveState.eventId === e.id) {
-        const newStart = addMinutes(e.start, moveState.deltaMin);
-        const newEnd = addMinutes(e.end, moveState.deltaMin);
+        let newStart = addMinutes(e.start, moveState.deltaMin);
+        let newEnd = addMinutes(e.end, moveState.deltaMin);
+        if (moveState.deltaDays) {
+          newStart = addDays(newStart, moveState.deltaDays);
+          newEnd = addDays(newEnd, moveState.deltaDays);
+        }
         return { ...e, start: newStart, end: newEnd };
       }
       return e;
@@ -456,28 +469,43 @@ export class TimeGridView {
   }
 
   /**
-   * Kéo để DI CHUYỂN sự kiện (đổi giờ + đổi ngày).
+   * Kéo để DI CHUYỂN sự kiện — lên/xuống đổi GIỜ, trái/phải đổi NGÀY (cột).
    *
-   * Chuột: vào chế độ kéo ngay khi nhấn (như trước).
-   * Chạm: phải NHẤN GIỮ ~350ms mới "nhấc" sự kiện lên (rung nhẹ + phóng to) —
-   * giống Google Calendar, để chạm-rồi-vuốt vẫn cuộn lịch bình thường. Nhích
-   * quá 10px trong lúc chờ = coi là cuộn, huỷ kéo.
+   * Chuột: vào chế độ kéo ngay khi nhấn.
+   * Chạm: NHẤN GIỮ ~260ms mới "nhấc" sự kiện (rung nhẹ + phóng to) — giống
+   * Google Calendar. Vì `.event-block` đặt `touch-action: none` trên di động,
+   * trong lúc chờ nhấn-giữ mà ngón tay trượt thì component TỰ đẩy cuộn cho lưới
+   * (scrollTop/scrollLeft), nên vuốt-để-cuộn vẫn mượt và không lỡ mở trình sửa.
    */
   onBlockPointerDown(ev: PointerEvent, pe: PositionedEvent): void {
     if (ev.pointerType === 'mouse' && ev.button !== 0) return;
     const el = ev.currentTarget as HTMLElement;
     const isTouch = ev.pointerType === 'touch';
     const container = this.scrollContainer()?.nativeElement;
+    // Bắt con trỏ + nghe sự kiện trên VÙNG CUỘN (phần tử ổn định), KHÔNG trên
+    // khối sự kiện: khi kéo đổi cột ngày, khối bị render lại ở cột khác —
+    // capture/listener gắn trên khối cũ sẽ mất, đứng kéo giữa chừng.
+    const capEl: HTMLElement = container ?? el;
 
     const startX = ev.clientX;
     const startY = ev.clientY;
     let lastX = startX;
     let lastY = startY;
+    let preLastX = startX;
+    let preLastY = startY;
     let active = false;
     let moved = false;
     let slid = false;
     let animFrameId: number | null = null;
     let longPressTimer: number | null = null;
+
+    if (isTouch) {
+      try {
+        capEl.setPointerCapture(ev.pointerId);
+      } catch {
+        /* noop */
+      }
+    }
 
     const updateMove = (): void => {
       animFrameId = null;
@@ -515,11 +543,10 @@ export class TimeGridView {
       longPressTimer = null;
       if (isTouch) navigator.vibrate?.(8);
       try {
-        el.setPointerCapture(ev.pointerId);
+        capEl.setPointerCapture(ev.pointerId);
       } catch {
         /* trình duyệt cũ / phần tử đã bỏ */
       }
-      el.classList.add('dragging');
       this.dragMove.set({ eventId: pe.event.id, deltaMin: 0, deltaDays: 0 });
     };
 
@@ -528,26 +555,27 @@ export class TimeGridView {
         clearTimeout(longPressTimer);
         longPressTimer = null;
       }
-      el.removeEventListener('pointermove', onPointerMove);
-      el.removeEventListener('pointerup', onPointerUp);
-      el.removeEventListener('pointercancel', onPointerCancel);
+      capEl.removeEventListener('pointermove', onPointerMove);
+      capEl.removeEventListener('pointerup', onPointerUp);
+      capEl.removeEventListener('pointercancel', onPointerCancel);
       try {
-        el.releasePointerCapture(ev.pointerId);
+        capEl.releasePointerCapture(ev.pointerId);
       } catch {
         /* noop */
       }
       if (animFrameId) cancelAnimationFrame(animFrameId);
-      el.classList.remove('dragging');
       const state = this.dragMove();
       this.dragMove.set(null);
 
       if (!active) {
-        // Nhấn-giữ chưa kịp kích hoạt: tap thường → mở trình sửa; vuốt → bỏ qua.
-        if (!slid) this.editRequested.emit(pe.event);
+        // Chưa kịp "nhấc": chỉ mở trình sửa nếu là một cú CHẠM sạch (không cuộn,
+        // gần đứng yên, nhả nhanh) — không phải khi trình duyệt huỷ để cuộn.
+        const dist = Math.hypot(lastX - startX, lastY - startY);
+        if (commit && !slid && dist < 12) this.editRequested.emit(pe.event);
         return;
       }
       if (!commit || !moved || !state) {
-        if (!moved) this.editRequested.emit(pe.event);
+        this.editRequested.emit(pe.event);
         return;
       }
 
@@ -564,10 +592,22 @@ export class TimeGridView {
       lastX = e.clientX;
       lastY = e.clientY;
       if (!active) {
-        if (Math.hypot(e.clientX - startX, e.clientY - startY) > 10) {
+        const far = Math.hypot(e.clientX - startX, e.clientY - startY) > 12;
+        if (far) {
+          // Người dùng đang cuộn, không phải giữ để kéo. Huỷ nhấn-giữ và tự đẩy
+          // cuộn cho lưới (touch-action:none đã chặn cuộn tự nhiên trên khối).
           slid = true;
-          cleanup(false);
+          if (longPressTimer !== null) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+          }
+          if (container) {
+            container.scrollTop -= e.clientY - preLastY;
+            container.scrollLeft -= e.clientX - preLastX;
+          }
         }
+        preLastX = e.clientX;
+        preLastY = e.clientY;
         return;
       }
       e.preventDefault();
@@ -575,14 +615,18 @@ export class TimeGridView {
     };
 
     const onPointerUp = (): void => cleanup(true);
-    const onPointerCancel = (): void => cleanup(false);
+    // Trình duyệt giành cử chỉ để cuộn → coi như đã cuộn, KHÔNG mở trình sửa.
+    const onPointerCancel = (): void => {
+      slid = true;
+      cleanup(false);
+    };
 
-    el.addEventListener('pointermove', onPointerMove);
-    el.addEventListener('pointerup', onPointerUp);
-    el.addEventListener('pointercancel', onPointerCancel);
+    capEl.addEventListener('pointermove', onPointerMove);
+    capEl.addEventListener('pointerup', onPointerUp);
+    capEl.addEventListener('pointercancel', onPointerCancel);
 
     if (isTouch) {
-      longPressTimer = window.setTimeout(activate, 350);
+      longPressTimer = window.setTimeout(activate, 260);
     } else {
       ev.preventDefault();
       ev.stopPropagation();
@@ -591,16 +635,23 @@ export class TimeGridView {
   }
 
   /**
-   * Kéo mép dưới để đổi ĐỘ DÀI sự kiện. Vùng tay cầm nhỏ và có chủ đích nên
-   * kích hoạt ngay cả trên chạm (không cần nhấn giữ), nhưng chỉ đổi giờ sau khi
-   * ngón tay đã nhích > 4px để một cú chạm hụt không lỡ làm co sự kiện.
+   * Kéo mép TRÊN hoặc DƯỚI để đổi độ dài sự kiện (`edge` = 'top' đổi giờ bắt
+   * đầu, 'bottom' đổi giờ kết thúc). Kích hoạt ngay cả trên chạm (vùng tay cầm
+   * có chủ đích), chỉ đổi giờ sau khi ngón tay nhích > 4px.
    */
-  onResizePointerDown(ev: PointerEvent, pe: PositionedEvent): void {
+  onResizePointerDown(
+    ev: PointerEvent,
+    pe: PositionedEvent,
+    edge: 'top' | 'bottom' = 'bottom',
+  ): void {
     if (ev.pointerType === 'mouse' && ev.button !== 0) return;
     ev.preventDefault();
     ev.stopPropagation();
     const el = ev.currentTarget as HTMLElement;
     const container = this.scrollContainer()?.nativeElement;
+    // Xem chú thích ở onBlockPointerDown: bắt/nghe trên vùng cuộn ổn định vì
+    // khối (và tay cầm resize con của nó) bị render lại khi đổi độ dài.
+    const capEl: HTMLElement = container ?? el;
     const startY = ev.clientY;
     const originalDuration = diffMinutes(pe.event.start, pe.event.end);
 
@@ -608,9 +659,9 @@ export class TimeGridView {
     let engaged = false;
     let animFrameId: number | null = null;
 
-    this.dragResize.set({ eventId: pe.event.id, deltaMin: 0 });
+    this.dragResize.set({ eventId: pe.event.id, deltaMin: 0, edge });
     try {
-      el.setPointerCapture(ev.pointerId);
+      capEl.setPointerCapture(ev.pointerId);
     } catch {
       /* noop */
     }
@@ -619,12 +670,17 @@ export class TimeGridView {
       animFrameId = null;
       if (container) {
         const cRect = container.getBoundingClientRect();
-        if (lastY < cRect.top + 40) container.scrollTop -= 12;
-        else if (lastY > cRect.bottom - 40) container.scrollTop += 12;
+        if (lastY < cRect.top + 44) container.scrollTop -= 14;
+        else if (lastY > cRect.bottom - 44) container.scrollTop += 14;
       }
       let deltaMin = snapSigned(((lastY - startY) / HOUR_HEIGHT) * 60);
-      if (originalDuration + deltaMin < SNAP_MINUTES) deltaMin = SNAP_MINUTES - originalDuration;
-      this.dragResize.set({ eventId: pe.event.id, deltaMin });
+      if (edge === 'bottom') {
+        if (originalDuration + deltaMin < SNAP_MINUTES) deltaMin = SNAP_MINUTES - originalDuration;
+      } else {
+        // Kéo mép trên xuống (deltaMin > 0) = bắt đầu muộn hơn = ngắn lại.
+        if (originalDuration - deltaMin < SNAP_MINUTES) deltaMin = originalDuration - SNAP_MINUTES;
+      }
+      this.dragResize.set({ eventId: pe.event.id, deltaMin, edge });
     };
 
     const onPointerMove = (e: PointerEvent): void => {
@@ -636,11 +692,11 @@ export class TimeGridView {
     };
 
     const cleanup = (commit: boolean): void => {
-      el.removeEventListener('pointermove', onPointerMove);
-      el.removeEventListener('pointerup', onPointerUp);
-      el.removeEventListener('pointercancel', onPointerCancel);
+      capEl.removeEventListener('pointermove', onPointerMove);
+      capEl.removeEventListener('pointerup', onPointerUp);
+      capEl.removeEventListener('pointercancel', onPointerCancel);
       try {
-        el.releasePointerCapture(ev.pointerId);
+        capEl.releasePointerCapture(ev.pointerId);
       } catch {
         /* noop */
       }
@@ -648,16 +704,20 @@ export class TimeGridView {
       const state = this.dragResize();
       this.dragResize.set(null);
       if (commit && state && state.deltaMin !== 0) {
-        this.store.updateEvent(pe.event.id, { end: addMinutes(pe.event.end, state.deltaMin) });
+        if (edge === 'bottom') {
+          this.store.updateEvent(pe.event.id, { end: addMinutes(pe.event.end, state.deltaMin) });
+        } else {
+          this.store.updateEvent(pe.event.id, { start: addMinutes(pe.event.start, state.deltaMin) });
+        }
       }
     };
 
     const onPointerUp = (): void => cleanup(true);
     const onPointerCancel = (): void => cleanup(false);
 
-    el.addEventListener('pointermove', onPointerMove);
-    el.addEventListener('pointerup', onPointerUp);
-    el.addEventListener('pointercancel', onPointerCancel);
+    capEl.addEventListener('pointermove', onPointerMove);
+    capEl.addEventListener('pointerup', onPointerUp);
+    capEl.addEventListener('pointercancel', onPointerCancel);
   }
 }
 

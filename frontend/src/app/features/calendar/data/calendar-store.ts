@@ -1607,14 +1607,14 @@ export class CalendarStore {
 
   step(amount: number): void {
     const mode = this.viewMode();
-    const unit = mode === 'month' ? 'month' : mode === 'week' ? 'week' : 'day';
     this.focusedDate.update((d) => {
-      if (unit === 'month') {
+      if (mode === 'month') {
         const next = new Date(d);
         next.setMonth(next.getMonth() + amount);
         return next;
       }
-      if (unit === 'week') return addDays(d, amount * 7);
+      if (mode === 'week') return addDays(d, amount * 7);
+      if (mode === '3day') return addDays(d, amount * 3);
       return addDays(d, amount);
     });
 

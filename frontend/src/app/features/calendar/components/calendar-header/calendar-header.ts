@@ -100,6 +100,7 @@ export class CalendarHeader {
 
   readonly viewModes: { mode: CalendarViewMode; labelKey: string }[] = [
     { mode: 'day', labelKey: 'header.viewDay' },
+    { mode: '3day', labelKey: 'header.view3Day' },
     { mode: 'week', labelKey: 'header.viewWeek' },
     { mode: 'month', labelKey: 'header.viewMonth' },
     { mode: 'agenda', labelKey: 'header.viewAgenda' },
@@ -117,6 +118,11 @@ export class CalendarHeader {
     const fmt = DATE_FMT[locale];
     if (mode === 'month') return monthYearLabel(focused, locale);
     if (mode === 'day') return fmt.fullDate.format(focused);
+
+    if (mode === '3day') {
+      const end3 = addDays(focused, 2);
+      return `${fmt.dayMonth.format(focused)} – ${fmt.dayMonth.format(end3)}, ${end3.getFullYear()}`;
+    }
 
     const start = startOfWeek(focused);
     const end = addDays(start, 6);

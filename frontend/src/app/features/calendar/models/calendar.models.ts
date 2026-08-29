@@ -1,6 +1,6 @@
 import { RecurrenceRule } from '../utils/recurrence';
 
-export type CalendarViewMode = 'month' | 'week' | 'day' | 'agenda';
+export type CalendarViewMode = 'month' | 'week' | '3day' | 'day' | 'agenda';
 
 /** Loại lịch một sự kiện thuộc về — quyết định nó hiện trong "Lịch Dương" hay
  *  "Lịch Âm" ở chế độ xem Lịch biểu. Ngày lễ hệ thống suy ra từ `dateRule.kind`
