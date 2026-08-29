@@ -3,3 +3,6 @@ hinh/
 
 # Log cua start-dev.ps1
 logs/
+
+# Bản clone lồng của chính repo — gitlink tự tham chiếu, đã gỡ khỏi tracking
+/calendar/
