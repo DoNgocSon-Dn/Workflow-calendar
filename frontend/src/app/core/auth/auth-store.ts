@@ -30,8 +30,21 @@ export class AuthStore {
   }
 
   private async doInit(): Promise<void> {
-    const { data } = await this.supabase.auth.getSession();
-    this.session.set(data.session);
+    // KHÔNG được để bước này làm treo cả lần dựng ứng dụng: `getSession()` có
+    // thể gọi mạng (refresh token) và mạng có thể chậm/lỗi — nhất là trong
+    // trình duyệt in-app của Zalo/Messenger. Nếu hỏng, khởi động ở trạng thái
+    // "chưa đăng nhập"; onAuthStateChange bên dưới vẫn bắt được phiên khi
+    // Supabase khôi phục xong ở nền.
+    try {
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('getSession timeout')), 8000),
+      );
+      const { data } = await Promise.race([this.supabase.auth.getSession(), timeout]);
+      this.session.set(data.session);
+    } catch (err) {
+      console.warn('[auth] getSession lỗi/quá lâu — khởi động không phiên:', err);
+      this.session.set(null);
+    }
 
     this.supabase.auth.onAuthStateChange((_event, session) => {
       this.session.set(session);

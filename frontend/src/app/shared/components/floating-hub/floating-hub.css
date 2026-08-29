@@ -8,26 +8,31 @@
   width: 3.25rem;
   height: 3.25rem;
   border-radius: var(--radius-full);
-  border: 1px solid transparent;
-  background: var(--holiday-accent);
-  color: var(--holiday-accent-contrast);
-  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+  color: #3b82f6 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 14px rgba(59, 130, 246, 0.25);
   cursor: grab;
   touch-action: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: box-shadow 0.2s ease, background 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .fab:hover {
-  background: var(--holiday-accent-hover);
-  box-shadow: var(--shadow-sm-hover);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.5), 0 0 20px rgba(59, 130, 246, 0.4);
+  transform: scale(1.08);
 }
 
-.fab.dragging {
+.fab.dragging,
+.fab:active {
   cursor: grabbing;
-  box-shadow: var(--shadow-popover);
+  transform: scale(0.95);
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.4);
   transition: none;
 }
 

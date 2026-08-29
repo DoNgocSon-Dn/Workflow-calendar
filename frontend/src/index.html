@@ -35,9 +35,20 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Chỉ tải các weight thật sự được dùng trong CSS (500/600/700/800 + 400
        mặc định). Bản cũ xin cả 300 và 900 cùng hai kiểu nghiêng của Be Vietnam
-       Pro — không chỗ nào trong dự án khai báo chúng, mà font là thứ chặn
-       đường render đầu tiên của chính trang landing này. -->
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Caveat:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=Kalam:wght@400;700&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+       Pro — không chỗ nào trong dự án khai báo chúng.
+
+       Nạp KHÔNG chặn render: `media="print"` khiến trình duyệt tải nhưng không
+       chờ, `onload` đổi lại `all` khi xong. Thiếu bước này, mạng chậm hoặc
+       fonts.googleapis.com bị chặn (trình duyệt in-app) là cả trang — kể cả
+       màn hình chờ — đứng im màu đen cho tới lúc file CSS font về. -->
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Caveat:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=Kalam:wght@400;700&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    media="print"
+    onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  </noscript>
 
   <!-- CHỐNG NHÁY SÁNG: chọn sáng/tối NGAY trước khi trang vẽ — theo lựa chọn đã
        lưu, hoặc theo cài đặt của thiết bị nếu người dùng chưa chọn gì. -->
@@ -65,7 +76,9 @@
     html { background: #ffffff; }
     html.dark { background: #0f1117; }
 
-    /* Màn hình chờ hiện tới khi Angular dựng xong (main.ts tự gỡ). */
+    /* Màn hình chờ — KHÔNG phụ thuộc CSS ứng dụng hay Google Fonts: màu đặt
+       cứng, font hệ thống. main.ts / script bên dưới tự cập nhật tiến độ và tự
+       gỡ khi Angular dựng xong. */
     #app-splash {
       position: fixed;
       inset: 0;
@@ -75,59 +88,158 @@
       align-items: center;
       justify-content: center;
       gap: 20px;
-      background: var(--color-bg, #ffffff);
-      color: var(--color-text, #1a1a2e);
-      font-family: 'Be Vietnam Pro', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      padding: 24px;
+      background: #ffffff;
+      color: #1b1c28;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
       opacity: 1;
-      transition: opacity 0.4s ease;
+      transition: opacity 0.38s ease;
     }
-    html.dark #app-splash { background: var(--color-bg, #0f1117); color: var(--color-text, #f3f4f6); }
+    html.dark #app-splash { background: #0f1117; color: #e9eaf0; }
     #app-splash.app-splash--hide { opacity: 0; pointer-events: none; }
 
     .app-splash__mark {
-      width: 60px;
-      height: 60px;
-      border-radius: 16px;
-      background: #2f6bff;
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #4a83ff, #2f6bff);
       color: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 800;
-      font-size: 30px;
+      font-size: 32px;
       letter-spacing: -0.02em;
-      box-shadow: 0 10px 30px rgba(47, 107, 255, 0.35);
+      box-shadow: 0 12px 34px rgba(47, 107, 255, 0.4);
+      animation: appSplashPulse 1.8s ease-in-out infinite;
+    }
+    @keyframes appSplashPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
     }
     .app-splash__name {
-      font-size: 20px;
+      font-size: 19px;
       font-weight: 700;
       letter-spacing: -0.01em;
-      opacity: 0.9;
+      opacity: 0.92;
     }
-    .app-splash__spin {
-      width: 26px;
-      height: 26px;
-      border: 3px solid currentColor;
-      border-right-color: transparent;
-      border-radius: 50%;
-      opacity: 0.45;
-      animation: appSplashSpin 0.75s linear infinite;
+
+    /* Thanh tiến độ: chiều rộng nhảy theo các mốc THẬT (xem script), còn lớp
+       gradient chạy ngang để không bao giờ trông như bị đứng. */
+    .app-splash__bar {
+      position: relative;
+      width: 190px;
+      max-width: 62vw;
+      height: 4px;
+      border-radius: 99px;
+      background: rgba(128, 128, 128, 0.22);
+      overflow: hidden;
     }
-    @keyframes appSplashSpin { to { transform: rotate(360deg); } }
+    .app-splash__fill {
+      height: 100%;
+      width: 10%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #2f6bff, #6ea0ff, #2f6bff);
+      background-size: 200% 100%;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: appSplashSlide 1.4s linear infinite;
+    }
+    @keyframes appSplashSlide {
+      to { background-position: -200% 0; }
+    }
+
+    .app-splash__status {
+      font-size: 12.5px;
+      line-height: 1.4;
+      opacity: 0.62;
+      min-height: 1.4em;
+      text-align: center;
+      max-width: 260px;
+    }
+    .app-splash__retry {
+      display: none;
+      margin-top: 2px;
+      padding: 9px 20px;
+      border: 0;
+      border-radius: 10px;
+      background: #2f6bff;
+      color: #ffffff;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #app-splash.is-slow .app-splash__retry { display: inline-block; }
+
     @media (prefers-reduced-motion: reduce) {
-      .app-splash__spin { animation-duration: 2.4s; }
+      .app-splash__mark,
+      .app-splash__fill { animation: none; }
       #app-splash { transition: none; }
     }
   </style>
 </head>
 <body>
-  <div id="app-splash" aria-hidden="true">
+  <div id="app-splash" role="status" aria-live="polite">
     <div class="app-splash__mark">W</div>
     <div class="app-splash__name">Workflow</div>
-    <div class="app-splash__spin"></div>
+    <div class="app-splash__bar"><div class="app-splash__fill" id="app-splash-fill"></div></div>
+    <div class="app-splash__status" id="app-splash-status">Đang tải…</div>
+    <button type="button" class="app-splash__retry" onclick="location.reload()">Tải lại</button>
   </div>
 
   <app-root></app-root>
+
+  <script>
+    /* Tiến độ tải: các mốc THẬT (parse HTML → tải xong tài nguyên → Angular
+       khởi động → dựng xong). Giữa các mốc có thông báo trấn an theo thời gian
+       để người dùng biết app chưa "chết", và nút Tải lại hiện nếu quá lâu. */
+    (function () {
+      var fill = document.getElementById('app-splash-fill');
+      var statusEl = document.getElementById('app-splash-status');
+      var splash = document.getElementById('app-splash');
+      var pct = 12;
+      var finished = false;
+
+      function now() { return pct; }
+      function set(target, msg) {
+        if (finished) return;
+        if (target > pct) { pct = target; if (fill) fill.style.width = pct + '%'; }
+        if (msg && statusEl) statusEl.textContent = msg;
+      }
+
+      // API cho main.ts.
+      window.__appSplash = {
+        set: set,
+        fail: function (msg) {
+          finished = true;
+          if (splash) splash.classList.add('is-slow');
+          if (statusEl) statusEl.textContent = msg || 'Không tải được ứng dụng. Kiểm tra mạng rồi thử lại.';
+          if (fill) fill.style.animationPlayState = 'paused';
+        },
+        done: function () {
+          finished = true;
+          if (fill) fill.style.width = '100%';
+          if (statusEl) statusEl.textContent = 'Xong!';
+        },
+      };
+
+      set(12, 'Đang tải…');
+      document.addEventListener('DOMContentLoaded', function () { set(38, 'Đang tải giao diện…'); });
+      window.addEventListener('load', function () { set(62, 'Đang khởi động…'); });
+
+      setTimeout(function () { set(Math.max(now(), 30), 'Đang tải giao diện…'); }, 2000);
+      setTimeout(function () {
+        if (!finished) set(Math.max(now(), 70), 'Máy chủ đang khởi động lại, đợi chút…');
+      }, 7000);
+      setTimeout(function () {
+        if (!finished && splash) {
+          splash.classList.add('is-slow');
+          if (statusEl) statusEl.textContent = 'Tải lâu hơn bình thường. Thử tải lại nếu chờ quá lâu.';
+        }
+      }, 18000);
+    })();
+  </script>
+
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
