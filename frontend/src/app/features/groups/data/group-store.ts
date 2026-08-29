@@ -9,6 +9,7 @@ import {
   GroupMessage,
   GroupMessageAttachment,
   GroupMessageMention,
+  GroupMeeting,
   GroupTask,
   GroupUpdate,
 } from '../models/group.models';
@@ -100,6 +101,9 @@ export class GroupStore {
   readonly requestedWorkspaceTab = signal<WorkspaceTabRequest | null>(null);
   readonly activeWorkspaceTab = signal<WorkspaceTabRequest>('tasks');
   readonly unreadChatCount = signal<number>(0);
+  /** Phòng họp "đang mở" của nhóm ĐANG XEM (null nếu chưa có / migration 40 chưa
+   *  chạy). Đặt lại mỗi lần đổi nhóm trong `selectGroup`. */
+  readonly meeting = signal<GroupMeeting | null>(null);
   /** Tin nhắn cần cuộn tới sau khi mở tab Trò chuyện. */
   readonly pendingChatMessageId = signal<string | null>(null);
   /** ID các nhóm có tin nhắn chưa đọc — cho sidebar "sáng lên" kiểu Messenger
@@ -620,6 +624,17 @@ export class GroupStore {
       },
     );
 
+    // Phòng họp nhóm được tạo / sửa / gỡ → cập nhật nếu đang mở đúng nhóm đó.
+    this.realtime.on<{ groupId: string; meeting: GroupMeeting | null }>(
+      'group:meetingChanged',
+      (payload) => {
+        if (!payload) return;
+        if (this.isActiveGroup(payload.groupId)) {
+          this.meeting.set(payload.meeting ?? null);
+        }
+      },
+    );
+
     // Yêu cầu vừa được duyệt: thành viên hiện có refresh danh sách ngay.
     this.realtime.on<{ groupId: string; member: GroupMember }>(
       'group:memberJoined',
@@ -1058,6 +1073,7 @@ export class GroupStore {
     // trong danh sách CŨ và suy ra vai trò của nhóm khác — hiện nhầm nút quản
     // lý, hoặc (với người không thuộc nhóm cũ) trả null gây điều hướng tab lặp.
     this.members.set([]);
+    this.meeting.set(null);
     this.activeWorkspaceModalOpen.set(true);
     this.clearGroupUnread(group.id);
     // Đọc rồi xoá ngay trong cùng chỗ — chỉ MỘT nơi tiêu thụ cờ này, tránh
@@ -1078,6 +1094,31 @@ export class GroupStore {
     }
 
     await Promise.all([this.loadMembers(group.id), this.loadTasks(group.id), this.loadMessages(group.id)]);
+    void this.loadMeeting(group.id);
+  }
+
+  async loadMeeting(groupId: string): Promise<void> {
+    try {
+      const m = await this.api.getMeeting(groupId);
+      if (this.activeGroupId() === groupId) this.meeting.set(m);
+    } catch (err) {
+      console.error('Lỗi khi tải phòng họp nhóm:', err);
+    }
+  }
+
+  /** Tạo / sửa phòng họp (chỉ Trưởng/Phó nhóm — backend chặn 403 nếu không). */
+  async saveMeeting(
+    groupId: string,
+    payload: { link: string; title?: string; startsAt?: string; durationMin?: number },
+  ): Promise<GroupMeeting> {
+    const m = await this.api.upsertMeeting(groupId, payload);
+    if (this.activeGroupId() === groupId) this.meeting.set(m);
+    return m;
+  }
+
+  async removeMeeting(groupId: string): Promise<void> {
+    await this.api.deleteMeeting(groupId);
+    if (this.activeGroupId() === groupId) this.meeting.set(null);
   }
 
   async loadMembers(groupId: string): Promise<void> {

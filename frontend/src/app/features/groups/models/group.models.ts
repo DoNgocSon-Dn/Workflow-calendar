@@ -106,6 +106,18 @@ export interface GroupTask {
   createdAt: string;
 }
 
+/** Phòng họp "đang mở" của nhóm — tối đa 1 / nhóm (xem migration 40). */
+export interface GroupMeeting {
+  groupId: string;
+  link: string;
+  title?: string;
+  startsAt?: string;
+  durationMin?: number;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /**
  * Một lượt nhắc tên trong tin nhắn.
  *

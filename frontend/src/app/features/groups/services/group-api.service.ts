@@ -14,6 +14,7 @@ import {
   GroupMessage,
   GroupMessageAttachment,
   GroupMessageMention,
+  GroupMeeting,
   GroupTask,
   GroupUpdate,
 } from '../models/group.models';
@@ -278,6 +279,36 @@ export class GroupApiService {
         `${environment.apiUrl}/groups/${groupId}/tasks/${taskId}`,
         { headers: this.authHeaders },
       ),
+    );
+  }
+
+  /** `null` khi nhóm chưa mở phòng họp nào. */
+  async getMeeting(groupId: string): Promise<GroupMeeting | null> {
+    return firstValueFrom(
+      this.http.get<GroupMeeting | null>(`${environment.apiUrl}/groups/${groupId}/meeting`, {
+        headers: this.authHeaders,
+      }),
+    );
+  }
+
+  async upsertMeeting(
+    groupId: string,
+    payload: { link: string; title?: string; startsAt?: string; durationMin?: number },
+  ): Promise<GroupMeeting> {
+    return firstValueFrom(
+      this.http.put<GroupMeeting>(
+        `${environment.apiUrl}/groups/${groupId}/meeting`,
+        payload,
+        { headers: this.authHeaders },
+      ),
+    );
+  }
+
+  async deleteMeeting(groupId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<{ ok: boolean }>(`${environment.apiUrl}/groups/${groupId}/meeting`, {
+        headers: this.authHeaders,
+      }),
     );
   }
 

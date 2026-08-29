@@ -9,6 +9,19 @@
           </div>
         </div>
         <div class="header-actions">
+          @if (canUserSeeGroupCalendar()) {
+            <button
+              type="button"
+              class="btn-header"
+              [class.btn-header--live]="activeMeeting()"
+              [title]="i18n.t('groupMeet.headerTooltip')"
+              (click)="setTab('calendar')"
+            >
+              <app-icon name="video" />
+              {{ i18n.t('groupMeet.headerButton') }}
+              @if (activeMeeting()) { <span class="live-dot" aria-hidden="true"></span> }
+            </button>
+          }
           <button
             type="button"
             class="btn-header"
@@ -139,6 +152,34 @@
           </button>
         }
       </nav>
+
+      <!-- Thanh phòng họp: hiện trên MỌI tab khi nhóm có phòng đang mở, để bất
+           kỳ thành viên nào cũng bấm Tham gia được ngay (tab Lịch họp chỉ
+           Trưởng/Phó nhóm thấy). -->
+      @if (activeMeeting(); as meet) {
+        <div class="meeting-bar">
+          <app-icon name="video" class="meeting-bar__icon" />
+          <span class="meeting-bar__label">
+            {{ meet.title || i18n.t('groupMeet.defaultTitle') }}
+          </span>
+          <a
+            class="meeting-bar__join"
+            [href]="formatExternalUrl(meet.link)"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ i18n.t('groupMeet.join') }}
+          </a>
+          @if (canManageMeeting()) {
+            <button type="button" class="icon-btn-sm" [title]="i18n.t('common.edit')" (click)="setTab('calendar'); startEditMeeting()">
+              <app-icon name="pencil" />
+            </button>
+            <button type="button" class="icon-btn-sm icon-btn-sm--danger" [title]="i18n.t('groupMeet.remove')" (click)="removeMeeting()">
+              <app-icon name="trash" />
+            </button>
+          }
+        </div>
+      }
 
       <div class="modal-body">
         <!-- TAB 1: TASKS -->
@@ -881,6 +922,64 @@
         <!-- TAB 4: CALENDAR INFO -->
         @if (activeTab() === 'calendar' && canUserSeeGroupCalendar()) {
           <div class="calendar-section">
+            <!-- Phòng họp cố định (bảng group_meetings) — link dùng lại được,
+                 mọi thành viên thấy nút Tham gia nổi ở thanh phía trên. -->
+            <div class="info-card meet-room-card">
+              <h3><app-icon name="video" /> {{ i18n.t('groupMeet.cardTitle') }}</h3>
+
+              @if (activeMeeting(); as meet) {
+                @if (!meetingEditing()) {
+                  <p class="meet-room-title">{{ meet.title || i18n.t('groupMeet.defaultTitle') }}</p>
+                  <a class="meet-room-link" [href]="formatExternalUrl(meet.link)" target="_blank" rel="noopener noreferrer">{{ meet.link }}</a>
+                  <div class="meet-room-actions">
+                    <a class="btn btn-primary" [href]="formatExternalUrl(meet.link)" target="_blank" rel="noopener noreferrer">{{ i18n.t('groupMeet.join') }}</a>
+                    @if (canManageMeeting()) {
+                      <button type="button" class="btn btn-ghost" (click)="startEditMeeting()">{{ i18n.t('common.edit') }}</button>
+                      <button type="button" class="btn btn-ghost" (click)="removeMeeting()">{{ i18n.t('groupMeet.remove') }}</button>
+                    }
+                  </div>
+                }
+              } @else if (!meetingEditing() && !canManageMeeting()) {
+                <p class="meet-hint">{{ i18n.t('groupMeet.noneMember') }}</p>
+              }
+
+              @if (canManageMeeting() && (meetingEditing() || !activeMeeting())) {
+                <div class="meet-room-form">
+                  <label class="meet-label">{{ i18n.t('groupMeet.linkLabel') }}</label>
+                  <input
+                    type="url"
+                    class="text-input"
+                    inputmode="url"
+                    [placeholder]="i18n.t('groupMeet.linkPlaceholder')"
+                    [value]="meetingLinkInput()"
+                    (input)="meetingLinkInput.set($any($event.target).value)"
+                  />
+                  <div class="meet-room-link-tools">
+                    <button type="button" class="btn-mini-ghost" (click)="openGoogleMeetTab()">{{ i18n.t('groupMeet.openGoogleMeet') }}</button>
+                    <button type="button" class="btn-mini-ghost" (click)="useJitsiRoom()">{{ i18n.t('groupMeet.quickJitsi') }}</button>
+                  </div>
+                  <label class="meet-label">{{ i18n.t('groupMeet.titleLabel') }}</label>
+                  <input
+                    type="text"
+                    class="text-input"
+                    maxlength="200"
+                    [placeholder]="i18n.t('groupMeet.titlePlaceholder')"
+                    [value]="meetingTitleInput()"
+                    (input)="meetingTitleInput.set($any($event.target).value)"
+                  />
+                  @if (meetingErr(); as err) { <p class="meet-hint meet-hint-error">{{ err }}</p> }
+                  <div class="meet-room-actions">
+                    <button type="button" class="btn btn-primary" [disabled]="meetingSaving()" (click)="saveMeetingLink()">
+                      {{ meetingSaving() ? i18n.t('common.saving') : i18n.t('common.save') }}
+                    </button>
+                    @if (activeMeeting()) {
+                      <button type="button" class="btn btn-ghost" (click)="cancelEditMeeting()">{{ i18n.t('common.cancel') }}</button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+
             <div class="info-card">
               <h3><app-icon name="calendar" /> {{ i18n.t('group.calendarTabTitle') }}</h3>
               <p>{{ i18n.t('group.calendarInfoPre') }}<strong>{{ i18n.t('group.calendarInfoStrong') }}</strong>{{ i18n.t('group.calendarInfoPost') }}</p>

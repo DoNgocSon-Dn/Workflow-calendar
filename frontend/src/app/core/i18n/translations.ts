@@ -1031,8 +1031,8 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'group.messagePlaceholderFull': 'Nhập tin nhắn... (gõ @ để nhắc tên, Shift+Enter để xuống dòng)',
 
     // --- phòng họp trực tuyến ---------------------------------------------
-    'meet.title': 'Phòng họp trực tuyến',
-    'meet.intro': 'Bấm "Tạo phòng họp" là có link ngay — không phải đi lấy rồi dán về. Link hiện ở dưới để sao chép, và tới giờ họp thì cả nhóm cùng thấy một popup kèm nút Tham gia.',
+    'meet.title': 'Lên lịch buổi họp',
+    'meet.intro': 'Tạo một sự kiện họp trên lịch nhóm kèm lời nhắc trước giờ. Dùng khi cần đặt lịch cho một buổi họp cụ thể; còn phòng họp dùng lại được thì đặt ở "Phòng họp" phía trên.',
     'meet.titleLabel': 'Tiêu đề buổi họp',
     'meet.titlePlaceholder': 'Để trống sẽ tự đặt theo tên nhóm',
     'meet.startLabel': 'Thời gian bắt đầu',
@@ -1056,6 +1056,24 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'meet.errAnnounce': 'Đã lưu phòng họp, nhưng chưa gửi được thông báo vào chat nhóm.',
     'meet.errSave': 'Không lưu được phòng họp. Vui lòng thử lại.',
     'meet.errCopy': 'Trình duyệt không cho sao chép tự động — hãy tự bôi đen và sao chép link.',
+
+    // --- phòng họp cố định của nhóm (group_meetings) -----------------------
+    'groupMeet.headerButton': 'Lịch họp',
+    'groupMeet.headerTooltip': 'Mở / đặt phòng họp của nhóm',
+    'groupMeet.cardTitle': 'Phòng họp',
+    'groupMeet.defaultTitle': 'Phòng họp nhóm',
+    'groupMeet.join': 'Tham gia họp',
+    'groupMeet.remove': 'Gỡ phòng họp',
+    'groupMeet.removeConfirm': 'Gỡ phòng họp của nhóm? Nút "Tham gia họp" sẽ biến mất với mọi thành viên.',
+    'groupMeet.noneMember': 'Trưởng nhóm chưa mở phòng họp nào.',
+    'groupMeet.linkLabel': 'Link phòng họp',
+    'groupMeet.linkPlaceholder': 'Dán link Google Meet / Zoom / Jitsi…',
+    'groupMeet.openGoogleMeet': 'Mở Google Meet',
+    'groupMeet.quickJitsi': 'hoặc tạo phòng nhanh (Jitsi)',
+    'groupMeet.titleLabel': 'Tên phòng (tuỳ chọn)',
+    'groupMeet.titlePlaceholder': 'VD: Họp tuần',
+    'groupMeet.invalidLink': 'Link không hợp lệ — cần bắt đầu bằng http:// hoặc https://',
+    'groupMeet.saveError': 'Không lưu được phòng họp. Thử lại nhé.',
 
     // --- link mời + yêu cầu tham gia ----------------------------------------
     'group.inviteLinkTitle': 'Link mời tham gia nhóm',
@@ -2150,8 +2168,8 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'group.messagePlaceholderFull': 'Type a message... (type @ to mention, Shift+Enter for a new line)',
 
     // --- online meeting room ---------------------------------------------
-    'meet.title': 'Online meeting room',
-    'meet.intro': 'Click "Create meeting room" to get a link instantly — no need to fetch and paste one. The link shows below to copy, and when the meeting starts everyone in the group sees a popup with a Join button.',
+    'meet.title': 'Schedule a meeting',
+    'meet.intro': 'Create a meeting event on the group calendar with reminders. Use this to schedule a specific meeting; for a reusable room, use "Meeting room" above.',
     'meet.titleLabel': 'Meeting title',
     'meet.titlePlaceholder': 'Leave blank to use the group name',
     'meet.startLabel': 'Start time',
@@ -2175,6 +2193,24 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'meet.errAnnounce': "The meeting room was saved, but the group chat notification couldn't be sent.",
     'meet.errSave': "Couldn't save the meeting room. Please try again.",
     'meet.errCopy': "The browser blocked automatic copying — please select and copy the link manually.",
+
+    // --- persistent group meeting room (group_meetings) --------------------
+    'groupMeet.headerButton': 'Meeting',
+    'groupMeet.headerTooltip': "Open / set the group's meeting room",
+    'groupMeet.cardTitle': 'Meeting room',
+    'groupMeet.defaultTitle': 'Group meeting',
+    'groupMeet.join': 'Join meeting',
+    'groupMeet.remove': 'Remove room',
+    'groupMeet.removeConfirm': 'Remove the group meeting room? The "Join meeting" button disappears for everyone.',
+    'groupMeet.noneMember': 'The group leader has not opened a meeting room yet.',
+    'groupMeet.linkLabel': 'Meeting link',
+    'groupMeet.linkPlaceholder': 'Paste a Google Meet / Zoom / Jitsi link…',
+    'groupMeet.openGoogleMeet': 'Open Google Meet',
+    'groupMeet.quickJitsi': 'or create a quick room (Jitsi)',
+    'groupMeet.titleLabel': 'Room name (optional)',
+    'groupMeet.titlePlaceholder': 'e.g. Weekly sync',
+    'groupMeet.invalidLink': 'Invalid link — it must start with http:// or https://',
+    'groupMeet.saveError': 'Could not save the meeting room. Please try again.',
 
     // --- invite link + join requests ----------------------------------------
     'group.inviteLinkTitle': 'Group invite link',

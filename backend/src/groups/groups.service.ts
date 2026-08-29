@@ -17,6 +17,7 @@ import { InviteGroupMemberDto } from './dto/invite-group-member.dto';
 import { UpdateGroupMemberRoleDto } from './dto/update-group-member-role.dto';
 import { CreateGroupTaskDto } from './dto/create-group-task.dto';
 import { UpdateGroupTaskDto } from './dto/update-group-task.dto';
+import { UpsertGroupMeetingDto } from './dto/upsert-group-meeting.dto';
 import {
   MessageMentionDto,
   SendGroupMessageDto,

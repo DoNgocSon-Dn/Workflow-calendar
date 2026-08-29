@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -20,6 +21,7 @@ import { InviteGroupMemberDto } from './dto/invite-group-member.dto';
 import { UpdateGroupMemberRoleDto } from './dto/update-group-member-role.dto';
 import { CreateGroupTaskDto } from './dto/create-group-task.dto';
 import { UpdateGroupTaskDto } from './dto/update-group-task.dto';
+import { UpsertGroupMeetingDto } from './dto/upsert-group-meeting.dto';
 import { SendGroupMessageDto } from './dto/send-group-message.dto';
 import { UpdateGroupMessageDto } from './dto/update-group-message.dto';
 import { RespondGroupInviteDto } from './dto/respond-group-invite.dto';
@@ -290,6 +292,34 @@ export class GroupsController {
     @Param('taskId') taskId: string,
   ) {
     return this.groupsService.deleteTask(supabase, groupId, taskId);
+  }
+
+  @Get(':id/meeting')
+  async getMeeting(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @Param('id') groupId: string,
+  ) {
+    return this.groupsService.getMeeting(supabase, groupId);
+  }
+
+  @Put(':id/meeting')
+  async upsertMeeting(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('id') groupId: string,
+    @Body() dto: UpsertGroupMeetingDto,
+  ) {
+    return this.groupsService.upsertMeeting(supabase, user, groupId, dto);
+  }
+
+  @Delete(':id/meeting')
+  async deleteMeeting(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('id') groupId: string,
+  ) {
+    await this.groupsService.deleteMeeting(supabase, user, groupId);
+    return { ok: true };
   }
 
   @Get(':id/messages')

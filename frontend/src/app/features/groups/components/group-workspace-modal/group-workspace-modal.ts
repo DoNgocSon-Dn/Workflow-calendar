@@ -1202,6 +1202,84 @@ export class GroupWorkspaceModal {
   }
 
   // ---------------------------------------------------------------------
+  // Phòng họp cố định của nhóm (bảng group_meetings) — CRUD cho Trưởng/Phó nhóm
+  // ---------------------------------------------------------------------
+
+  /** Phòng họp đang mở của nhóm (null nếu chưa có). */
+  protected readonly activeMeeting = this.store.meeting;
+  /** Chỉ Trưởng nhóm / Phó nhóm tạo–sửa–gỡ phòng họp. */
+  protected readonly canManageMeeting = this.canInviteMembers;
+
+  protected readonly meetingEditing = signal(false);
+  protected readonly meetingLinkInput = signal('');
+  protected readonly meetingTitleInput = signal('');
+  protected readonly meetingSaving = signal(false);
+  protected readonly meetingErr = signal<string | null>(null);
+
+  /** Mở Google Meet ở tab mới để lấy link thật rồi dán vào ô (không tự sinh
+   *  được mã meet.google.com hợp lệ ở client — xem meeting-link.util.ts). */
+  openGoogleMeetTab(): void {
+    window.open('https://meet.google.com/new', '_blank', 'noopener');
+    this.meetingEditing.set(true);
+  }
+
+  /** Phòng Jitsi tạo tức thì, không cần tài khoản — phương án nhanh. */
+  useJitsiRoom(): void {
+    this.meetingLinkInput.set(createMeetingRoomLink());
+    this.meetingEditing.set(true);
+  }
+
+  startEditMeeting(): void {
+    const m = this.activeMeeting();
+    this.meetingLinkInput.set(m?.link ?? '');
+    this.meetingTitleInput.set(m?.title ?? '');
+    this.meetingErr.set(null);
+    this.meetingEditing.set(true);
+  }
+
+  cancelEditMeeting(): void {
+    this.meetingEditing.set(false);
+    this.meetingLinkInput.set('');
+    this.meetingTitleInput.set('');
+    this.meetingErr.set(null);
+  }
+
+  async saveMeetingLink(): Promise<void> {
+    const group = this.store.activeGroup();
+    const link = this.meetingLinkInput().trim();
+    if (!group || this.meetingSaving()) return;
+    if (!/^https?:\/\/\S+$/.test(link)) {
+      this.meetingErr.set(this.i18n.t('groupMeet.invalidLink'));
+      return;
+    }
+    this.meetingSaving.set(true);
+    this.meetingErr.set(null);
+    try {
+      await this.store.saveMeeting(group.id, {
+        link,
+        title: this.meetingTitleInput().trim() || undefined,
+      });
+      this.cancelEditMeeting();
+    } catch (err: any) {
+      this.meetingErr.set(err?.error?.message || this.i18n.t('groupMeet.saveError'));
+    } finally {
+      this.meetingSaving.set(false);
+    }
+  }
+
+  async removeMeeting(): Promise<void> {
+    const group = this.store.activeGroup();
+    if (!group) return;
+    const ok = await this.dialog.confirm(this.i18n.t('groupMeet.removeConfirm'), { danger: true });
+    if (!ok) return;
+    try {
+      await this.store.removeMeeting(group.id);
+    } catch (err: any) {
+      await this.dialog.alert(err?.error?.message || this.i18n.t('groupMeet.saveError'));
+    }
+  }
+
+  // ---------------------------------------------------------------------
   // Phòng họp trực tuyến (tab Lịch Nhóm)
   // ---------------------------------------------------------------------
 
