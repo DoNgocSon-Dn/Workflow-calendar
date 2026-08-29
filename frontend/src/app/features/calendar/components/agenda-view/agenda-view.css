@@ -156,131 +156,160 @@
 .agenda-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 2px;
   padding-bottom: 1.25rem;
 }
 
-.day-group {
+/* Dải tháng — như tiêu đề tháng trong "Lịch biểu" của Google Calendar. */
+.agenda-month {
+  position: sticky;
+  top: -4px;
+  z-index: 2;
+  margin: 1.4rem 0 0.5rem;
+  padding: 0.35rem 0;
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-transform: capitalize;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border-bottom: 2px solid var(--holiday-accent-soft);
+}
+.agenda-list > .agenda-month:first-child {
+  margin-top: 0;
+}
+
+/* Một ngày = cột trái (thứ + số) + danh sách pill bên phải. */
+.day-row {
+  display: grid;
+  grid-template-columns: 3rem 1fr;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  align-items: start;
+  border-top: 1px solid var(--color-border);
+}
+.day-row:first-of-type {
+  border-top: none;
+}
+
+.day-col {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  align-items: center;
+  padding-top: 0.1rem;
+  line-height: 1.1;
 }
-
-.day-header {
+.day-weekday {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-text-tertiary);
+}
+.day-number {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-top: 1px;
+}
+.day-row.is-today .day-weekday {
+  color: var(--holiday-accent);
+}
+.day-row.is-today .day-number {
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
+  border-radius: 50%;
+  width: 1.9rem;
+  height: 1.9rem;
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 0.35rem;
+  justify-content: center;
 }
-
-.day-title {
-  font-size: 0.85rem;
+.day-row.is-past {
+  opacity: 0.62;
+}
+.day-row.lunar {
+  grid-template-columns: 1fr;
+}
+.day-lunar-label {
+  font-size: 0.82rem;
   font-weight: 700;
-  color: var(--holiday-accent);
+  color: var(--color-warning);
   text-transform: capitalize;
 }
 
-.day-title.lunar-title {
-  color: var(--color-warning);
-}
-
-.badge {
-  background: var(--color-surface-hover);
-  color: var(--color-text-tertiary);
-  padding: 0.1rem 0.45rem;
-  border-radius: var(--radius-full);
-  font-size: 0.7rem;
-}
-
-.holiday-tag {
-  background: var(--holiday-accent-soft);
-  color: var(--holiday-accent);
-  padding: 0.1rem 0.5rem;
-  border-radius: var(--radius-full);
-  font-size: 0.72rem;
-  font-weight: 600;
-}
-
-.events-list {
+.day-events {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-}
-
-.event-card {
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  display: flex;
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-
-.event-card.system-card {
-  background: color-mix(in srgb, var(--holiday-accent) 4%, var(--color-surface));
-}
-
-.event-card.marker-card {
-  background: color-mix(in srgb, var(--color-warning) 5%, var(--color-surface));
-  border-color: color-mix(in srgb, var(--color-warning) 30%, var(--color-border));
-}
-
-.event-card.non-clickable {
-  cursor: default;
-}
-
-.event-card:not(.non-clickable):hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm-hover);
-  border-color: var(--color-border-strong);
-}
-
-.color-bar {
-  width: 0.375rem;
-}
-
-.event-details {
-  padding: 0.5rem 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+  gap: 4px;
   min-width: 0;
 }
 
-.event-title {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text);
+/* Pill sự kiện — thân tô nhạt theo màu lịch (đỡ rối hơn "vạch màu + hộp trắng"). */
+.event-pill {
   display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-radius: 10px;
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
+  font: inherit;
+  color: var(--color-text);
+  transition: filter 0.12s ease, transform 0.12s ease;
+}
+.event-pill:not(.non-clickable):hover {
+  filter: brightness(1.05);
+  transform: translateX(1px);
+}
+.event-pill.non-clickable {
+  cursor: default;
+}
+
+.pill-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--pill-accent);
+}
+
+.pill-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.pill-title {
+  font-size: 0.86rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+.pill-src {
+  flex: 0 0 auto;
+  background: color-mix(in srgb, var(--pill-accent) 22%, transparent);
+  color: var(--color-text-secondary);
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.05rem 0.36rem;
+  border-radius: 4px;
+}
+
+.pill-sub {
+  font-size: 0.74rem;
+  color: var(--color-text-tertiary);
   overflow-wrap: anywhere;
 }
-
-.src-badge {
-  background: color-mix(in srgb, var(--holiday-accent) 14%, transparent);
-  color: var(--holiday-accent);
-  font-size: 0.66rem;
-  font-weight: 700;
-  padding: 0.1rem 0.4rem;
-  border-radius: 4px;
-  border: 1px solid color-mix(in srgb, var(--holiday-accent) 28%, transparent);
-}
-
-.event-time {
-  font-size: 0.75rem;
-  color: var(--color-text-tertiary);
-  display: flex;
-  gap: 0.6rem;
-  align-items: center;
-}
-
-.event-meta {
-  font-size: 0.72rem;
-  color: var(--color-text-tertiary);
-  margin-top: 0.05rem;
+.pill-loc,
+.pill-tz {
+  white-space: nowrap;
 }
 
 .time-tag.span-tag {
@@ -390,18 +419,9 @@
     padding-right: 0.75rem;
   }
 
-  /* Thẻ sự kiện: giờ và phần meta xuống dòng dưới tiêu đề thay vì chen cùng
-     hàng rồi ép tiêu đề còn vài ký tự. */
-  .event-card {
-    flex-wrap: wrap;
-  }
-
-  .event-details {
-    min-width: 0;
-  }
-
-  .event-title {
-    overflow-wrap: anywhere;
+  .day-row {
+    grid-template-columns: 2.6rem 1fr;
+    gap: 0.55rem;
   }
 
   .mine-filter-row {

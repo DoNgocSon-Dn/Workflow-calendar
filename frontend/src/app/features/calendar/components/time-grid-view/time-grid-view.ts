@@ -526,7 +526,6 @@ export class TimeGridView {
     let preLastY = startY;
     let active = false;
     let moved = false;
-    let slid = false;
     let animFrameId: number | null = null;
     let longPressTimer: number | null = null;
     // Đo TỌA ĐỘ CÁC CỘT một lần lúc nhấc, không đo lại mỗi frame (getBounding
@@ -612,14 +611,12 @@ export class TimeGridView {
       this.dragMove.set(null);
 
       if (!active) {
-        // Chưa kịp "nhấc": chỉ mở trình sửa nếu là một cú CHẠM sạch (không cuộn,
-        // gần đứng yên, nhả nhanh) — không phải khi trình duyệt huỷ để cuộn.
-        const dist = Math.hypot(lastX - startX, lastY - startY);
-        if (commit && !slid && dist < 12) this.editRequested.emit(pe.event);
+        // Chưa "nhấc" (chạm nhanh / cuộn). KHÔNG mở trình sửa nữa — nhấp một
+        // lần chỉ để bắt đầu di chuyển; sửa thì nhấp đúp (xem onBlockDblClick).
         return;
       }
       if (!commit || !moved || !state) {
-        this.editRequested.emit(pe.event);
+        // "Nhấc" xong nhưng không kéo đi đâu — thả tại chỗ, không làm gì.
         return;
       }
 
@@ -640,7 +637,6 @@ export class TimeGridView {
         if (far) {
           // Người dùng đang cuộn, không phải giữ để kéo. Huỷ nhấn-giữ và tự đẩy
           // cuộn cho lưới (touch-action:none đã chặn cuộn tự nhiên trên khối).
-          slid = true;
           if (longPressTimer !== null) {
             clearTimeout(longPressTimer);
             longPressTimer = null;
@@ -659,23 +655,30 @@ export class TimeGridView {
     };
 
     const onPointerUp = (): void => cleanup(true);
-    // Trình duyệt giành cử chỉ để cuộn → coi như đã cuộn, KHÔNG mở trình sửa.
-    const onPointerCancel = (): void => {
-      slid = true;
-      cleanup(false);
-    };
+    const onPointerCancel = (): void => cleanup(false);
 
     capEl.addEventListener('pointermove', onPointerMove);
     capEl.addEventListener('pointerup', onPointerUp);
     capEl.addEventListener('pointercancel', onPointerCancel);
 
     if (isTouch) {
-      longPressTimer = window.setTimeout(activate, 260);
+      // Trên chạm vẫn cần một nhịp giữ ngắn để phân biệt "kéo sự kiện" với
+      // "vuốt cuộn lưới" (cả hai đều là kéo dọc). 180ms đủ nhanh để cảm giác
+      // như chạm-là-nhấc, đủ chậm để một cú vuốt cuộn không nhấc nhầm.
+      longPressTimer = window.setTimeout(activate, 180);
     } else {
       ev.preventDefault();
       ev.stopPropagation();
       activate();
     }
+  }
+
+  /** Nhấp đúp một khối sự kiện → mở trình sửa. (Nhấp một lần chỉ để kéo.) */
+  onBlockDblClick(ev: Event, pe: PositionedEvent): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    this.dragMove.set(null);
+    this.editRequested.emit(pe.event);
   }
 
   /**

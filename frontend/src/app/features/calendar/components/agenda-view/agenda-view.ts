@@ -319,4 +319,46 @@ export class AgendaView {
     if (event.isLunarMarker) return; // mốc lịch, không có chi tiết
     this.selectEvent.emit(event.id);
   }
+
+  // --- Bố cục kiểu "Lịch biểu" của Google Calendar ---------------------
+
+  private readonly intlLocale = computed(() =>
+    this.i18n.locale() === 'en' ? 'en-US' : 'vi-VN',
+  );
+
+  /** Nhãn tháng chèn phía trên nhóm ngày `index` khi sang tháng mới. */
+  protected monthHeaderBefore(index: number): string | null {
+    const days = this.visibleGroupedDays();
+    const cur = days[index]?.date;
+    if (!cur) return null;
+    const prev = days[index - 1]?.date;
+    const sameMonth =
+      prev && prev.getFullYear() === cur.getFullYear() && prev.getMonth() === cur.getMonth();
+    if (sameMonth) return null;
+    return cur.toLocaleDateString(this.intlLocale(), { month: 'long', year: 'numeric' });
+  }
+
+  protected dayNum(d: Date): string {
+    return String(d.getDate());
+  }
+
+  protected weekdayShort(d: Date): string {
+    return d
+      .toLocaleDateString(this.intlLocale(), { weekday: 'short' })
+      .replace('.', '')
+      .toUpperCase();
+  }
+
+  protected isToday(d: Date): boolean {
+    return isSameDay(d, this.store.today());
+  }
+
+  protected isPastDay(d: Date): boolean {
+    return startOfDay(d).getTime() < startOfDay(this.store.today()).getTime();
+  }
+
+  /** Nền pill mờ theo màu lịch — thân thẻ tô nhạt thay vì chỉ một vạch bên trái. */
+  protected pillTint(event: AgendaEvent): string {
+    return `color-mix(in srgb, ${this.colorFor(event)} 16%, var(--color-surface))`;
+  }
 }

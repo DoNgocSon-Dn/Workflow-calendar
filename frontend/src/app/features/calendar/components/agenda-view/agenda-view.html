@@ -77,50 +77,57 @@
     </div>
   } @else {
     <div class="agenda-list">
-      @for (dayGroup of visibleGroupedDays(); track dayGroup.dateLabel) {
-        <div class="day-group">
-          <div class="day-header">
-            <span class="day-title" [class.lunar-title]="scope() === 'lunar'">
-              {{ dayGroup.dateLabel }}
-            </span>
-            <span class="badge">{{ i18n.t('agenda.eventsCount', { count: dayGroup.events.length }) }}</span>
+      @for (dayGroup of visibleGroupedDays(); track dayGroup.dateLabel; let idx = $index) {
+        @if (monthHeaderBefore(idx); as ml) {
+          <div class="agenda-month">{{ ml }}</div>
+        }
+
+        <div
+          class="day-row"
+          [class.is-today]="isToday(dayGroup.date)"
+          [class.is-past]="isPastDay(dayGroup.date)"
+          [class.lunar]="scope() === 'lunar'"
+        >
+          <div class="day-col">
+            @if (scope() === 'lunar') {
+              <span class="day-lunar-label">{{ dayGroup.dateLabel }}</span>
+            } @else {
+              <span class="day-weekday">{{ weekdayShort(dayGroup.date) }}</span>
+              <span class="day-number">{{ dayNum(dayGroup.date) }}</span>
+            }
           </div>
 
-          <div class="events-list">
+          <div class="day-events">
             @for (event of dayGroup.events; track event.id) {
-              <div
-                class="event-card"
-                [class.marker-card]="event.isLunarMarker"
-                [class.system-card]="isSystemEvent(event) && !event.isLunarMarker"
+              <button
+                type="button"
+                class="event-pill"
                 [class.non-clickable]="event.isLunarMarker"
+                [style.background]="pillTint(event)"
+                [style.--pill-accent]="colorFor(event)"
                 (click)="onCardClick(event)"
               >
-                <div class="color-bar" [style.background]="colorFor(event)"></div>
-                <div class="event-details">
-                  <div class="event-title">
+                <span class="pill-dot"></span>
+                <span class="pill-body">
+                  <span class="pill-title">
                     {{ event.title }}
                     @if (isSystemEvent(event)) {
-                      <span class="src-badge">{{ i18n.t('agenda.sourceSystem') }}</span>
+                      <span class="pill-src">{{ i18n.t('agenda.sourceSystem') }}</span>
                     }
-                  </div>
-                  <div class="event-time">
+                  </span>
+                  <span class="pill-sub">
                     @if (multiDaySpan(event); as span) {
-                      <span class="time-tag span-tag">{{ span }}</span>
+                      {{ span }}
                     } @else if (event.allDay) {
-                      <span class="time-tag all-day">{{ i18n.t('calendar.allDay') }}</span>
+                      {{ i18n.t('calendar.allDay') }}
                     } @else {
-                      <span class="time-tag">{{ event.start | date:'HH:mm' }} - {{ event.end | date:'HH:mm' }}</span>
+                      {{ event.start | date: 'HH:mm' }}–{{ event.end | date: 'HH:mm' }}
                     }
-                    @if (tzBadge(event); as tzb) {
-                      <span class="time-tag tz-tag" [title]="i18n.t('event.timezone')">🌐 {{ tzb }}</span>
-                    }
-                    @if (event.location) {
-                      <span class="event-location">📍 {{ event.location }}</span>
-                    }
-                  </div>
-                  <div class="event-meta">{{ eventMeta(event) }}</div>
-                </div>
-              </div>
+                    @if (event.location) { <span class="pill-loc">· 📍 {{ event.location }}</span> }
+                    @if (tzBadge(event); as tzb) { <span class="pill-tz">· 🌐 {{ tzb }}</span> }
+                  </span>
+                </span>
+              </button>
             }
           </div>
         </div>

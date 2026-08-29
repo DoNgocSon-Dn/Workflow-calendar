@@ -153,6 +153,7 @@
                 [style.--chip-color]="colorFor(pe.event)"
                 (pointerdown)="onBlockPointerDown($event, pe)"
                 (mousedown)="$event.stopPropagation()"
+                (dblclick)="onBlockDblClick($event, pe)"
                 [title]="conflictTooltip(pe.event.id)"
               >
                 <div
