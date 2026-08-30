@@ -1037,13 +1037,17 @@
                   @if (composerMenuOpen()) {
                     <div class="menu-backdrop" (click)="composerMenuOpen.set(false)"></div>
                     <div class="composer-menu">
+                      <label class="composer-menu-file">
+                        📎 {{ i18n.t('group.attachFileTooltip') }}
+                        <input type="file" class="file-input-hidden" (change)="onAttachmentSelected($event); composerMenuOpen.set(false)" />
+                      </label>
                       <button type="button" (click)="composerMenuOpen.set(false); createPollOpen.set(true)">
                         📊 {{ i18n.t('poll.createTitle') }}
                       </button>
                     </div>
                   }
                 </div>
-                <label class="btn-attach" [title]="i18n.t('group.attachFileTooltip')">
+                <label class="btn-attach btn-attach--paperclip" [title]="i18n.t('group.attachFileTooltip')">
                   <app-icon name="paperclip" />
                   <input type="file" class="file-input-hidden" (change)="onAttachmentSelected($event)" />
                 </label>

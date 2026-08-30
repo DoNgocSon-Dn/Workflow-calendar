@@ -253,17 +253,34 @@
 }
 
 /* Dưới ngưỡng này, 3 cột kanban co lại còn vài chục pixel mỗi cột — không
-   đọc được, không kéo-thả được. Xếp dọc thành 1 cột, cuộn dọc thay vì cuộn
-   ngang — nhất quán với cách modal-body đã cuộn dọc. */
+   đọc được. Chuyển thành carousel VUỐT NGANG: mỗi cột ~86vw, snap từng cột,
+   người dùng vuốt trái/phải để xem Todo → Đang làm → Xong. Xem thêm block
+   mobile tổng ở cuối file. */
 @media (max-width: 767.98px) {
   .kanban-board {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: row;
+    grid-template-columns: none;
+    gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    /* Tràn ra sát mép màn để cột kế tiếp "ló" ra, gợi ý vuốt được. */
+    margin: 0 -12px;
+    padding: 2px 12px;
+    scrollbar-width: none;
+  }
+  .kanban-board::-webkit-scrollbar {
+    display: none;
   }
 
   .kanban-col {
-    min-height: 12rem;
+    flex: 0 0 86vw;
+    max-width: 86vw;
+    scroll-snap-align: center;
+    /* Không ép chiều cao tối thiểu — cột rỗng ("Chưa có task nào") tự co gọn. */
+    min-height: 0;
   }
 }
 
@@ -1221,7 +1238,8 @@
   border: 1px solid var(--color-border);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
-.composer-menu button {
+.composer-menu button,
+.composer-menu .composer-menu-file {
   display: block;
   width: 100%;
   text-align: left;
@@ -1234,8 +1252,17 @@
   padding: 8px 10px;
   cursor: pointer;
 }
-.composer-menu button:hover {
+.composer-menu button:hover,
+.composer-menu .composer-menu-file:hover {
   background: var(--color-surface-hover);
+}
+
+/* Trên desktop đã có nút 📎 riêng cạnh ô nhập — mục này chỉ để gom gọn trên
+   điện thoại. */
+@media (min-width: 768px) {
+  .composer-menu .composer-menu-file {
+    display: none;
+  }
 }
 
 /* Khối trích dẫn trong bong bóng — bấm để nhảy tới tin gốc. */
@@ -2119,13 +2146,48 @@
 }
 
 @media (max-width: 599.98px) {
+  /* Header GỌN: tên nhóm + cụm nút trên CÙNG một hàng (không wrap), bỏ mô tả
+     phụ, các nút chỉ còn icon để đủ chỗ. */
   .modal-header {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 12px 14px;
+  }
+  .group-desc {
+    display: none;
+  }
+  .header-title-box {
     gap: 10px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .group-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
+  }
+  .modal-header h2 {
+    font-size: 1rem;
   }
   .header-actions {
-    width: 100%;
-    justify-content: flex-end;
+    width: auto;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  /* Nút header chỉ còn icon — chữ ("Ẩn nhóm", "Sửa"...) ẩn bằng font-size 0,
+     icon con được trả lại cỡ thật. Bỏ viền, thay bằng nền nhẹ. */
+  .btn-header {
+    font-size: 0;
+    gap: 0;
+    padding: 8px;
+    border: none;
+    background: var(--color-surface-hover);
+  }
+  .btn-header app-icon {
+    font-size: 1rem;
+  }
+  .btn-close {
+    padding: 8px;
   }
 }
 
@@ -2446,10 +2508,11 @@
 }
 
 /* ======================================================================
-   MOBILE: thanh tab thành Bottom Navigation, kanban dọc, ít viền + bóng nhẹ
+   MOBILE (≤767.98px) — thiết kế phẳng: bỏ viền cứng, phân cấp bằng nền,
+   thanh tab thành Bottom Navigation tinh gọn, kanban vuốt ngang.
    ====================================================================== */
 @media (max-width: 767.98px) {
-  /* .modal-card đã là flex column — dùng `order` để đẩy thanh tab xuống đáy. */
+  /* --- Bố cục: đẩy thanh tab xuống đáy (.modal-card là flex column) --- */
   .group-edit-panel { order: 0; }
   .meeting-bar { order: 1; }
   .modal-body {
@@ -2457,15 +2520,44 @@
     padding: 12px 12px calc(14px + env(safe-area-inset-bottom, 0px));
   }
 
+  /* --- Chiều sâu bằng NỀN, không bằng viền ---
+     Nền tổng modal = --color-bg (tối/nhạt hơn); card nội dung = --color-surface
+     đặt nổi lên trên, bo góc 8px, không viền. */
+  .modal-card {
+    background: var(--color-bg);
+  }
+  .modal-header {
+    border-bottom: none;
+  }
+
+  .create-task-card,
+  .invite-card,
+  .info-card,
+  .group-edit-panel,
+  .saved-meet,
+  .meet-card .saved-meet {
+    padding: 12px;
+    border: none;
+    background: var(--color-surface);
+    border-radius: var(--radius-sm);
+  }
+
+  /* ================= BOTTOM NAVIGATION ================= */
   .workspace-tabs {
     order: 90;
     overflow-x: visible;
     border-bottom: none;
-    border-top: 1px solid var(--color-border);
-    padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
+    /* Vạch kẻ cứng → kính mờ + bóng mảnh ở viền trên cho mềm. */
+    border-top: none;
+    background: color-mix(in srgb, var(--color-bg-sidebar) 82%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow:
+      0 -0.5px 0 color-mix(in srgb, var(--color-border) 70%, transparent),
+      0 -8px 20px rgba(0, 0, 0, 0.06);
+    padding: 3px 4px calc(3px + env(safe-area-inset-bottom, 0px));
     gap: 2px;
     justify-content: space-around;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
   }
 
   .tab-btn {
@@ -2473,56 +2565,165 @@
     flex: 1 1 0;
     min-width: 0;
     flex-direction: column;
-    gap: 2px;
-    padding: 7px 2px;
-    font-size: 0.62rem;
+    gap: 3px;
+    padding: 5px 2px;
+    font-size: 0.58rem;
     font-weight: 600;
-    border-radius: 10px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    letter-spacing: -0.01em;
+    border-radius: 12px;
+    color: var(--color-text-tertiary);
+    background: transparent;
+    overflow: visible;
   }
 
+  /* Active KHÔNG tô nguyên khối — chỉ đổi màu icon+chữ sang accent và bọc
+     riêng cái icon bằng nền pill nhỏ. */
   .tab-btn.active {
-    background: color-mix(in srgb, var(--holiday-accent) 14%, transparent);
+    background: transparent;
+    color: var(--holiday-accent);
+  }
+  .tab-btn.active::after { display: none; }
+
+  .tab-icon {
+    font-size: 1.2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 14px;
+    border-radius: 999px;
+    transition: background 0.16s ease, color 0.16s ease;
+  }
+  .tab-btn.active .tab-icon {
+    background: color-mix(in srgb, var(--holiday-accent) 16%, transparent);
     color: var(--holiday-accent);
   }
 
-  .tab-btn.active::after { display: none; }
-
-  .tab-icon { font-size: 1.25rem; }
-
+  /* Badge: tròn tuyệt đối, nhỏ, góc trên-phải icon, viền trùng nền bar để
+     tạo cảm giác "khoét" (cut-out). */
   .tab-badge {
     position: absolute;
-    top: 3px;
-    right: calc(50% - 20px);
-    padding: 0 5px;
-    font-size: 0.62rem;
+    top: 0;
+    left: 50%;
+    transform: translateX(4px);
+    min-width: 15px;
+    height: 15px;
+    padding: 0 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--color-danger);
+    color: #fff;
+    border: 2px solid var(--color-bg-sidebar);
+    font-size: 0.56rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .tab-btn.active .tab-badge {
+    background: var(--color-danger);
+    color: #fff;
   }
 
-  /* Ít viền — dùng bóng nhẹ để phân tách, gọn hơn trên màn hẹp. */
+  /* ================= KANBAN (carousel ngang) ================= */
   .kanban-col {
     border: none;
     background: transparent;
     padding: 0;
   }
-
   .kanban-col-body {
-    background: var(--color-surface-input);
-    padding: 8px;
+    background: var(--color-surface);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+  }
+  .col-title {
+    border-bottom: none;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+  }
+  .col-count {
+    border: none;
+    background: var(--color-surface-hover-strong);
+  }
+  .col-empty {
+    margin-top: 10px;
+    padding: 8px 0;
   }
 
   .task-item {
     border: none;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), inset 0 0 0 1px var(--color-border);
+    box-shadow: none;
+    background: var(--color-surface-hover);
+    border-radius: var(--radius-sm);
     padding: 10px;
+    margin-bottom: 8px;
+  }
+  .task-item:hover {
+    transform: none;
   }
 
-  .create-task-card,
-  .invite-card,
-  .info-card,
-  .group-edit-panel {
-    padding: 12px;
+  /* ================= CHAT ================= */
+  .chat-messages {
+    border: none;
+    background: var(--color-surface);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    gap: 3px;
   }
-
   .chat-msg-row { max-width: 88%; }
+  /* Gom cụm chặt hơn: tin liên tiếp cùng người dính sát thành một khối. */
+  .chat-messages > .chat-msg-row.grouped {
+    margin-top: -6px;
+  }
+
+  .chat-input-bar {
+    gap: 6px;
+    margin-top: 8px;
+  }
+  /* 📎 và các icon phụ gom vào nút [ + ] — ẩn nút 📎 đứng riêng. */
+  .chat-input-bar > .btn-attach--paperclip {
+    display: none;
+  }
+  .btn-attach {
+    width: 34px;
+    height: 34px;
+    border: none;
+    background: var(--color-surface-hover);
+  }
+  /* Ô gõ chữ giãn tối đa — bỏ dòng đếm "0/2000" cho rộng chỗ (textarea vẫn
+     chặn cứng ở maxlength 2000). */
+  .chat-composer { flex: 1 1 auto; }
+  .chat-input-bar > app-char-counter {
+    display: none;
+  }
+
+  /* ================= THÀNH VIÊN (flat list) ================= */
+  .members-list {
+    gap: 0;
+    padding: 0;
+  }
+  .members-list .member-row {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    border-bottom: 1px solid var(--color-border);
+    padding: 10px 2px;
+  }
+  .members-list .member-row:last-child {
+    border-bottom: none;
+  }
+  .members-list .member-row:hover {
+    border-color: var(--color-border);
+  }
+  .members-list .user-avatar {
+    width: 32px;
+    height: 32px;
+  }
+  /* Badge chức vụ nhỏ lại. */
+  .members-list .role-pill,
+  .members-list .role-select-btn {
+    font-size: 0.66rem;
+    padding: 0.24rem 0.5rem;
+    gap: 0.28rem;
+    box-shadow: none;
+  }
 }
