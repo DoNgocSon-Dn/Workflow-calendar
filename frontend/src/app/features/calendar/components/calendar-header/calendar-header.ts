@@ -129,6 +129,35 @@ export class CalendarHeader {
     return `${fmt.dayMonth.format(start)} – ${fmt.dayMonth.format(end)}, ${end.getFullYear()}`;
   });
 
+  /** Nhãn kỳ RÚT GỌN cho thanh trên điện thoại — bỏ thứ + năm cho đỡ chật.
+   *  "Chủ Nhật, 30 Tháng 8, 2026" → "30 Thg 8" · "Tháng 8 2026" giữ nguyên. */
+  readonly periodLabelShort = computed(() => {
+    const mode = this.store.viewMode();
+    const focused = this.store.focusedDate();
+    const locale = this.i18n.locale();
+    const fmt = DATE_FMT[locale];
+    if (mode === 'month') return monthYearLabel(focused, locale);
+    if (mode === 'day' || mode === 'agenda') return fmt.dayMonth.format(focused);
+    if (mode === '3day') {
+      return `${fmt.dayMonth.format(focused)} – ${fmt.dayMonth.format(addDays(focused, 2))}`;
+    }
+    const start = startOfWeek(focused);
+    return `${fmt.dayMonth.format(start)} – ${fmt.dayMonth.format(addDays(start, 6))}`;
+  });
+
+  /** Menu ⋮ trên điện thoại — gom Tìm kiếm / Nhập / Cài đặt / chuyển Tasks. */
+  protected readonly moreMenuOpen = signal(false);
+  toggleMoreMenu(): void {
+    this.moreMenuOpen.update((o) => !o);
+  }
+  closeMoreMenu(): void {
+    this.moreMenuOpen.set(false);
+  }
+  goToTasks(): void {
+    this.closeMoreMenu();
+    void this.router.navigate(['/tasks']);
+  }
+
   /** One control that does the useful thing per screen size: on mobile the
    *  sidebar is an overlay drawer, so it must fully show/hide; on desktop
    *  there's room to keep an icon rail, so it collapses instead of vanishing. */

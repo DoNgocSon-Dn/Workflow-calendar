@@ -27,7 +27,7 @@
         [attr.aria-expanded]="viewMenuOpen()"
         (click)="toggleViewMenu()"
       >
-        <span class="mobile-period-label">{{ periodLabel() }}</span>
+        <span class="mobile-period-label">{{ periodLabelShort() }}</span>
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
           <path fill="currentColor" d="M7 10l5 5 5-5z" />
         </svg>
@@ -54,16 +54,40 @@
 
   <div class="right">
     @if (store.isPhone()) {
-      <button
-        type="button"
-        class="icon-btn"
-        [attr.aria-label]="i18n.t('header.searchPlaceholder')"
-        (click)="openSearchOverlay()"
-      >
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-          <path fill="currentColor" d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z" />
-        </svg>
-      </button>
+      <!-- Điện thoại: gom Tìm kiếm / Nhập lịch / Cài đặt / chuyển Công việc vào
+           MỘT nút ⋮ để chừa chỗ ngang cho tiêu đề ngày. Chuông + avatar giữ
+           ngoài vì hay dùng nhất. -->
+      <div class="more-menu">
+        <button
+          type="button"
+          class="icon-btn"
+          aria-haspopup="true"
+          [attr.aria-expanded]="moreMenuOpen()"
+          [attr.aria-label]="i18n.t('header.moreOptions')"
+          (click)="toggleMoreMenu()"
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path fill="currentColor" d="M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" />
+          </svg>
+        </button>
+        @if (moreMenuOpen()) {
+          <div class="menu-backdrop" (click)="closeMoreMenu()"></div>
+          <div class="more-dropdown" role="menu">
+            <button type="button" class="dropdown-item" role="menuitem" (click)="closeMoreMenu(); openSearchOverlay()">
+              {{ i18n.t('header.searchPlaceholder') }}
+            </button>
+            <button type="button" class="dropdown-item" role="menuitem" (click)="goToTasks()">
+              {{ i18n.t('tasks.title') }}
+            </button>
+            <button type="button" class="dropdown-item" role="menuitem" (click)="closeMoreMenu(); openImport.emit()">
+              {{ i18n.t('header.import') }}
+            </button>
+            <button type="button" class="dropdown-item" role="menuitem" (click)="closeMoreMenu(); openSettings.emit()">
+              {{ i18n.t('header.settings') }}
+            </button>
+          </div>
+        }
+      </div>
     }
     <div class="search-box" [class.is-hidden-phone]="store.isPhone()">
       <input
@@ -159,14 +183,16 @@
       }
     </div>
 
-    <div class="app-switch" role="group" [attr.aria-label]="i18n.t('tasks.viewToggle')">
-      <span class="app-switch-btn active" aria-current="page" [attr.aria-label]="i18n.t('tasks.calendar')">
-        <app-icon name="calendar" />
-      </span>
-      <a routerLink="/tasks" class="app-switch-btn" [attr.aria-label]="i18n.t('tasks.title')">
-        <app-icon name="check-square" />
-      </a>
-    </div>
+    @if (!store.isPhone()) {
+      <div class="app-switch" role="group" [attr.aria-label]="i18n.t('tasks.viewToggle')">
+        <span class="app-switch-btn active" aria-current="page" [attr.aria-label]="i18n.t('tasks.calendar')">
+          <app-icon name="calendar" />
+        </span>
+        <a routerLink="/tasks" class="app-switch-btn" [attr.aria-label]="i18n.t('tasks.title')">
+          <app-icon name="check-square" />
+        </a>
+      </div>
+    }
 
     @if (userEmail()) {
       <div class="user-menu">
@@ -190,15 +216,6 @@
             <p class="user-dropdown-name">{{ displayName() }}</p>
             @if (authStore.displayName()) {
               <p class="user-dropdown-email">{{ userEmail() }}</p>
-            }
-            @if (store.isPhone()) {
-              <!-- Trên điện thoại các nút này đã ẩn khỏi thanh trên. -->
-              <button type="button" class="dropdown-item" role="menuitem" (click)="closeUserMenu(); openSettings.emit()">
-                {{ i18n.t('header.settings') }}
-              </button>
-              <button type="button" class="dropdown-item" role="menuitem" (click)="closeUserMenu(); openImport.emit()">
-                {{ i18n.t('header.import') }}
-              </button>
             }
             <button type="button" class="dropdown-item" role="menuitem" (click)="logout()">
               {{ i18n.t('header.logout') }}

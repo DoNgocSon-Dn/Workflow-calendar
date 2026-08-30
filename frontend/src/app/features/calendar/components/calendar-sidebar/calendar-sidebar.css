@@ -545,4 +545,10 @@ app-mini-calendar {
   .sidebar.collapsed {
     width: 256px;
   }
+
+  /* Lịch tháng nhỏ chiếm nhiều chiều dọc mà ít dùng trên điện thoại —
+     ẩn hẳn, chừa chỗ cho danh sách "Nhóm làm việc" + "Lịch của tôi". */
+  app-mini-calendar {
+    display: none;
+  }
 }
