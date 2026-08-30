@@ -56,6 +56,7 @@ import {
   GroupTask,
 } from '../../models/group.models';
 import { MentionOption, MentionPopup } from '../mention-popup/mention-popup';
+import { ForwardTargetModal } from '../forward-target-modal/forward-target-modal';
 import { createMeetingRoomLink } from '../../../../shared/utils/meeting-link.util';
 import {
   ActiveMentionQuery,
@@ -112,7 +113,7 @@ function meetAnnouncement(
   templateUrl: './group-workspace-modal.html',
   styleUrl: './group-workspace-modal.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, Icon, MentionPopup, CharCounter],
+  imports: [DatePipe, Icon, MentionPopup, CharCounter, ForwardTargetModal],
 })
 export class GroupWorkspaceModal {
   protected readonly store = inject(GroupStore);
@@ -1153,6 +1154,42 @@ export class GroupWorkspaceModal {
     this.swipeDx.set(null);
     if (s?.active && moved && moved.id === msg.id && Math.abs(moved.dx) > 55) {
       this.startReply(msg);
+    }
+  }
+
+  // --- Chuyển tiếp ---------------------------------------------------
+  protected readonly forwardingMsg = signal<GroupMessage | null>(null);
+
+  startForward(msg: GroupMessage): void {
+    if (msg.deletedAt) return;
+    this.msgMenu.set(null);
+    this.forwardingMsg.set(msg);
+  }
+
+  async onForwardPicked(target: { id: string; name: string }): Promise<void> {
+    const msg = this.forwardingMsg();
+    const from = this.store.activeGroup()?.name;
+    this.forwardingMsg.set(null);
+    if (!msg) return;
+    const attachment = msg.attachmentUrl
+      ? {
+          url: msg.attachmentUrl,
+          name: msg.attachmentName ?? 'file',
+          type: msg.attachmentType ?? '',
+          size: msg.attachmentSize ?? 0,
+        }
+      : undefined;
+    try {
+      await this.store.sendMessage(
+        target.id,
+        msg.message ?? '',
+        attachment,
+        undefined,
+        undefined,
+        from,
+      );
+    } catch (err: any) {
+      await this.dialog.alert(err?.error?.message || this.i18n.t('group.sendMessageError'));
     }
   }
 

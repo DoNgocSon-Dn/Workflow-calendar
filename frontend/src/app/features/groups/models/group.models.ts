@@ -162,6 +162,8 @@ export interface GroupMessage {
   /** Ghim tin nhắn (Phase 11) — Trưởng/Phó nhóm. */
   pinnedAt?: string;
   pinnedBy?: string;
+  /** Tên nhóm nguồn khi tin này được chuyển tiếp (Phase 12). */
+  forwardedFromGroup?: string;
   /**
    * Mã do client sinh ra trước khi gọi API, dùng để ghép tin nhắn lạc quan
    * (hiện ngay lúc nhấn Enter) với tin nhắn thật do server trả về / socket

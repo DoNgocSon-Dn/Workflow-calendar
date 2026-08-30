@@ -67,4 +67,10 @@ export class SendGroupMessageDto {
   @IsOptional()
   @IsUUID()
   replyToId?: string;
+
+  /** Tên nhóm nguồn khi đây là tin được chuyển tiếp. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  forwardedFromGroup?: string;
 }

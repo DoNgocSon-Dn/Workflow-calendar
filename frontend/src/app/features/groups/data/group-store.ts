@@ -1619,6 +1619,7 @@ export class GroupStore {
     attachment?: GroupMessageAttachment,
     mentions?: readonly GroupMessageMention[],
     replyTo?: GroupMessage,
+    forwardedFromGroup?: string,
   ): Promise<GroupMessage> {
     const clientMessageId = crypto.randomUUID();
     const user = this.authStore.user();
@@ -1644,15 +1645,26 @@ export class GroupStore {
       replyPreview: replyTo ? this.previewOf(replyTo) : undefined,
       replySenderName: replyTo?.senderName || replyTo?.senderEmail?.split('@')[0],
       replyDeleted: replyTo?.deletedAt ? true : undefined,
+      forwardedFromGroup: forwardedFromGroup || undefined,
     };
-    this.messages.update((prev) => [...prev, optimistic]);
+    // Chỉ vẽ tin lạc quan khi đang gửi vào ĐÚNG nhóm đang mở (chuyển tiếp sang
+    // nhóm khác thì `messages` không phải của nhóm đó).
+    const showOptimistic = this.activeGroupId() === groupId;
+    if (showOptimistic) this.messages.update((prev) => [...prev, optimistic]);
 
     try {
-      const saved = await this.api.sendMessage(groupId, text, attachment, mentions, replyTo?.id);
-      this.replaceOptimistic(clientMessageId, saved);
+      const saved = await this.api.sendMessage(
+        groupId,
+        text,
+        attachment,
+        mentions,
+        replyTo?.id,
+        forwardedFromGroup,
+      );
+      if (showOptimistic) this.replaceOptimistic(clientMessageId, saved);
       return saved;
     } catch (err) {
-      this.dropOptimistic(clientMessageId);
+      if (showOptimistic) this.dropOptimistic(clientMessageId);
       throw err;
     }
   }

@@ -212,6 +212,7 @@ export interface GroupMessageDto {
   replyDeleted?: boolean;
   pinnedAt?: string;
   pinnedBy?: string;
+  forwardedFromGroup?: string;
 }
 
 @Injectable()
@@ -585,6 +586,7 @@ export class GroupsService {
       replyDeleted: row.reply_deleted ?? undefined,
       pinnedAt: row.pinned_at ?? undefined,
       pinnedBy: row.pinned_by ?? undefined,
+      forwardedFromGroup: row.forwarded_from_group ?? undefined,
     };
   }
 
@@ -2869,9 +2871,12 @@ export class GroupsService {
       attachment_type: dto.attachmentType || null,
       attachment_size: dto.attachmentSize ?? null,
     };
-    // Cột chỉ có sau migration 43 — gửi kèm chỉ khi có replyToId, để DB cũ vẫn
+    // Cột chỉ có sau migration 43/46 — gửi kèm chỉ khi có giá trị, để DB cũ vẫn
     // gửi tin thường được (PostgREST báo lỗi nếu key trỏ cột không tồn tại).
     if (dto.replyToId) insertRow['reply_to_id'] = dto.replyToId;
+    if (dto.forwardedFromGroup) {
+      insertRow['forwarded_from_group'] = dto.forwardedFromGroup.slice(0, 100);
+    }
 
     const { data, error } = await supabase
       .from('group_messages')

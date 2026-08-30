@@ -1,0 +1,33 @@
+<div class="modal-backdrop" (click)="onBackdropClick($event)" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <header class="modal-header">
+      <h2>{{ i18n.t('chat.forwardTo') }}</h2>
+      <button type="button" class="btn-close" (click)="cancel()" [attr.aria-label]="i18n.t('common.close')">
+        <app-icon name="close" />
+      </button>
+    </header>
+
+    <div class="modal-body">
+      <input
+        type="text"
+        class="text-input"
+        [placeholder]="i18n.t('chat.forwardSearch')"
+        [value]="query()"
+        (input)="query.set($any($event.target).value)"
+        autofocus
+      />
+
+      <div class="target-list">
+        @for (g of targets(); track g.id) {
+          <button type="button" class="target-row" [disabled]="sending()" (click)="choose(g)">
+            <span class="target-dot" [style.background]="g.color"></span>
+            <app-icon name="users" />
+            <span class="target-name">{{ g.name }}</span>
+          </button>
+        } @empty {
+          <p class="target-empty">{{ i18n.t('agenda.empty') }}</p>
+        }
+      </div>
+    </div>
+  </div>
+</div>

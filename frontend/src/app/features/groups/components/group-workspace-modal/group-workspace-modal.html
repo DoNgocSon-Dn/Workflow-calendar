@@ -823,6 +823,9 @@
                     </div>
                   }
                   <div class="chat-msg-body">
+                    @if (msg.forwardedFromGroup && !msg.deletedAt) {
+                      <span class="chat-forwarded">↪ {{ i18n.t('chat.forwardedFrom', { name: msg.forwardedFromGroup }) }}</span>
+                    }
                     @if (msg.replyToId && !msg.deletedAt) {
                       <button type="button" class="chat-quote" (click)="scrollToMessage(msg.replyToId)">
                         <span class="chat-quote__name">{{ replyLabelFor(msg) }}</span>
@@ -1041,6 +1044,14 @@
               </div>
             }
 
+            @if (forwardingMsg()) {
+              <app-forward-target-modal
+                [excludeGroupId]="store.activeGroup()?.id ?? null"
+                (picked)="onForwardPicked($event)"
+                (closed)="forwardingMsg.set(null)"
+              />
+            }
+
             @if (msgMenu(); as m) {
               <div class="chat-menu-backdrop" (click)="closeMsgMenu()" (contextmenu)="$event.preventDefault(); closeMsgMenu()"></div>
               <div class="chat-menu" [style.left.px]="m.x" [style.top.px]="m.y">
@@ -1053,6 +1064,7 @@
                 @if (m.msg.message) {
                   <button type="button" (click)="copyMessageText(m.msg)"><app-icon name="paperclip" /> {{ i18n.t('chat.copy') }}</button>
                 }
+                <button type="button" (click)="startForward(m.msg)"><app-icon name="external" /> {{ i18n.t('chat.forward') }}</button>
                 @if (canEditMessage(m.msg)) {
                   <button type="button" (click)="startEditMessage(m.msg); closeMsgMenu()"><app-icon name="pencil" /> {{ i18n.t('common.edit') }}</button>
                 }
