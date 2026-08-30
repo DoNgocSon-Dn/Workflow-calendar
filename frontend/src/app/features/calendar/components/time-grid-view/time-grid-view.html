@@ -141,6 +141,23 @@
             }
 
             @for (pe of eventsFor(day); track pe.event.id) {
+              @if (isMoving(pe.event.id)) {
+                <!-- Bóng mờ ghim tại vị trí giờ GỐC làm điểm tựa trong lúc kéo. -->
+                <div
+                  class="event-block event-ghost"
+                  [style.top.px]="blockTop(pe)"
+                  [style.height.px]="blockHeight(pe)"
+                  [style.left.%]="pe.leftPct"
+                  [style.width.%]="pe.widthPct"
+                  [style.--chip-color]="colorFor(pe.event)"
+                  aria-hidden="true"
+                >
+                  <div class="block-content">
+                    <span class="block-title">{{ pe.event.title }}</span>
+                    <span class="block-time">{{ formatTimeLabel(pe.event.start) }}</span>
+                  </div>
+                </div>
+              }
               <div
                 class="event-block"
                 [class.conflict]="store.conflictingEventIds().has(pe.event.id)"

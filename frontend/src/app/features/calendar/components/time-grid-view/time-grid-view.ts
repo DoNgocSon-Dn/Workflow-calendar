@@ -218,6 +218,11 @@ export class TimeGridView {
     return this.dragMove()?.eventId === eventId || this.dragResize()?.eventId === eventId;
   }
 
+  /** Khối đang được DI CHUYỂN (không tính đổi độ dài) — để vẽ bóng mờ ở chỗ cũ. */
+  protected isMoving(eventId: string): boolean {
+    return this.dragMove()?.eventId === eventId;
+  }
+
   /** Khối vừa thả, đang "lắng" nốt vài pixel dư về ô lưới. */
   protected isSettling(eventId: string): boolean {
     return this.dropSettle()?.eventId === eventId;

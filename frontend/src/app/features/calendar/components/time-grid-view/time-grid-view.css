@@ -366,6 +366,24 @@
   will-change: transform, top, height;
 }
 
+/* Giờ đích to & rõ hơn trong lúc kéo — người dùng đang nhìn con số này. */
+.event-block.dragging .block-time {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* Bóng mờ giữ chỗ giờ GỐC trong lúc kéo. Không nhận tương tác, chỉ làm mốc. */
+.event-block.event-ghost {
+  opacity: 0.32;
+  pointer-events: none;
+  z-index: 4;
+  box-shadow: none;
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.55);
+  cursor: default;
+  transition: opacity 0.12s ease;
+}
+
 /* Vừa thả: khối đã ở đúng ô lưới (top mới), `transform` đang giữ phần lệch
    pixel còn dư. Khung hình 1 — KHÔNG transition (đặt khối đúng chỗ vừa buông
    tay). */
