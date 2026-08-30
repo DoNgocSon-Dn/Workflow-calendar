@@ -1460,6 +1460,98 @@ export class GroupWorkspaceModal {
     this.mentionActiveIndex.set(0);
   }
 
+  // --- Tin nhắn thoại -------------------------------------------------
+  protected readonly recording = signal<{ label: string } | null>(null);
+  protected readonly playingVoiceId = signal<string | null>(null);
+  private recorder: MediaRecorder | null = null;
+  private recordChunks: Blob[] = [];
+  private recordStartMs = 0;
+  private recordTimer = 0;
+  private recordStream: MediaStream | null = null;
+  private voiceAudio: HTMLAudioElement | null = null;
+
+  isVoiceMessage(msg: GroupMessage): boolean {
+    return !!msg.attachmentType?.startsWith('audio/');
+  }
+
+  /** Dãy cột sóng cao thấp cố định theo id — trang trí, không phản ánh biên độ thật. */
+  voiceBars(id: string): number[] {
+    let h = 0;
+    for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+    const bars: number[] = [];
+    for (let i = 0; i < 22; i++) {
+      h = (h * 1103515245 + 12345) & 0x7fffffff;
+      bars.push(30 + (h % 70));
+    }
+    return bars;
+  }
+
+  async startVoiceRecord(ev: PointerEvent): Promise<void> {
+    ev.preventDefault();
+    if (this.recorder || !navigator.mediaDevices?.getUserMedia) return;
+    try {
+      this.recordStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      await this.dialog.alert(this.i18n.t('chat.voiceNoMic'));
+      return;
+    }
+    const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : MediaRecorder.isTypeSupported('audio/mp4')
+        ? 'audio/mp4'
+        : '';
+    this.recorder = new MediaRecorder(this.recordStream, mime ? { mimeType: mime } : undefined);
+    this.recordChunks = [];
+    this.recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) this.recordChunks.push(e.data);
+    };
+    this.recordStartMs = Date.now();
+    this.recording.set({ label: '0:00' });
+    this.recordTimer = window.setInterval(() => {
+      const s = Math.floor((Date.now() - this.recordStartMs) / 1000);
+      this.recording.set({ label: `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` });
+      if (s >= 300) this.stopVoiceRecord(true); // trần 5 phút
+    }, 500);
+    this.recorder.start();
+  }
+
+  stopVoiceRecord(send: boolean): void {
+    const rec = this.recorder;
+    if (!rec) return;
+    this.recorder = null;
+    clearInterval(this.recordTimer);
+    const durationMs = Date.now() - this.recordStartMs;
+    this.recording.set(null);
+
+    rec.onstop = () => {
+      this.recordStream?.getTracks().forEach((t) => t.stop());
+      this.recordStream = null;
+      if (!send || durationMs < 800 || this.recordChunks.length === 0) return;
+      const type = rec.mimeType || 'audio/webm';
+      const ext = type.includes('mp4') ? 'm4a' : 'webm';
+      const file = new File([new Blob(this.recordChunks, { type })], `voice-${Date.now()}.${ext}`, {
+        type,
+      });
+      const group = this.store.activeGroup();
+      if (group) void this.deliverChat(group.id, '', [], file, null);
+    };
+    rec.stop();
+  }
+
+  toggleVoicePlay(msg: GroupMessage): void {
+    if (!msg.attachmentUrl) return;
+    if (this.playingVoiceId() === msg.id) {
+      this.voiceAudio?.pause();
+      this.playingVoiceId.set(null);
+      return;
+    }
+    this.voiceAudio?.pause();
+    this.voiceAudio = new Audio(msg.attachmentUrl);
+    this.voiceAudio.onended = () => this.playingVoiceId.set(null);
+    void this.voiceAudio.play().catch(() => this.playingVoiceId.set(null));
+    this.playingVoiceId.set(msg.id);
+  }
+
   protected onChatInput(event: Event): void {
     const el = event.target as HTMLTextAreaElement;
     this.chatMessage.set(el.value);

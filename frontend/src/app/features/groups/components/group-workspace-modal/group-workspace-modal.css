@@ -1143,6 +1143,67 @@
   cursor: pointer;
 }
 
+/* --- Tin nhắn thoại --- */
+.btn-mic {
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 0.12s ease, color 0.12s ease;
+}
+.btn-mic.recording {
+  color: var(--color-danger);
+  transform: scale(1.25);
+}
+.voice-recording {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--color-danger);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.voice-recording__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-danger);
+  animation: chatTypingBounce 1s ease-in-out infinite;
+}
+
+.voice-msg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 150px;
+}
+.voice-play {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--holiday-accent);
+  color: var(--holiday-accent-contrast);
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.voice-wave {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 24px;
+  flex: 1 1 auto;
+}
+.voice-wave i {
+  width: 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--holiday-accent) 55%, var(--color-text-tertiary));
+  min-height: 20%;
+}
+
 /* Nút ⊕ cạnh ô nhập chat. */
 .composer-plus {
   position: relative;

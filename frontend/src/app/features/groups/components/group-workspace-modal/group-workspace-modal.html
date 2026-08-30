@@ -930,7 +930,18 @@
                         }
                         @if (msg.attachmentUrl) {
                           <div class="chat-attachment">
-                            @if (isImageAttachment(msg)) {
+                            @if (isVoiceMessage(msg)) {
+                              <div class="voice-msg">
+                                <button type="button" class="voice-play" (click)="toggleVoicePlay(msg)">
+                                  {{ playingVoiceId() === msg.id ? '⏸' : '▶' }}
+                                </button>
+                                <span class="voice-wave">
+                                  @for (h of voiceBars(msg.id); track $index) {
+                                    <i [style.height.%]="h"></i>
+                                  }
+                                </span>
+                              </div>
+                            } @else if (isImageAttachment(msg)) {
                               <a [href]="msg.attachmentUrl" target="_blank" rel="noopener">
                                 <img [src]="msg.attachmentUrl" [alt]="msg.attachmentName || i18n.t('group.attachmentAlt')" class="chat-attachment-img" />
                               </a>
@@ -1036,6 +1047,24 @@
                   <app-icon name="paperclip" />
                   <input type="file" class="file-input-hidden" (change)="onAttachmentSelected($event)" />
                 </label>
+                <button
+                  type="button"
+                  class="btn-attach btn-mic"
+                  [class.recording]="!!recording()"
+                  [title]="i18n.t('chat.voiceHold')"
+                  (pointerdown)="startVoiceRecord($event)"
+                  (pointerup)="stopVoiceRecord(true)"
+                  (pointerleave)="stopVoiceRecord(false)"
+                  (pointercancel)="stopVoiceRecord(false)"
+                >
+                  🎤
+                </button>
+                @if (recording(); as rec) {
+                  <div class="voice-recording">
+                    <span class="voice-recording__dot"></span>
+                    {{ i18n.t('chat.voiceRecording', { t: rec.label }) }}
+                  </div>
+                }
                 <!-- Neo popup mention vào đúng ô nhập: popup dùng position
                      absolute trong wrapper này nên nó luôn nổi ngay phía trên ô
                      nhập, không bao giờ trôi ra giữa khung chat. -->
