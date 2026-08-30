@@ -861,6 +861,39 @@
                     <div class="chat-msg-content">
                       @if (msg.deletedAt) {
                         <p class="chat-text chat-text-deleted">{{ i18n.t('group.messageDeleted') }}</p>
+                      } @else if (msg.pollId) {
+                        @if (pollFor(msg); as poll) {
+                          <div class="poll-card">
+                            <p class="poll-q">📊 {{ poll.question }}</p>
+                            @for (o of poll.options; track o.id) {
+                              <button
+                                type="button"
+                                class="poll-opt"
+                                [class.chosen]="poll.myOptionIds.includes(o.id)"
+                                [disabled]="!!poll.closedAt"
+                                (click)="togglePollOption(poll, o.id)"
+                              >
+                                <span class="poll-opt__bar" [style.width.%]="pollPercent(poll, o.count)"></span>
+                                <span class="poll-opt__label">
+                                  <span class="poll-opt__check">{{ poll.myOptionIds.includes(o.id) ? '●' : '○' }}</span>
+                                  {{ o.text }}
+                                </span>
+                                <span class="poll-opt__count">{{ o.count }}</span>
+                              </button>
+                            }
+                            <div class="poll-foot">
+                              <span>{{ i18n.t('poll.totalVotes', { n: pollTotalVotes(poll) }) }}</span>
+                              @if (poll.anonymous) { <span>· {{ i18n.t('poll.anonymous') }}</span> }
+                              @if (poll.closedAt) {
+                                <span class="poll-closed">· {{ i18n.t('poll.closed') }}</span>
+                              } @else if (canClosePoll(poll)) {
+                                <button type="button" class="poll-close-btn" (click)="closePoll(poll)">{{ i18n.t('poll.closeAction') }}</button>
+                              }
+                            </div>
+                          </div>
+                        } @else {
+                          <p class="chat-text">📊 {{ msg.message }}</p>
+                        }
                       } @else if (editingMessageId() === msg.id) {
                         <div class="chat-edit-box">
                           <textarea
@@ -986,6 +1019,19 @@
             }
             @if (canUserChat()) {
               <div class="chat-input-bar">
+                <div class="composer-plus">
+                  <button type="button" class="btn-attach" [attr.aria-expanded]="composerMenuOpen()" (click)="composerMenuOpen.set(!composerMenuOpen())" [title]="i18n.t('poll.createTitle')">
+                    <app-icon name="plus" />
+                  </button>
+                  @if (composerMenuOpen()) {
+                    <div class="menu-backdrop" (click)="composerMenuOpen.set(false)"></div>
+                    <div class="composer-menu">
+                      <button type="button" (click)="composerMenuOpen.set(false); createPollOpen.set(true)">
+                        📊 {{ i18n.t('poll.createTitle') }}
+                      </button>
+                    </div>
+                  }
+                </div>
                 <label class="btn-attach" [title]="i18n.t('group.attachFileTooltip')">
                   <app-icon name="paperclip" />
                   <input type="file" class="file-input-hidden" (change)="onAttachmentSelected($event)" />
@@ -1050,6 +1096,10 @@
                 (picked)="onForwardPicked($event)"
                 (closed)="forwardingMsg.set(null)"
               />
+            }
+
+            @if (createPollOpen()) {
+              <app-create-poll-modal (closed)="createPollOpen.set(false)" />
             }
 
             @if (msgMenu(); as m) {

@@ -54,9 +54,11 @@ import {
   GroupMessageAttachment,
   GroupMessageMention,
   GroupTask,
+  PollDetail,
 } from '../../models/group.models';
 import { MentionOption, MentionPopup } from '../mention-popup/mention-popup';
 import { ForwardTargetModal } from '../forward-target-modal/forward-target-modal';
+import { CreatePollModal } from '../create-poll-modal/create-poll-modal';
 import { createMeetingRoomLink } from '../../../../shared/utils/meeting-link.util';
 import {
   ActiveMentionQuery,
@@ -113,7 +115,7 @@ function meetAnnouncement(
   templateUrl: './group-workspace-modal.html',
   styleUrl: './group-workspace-modal.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, Icon, MentionPopup, CharCounter, ForwardTargetModal],
+  imports: [DatePipe, Icon, MentionPopup, CharCounter, ForwardTargetModal, CreatePollModal],
 })
 export class GroupWorkspaceModal {
   protected readonly store = inject(GroupStore);
@@ -318,6 +320,19 @@ export class GroupWorkspaceModal {
       const group = this.store.activeGroup();
       if (!group || this.activeTab() !== 'chat' || msgs.length === 0) return;
       untracked(() => this.store.markGroupMessagesRead(group.id));
+    });
+
+    // Nạp chi tiết cho các bình chọn vừa xuất hiện trong dòng chat.
+    effect(() => {
+      const msgs = this.store.messages();
+      const group = this.store.activeGroup();
+      if (!group) return;
+      const loaded = untracked(() => this.store.polls());
+      for (const m of msgs) {
+        if (m.pollId && !loaded[m.pollId]) {
+          untracked(() => void this.store.loadPoll(group.id, m.pollId!));
+        }
+      }
     });
 
     effect(() => {
@@ -1154,6 +1169,59 @@ export class GroupWorkspaceModal {
     this.swipeDx.set(null);
     if (s?.active && moved && moved.id === msg.id && Math.abs(moved.dx) > 55) {
       this.startReply(msg);
+    }
+  }
+
+  // --- Bình chọn ----------------------------------------------------
+  protected readonly createPollOpen = signal(false);
+  /** Menu ⊕ cạnh ô nhập (Tạo bình chọn, …). */
+  protected readonly composerMenuOpen = signal(false);
+
+  pollFor(msg: GroupMessage) {
+    return msg.pollId ? this.store.polls()[msg.pollId] ?? null : null;
+  }
+
+  pollTotalVotes(poll: { options: { count: number }[] }): number {
+    return poll.options.reduce((s, o) => s + o.count, 0);
+  }
+
+  pollPercent(poll: { options: { count: number }[] }, count: number): number {
+    const total = this.pollTotalVotes(poll);
+    return total === 0 ? 0 : Math.round((count / total) * 100);
+  }
+
+  async togglePollOption(poll: PollDetail, optionId: string): Promise<void> {
+    const group = this.store.activeGroup();
+    if (!group || poll.closedAt) return;
+    const mine = new Set(poll.myOptionIds);
+    let next: string[];
+    if (poll.allowMultiple) {
+      if (mine.has(optionId)) mine.delete(optionId);
+      else mine.add(optionId);
+      next = [...mine];
+    } else {
+      next = mine.has(optionId) ? [] : [optionId];
+    }
+    try {
+      await this.store.votePoll(group.id, poll.id, next);
+    } catch (err: any) {
+      await this.dialog.alert(err?.error?.message || this.i18n.t('poll.voteError'));
+    }
+  }
+
+  canClosePoll(poll: PollDetail): boolean {
+    return !poll.closedAt && (poll.createdBy === this.currentUserId() || this.canModerateChat());
+  }
+
+  async closePoll(poll: PollDetail): Promise<void> {
+    const group = this.store.activeGroup();
+    if (!group) return;
+    const ok = await this.dialog.confirm(this.i18n.t('poll.closeConfirm'), { danger: true });
+    if (!ok) return;
+    try {
+      await this.store.closePoll(group.id, poll.id);
+    } catch (err: any) {
+      await this.dialog.alert(err?.error?.message || this.i18n.t('poll.voteError'));
     }
   }
 

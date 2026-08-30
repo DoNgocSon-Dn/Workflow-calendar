@@ -17,6 +17,7 @@ import {
   GroupMeeting,
   GroupTask,
   GroupUpdate,
+  PollDetail,
 } from '../models/group.models';
 
 @Injectable({ providedIn: 'root' })
@@ -395,6 +396,48 @@ export class GroupApiService {
       this.http.post<{ added: boolean }>(
         `${environment.apiUrl}/groups/${groupId}/messages/${messageId}/reactions`,
         { emoji },
+        { headers: this.authHeaders },
+      ),
+    );
+  }
+
+  async createPoll(
+    groupId: string,
+    payload: { question: string; options: string[]; allowMultiple: boolean; anonymous: boolean },
+  ): Promise<GroupMessage> {
+    return firstValueFrom(
+      this.http.post<GroupMessage>(
+        `${environment.apiUrl}/groups/${groupId}/polls`,
+        payload,
+        { headers: this.authHeaders },
+      ),
+    );
+  }
+
+  async getPoll(groupId: string, pollId: string): Promise<PollDetail | null> {
+    return firstValueFrom(
+      this.http.get<PollDetail | null>(
+        `${environment.apiUrl}/groups/${groupId}/polls/${pollId}`,
+        { headers: this.authHeaders },
+      ),
+    );
+  }
+
+  async votePoll(groupId: string, pollId: string, optionIds: string[]): Promise<void> {
+    await firstValueFrom(
+      this.http.post(
+        `${environment.apiUrl}/groups/${groupId}/polls/${pollId}/vote`,
+        { optionIds },
+        { headers: this.authHeaders },
+      ),
+    );
+  }
+
+  async closePoll(groupId: string, pollId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.patch(
+        `${environment.apiUrl}/groups/${groupId}/polls/${pollId}/close`,
+        {},
         { headers: this.authHeaders },
       ),
     );

@@ -213,6 +213,7 @@ export interface GroupMessageDto {
   pinnedAt?: string;
   pinnedBy?: string;
   forwardedFromGroup?: string;
+  pollId?: string;
 }
 
 @Injectable()
@@ -587,6 +588,7 @@ export class GroupsService {
       pinnedAt: row.pinned_at ?? undefined,
       pinnedBy: row.pinned_by ?? undefined,
       forwardedFromGroup: row.forwarded_from_group ?? undefined,
+      pollId: row.poll_id ?? undefined,
     };
   }
 
@@ -2764,6 +2766,140 @@ export class GroupsService {
       added,
     });
     return { added };
+  }
+
+  // ---- Bình chọn / poll (migration 47) ----
+
+  async createPoll(
+    supabase: SupabaseClient,
+    user: User,
+    groupId: string,
+    dto: {
+      question: string;
+      options: string[];
+      allowMultiple?: boolean;
+      anonymous?: boolean;
+    },
+  ): Promise<GroupMessageDto> {
+    const role = await this.requireRole(supabase, user, groupId);
+    if (!canChat(role)) {
+      throw new ForbiddenException('Khách không tạo được bình chọn');
+    }
+    const opts = dto.options.map((t) => t.trim()).filter(Boolean);
+    if (opts.length < 2) {
+      throw new BadRequestException('Cần ít nhất 2 lựa chọn');
+    }
+
+    const { data: poll, error: pErr } = await supabase
+      .from('group_polls')
+      .insert({
+        group_id: groupId,
+        question: dto.question.trim().slice(0, 300),
+        allow_multiple: !!dto.allowMultiple,
+        anonymous: !!dto.anonymous,
+        created_by: user.id,
+      })
+      .select('id')
+      .single<{ id: string }>();
+    if (pErr || !poll) {
+      if (pErr?.code === '42P01') {
+        throw new InternalServerErrorException(
+          'Tính năng bình chọn cần chạy migration 47_group_polls.sql',
+        );
+      }
+      throw new InternalServerErrorException(pErr?.message || 'Không tạo được bình chọn');
+    }
+
+    const { error: oErr } = await supabase.from('group_poll_options').insert(
+      opts.map((text, i) => ({ poll_id: poll.id, text: text.slice(0, 120), sort: i })),
+    );
+    if (oErr) throw new InternalServerErrorException(oErr.message);
+
+    const { data: msg, error: mErr } = await supabase
+      .from('group_messages')
+      .insert({
+        group_id: groupId,
+        sender_id: user.id,
+        message: dto.question.trim().slice(0, 2000),
+        poll_id: poll.id,
+      })
+      .select('*')
+      .single();
+    if (mErr || !msg) {
+      throw new InternalServerErrorException(mErr?.message || 'Không tạo được tin bình chọn');
+    }
+
+    const msgDto: GroupMessageDto = {
+      ...this.mapMessageRow(msg),
+      senderEmail: user.email,
+      senderName: (user.user_metadata as Record<string, unknown> | undefined)?.[
+        'full_name'
+      ] as string | undefined,
+    };
+    await this.emitToGroupRooms(supabase, groupId, 'group:messageSent', {
+      groupId,
+      message: msgDto,
+    });
+    await this.emitToGroupMembers(supabase, groupId, 'group:messageSent', {
+      groupId,
+      message: msgDto,
+    });
+    return msgDto;
+  }
+
+  async getPoll(
+    supabase: SupabaseClient,
+    _groupId: string,
+    pollId: string,
+  ): Promise<unknown> {
+    const { data, error } = await supabase.rpc('get_group_poll', { p_poll_id: pollId });
+    if (error) {
+      if (error.code === '42883' || error.code === '42P01') return null;
+      if (error.message?.includes('not authorized')) {
+        throw new ForbiddenException('Bạn không xem được bình chọn này');
+      }
+      throw new InternalServerErrorException(error.message);
+    }
+    return data;
+  }
+
+  async votePoll(
+    supabase: SupabaseClient,
+    user: User,
+    groupId: string,
+    pollId: string,
+    optionIds: string[],
+  ): Promise<void> {
+    await this.requireRole(supabase, user, groupId);
+    const { error } = await supabase.rpc('vote_group_poll', {
+      p_poll_id: pollId,
+      p_option_ids: optionIds,
+    });
+    if (error) {
+      const m = error.message || '';
+      if (m.includes('poll closed')) throw new ConflictException('Bình chọn đã đóng');
+      if (m.includes('single choice')) throw new BadRequestException('Chỉ được chọn một');
+      if (m.includes('invalid option')) throw new BadRequestException('Lựa chọn không hợp lệ');
+      throw new InternalServerErrorException(m);
+    }
+    await this.emitToGroupRooms(supabase, groupId, 'group:pollChanged', { groupId, pollId });
+  }
+
+  async closePoll(
+    supabase: SupabaseClient,
+    user: User,
+    groupId: string,
+    pollId: string,
+  ): Promise<void> {
+    await this.requireRole(supabase, user, groupId);
+    const { error } = await supabase.rpc('close_group_poll', { p_poll_id: pollId });
+    if (error) {
+      if (error.message?.includes('not authorized')) {
+        throw new ForbiddenException('Chỉ người tạo hoặc Trưởng/Phó nhóm mới đóng được');
+      }
+      throw new InternalServerErrorException(error.message);
+    }
+    await this.emitToGroupRooms(supabase, groupId, 'group:pollChanged', { groupId, pollId });
   }
 
   // ---- Ghim tin nhắn (Trưởng/Phó nhóm, migration 45) ----

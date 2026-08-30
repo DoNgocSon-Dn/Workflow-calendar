@@ -12,6 +12,7 @@ import {
   GroupMeeting,
   GroupTask,
   GroupUpdate,
+  PollDetail,
 } from '../models/group.models';
 import { mentionsUser, normalizeMentions } from '../utils/mention.util';
 import { GroupApiService } from '../services/group-api.service';
@@ -111,6 +112,9 @@ export class GroupStore {
 
   /** messageId → emoji → danh sách userId đã thả (nhóm ĐANG XEM). */
   readonly reactions = signal<Record<string, Record<string, string[]>>>({});
+
+  /** pollId → chi tiết bình chọn (nạp lười khi thẻ poll xuất hiện). */
+  readonly polls = signal<Record<string, PollDetail>>({});
 
   /** userId → tên người đang soạn tin (nhóm ĐANG XEM). Phù du, tự hết hạn 4s. */
   readonly typingUsers = signal<{ userId: string; name: string }[]>([]);
@@ -688,6 +692,15 @@ export class GroupStore {
       },
     );
 
+    // Bình chọn thay đổi (có phiếu mới / bị đóng) → tải lại chi tiết.
+    this.realtime.on<{ groupId: string; pollId: string }>(
+      'group:pollChanged',
+      (payload) => {
+        if (!payload || !this.isActiveGroup(payload.groupId)) return;
+        if (this.polls()[payload.pollId]) void this.loadPoll(payload.groupId, payload.pollId);
+      },
+    );
+
     // Ghim / bỏ ghim một tin nhắn.
     this.realtime.on<{ groupId: string; messageId: string; pinned: boolean; pinnedBy: string | null }>(
       'group:messagePinned',
@@ -1209,6 +1222,7 @@ export class GroupStore {
     this.typingUsers.set([]);
     this.typingExpiry.clear();
     this.deliveredMessageIds.set(new Set());
+    this.polls.set({});
     this.lastMarkReadAt = 0;
     this.activeWorkspaceModalOpen.set(true);
     this.clearGroupUnread(group.id);
@@ -1314,6 +1328,60 @@ export class GroupStore {
       .filter((m) => m.pinnedAt && !m.deletedAt)
       .sort((a, b) => (b.pinnedAt! < a.pinnedAt! ? -1 : 1)),
   );
+
+  // --- Bình chọn -----------------------------------------------------
+  async loadPoll(groupId: string, pollId: string): Promise<void> {
+    try {
+      const p = await this.api.getPoll(groupId, pollId);
+      if (!p || this.activeGroupId() !== groupId) return;
+      this.polls.update((prev) => ({ ...prev, [pollId]: p }));
+    } catch {
+      /* migration 47 chưa chạy — thẻ poll hiện dạng tối giản */
+    }
+  }
+
+  async createPoll(
+    groupId: string,
+    payload: { question: string; options: string[]; allowMultiple: boolean; anonymous: boolean },
+  ): Promise<void> {
+    await this.api.createPoll(groupId, payload);
+    // Tin bình chọn tới qua realtime/polling như tin thường.
+  }
+
+  async votePoll(groupId: string, pollId: string, optionIds: string[]): Promise<void> {
+    // Lạc quan: cập nhật myOptionIds + count ngay.
+    const me = this.authStore.user()?.id;
+    const before = this.polls()[pollId];
+    if (before && me) {
+      const prevMine = new Set(before.myOptionIds);
+      const nextMine = new Set(optionIds);
+      this.polls.update((prev) => ({
+        ...prev,
+        [pollId]: {
+          ...before,
+          myOptionIds: optionIds,
+          options: before.options.map((o) => {
+            const was = prevMine.has(o.id);
+            const now = nextMine.has(o.id);
+            if (was === now) return o;
+            return { ...o, count: Math.max(0, o.count + (now ? 1 : -1)) };
+          }),
+        },
+      }));
+    }
+    try {
+      await this.api.votePoll(groupId, pollId, optionIds);
+      void this.loadPoll(groupId, pollId);
+    } catch (err) {
+      if (before) this.polls.update((prev) => ({ ...prev, [pollId]: before }));
+      throw err;
+    }
+  }
+
+  async closePoll(groupId: string, pollId: string): Promise<void> {
+    await this.api.closePoll(groupId, pollId);
+    void this.loadPoll(groupId, pollId);
+  }
 
   async setMessagePinned(groupId: string, messageId: string, pinned: boolean): Promise<void> {
     // Lạc quan.
@@ -1647,9 +1715,10 @@ export class GroupStore {
       replyDeleted: replyTo?.deletedAt ? true : undefined,
       forwardedFromGroup: forwardedFromGroup || undefined,
     };
-    // Chỉ vẽ tin lạc quan khi đang gửi vào ĐÚNG nhóm đang mở (chuyển tiếp sang
-    // nhóm khác thì `messages` không phải của nhóm đó).
-    const showOptimistic = this.activeGroupId() === groupId;
+    // KHÔNG vẽ tin lạc quan khi đang chuyển tiếp sang một nhóm KHÁC nhóm đang mở
+    // (`messages` không phải của nhóm đó). Không có nhóm đang mở → vẫn vẽ như cũ.
+    const activeId = this.activeGroupId();
+    const showOptimistic = activeId == null || activeId === groupId;
     if (showOptimistic) this.messages.update((prev) => [...prev, optimistic]);
 
     try {

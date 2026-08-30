@@ -30,6 +30,7 @@ import { RequestJoinGroupDto } from './dto/request-join-group.dto';
 import { DecideJoinRequestDto } from './dto/decide-join-request.dto';
 import { JoinByCodeDto } from './dto/join-by-code.dto';
 import { ToggleReactionDto } from './dto/toggle-reaction.dto';
+import { CreateGroupPollDto, VoteGroupPollDto } from './dto/create-group-poll.dto';
 import { GroupsService } from './groups.service';
 
 @Controller('groups')
@@ -348,6 +349,48 @@ export class GroupsController {
     @Param('id') groupId: string,
   ) {
     await this.groupsService.deleteMeeting(supabase, user, groupId);
+    return { ok: true };
+  }
+
+  @Post(':id/polls')
+  async createPoll(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('id') groupId: string,
+    @Body() dto: CreateGroupPollDto,
+  ) {
+    return this.groupsService.createPoll(supabase, user, groupId, dto);
+  }
+
+  @Get(':id/polls/:pollId')
+  async getPoll(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @Param('id') groupId: string,
+    @Param('pollId') pollId: string,
+  ) {
+    return this.groupsService.getPoll(supabase, groupId, pollId);
+  }
+
+  @Post(':id/polls/:pollId/vote')
+  async votePoll(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('id') groupId: string,
+    @Param('pollId') pollId: string,
+    @Body() dto: VoteGroupPollDto,
+  ) {
+    await this.groupsService.votePoll(supabase, user, groupId, pollId, dto.optionIds);
+    return { ok: true };
+  }
+
+  @Patch(':id/polls/:pollId/close')
+  async closePoll(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Param('id') groupId: string,
+    @Param('pollId') pollId: string,
+  ) {
+    await this.groupsService.closePoll(supabase, user, groupId, pollId);
     return { ok: true };
   }
 

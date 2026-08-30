@@ -164,6 +164,8 @@ export interface GroupMessage {
   pinnedBy?: string;
   /** Tên nhóm nguồn khi tin này được chuyển tiếp (Phase 12). */
   forwardedFromGroup?: string;
+  /** Tin này là một bình chọn (Phase 13) — render bằng poll-card. */
+  pollId?: string;
   /**
    * Mã do client sinh ra trước khi gọi API, dùng để ghép tin nhắn lạc quan
    * (hiện ngay lúc nhấn Enter) với tin nhắn thật do server trả về / socket
@@ -179,4 +181,23 @@ export interface GroupMessageAttachment {
   name: string;
   type: string;
   size: number;
+}
+
+export interface PollOption {
+  id: string;
+  text: string;
+  count: number;
+  voterIds: string[];
+}
+
+export interface PollDetail {
+  id: string;
+  groupId: string;
+  question: string;
+  allowMultiple: boolean;
+  anonymous: boolean;
+  closedAt: string | null;
+  createdBy: string | null;
+  myOptionIds: string[];
+  options: PollOption[];
 }

@@ -1,0 +1,65 @@
+<div class="modal-backdrop" (click)="onBackdropClick($event)" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <header class="modal-header">
+      <h2>{{ i18n.t('poll.createTitle') }}</h2>
+      <button type="button" class="btn-close" (click)="cancel()" [attr.aria-label]="i18n.t('common.close')">
+        <app-icon name="close" />
+      </button>
+    </header>
+
+    <div class="modal-body">
+      <label class="lbl">{{ i18n.t('poll.question') }}</label>
+      <input
+        type="text"
+        class="text-input"
+        maxlength="300"
+        [placeholder]="i18n.t('poll.questionPlaceholder')"
+        [value]="question()"
+        (input)="question.set($any($event.target).value)"
+        autofocus
+      />
+
+      <label class="lbl">{{ i18n.t('poll.options') }}</label>
+      @for (opt of options(); track $index) {
+        <div class="opt-row">
+          <input
+            type="text"
+            class="text-input"
+            maxlength="120"
+            [placeholder]="i18n.t('poll.optionN', { n: $index + 1 })"
+            [value]="opt"
+            (input)="setOption($index, $any($event.target).value)"
+          />
+          @if (options().length > 2) {
+            <button type="button" class="opt-del" (click)="removeOption($index)" [attr.aria-label]="i18n.t('common.delete')">
+              <app-icon name="close" />
+            </button>
+          }
+        </div>
+      }
+      @if (options().length < 12) {
+        <button type="button" class="add-opt" (click)="addOption()">
+          <app-icon name="plus" /> {{ i18n.t('poll.addOption') }}
+        </button>
+      }
+
+      <label class="toggle">
+        <input type="checkbox" [checked]="allowMultiple()" (change)="allowMultiple.set($any($event.target).checked)" />
+        {{ i18n.t('poll.allowMultiple') }}
+      </label>
+      <label class="toggle">
+        <input type="checkbox" [checked]="anonymous()" (change)="anonymous.set($any($event.target).checked)" />
+        {{ i18n.t('poll.anonymous') }}
+      </label>
+
+      @if (error(); as err) { <p class="error-msg" role="alert">{{ err }}</p> }
+    </div>
+
+    <footer class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="cancel()">{{ i18n.t('common.cancel') }}</button>
+      <button type="button" class="btn btn-primary" [disabled]="!canCreate()" (click)="create()">
+        {{ creating() ? i18n.t('common.saving') : i18n.t('poll.create') }}
+      </button>
+    </footer>
+  </div>
+</div>

@@ -1054,6 +1054,129 @@
   margin-bottom: 2px;
 }
 
+/* --- Thẻ bình chọn --- */
+.poll-card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 220px;
+}
+.poll-q {
+  margin: 0 0 2px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.poll-opt {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.84rem;
+  cursor: pointer;
+  overflow: hidden;
+}
+.poll-opt:disabled {
+  cursor: default;
+}
+.poll-opt.chosen {
+  border-color: var(--holiday-accent);
+}
+.poll-opt__bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--holiday-accent-soft);
+  transition: width 0.3s ease;
+  z-index: 0;
+}
+.poll-opt__label {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.poll-opt__check {
+  color: var(--holiday-accent);
+  font-size: 0.7rem;
+}
+.poll-opt__count {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+.poll-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--color-text-tertiary);
+  margin-top: 2px;
+}
+.poll-closed {
+  font-weight: 700;
+  color: var(--color-warning);
+}
+.poll-close-btn {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: var(--color-danger);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Nút ⊕ cạnh ô nhập chat. */
+.composer-plus {
+  position: relative;
+  flex: 0 0 auto;
+}
+.composer-menu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  min-width: 170px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+.composer-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.composer-menu button:hover {
+  background: var(--color-surface-hover);
+}
+
 /* Khối trích dẫn trong bong bóng — bấm để nhảy tới tin gốc. */
 .chat-quote {
   display: block;
