@@ -366,6 +366,27 @@
   will-change: transform, top, height;
 }
 
+/* Vừa thả: khối đã ở đúng ô lưới (top mới), `transform` đang giữ phần lệch
+   pixel còn dư. Khung hình 1 — KHÔNG transition (đặt khối đúng chỗ vừa buông
+   tay). */
+.event-block.settling {
+  transition: none;
+  z-index: 20;
+  will-change: transform;
+}
+
+/* Khung hình 2 — bật transition rồi kéo phần dư về 0: khối "click" vào khung
+   giờ trong ~0.16s thay vì nhảy phịch. */
+.event-block.settling.settling-anim {
+  transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event-block.settling.settling-anim {
+    transition: none;
+  }
+}
+
 .resize-handle {
   position: absolute;
   left: 0;

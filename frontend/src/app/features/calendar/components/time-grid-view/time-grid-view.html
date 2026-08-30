@@ -145,6 +145,8 @@
                 class="event-block"
                 [class.conflict]="store.conflictingEventIds().has(pe.event.id)"
                 [class.dragging]="isDragging(pe.event.id)"
+                [class.settling]="isSettling(pe.event.id)"
+                [class.settling-anim]="isSettlingAnim(pe.event.id)"
                 [style.top.px]="blockTop(pe) + resizeTopOffset(pe.event.id)"
                 [style.height.px]="blockHeight(pe) + resizeHeightDelta(pe.event.id)"
                 [style.left.%]="pe.leftPct"

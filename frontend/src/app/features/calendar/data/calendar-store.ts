@@ -1847,6 +1847,37 @@ export class CalendarStore {
     this.events.update((list) => list.map((e) => (e.id === id ? event : e)));
   }
 
+  /**
+   * Kéo-thả sự kiện trong lưới giờ / tháng: đổi `start`+`end` và cập nhật NGAY
+   * tại chỗ (lạc quan) rồi mới gọi server. `updateEvent()` chờ server xong mới
+   * đổi state — với thao tác kéo thì khối "nhảy về chỗ cũ" một nhịp trong lúc
+   * chờ, đúng cảm giác giật. Ở đây khối ở lại đúng ô vừa thả; server phản hồi
+   * thì đồng bộ lại, còn lỗi thì hoàn tác về vị trí cũ.
+   */
+  async moveEvent(id: string, start: Date, end: Date): Promise<void> {
+    const prev = this.events().find((e) => e.id === id);
+    if (!prev) return;
+
+    this.events.update((list) =>
+      list.map((e) => (e.id === id ? { ...e, start, end } : e)),
+    );
+    this.markSelfOrigin(id);
+
+    try {
+      const updated = await firstValueFrom(
+        this.http.patch<EventApiDto>(
+          `${this.apiUrl}/events/${id}`,
+          toEventApiPayload({ start, end }),
+        ),
+      );
+      const event = toCalendarEvent(updated);
+      this.events.update((list) => list.map((e) => (e.id === id ? event : e)));
+    } catch (err) {
+      this.events.update((list) => list.map((e) => (e.id === id ? prev : e)));
+      throw err;
+    }
+  }
+
   /** scope 'this' chỉ chuyển thẳng sang updateEvent() hiện có — sự kiện
    *  không thuộc chuỗi lặp lại nào thì hành vi giữ nguyên như trước. */
   async updateEventSeries(
@@ -1923,7 +1954,7 @@ export class CalendarStore {
     const start = current.allDay ? startOfDay(targetDay) : clampToDay(current.start, targetDay);
     const end = new Date(start.getTime() + durationMs);
 
-    await this.updateEvent(id, { start, end });
+    await this.moveEvent(id, start, end);
   }
 
   async checkConflicts(range: {

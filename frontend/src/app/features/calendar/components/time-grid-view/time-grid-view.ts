@@ -74,6 +74,19 @@ interface DragResizeState {
   snapMin: number;
 }
 
+/**
+ * Ngay sau khi THẢ: khối đã được đặt vào ô lưới 15' (cập nhật lạc quan), phần
+ * lệch pixel còn dư (`x`/`y`) được "kéo" mượt về 0 để có cảm giác click vào
+ * khung giờ thay vì nhảy phịch. `go=false` là khung hình đầu (đặt đúng chỗ vừa
+ * thả, chưa transition); `go=true` là khung sau (bật transition, dồn về 0).
+ */
+interface DropSettleState {
+  eventId: string;
+  x: number;
+  y: number;
+  go: boolean;
+}
+
 function snap(min: number): number {
   return Math.max(0, Math.min(1440, Math.round(min / SNAP_MINUTES) * SNAP_MINUTES));
 }
@@ -198,18 +211,34 @@ export class TimeGridView {
   protected readonly dragCreate = signal<DragCreateState | null>(null);
   protected readonly dragMove = signal<DragMoveState | null>(null);
   protected readonly dragResize = signal<DragResizeState | null>(null);
+  protected readonly dropSettle = signal<DropSettleState | null>(null);
 
   /** Khối đang bị kéo/đổi độ dài — để template gắn class `.dragging`. */
   protected isDragging(eventId: string): boolean {
     return this.dragMove()?.eventId === eventId || this.dragResize()?.eventId === eventId;
   }
 
+  /** Khối vừa thả, đang "lắng" nốt vài pixel dư về ô lưới. */
+  protected isSettling(eventId: string): boolean {
+    return this.dropSettle()?.eventId === eventId;
+  }
+  /** Khung hình 2 của pha lắng — đã bật transition để dồn phần dư về 0. */
+  protected isSettlingAnim(eventId: string): boolean {
+    const s = this.dropSettle();
+    return !!s && s.eventId === eventId && s.go;
+  }
+
   /** `transform` cho khối đang được DI CHUYỂN — pixel thô, bám sát ngón tay. */
   protected moveTransform(eventId: string): string | null {
     const m = this.dragMove();
-    return m && m.eventId === eventId
-      ? `translate(${m.dxPx}px, ${m.dyPx}px) scale(1.02)`
-      : null;
+    if (m && m.eventId === eventId) {
+      return `translate(${m.dxPx}px, ${m.dyPx}px) scale(1.02)`;
+    }
+    const s = this.dropSettle();
+    if (s && s.eventId === eventId) {
+      return s.go ? 'translate(0px, 0px)' : `translate(${s.x}px, ${s.y}px)`;
+    }
+    return null;
   }
 
   /** Bù `top` / `height` cho khối đang ĐỔI ĐỘ DÀI (kéo mép trên / dưới). */
@@ -223,14 +252,21 @@ export class TimeGridView {
     return r.edge === 'bottom' ? r.dyPx : -r.dyPx;
   }
 
-  /** Giờ hiển thị trên khối — đổi theo vị trí kéo/độ dài đang chỉnh (đã snap). */
+  /**
+   * Giờ hiển thị trên khối trong lúc kéo. Bám THEO PIXEL, làm tròn tới từng
+   * phút — không đợi mốc snap 15' — để người dùng thấy ngay khối sẽ rớt vào
+   * khoảng mấy giờ nếu buông tay. Lúc THẢ mới snap về 15' (xem cleanup), và vì
+   * `pe.event.start` lúc đó đã là giá trị đã snap nên nhãn tự khớp.
+   */
   protected liveTimeLabel(pe: PositionedEvent): string {
     const m = this.dragMove();
     const r = this.dragResize();
     let start = pe.event.start;
-    if (m && m.eventId === pe.event.id) start = addMinutes(start, m.snapMin);
-    else if (r && r.eventId === pe.event.id && r.edge === 'top')
-      start = addMinutes(start, r.snapMin);
+    if (m && m.eventId === pe.event.id) {
+      start = addMinutes(start, Math.round((m.dyPx / HOUR_HEIGHT) * 60));
+    } else if (r && r.eventId === pe.event.id && r.edge === 'top') {
+      start = addMinutes(start, Math.round((r.dyPx / HOUR_HEIGHT) * 60));
+    }
     return this.formatTimeLabel(start);
   }
 
@@ -626,7 +662,32 @@ export class TimeGridView {
         newStart = addDays(newStart, state.snapDays);
         newEnd = addDays(newEnd, state.snapDays);
       }
-      this.store.updateEvent(pe.event.id, { start: newStart, end: newEnd });
+
+      // SNAP KHI THẢ: phần lệch pixel giữa chỗ buông tay và ô lưới 15' gần nhất
+      // được giữ lại làm `transform` khởi đầu rồi kéo mượt về 0 ở khung hình
+      // sau ⇒ khối "click" vào khung giờ, không giật.
+      const colW = colRects[startDayIndex]?.width ?? colRects[0]?.width ?? 0;
+      const resX = state.dxPx - state.snapDays * colW;
+      const resY = state.dyPx - (state.snapMin / 60) * HOUR_HEIGHT;
+      const settleId = pe.event.id;
+      this.dropSettle.set({ eventId: settleId, x: resX, y: resY, go: false });
+
+      // Cập nhật LẠC QUAN: khối vào đúng ô ngay, không "nhảy về chỗ cũ" trong
+      // lúc chờ server.
+      void this.store.moveEvent(settleId, newStart, newEnd).catch(() => undefined);
+
+      // Hai rAF: chắc chắn khung hình "đặt đúng chỗ vừa thả" (go=false) đã được
+      // vẽ ít nhất một lần trước khi bật transition, nếu không trình duyệt gộp
+      // hai thay đổi làm một và transform lại animate cả quãng kéo (giật).
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const s = this.dropSettle();
+          if (s && s.eventId === settleId) this.dropSettle.set({ ...s, go: true });
+        });
+      });
+      window.setTimeout(() => {
+        if (this.dropSettle()?.eventId === settleId) this.dropSettle.set(null);
+      }, 260);
     };
 
     const onPointerMove = (e: PointerEvent): void => {
@@ -758,11 +819,13 @@ export class TimeGridView {
       const state = this.dragResize();
       this.dragResize.set(null);
       if (commit && state && state.snapMin !== 0) {
-        if (edge === 'bottom') {
-          this.store.updateEvent(pe.event.id, { end: addMinutes(pe.event.end, state.snapMin) });
-        } else {
-          this.store.updateEvent(pe.event.id, { start: addMinutes(pe.event.start, state.snapMin) });
-        }
+        // Cập nhật lạc quan (xem moveEvent) để mép khối không bật về độ dài cũ
+        // một nhịp trong lúc chờ server.
+        const newStart =
+          edge === 'top' ? addMinutes(pe.event.start, state.snapMin) : pe.event.start;
+        const newEnd =
+          edge === 'bottom' ? addMinutes(pe.event.end, state.snapMin) : pe.event.end;
+        void this.store.moveEvent(pe.event.id, newStart, newEnd).catch(() => undefined);
       }
     };
 
