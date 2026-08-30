@@ -538,6 +538,30 @@ h1, h2, h3, h4, .font-heading {
   }
 }
 
+/* ============================================================
+   PHẢN HỒI KHI NHẤN — mục trong menu / danh sách chọn
+
+   Các nút trong dropdown (đổi view, menu avatar, chọn giờ, chọn
+   người, kết quả tìm kiếm…) trước chỉ đổi nền khi hover — trên
+   điện thoại không có hover nên bấm vào thấy "chết". Thêm một cái
+   nhún nhẹ lúc nhấn giữ cho có cảm giác chạm.
+   ============================================================ */
+@media (prefers-reduced-motion: no-preference) {
+  .dropdown-item,
+  [role='menuitem'],
+  [role='menuitemradio'],
+  [role='option'] {
+    transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  }
+
+  .dropdown-item:active,
+  [role='menuitem']:active,
+  [role='menuitemradio']:active,
+  [role='option']:active {
+    transform: scale(0.975);
+  }
+}
+
 /* Print Styles */
 @media print {
   app-calendar-sidebar,

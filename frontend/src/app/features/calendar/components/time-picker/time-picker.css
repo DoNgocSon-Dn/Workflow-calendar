@@ -36,6 +36,25 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-popover);
   overflow: hidden;
+  transform-origin: top left;
+  animation: timePickerPanelIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes timePickerPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
 }
 
 .tabs {

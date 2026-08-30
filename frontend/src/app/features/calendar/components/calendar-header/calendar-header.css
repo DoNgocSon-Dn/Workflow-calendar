@@ -133,6 +133,8 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-modal);
   z-index: 60;
+  transform-origin: top center;
+  animation: dropdownIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .search-result {

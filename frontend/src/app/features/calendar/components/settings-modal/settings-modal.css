@@ -108,6 +108,28 @@
   gap: 1.5rem;
 }
 
+/* Đổi mục ở thanh trái → nội dung mới lướt vào thay vì nhảy phịch. */
+.settings-content > section {
+  animation: settingsSectionIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes settingsSectionIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-content > section {
+    animation: none;
+  }
+}
+
 .profile-section {
   display: flex;
   align-items: flex-start;
