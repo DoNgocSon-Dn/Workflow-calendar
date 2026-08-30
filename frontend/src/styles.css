@@ -462,6 +462,82 @@ h1, h2, h3, h4, .font-heading {
   }
 }
 
+/* ============================================================
+   HIỆU ỨNG MỞ MODAL — lớp mặc định TOÀN CỤC
+
+   ~10 hộp thoại trong app (event-form, settings, invite, tạo lịch,
+   thùng rác, tạo nhóm, tạo bình chọn, chuyển tiếp, tham gia nhóm…)
+   trước đây hiện ra "khựng" một phát, không chuyển động. Ở đây gắn
+   một hiệu ứng chung: nền mờ dần, panel trượt nhẹ lên + phóng to nhẹ
+   theo đường cong easing "nhà" của app (cubic-bezier(0.16,1,0.3,1)).
+
+   Đây là stylesheet toàn cục nên KHÔNG bị Angular scope — chỉ chạm
+   tới lớp vỏ modal chuẩn. Component nào đã tự khai báo `animation`
+   riêng (group-workspace, holiday-info, dialog-host) thì style scoped
+   của nó nạp sau → thắng, giữ nguyên hiệu ứng riêng.
+   ============================================================ */
+.backdrop:has(> [role='dialog']),
+.modal-backdrop[role='dialog'] {
+  animation: appModalBackdropIn 0.18s ease-out both;
+}
+
+.backdrop:has(> [role='dialog']) > [role='dialog'],
+.modal-backdrop[role='dialog'] > .modal-card {
+  animation: appModalPanelIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+@keyframes appModalBackdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes appModalPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Điện thoại: modal hay dán đáy (bottom-sheet) — trượt lên gọn hơn,
+   bỏ phóng to cho đỡ "nảy". */
+@media (max-width: 767.98px) {
+  .backdrop:has(> [role='dialog']) > [role='dialog'],
+  .modal-backdrop[role='dialog'] > .modal-card {
+    animation-name: appModalSheetIn;
+    animation-duration: 0.26s;
+  }
+}
+
+@keyframes appModalSheetIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop:has(> [role='dialog']),
+  .modal-backdrop[role='dialog'],
+  .backdrop:has(> [role='dialog']) > [role='dialog'],
+  .modal-backdrop[role='dialog'] > .modal-card {
+    animation-duration: 0.001s;
+    animation-timing-function: linear;
+  }
+}
+
 /* Print Styles */
 @media print {
   app-calendar-sidebar,
