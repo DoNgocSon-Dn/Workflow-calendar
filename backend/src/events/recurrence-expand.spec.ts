@@ -66,3 +66,30 @@ describe('expandRecurrence — options', () => {
     ]);
   });
 });
+
+
+describe('recurrence date anchors', () => {
+  it('restores the original day after a shorter month', () => {
+    const start = new Date(2026, 0, 31, 9);
+    const results = expandRecurrence(start, new Date(2026, 0, 31, 10),
+      { freq: 'monthly', endType: 'count', count: 4 });
+    expect(results.map(({ start }) => [start.getMonth(), start.getDate()]))
+      .toEqual([[0, 31], [1, 28], [2, 31], [3, 30]]);
+    expect(results.every(({ start, end }) => start.getHours() === 9 && end.getTime() - start.getTime() === 3600000)).toBe(true);
+  });
+  it('clamps leap day and restores it in the next leap year', () => {
+    const start = new Date(2024, 1, 29, 9);
+    const results = expandRecurrence(start, new Date(2024, 1, 29, 10),
+      { freq: 'yearly', endType: 'count', count: 5 }, { until: new Date(2029, 0, 1) });
+    expect(results.map(({ start }) => [start.getMonth(), start.getDate()]))
+      .toEqual([[1, 29], [1, 28], [1, 28], [1, 28], [1, 29]]);
+  });
+  it('preserves the original day for custom intervals and top-up', () => {
+    const start = new Date(2026, 0, 31, 9);
+    const results = expandRecurrence(start, new Date(2026, 0, 31, 10),
+      { freq: 'custom', unit: 'month', interval: 3, endType: 'count', count: 4 },
+      { after: new Date(2026, 3, 30, 9) });
+    expect(results.map(({ start }) => [start.getMonth(), start.getDate()]))
+      .toEqual([[6, 31], [9, 31]]);
+  });
+});

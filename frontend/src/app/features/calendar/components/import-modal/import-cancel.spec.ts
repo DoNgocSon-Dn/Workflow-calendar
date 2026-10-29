@@ -47,7 +47,7 @@ describe('ImportModalComponent — hủy import', () => {
         { provide: SUPABASE_CLIENT, useValue: { auth: { getSession: async () => ({ data: {} }) } } },
         { provide: Router, useValue: { navigate: (cmd: string[]) => { nav.push(cmd); return Promise.resolve(true); } } },
         { provide: DialogService, useValue: dialog },
-        { provide: CalendarStore, useValue: { calendars: () => [] } },
+        { provide: CalendarStore, useValue: { calendars: () => [], defaultWritableCalendar: () => null } },
       ],
     });
 

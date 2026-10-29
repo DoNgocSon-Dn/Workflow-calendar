@@ -103,10 +103,9 @@ function* candidateDates(start: Date, rule: RecurrenceRuleDto): Generator<Date> 
 }
 
 function* periodicCandidates(start: Date, unit: RecurrenceUnit, interval: number): Generator<Date> {
-  let cursor = start;
-  while (true) {
-    yield cursor;
-    cursor = addUnit(cursor, unit, interval);
+  // Anchor each occurrence to the original date: Jan 31 -> Feb 28 -> Mar 31.
+  for (let index = 0; ; index++) {
+    yield addUnit(start, unit, index * interval);
   }
 }
 
@@ -195,17 +194,7 @@ function addDays(date: Date, days: number): Date {
 function addUnit(date: Date, unit: RecurrenceUnit, amount: number): Date {
   if (unit === 'day') return addDays(date, amount);
   if (unit === 'week') return addDays(date, amount * 7);
-  if (unit === 'year') {
-    return new Date(
-      date.getFullYear() + amount,
-      date.getMonth(),
-      date.getDate(),
-      date.getHours(),
-      date.getMinutes(),
-      date.getSeconds(),
-      date.getMilliseconds(),
-    );
-  }
+  if (unit === 'year') return addUnit(date, 'month', amount * 12);
   // month: giữ nguyên ngày trong tháng, kẹp về ngày cuối cùng nếu tháng đích ngắn hơn
   // (VD 31/1 + 1 tháng -> 28 hoặc 29/2, không tràn sang tháng 3).
   const targetIndex = date.getMonth() + amount;
