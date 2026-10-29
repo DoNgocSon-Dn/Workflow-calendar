@@ -53,16 +53,16 @@
     </div>
 
     <div class="links">
-      <a href="#about" [class.is-active]="activeSection() === 'about'"
+      <a href="/landing#about" [class.is-active]="activeSection() === 'about'"
         [attr.aria-current]="activeSection() === 'about' ? 'true' : null"
         (click)="scrollToSection($event, 'about')">{{ i18n.t('landing.nav.about') }}</a>
-      <a href="#features" [class.is-active]="activeSection() === 'features'"
+      <a href="/landing#features" [class.is-active]="activeSection() === 'features'"
         [attr.aria-current]="activeSection() === 'features' ? 'true' : null"
         (click)="scrollToSection($event, 'features')">{{ i18n.t('landing.nav.features') }}</a>
-      <a href="#showcase" [class.is-active]="activeSection() === 'showcase'"
+      <a href="/landing#showcase" [class.is-active]="activeSection() === 'showcase'"
         [attr.aria-current]="activeSection() === 'showcase' ? 'true' : null"
         (click)="scrollToSection($event, 'showcase')">{{ i18n.t('landing.nav.showcase') }}</a>
-      <a href="#process" [class.is-active]="activeSection() === 'process'"
+      <a href="/landing#process" [class.is-active]="activeSection() === 'process'"
         [attr.aria-current]="activeSection() === 'process' ? 'true' : null"
         (click)="scrollToSection($event, 'process')">{{ i18n.t('landing.nav.process') }}</a>
     </div>
@@ -100,15 +100,15 @@
   <div class="mobile-menu-scrim" (click)="closeMobileMenu()" aria-hidden="true"></div>
   }
   <div id="mobileMenu" class="mobile-menu" [class.is-open]="mobileMenuOpen()">
-    <a href="#about" [class.is-active]="activeSection() === 'about'"
+    <a href="/landing#about" [class.is-active]="activeSection() === 'about'"
       [attr.aria-current]="activeSection() === 'about' ? 'true' : null" (click)="scrollToSection($event, 'about')">{{ i18n.t('landing.footer.about') }}</a>
-    <a href="#features" [class.is-active]="activeSection() === 'features'"
+    <a href="/landing#features" [class.is-active]="activeSection() === 'features'"
       [attr.aria-current]="activeSection() === 'features' ? 'true' : null"
       (click)="scrollToSection($event, 'features')">{{ i18n.t('landing.nav.features') }}</a>
-    <a href="#showcase" [class.is-active]="activeSection() === 'showcase'"
+    <a href="/landing#showcase" [class.is-active]="activeSection() === 'showcase'"
       [attr.aria-current]="activeSection() === 'showcase' ? 'true' : null"
       (click)="scrollToSection($event, 'showcase')">{{ i18n.t('landing.nav.showcase') }}</a>
-    <a href="#process" [class.is-active]="activeSection() === 'process'"
+    <a href="/landing#process" [class.is-active]="activeSection() === 'process'"
       [attr.aria-current]="activeSection() === 'process' ? 'true' : null"
       (click)="scrollToSection($event, 'process')">{{ i18n.t('landing.nav.process') }}</a>
     <a class="mobile-menu-cta" routerLink="/login">{{ i18n.t('landing.cta.start') }}</a>
@@ -148,7 +148,7 @@
         <!-- CTA phụ cho người chưa sẵn sàng đăng nhập. .btn-ghost vốn đã được
              style đầy đủ nhưng không có ai dùng — chỗ trống này chính là nơi
              nó được dựng ra để đứng. -->
-        <a class="btn-ghost" href="#about" (click)="scrollToSection($event, 'about')">{{ i18n.t('landing.hero.q') }}</a>
+        <a class="btn-ghost" href="/landing#about" (click)="scrollToSection($event, 'about')">{{ i18n.t('landing.hero.q') }}</a>
       </div>
 
       <!-- Bốn điều người ta cần biết TRƯỚC khi bấm "Bắt đầu miễn phí": giá,
@@ -711,9 +711,9 @@
          link 404 ở chân trang bào mòn niềm tin nhanh hơn là không có link.
          Khi hai trang đó được dựng thì thêm vào đây. -->
     <div class="f-links">
-      <a href="#about" (click)="scrollToSection($event, 'about')">{{ i18n.t('landing.nav.about') }}</a>
-      <a href="#features" (click)="scrollToSection($event, 'features')">{{ i18n.t('landing.nav.features') }}</a>
-      <a href="#showcase" (click)="scrollToSection($event, 'showcase')">{{ i18n.t('landing.nav.showcase') }}</a>
+      <a href="/landing#about" (click)="scrollToSection($event, 'about')">{{ i18n.t('landing.nav.about') }}</a>
+      <a href="/landing#features" (click)="scrollToSection($event, 'features')">{{ i18n.t('landing.nav.features') }}</a>
+      <a href="/landing#showcase" (click)="scrollToSection($event, 'showcase')">{{ i18n.t('landing.nav.showcase') }}</a>
       <a href="mailto:tpken249&#64;gmail.com">{{ i18n.t('landing.nav.contact') }}</a>
       <a routerLink="/login">{{ i18n.t('landing.nav.login') }}</a>
     </div>

@@ -58,10 +58,13 @@ if (!apiUrl) {
       '   về origin của web. Backend ở domain khác thì app sẽ KHÔNG gọi được API.\n',
   );
 } else {
-  console.log(`set-env.mjs: apiUrl = ${apiUrl}${envApiUrl ? '' : '  (từ file, không có $API_URL)'}`);
+  console.log(
+    `set-env.mjs: apiUrl = ${apiUrl}${envApiUrl ? '' : '  (từ file, không có $API_URL)'}`,
+  );
 }
 
 const contents = `// TỆP NÀY ĐƯỢC SINH TỰ ĐỘNG bởi scripts/set-env.mjs lúc build — đừng sửa tay.
+import { runtimeConnection } from './runtime-config';
 export const environment = {
   production: true,
   apiUrl: ${apiUrlExpr},
@@ -70,6 +73,7 @@ export const environment = {
     ${JSON.stringify(supabaseAnonKey)},
   vapidPublicKey:
     ${JSON.stringify(vapidPublicKey)},
+  ...runtimeConnection(),
 };
 `;
 

@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { AuthError, Session } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../supabase-client';
+import { desktopBridge } from '../desktop/desktop-bridge';
 
 @Injectable({ providedIn: 'root' })
 export class AuthStore {
@@ -48,27 +49,44 @@ export class AuthStore {
 
     this.supabase.auth.onAuthStateChange((_event, session) => {
       this.session.set(session);
+      if (_event === 'SIGNED_OUT')
+        void desktopBridge()
+          ?.clearNotifications()
+          .catch(() => undefined);
     });
   }
 
-  /**
-   * Cách đăng nhập duy nhất của ứng dụng. Không còn luồng email/mật khẩu nên
-   * cũng không còn đăng ký hay đặt lại mật khẩu — tài khoản mới được Supabase
-   * tạo ngay trong lần đăng nhập Google đầu tiên.
-   *
-   * `returnUrl` cho phép quay lại đúng trang đã kéo người dùng vào /login
-   * (vd. authGuard giữ lại `?returnUrl=` khi chặn một route cần đăng nhập) —
-   * mặc định vẫn là /calendar như trước. Đây là redirect toàn trang qua
-   * Supabase/Google chứ không phải Angular router, nên phải truyền thẳng vào
-   * đây thay vì trông chờ router điều hướng lại sau khi quay về.
-   */
-  async signInWithGoogle(returnUrl?: string): Promise<AuthError | null> {
-    const { error } = await this.supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}${returnUrl || '/calendar'}`,
-      },
+  async signInWithPassword(email: string, password: string): Promise<AuthError | null> {
+    const { data, error } = await this.supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
     });
+    if (data.session) this.session.set(data.session);
+    return error;
+  }
+
+  async signUp(
+    email: string,
+    password: string,
+  ): Promise<{ error: AuthError | null; needsConfirmation: boolean }> {
+    const { data, error } = await this.supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: { emailRedirectTo: `${window.location.origin}/login` },
+    });
+    if (data.session) this.session.set(data.session);
+    return { error, needsConfirmation: !data.session };
+  }
+
+  async requestPasswordReset(email: string): Promise<AuthError | null> {
+    const { error } = await this.supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    return error;
+  }
+
+  async updatePassword(password: string): Promise<AuthError | null> {
+    const { error } = await this.supabase.auth.updateUser({ password });
     return error;
   }
 

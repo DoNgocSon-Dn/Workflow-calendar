@@ -49,11 +49,17 @@ export class RecurrenceCronService {
     private readonly realtimeGateway: RealtimeGateway,
   ) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_4AM)
+  @Cron(CronExpression.EVERY_DAY_AT_4AM, {
+    waitForCompletion: true,
+    timeZone: 'Asia/Ho_Chi_Minh',
+  })
   async topUpSeries(): Promise<void> {
-    const supabase = this.supabaseService.getServiceRoleClient();
+    const supabase = this.supabaseService.getScheduledClient();
+    if (!supabase) return;
     const now = new Date();
-    const horizon = new Date(now.getTime() + RECURRENCE_TOPUP_HORIZON_DAYS * 86_400_000);
+    const horizon = new Date(
+      now.getTime() + RECURRENCE_TOPUP_HORIZON_DAYS * 86_400_000,
+    );
 
     const { data, error } = await supabase
       .from('events')
@@ -82,10 +88,13 @@ export class RecurrenceCronService {
       try {
         created += await this.topUpOne(supabase, seriesId, rows, horizon);
       } catch (err) {
-        this.logger.warn(`Top-up chuỗi ${seriesId} lỗi: ${(err as Error).message}`);
+        this.logger.warn(
+          `Top-up chuỗi ${seriesId} lỗi: ${(err as Error).message}`,
+        );
       }
     }
-    if (created > 0) this.logger.log(`Đã nối thêm ${created} lần lặp cho các chuỗi.`);
+    if (created > 0)
+      this.logger.log(`Đã nối thêm ${created} lần lặp cho các chuỗi.`);
   }
 
   private async topUpOne(
@@ -99,10 +108,18 @@ export class RecurrenceCronService {
     if (!rule) return 0;
 
     // Chuỗi có số lần cố định đã tạo đủ khi tạo — không nối thêm.
-    if (rule.endType === 'count' && rule.count && rows.length >= rule.count) return 0;
+    if (rule.endType === 'count' && rule.count && rows.length >= rule.count)
+      return 0;
     // Chuỗi có ngày kết thúc đã qua mốc lần lặp mới nhất — không còn gì để thêm.
-    const latestStartMs = rows.reduce((m, r) => Math.max(m, Date.parse(r.start_at)), 0);
-    if (rule.endType === 'until' && rule.until && Date.parse(rule.until) <= latestStartMs) {
+    const latestStartMs = rows.reduce(
+      (m, r) => Math.max(m, Date.parse(r.start_at)),
+      0,
+    );
+    if (
+      rule.endType === 'until' &&
+      rule.until &&
+      Date.parse(rule.until) <= latestStartMs
+    ) {
       return 0;
     }
     if (latestStartMs >= horizon.getTime()) return 0;
@@ -112,14 +129,21 @@ export class RecurrenceCronService {
       .select('occurred_at')
       .eq('series_id', seriesId)
       .returns<{ occurred_at: string }[]>();
-    const excluded = new Set<number>((exRows ?? []).map((r) => Date.parse(r.occurred_at)));
+    const excluded = new Set<number>(
+      (exRows ?? []).map((r) => Date.parse(r.occurred_at)),
+    );
     const existing = new Set<number>(rows.map((r) => Date.parse(r.start_at)));
 
     const occurrences = expandRecurrence(
       new Date(template.start_at),
       new Date(template.end_at),
       rule,
-      { after: new Date(latestStartMs), until: horizon, excluded, max: MAX_TOPUP_PER_SERIES },
+      {
+        after: new Date(latestStartMs),
+        until: horizon,
+        excluded,
+        max: MAX_TOPUP_PER_SERIES,
+      },
     ).filter((occ) => !existing.has(occ.start.getTime()));
 
     if (occurrences.length === 0) return 0;
@@ -149,10 +173,14 @@ export class RecurrenceCronService {
 
     const dtos: EventDto[] = (inserted ?? []).map(toEventDto);
     if (dtos.length > 0) {
-      this.realtimeGateway.emitToCalendar(template.calendar_id, 'events:bulk-created', {
-        calendarId: template.calendar_id,
-        events: dtos,
-      });
+      this.realtimeGateway.emitToCalendar(
+        template.calendar_id,
+        'events:bulk-created',
+        {
+          calendarId: template.calendar_id,
+          events: dtos,
+        },
+      );
     }
     return dtos.length;
   }

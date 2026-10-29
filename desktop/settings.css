@@ -1,0 +1,90 @@
+:root {
+  font:
+    14px "Segoe UI",
+    sans-serif;
+  color: #172c23;
+  background: #f5f8f4;
+}
+body {
+  margin: 0;
+  padding: 28px 32px;
+}
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 2px;
+  font-weight: 700;
+  color: #387347;
+}
+h1 {
+  font-size: 27px;
+  letter-spacing: -0.7px;
+  margin: 8px 0 12px;
+}
+p {
+  line-height: 1.6;
+  color: #506157;
+}
+label {
+  display: block;
+  margin: 17px 0 6px;
+  font-weight: 600;
+  font-size: 12px;
+}
+input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #bacabc;
+  border-radius: 7px;
+  background: #fff;
+  font:
+    13px "Segoe UI",
+    sans-serif;
+}
+input:focus {
+  outline: 2px solid #4b8257;
+  outline-offset: 1px;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+button {
+  padding: 11px 16px;
+  border: 1px solid #9db49f;
+  border-radius: 7px;
+  font:
+    600 12px "Segoe UI",
+    sans-serif;
+  cursor: pointer;
+  background: #fff;
+  color: #214c2d;
+}
+button[type="submit"] {
+  background: #245b35;
+  color: #fff;
+  border-color: #245b35;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+aside {
+  border-top: 1px solid #cedbce;
+  margin-top: 22px;
+  padding-top: 20px;
+  font-size: 12px;
+}
+aside p {
+  margin: 7px 0;
+}
+code {
+  font-size: 12px;
+  user-select: all;
+}
+#status {
+  white-space: pre-wrap;
+  font-size: 12px;
+  min-height: 20px;
+}

@@ -38,15 +38,18 @@ export class TaskDeadlinesCronService {
     private readonly realtimeGateway: RealtimeGateway,
   ) {}
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(CronExpression.EVERY_5_MINUTES, { waitForCompletion: true })
   async handleTaskDeadlines(): Promise<void> {
-    const supabase = this.supabaseService.getServiceRoleClient();
+    const supabase = this.supabaseService.getScheduledClient();
+    if (!supabase) return;
     const now = Date.now();
     const horizonIso = new Date(now + UPCOMING_MS).toISOString();
 
     const { data, error } = await supabase
       .from('group_tasks')
-      .select('id, group_id, title, status, assigned_to, due_date, groups(name)')
+      .select(
+        'id, group_id, title, status, assigned_to, due_date, groups(name)',
+      )
       .not('assigned_to', 'is', null)
       .not('due_date', 'is', null)
       .neq('status', 'done')

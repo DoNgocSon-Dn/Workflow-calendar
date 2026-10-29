@@ -1,10 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { AppConfig } from '../config/configuration';
 
 @Injectable()
 export class SupabaseService {
+  private readonly logger = new Logger(SupabaseService.name);
+  private warnedMissingServiceRole = false;
   private anonClient: SupabaseClient | null = null;
   private serviceRoleClient: SupabaseClient | null = null;
 
@@ -52,10 +58,32 @@ export class SupabaseService {
       const { url, serviceRoleKey } = this.configService.get('supabase', {
         infer: true,
       });
+      if (!serviceRoleKey || serviceRoleKey === 'your-secret-key') {
+        throw new ServiceUnavailableException(
+          'Server chưa cấu hình SUPABASE_SERVICE_ROLE_KEY cho chức năng này.',
+        );
+      }
       this.serviceRoleClient = createClient(url, serviceRoleKey, {
         auth: { persistSession: false, autoRefreshToken: false },
       });
     }
     return this.serviceRoleClient;
+  }
+
+  /** Scheduled jobs are optional locally; report missing configuration once. */
+  getScheduledClient(): SupabaseClient | null {
+    const { serviceRoleKey } = this.configService.get('supabase', {
+      infer: true,
+    });
+    if (!serviceRoleKey || serviceRoleKey === 'your-secret-key') {
+      if (!this.warnedMissingServiceRole) {
+        this.warnedMissingServiceRole = true;
+        this.logger.warn(
+          'Scheduled reminders, deadlines and recurrence top-up are disabled: configure SUPABASE_SERVICE_ROLE_KEY on the backend.',
+        );
+      }
+      return null;
+    }
+    return this.getServiceRoleClient();
   }
 }

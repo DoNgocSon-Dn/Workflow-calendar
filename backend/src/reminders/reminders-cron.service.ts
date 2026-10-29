@@ -11,7 +11,12 @@ interface DueReminderRow {
   event_id: string;
   user_id: string;
   remind_type: 'popup' | 'email';
-  events: { title: string; start_at: string; meet_link: string | null; calendar_id: string } | null;
+  events: {
+    title: string;
+    start_at: string;
+    meet_link: string | null;
+    calendar_id: string;
+  } | null;
 }
 
 @Injectable()
@@ -25,14 +30,17 @@ export class RemindersCronService {
     private readonly pushService: PushService,
   ) {}
 
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_MINUTE, { waitForCompletion: true })
   async handleDueReminders(): Promise<void> {
-    const supabase = this.supabaseService.getServiceRoleClient();
+    const supabase = this.supabaseService.getScheduledClient();
+    if (!supabase) return;
     const nowIso = new Date().toISOString();
 
     const { data, error } = await supabase
       .from('reminders')
-      .select('id, event_id, user_id, remind_type, events(title, start_at, meet_link, calendar_id)')
+      .select(
+        'id, event_id, user_id, remind_type, events(title, start_at, meet_link, calendar_id)',
+      )
       .lte('remind_at', nowIso)
       .eq('is_sent', false)
       .returns<DueReminderRow[]>();
@@ -46,17 +54,26 @@ export class RemindersCronService {
     for (const reminder of data) {
       try {
         await this.dispatch(supabase, reminder);
+        const { error: updateError } = await supabase
+          .from('reminders')
+          .update({ is_sent: true })
+          .eq('id', reminder.id);
+        if (updateError)
+          this.logger.error(
+            `Failed to mark reminder ${reminder.id} as sent: ${updateError.message}`,
+          );
       } catch (err) {
         this.logger.error(
           `Failed to dispatch reminder ${reminder.id}: ${(err as Error).message}`,
         );
-      } finally {
-        await supabase.from('reminders').update({ is_sent: true }).eq('id', reminder.id);
       }
     }
   }
 
-  private async dispatch(supabase: SupabaseClient, reminder: DueReminderRow): Promise<void> {
+  private async dispatch(
+    supabase: SupabaseClient,
+    reminder: DueReminderRow,
+  ): Promise<void> {
     const title = reminder.events?.title ?? 'Sự kiện';
     const startAt = reminder.events?.start_at ?? '';
     const calendarId = reminder.events?.calendar_id;
@@ -97,7 +114,9 @@ export class RemindersCronService {
     const { data: email, error } = await supabase.rpc('get_user_email_by_id', {
       p_user_id: reminder.user_id,
     });
-    if (error || !email) {
+    if (error)
+      throw new Error(`Cannot resolve reminder email: ${error.message}`);
+    if (!email) {
       this.logger.warn(
         `No email found for user ${reminder.user_id}, skip reminder ${reminder.id}`,
       );

@@ -1,4 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
+import { desktopBridge } from '../../../core/desktop/desktop-bridge';
+import { NotificationService } from '../../../core/services/notification.service';
 import { Router } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth-store';
 import { DensityService } from '../../../core/density/density-service';
@@ -140,11 +151,7 @@ export class CalendarPage {
     const dy = t.clientY - start.y;
     const elapsed = Date.now() - start.t;
 
-    if (
-      elapsed <= 600 &&
-      Math.abs(dx) >= 60 &&
-      Math.abs(dx) > Math.abs(dy) * 1.5
-    ) {
+    if (elapsed <= 600 && Math.abs(dx) >= 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
       this.store.step(dx < 0 ? 1 : -1);
     }
   }
@@ -163,9 +170,10 @@ export class CalendarPage {
   protected readonly trashModalOpen = signal(false);
   protected readonly notesTrashModalOpen = signal(false);
   protected readonly settingsModalOpen = signal(false);
-  protected readonly inviteModalTarget = signal<{ calendarId: string; calendarName: string } | null>(
-    null,
-  );
+  protected readonly inviteModalTarget = signal<{
+    calendarId: string;
+    calendarName: string;
+  } | null>(null);
   protected readonly createCalendarModalOpen = signal(false);
   protected readonly createGroupModalOpen = signal(false);
   protected readonly joinGroupModalOpen = signal(false);
@@ -187,6 +195,18 @@ export class CalendarPage {
 
   constructor() {
     this.notificationQueue.requestPermission();
+    const notifications = inject(NotificationService);
+    const unsubscribe = desktopBridge()?.onNotificationClick((alert) => {
+      notifications.markAsRead(alert.id);
+      if (alert.eventId) this.onViewDetail(alert.eventId);
+      else if (alert.groupId)
+        this.onOpenGroupFromNotification({
+          groupId: alert.groupId,
+          messageId: alert.messageId,
+          tab: ['task', 'deadline'].includes(alert.kind) ? 'tasks' : 'chat',
+        });
+    });
+    inject(DestroyRef).onDestroy(() => unsubscribe?.());
 
     effect(() => {
       if (this.authStore.session()) {

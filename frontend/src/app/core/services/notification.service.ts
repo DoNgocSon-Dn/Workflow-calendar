@@ -1,5 +1,6 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { NotificationSoundService } from './notification-sound.service';
+import { desktopBridge } from '../desktop/desktop-bridge';
 import {
   AppNotification,
   NotificationDraft,
@@ -23,7 +24,8 @@ function readStored(): readonly AppNotification[] {
     if (!Array.isArray(parsed)) return [];
     return parsed.filter(
       (n): n is AppNotification =>
-        !!n && typeof n === 'object' &&
+        !!n &&
+        typeof n === 'object' &&
         typeof (n as AppNotification).id === 'string' &&
         typeof (n as AppNotification).type === 'string' &&
         typeof (n as AppNotification).createdAt === 'string',
@@ -101,7 +103,24 @@ export class NotificationService {
 
     // Âm báo là bước CUỐI và hoàn toàn phụ: state đã cập nhật xong ở trên, nên
     // dù âm thanh lỗi hay bị trình duyệt chặn thì thông báo vẫn hiện bình thường.
-    this.sound.notify(notification);
+    const desktop = desktopBridge();
+    if (desktop) {
+      const eventTypes = ['reminder', 'event_invitation', 'event_update', 'conflict'];
+      void desktop
+        .notify({
+          id: notification.id,
+          title: notification.title,
+          body: notification.message,
+          kind: notification.type,
+          sound: this.sound.enabled(),
+          eventId: eventTypes.includes(notification.type) ? notification.relatedId : undefined,
+          groupId: notification.messageMeta?.groupId ?? notification.metadata?.['groupId'],
+          messageId: notification.messageMeta?.messageId,
+        })
+        .catch(() => undefined);
+    } else {
+      this.sound.notify(notification);
+    }
     return true;
   }
 
@@ -112,7 +131,9 @@ export class NotificationService {
   }
 
   markAllAsRead(): void {
-    this.notificationsState.update((list) => list.map((n) => (n.isRead ? n : { ...n, isRead: true })));
+    this.notificationsState.update((list) =>
+      list.map((n) => (n.isRead ? n : { ...n, isRead: true })),
+    );
   }
 
   respond(id: string, status: NotificationResponseStatus): void {

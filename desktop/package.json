@@ -1,0 +1,66 @@
+{
+  "name": "workflow-calendar-desktop",
+  "version": "1.0.0",
+  "description": "Workflow Calendar for Windows with persistent on-screen reminders",
+  "author": "DoNgocSon-Dn",
+  "private": true,
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.cjs",
+    "build:web": "node prepare-config.cjs && npm --prefix ../frontend run build",
+    "pack": "npm run build:web && electron-builder --win --dir",
+    "dist": "npm run build:web && electron-builder --win nsis portable"
+  },
+  "devDependencies": {
+    "electron": "45.1.0",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "com.dongocson.workflowcalendar",
+    "productName": "Workflow Calendar",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "*.cjs",
+      "default-config.json",
+      "popup.html",
+      "popup.css",
+      "popup.js",
+      "settings.html",
+      "settings.css",
+      "settings.js",
+      "icon.ico",
+      "icon.png",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../frontend/dist/frontend/browser",
+        "to": "web"
+      }
+    ],
+    "win": {
+      "icon": "icon.ico",
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "artifactName": "Workflow-Calendar-Setup-${version}-${arch}.${ext}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Workflow Calendar",
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "Workflow-Calendar-Portable-${version}-${arch}.${ext}"
+    }
+  }
+}

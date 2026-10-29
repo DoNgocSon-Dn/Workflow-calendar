@@ -1,4 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
+import { desktopBridge } from '../desktop/desktop-bridge';
 
 export type NotificationKind =
   | 'created'
@@ -81,7 +82,11 @@ export class NotificationQueue {
       if (list.some((n) => n.title === full.title && n.body === full.body)) return list;
 
       // 3. Khai trùng loại thông báo theo cùng một sự kiện (trùng lịch, nhắc lịch...)
-      if (full.eventId && full.kind && list.some((n) => n.eventId === full.eventId && n.kind === full.kind)) {
+      if (
+        full.eventId &&
+        full.kind &&
+        list.some((n) => n.eventId === full.eventId && n.kind === full.kind)
+      ) {
         return list;
       }
 
@@ -120,6 +125,7 @@ export class NotificationQueue {
   }
 
   requestPermission(): void {
+    if (desktopBridge()) return;
     if (typeof Notification === 'undefined') return;
     if (Notification.permission === 'default') {
       void Notification.requestPermission();
@@ -127,6 +133,8 @@ export class NotificationQueue {
   }
 
   private notifyBrowserIfHidden(item: NotificationItem): void {
+    // Desktop uses the dedicated persistent popup from NotificationService.
+    if (desktopBridge()) return;
     if (typeof Notification === 'undefined') return;
     if (Notification.permission !== 'granted') return;
     if (!document.hidden) return;

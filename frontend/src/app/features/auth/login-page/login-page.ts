@@ -1,523 +1,117 @@
-import {
-  AfterViewInit,
-  ChangeDetectionStrategy,
-  Component,
-  DestroyRef,
-  ElementRef,
-  OnInit,
-  inject,
-  signal,
-  viewChild,
-} from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { gsap } from 'gsap';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth-store';
+import { desktopBridge } from '../../../core/desktop/desktop-bridge';
 import { TranslationService } from '../../../core/i18n/translation.service';
+import { ThemeService } from '../../../core/theme/theme-service';
 import { BrandLogo } from '../../../shared/components/brand-logo/brand-logo';
 
-/** Thời gian giữ vòng xoay trước khi mở màn (ms). */
-const SPIN_HOLD_MS = 1500;
-/** Thời lượng của hiệu ứng iris thu nhỏ, khớp với transition trong CSS. */
-const IRIS_EXIT_MS = 900;
-const PARTICLE_COUNT = 14;
-const THEME_STORAGE_KEY = 'workflow-theme';
-/** Cùng đường cong với landing: vào mềm, tăng tốc, hãm chậm, không nảy. */
-const CINEMATIC_EASE = 'cubic-bezier(0.22, 0.61, 0.24, 1)';
-/** Rời cảnh thì tăng tốc dần rồi đi luôn — không hãm lại ở cuối như lúc vào. */
-const DEPARTURE_EASE = 'cubic-bezier(0.45, 0, 0.7, 0.35)';
-
-/** Mọi thứ animation có ghi inline style lên. Gom lại một chỗ để lúc khôi
- *  phục còn biết đường xoá cho đúng và cho đủ. */
-const ANIMATED_SELECTORS =
-  '.auth-card, .auth-card .sub, .auth-card h1, .auth-kicker,' +
-  ' .btn-oauth, .login-nav, .auth-halo, .orb, .orb--offset, .orbit-motif,' +
-  ' .grid-ring, .particle, .card-ignition';
-
-interface AmbientParticle {
-  size: number;
-  left: number;
-  top: number;
-  duration: number;
-  delay: number;
-}
+type AuthMode = 'login' | 'register' | 'forgot-password' | 'reset-password';
 
 @Component({
   selector: 'app-login-page',
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, BrandLogo],
+  imports: [FormsModule, RouterLink, BrandLogo],
 })
-export class LoginPage implements OnInit, AfterViewInit {
-  private readonly authStore = inject(AuthStore);
+export class LoginPage {
+  private readonly auth = inject(AuthStore);
   private readonly route = inject(ActivatedRoute);
-  private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
   protected readonly i18n = inject(TranslationService);
-
-  private readonly page = viewChild.required<ElementRef<HTMLElement>>('page');
-  private readonly preloader = viewChild.required<ElementRef<HTMLElement>>('preloader');
-
-  private readonly timers: ReturnType<typeof setTimeout>[] = [];
-  /** Giữ timeline rời cảnh để huỷ được nếu OAuth lỗi giữa chừng. */
-  private departureTl: gsap.core.Timeline | null = null;
-  /** Parallax chỉ được gắn một lần, kể cả khi cảnh được dựng lại. */
-  private parallaxBound = false;
-
-  /** Hạt sáng nổi trong nền — thuần trang trí, dựng một lần rồi để CSS lo. */
-  protected readonly particles: AmbientParticle[] = this.prefersReducedMotion()
-    ? []
-    : Array.from({ length: PARTICLE_COUNT }, () => ({
-        size: 2 + Math.random() * 3,
-        left: Math.random() * 100,
-        top: 30 + Math.random() * 55,
-        duration: 6 + Math.random() * 6,
-        delay: Math.random() * 6,
-      }));
-
-  readonly submitting = signal(false);
-  readonly revealed = signal(false);
-  // authInterceptor đá về đây kèm ?sessionExpired=1 khi refresh token cũng đã
-  // chết — dùng khung "danger" (đỏ) chứ không phải successMessage (xanh),
-  // đúng bản chất "phiên đã hết hạn" chứ không phải một tin vui.
-  /**
-   * Thông báo hết phiên ở lại 5 phút.
-   *
-   * Nó khác mọi lỗi khác trên trang này: các lỗi kia là phản hồi cho một thao
-   * tác người dùng vừa làm nên họ đang nhìn sẵn, còn cái này xuất hiện sau một
-   * cú chuyển trang do hệ thống tự quyết — người dùng có thể còn chưa kịp nhìn
-   * màn hình. Cho nó ở lại đủ lâu để họ hiểu vì sao mình bị đá ra.
-   */
-  private static readonly SESSION_NOTICE_MS = 5 * 60_000;
-
-  /** Lỗi đang hiện có phải là thông báo hết phiên không. Phân biệt để các
-   *  đường dọn dẹp cảnh (restoreAfterBack) không xoá nhầm nó. */
-  private sessionNoticeShown = false;
-
-  readonly errorMessage = signal<string | null>(
-    this.route.snapshot.queryParamMap.get('sessionExpired')
+  protected readonly theme = inject(ThemeService);
+  protected readonly desktop = desktopBridge();
+  protected readonly mode = signal<AuthMode>(
+    (this.route.snapshot.routeConfig?.path as AuthMode) || 'login',
+  );
+  protected readonly email = signal('');
+  protected readonly password = signal('');
+  protected readonly confirmPassword = signal('');
+  protected readonly showPassword = signal(false);
+  protected readonly busy = signal(false);
+  protected readonly error = signal<string | null>(
+    this.route.snapshot.queryParamMap.has('sessionExpired')
       ? this.i18n.t('login.sessionExpired')
       : null,
   );
-  readonly successMessage = signal<string | null>(this.route.snapshot.queryParamMap.get('message'));
-  /** Trang cần quay lại sau khi đăng nhập xong (authGuard gắn vào khi chặn
-   *  một route cần đăng nhập, vd. trang "xin vào nhóm" từ link mời). Chỉ nhận
-   *  đường dẫn nội bộ dạng "/xxx" — loại "//evil.com" (protocol-relative) để
-   *  không biến query param này thành cửa mở-redirect ra ngoài app. */
-  private readonly returnUrl = (() => {
-    const raw = this.route.snapshot.queryParamMap.get('returnUrl');
-    return raw && /^\/(?!\/)/.test(raw) ? raw : undefined;
-  })();
+  protected readonly success = signal<string | null>(null);
+  protected readonly heading = computed(() =>
+    this.i18n.t(
+      {
+        login: 'auth.signIn',
+        register: 'auth.signUp',
+        'forgot-password': 'auth.forgotTitle',
+        'reset-password': 'auth.resetTitle',
+      }[this.mode()],
+    ),
+  );
+  protected readonly needsPassword = computed(() => this.mode() !== 'forgot-password');
+  protected readonly needsConfirmation = computed(() =>
+    ['register', 'reset-password'].includes(this.mode()),
+  );
 
-  /** Chưa từng chọn thủ công thì đi theo sáng/tối của thiết bị. */
-  private initialPublicTheme(): 'light' | 'dark' {
-    const saved = localStorage.getItem(THEME_STORAGE_KEY);
-    if (saved === 'light' || saved === 'dark') return saved;
-    return typeof matchMedia === 'function' &&
-      matchMedia('(prefers-color-scheme: dark)').matches
-      ? 'dark'
-      : 'light';
-  }
-
-  ngOnInit(): void {
-    // Chủ đề dùng chung với trang landing nên hai trang không nhấp nháy khi
-    // chuyển qua lại.
-    document.documentElement.setAttribute('data-theme', this.initialPublicTheme());
-
-    this.startSessionNoticeTimer();
-  }
-
-  ngAfterViewInit(): void {
-    this.page().nativeElement.setAttribute('data-theme', this.initialPublicTheme());
-    this.runPreloader();
-
-    // Bấm Back từ Google: trình duyệt khôi phục trang từ bfcache KÈM NGUYÊN
-    // inline style của animation rời cảnh, nên thẻ đăng nhập bị opacity 0 và
-    // người dùng thấy trang trống. Component không bị dựng lại nên không có
-    // vòng đời Angular nào bắt được — phải nghe pageshow.
-    // KHÔNG lọc theo event.persisted: quay lại từ Google có thể là bfcache
-    // restore, có thể là tải lại thường, tuỳ trình duyệt và header cache. Thay
-    // vì đoán cơ chế, cứ thấy cảnh còn kẹt ở trạng thái "đã rời đi" thì dựng
-    // lại — điều kiện này đúng cho mọi đường quay về.
-    const onReturn = (): void => {
-      if (this.page().nativeElement.classList.contains('is-departing')) {
-        this.restoreAfterBack();
-      }
-    };
-    const onVisible = (): void => {
-      if (document.visibilityState === 'visible') onReturn();
-    };
-    window.addEventListener('pageshow', onReturn);
-    window.addEventListener('focus', onReturn);
-    document.addEventListener('visibilitychange', onVisible);
-
-    this.destroyRef.onDestroy(() => {
-      window.removeEventListener('pageshow', onReturn);
-      window.removeEventListener('focus', onReturn);
-      document.removeEventListener('visibilitychange', onVisible);
-      for (const timer of this.timers) {
-        clearTimeout(timer);
-      }
-    });
-  }
-
-  toggleTheme(event: MouseEvent): void {
-    const button = event.currentTarget as HTMLElement;
-    const root = document.documentElement;
-    const container = this.page().nativeElement;
-
-    const current = container.getAttribute('data-theme') ?? root.getAttribute('data-theme') ?? 'dark';
-    const next = current === 'light' ? 'dark' : 'light';
-
-    // Hiệu ứng loang tròn bắt đầu từ chính nút bấm.
-    const rect = button.getBoundingClientRect();
-    root.style.setProperty('--tx', `${((rect.left + rect.width / 2) / window.innerWidth) * 100}%`);
-    root.style.setProperty('--ty', `${((rect.top + rect.height / 2) / window.innerHeight) * 100}%`);
-
-    const applyTheme = (): void => {
-      root.setAttribute('data-theme', next);
-      container.setAttribute('data-theme', next);
-      localStorage.setItem(THEME_STORAGE_KEY, next);
-    };
-
-    const startViewTransition = (document as Document & {
-      startViewTransition?: (callback: () => void) => unknown;
-    }).startViewTransition;
-
-    if (startViewTransition && !this.prefersReducedMotion()) {
-      startViewTransition.call(document, applyTheme);
-    } else {
-      applyTheme();
-    }
-  }
-
-  /** Bật đồng hồ tự tắt cho thông báo hết phiên. Gọi một lần lúc dựng trang. */
-  private startSessionNoticeTimer(): void {
-    if (!this.errorMessage()) return;
-    this.sessionNoticeShown = true;
-    this.timers.push(
-      setTimeout(() => {
-        // Chỉ tắt nếu vẫn đúng thông báo cũ — trong 5 phút đó người dùng có thể
-        // đã bấm đăng nhập và gặp một lỗi KHÁC, xoá đè lên là mất lỗi mới.
-        if (this.sessionNoticeShown) {
-          this.sessionNoticeShown = false;
-          this.errorMessage.set(null);
-        }
-      }, LoginPage.SESSION_NOTICE_MS),
-    );
-  }
-
-  async signInWithGoogle(): Promise<void> {
-    // Chặn bấm nhiều lần: mỗi lần bấm là một request OAuth, và giữa animation
-    // thì nút vẫn nằm đó cho tới lúc trang bị thay thế.
-    if (this.submitting()) return;
-
-    this.sessionNoticeShown = false;
-    this.errorMessage.set(null);
-    this.submitting.set(true);
-
-    // Chuyển cảnh chạy TRƯỚC khi gọi OAuth: Supabase tự gán window.location
-    // ngay trong signInWithOAuth, nên gọi trước thì trang biến mất giữa chừng
-    // và animation không kịp chạy.
-    await this.playDeparture();
-
-    try {
-      const error = await this.authStore.signInWithGoogle(this.returnUrl);
-      if (error) {
-        this.errorMessage.set(
-          error.message.includes('provider') || error.message.includes('disabled')
-            ? this.i18n.t('login.googleProviderDisabled')
-            : error.message,
-        );
-        this.reverseDeparture();
-        this.submitting.set(false);
-      }
-      // Khi thành công Supabase điều hướng sang Google, nên giữ nguyên trạng
-      // thái "đang chuyển hướng" cho tới lúc trang bị thay thế.
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : this.i18n.t('login.googleNoCredentials');
-      this.errorMessage.set(this.i18n.t('login.googleSignInError', { message }));
-      this.reverseDeparture();
-      this.submitting.set(false);
-    }
-  }
-
-  private prefersReducedMotion(): boolean {
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  }
-
-  /** Vòng xoay giữ nhịp rồi thu nhỏ kiểu iris để lộ thẻ đăng nhập. */
-  private runPreloader(): void {
-    const preloader = this.preloader().nativeElement;
-
-    if (this.prefersReducedMotion()) {
-      preloader.style.display = 'none';
-      this.revealed.set(true);
-      this.playEntrance();
+  protected async submit(): Promise<void> {
+    if (this.busy()) return;
+    this.error.set(null);
+    this.success.set(null);
+    if (this.needsConfirmation() && this.password().length < 8) {
+      this.error.set(this.i18n.t('auth.passwordLength'));
       return;
     }
-
-    this.timers.push(
-      setTimeout(() => {
-        preloader.classList.add('exit');
-        this.revealed.set(true);
-        // Vào màn chạy NGAY khi iris bắt đầu khép, không đợi nó biến mất —
-        // hai lớp chồng nhau nên không có khoảng trống ở giữa.
-        this.playEntrance();
-        this.timers.push(
-          setTimeout(() => {
-            preloader.style.display = 'none';
-          }, IRIS_EXIT_MS),
-        );
-      }, SPIN_HOLD_MS),
-    );
-  }
-
-  /**
-   * Vào màn theo từng lớp: không gian trước, hình học sau, rồi thẻ tiến từ
-   * chiều sâu về, cuối cùng mới tới nội dung. Cùng ngôn ngữ chuyển động với
-   * landing (GSAP timeline, easing giống nhau) để hai trang là một thế giới.
-   */
-  private playEntrance(): void {
-    const host = this.page().nativeElement;
-    const reduced = this.prefersReducedMotion();
-    const k = reduced ? 0.35 : 1;
-    const q = (sel: string) => host.querySelector(sel);
-
-    const tl = gsap.timeline({ defaults: { ease: CINEMATIC_EASE } });
-
-    // Lớp 1-2: không gian và ánh sáng mở ra trước
-    tl.to(q('.orbit-motif'), { opacity: 1, duration: 1.6 * k }, 0)
-      .fromTo(
-        q('.auth-halo'),
-        { opacity: 0, scale: 0.86 },
-        { opacity: 1, scale: 1, duration: 1.5 * k },
-        0.1 * k,
-      );
-
-    // Lớp 3: thẻ tiến từ phía sau về đúng vị trí
-    tl.fromTo(
-      q('.auth-card'),
-      { opacity: 0, y: 30, scale: 0.94, filter: 'blur(10px)' },
-      { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 1.05 * k },
-      0.28 * k,
-    );
-
-    // Lớp 4-6: nội dung lắp vào sau khi thẻ đã đứng yên
-    tl.to(
-      [q('.auth-kicker'), q('.auth-card h1'), q('.auth-card .sub'), q('.btn-oauth')],
-      {
-        opacity: 1,
-        y: 0,
-        filter: 'blur(0px)',
-        duration: 0.7 * k,
-        stagger: reduced ? 0.03 : 0.09,
-      },
-      0.62 * k,
-    );
-
-    if (!reduced) this.initParallax();
-  }
-
-  /**
-   * Chuyển cảnh rời Login — HAI PHA NGƯỢC CHIỀU.
-   *
-   * Bản trước chỉ đi một chiều (mọi thứ cùng giãn ra) nên đọc ra là "zoom",
-   * không phải chuyển động camera. Bản này tách làm hai pha đối nghịch:
-   *
-   *   PHA 1 (40–190ms)  camera LÙI lại — cảnh co nhỏ, trường nhìn mở rộng.
-   *                     Easing power3.out nên vận tốc GIẢM VỀ 0 ở điểm xa nhất.
-   *   ĐẢO CHIỀU (~200ms) đúng lúc vận tốc bằng 0, đốm sáng ở nút bùng lên nên
-   *                     không có frame nào đứng yên.
-   *   PHA 2 (210–500ms) camera LAO NGƯỢC — easing power4.in khởi từ 0 rồi tăng
-   *                     tốc mạnh. Chính cặp out→in này tạo cảm giác dây cung
-   *                     căng rồi bật, thứ mà một tween đơn không làm được.
-   *
-   * OAuth nổ tại 500ms (đỉnh), đuôi animation để redirect cắt.
-   */
-  private playDeparture(): Promise<void> {
-    const host = this.page().nativeElement;
-    const q = (sel: string) => host.querySelector(sel);
-    const qa = (sel: string) => host.querySelectorAll(sel);
-
-    host.classList.add('is-departing');
-
-    if (this.prefersReducedMotion()) {
-      return new Promise((resolve) => {
-        gsap.to(q('.btn-oauth'), { scale: 0.975, duration: 0.07, yoyo: true, repeat: 1 });
-        gsap.to([q('.auth-card'), q('.login-nav')], {
-          opacity: 0, duration: 0.16, delay: 0.06, ease: 'power2.out',
-          onComplete: () => resolve(),
-        });
-      });
+    if (this.needsConfirmation() && this.password() !== this.confirmPassword()) {
+      this.error.set(this.i18n.t('auth.passwordMismatch'));
+      return;
     }
-
-    return new Promise((resolve) => {
-      const tl = gsap.timeline();
-      this.departureTl = tl;
-
-      // ── Nút phản hồi tức thì ────────────────────────────────────────────
-      tl.to(q('.btn-oauth'), { scale: 0.975, duration: 0.06, ease: 'power3.out' }, 0)
-        .to(q('.btn-oauth'), { scale: 1, duration: 0.08, ease: 'power2.out' }, 0.06)
-        .to(q('.btn-oauth'), { borderColor: 'var(--login-orbit-dot)', duration: 0.12 }, 0.05);
-
-      // ══ PHA 1: CAMERA LÙI LẠI LẤY ĐÀ ═══════════════════════════════════
-      // Cảnh co lại còn quầng sáng nở ra — hai chiều ngược nhau khiến không
-      // gian đọc ra là RỘNG HƠN, chứ không phải trang bị thu nhỏ.
-      tl.to(q('.auth-card'), { scale: 0.8, y: 10, duration: 0.15, ease: 'power3.out' }, 0.04)
-        .to(qa('.grid-ring'), { scale: 0.86, duration: 0.15, ease: 'power3.out' }, 0.04)
-        .to(q('.orbit-motif'), { scale: 0.93, duration: 0.16, ease: 'power3.out' }, 0.05)
-        .to(q('.auth-halo'), { scale: 1.18, opacity: 1, duration: 0.17, ease: 'power2.out' }, 0.04)
-        .to(q('.orb'), { scale: 1.12, duration: 0.17, ease: 'power2.out' }, 0.06)
-        // Hạt tách xa nhau: dấu hiệu rõ nhất của việc trường nhìn đang mở.
-        .to(qa('.particle'), {
-          x: (_i: number, el: HTMLElement) => (el.offsetLeft - window.innerWidth / 2) * 0.12,
-          y: (_i: number, el: HTMLElement) => (el.offsetTop - window.innerHeight / 2) * 0.12,
-          duration: 0.16, ease: 'power2.out',
-        }, 0.06)
-        .to(q('.login-nav'), { opacity: 0, y: -12, duration: 0.18, ease: 'power2.in' }, 0.08);
-
-      // ══ ĐẢO CHIỀU ═══════════════════════════════════════════════════════
-      // Ánh sáng bùng ở nút đúng lúc cảnh dừng lại — lấp kín khoảnh khắc
-      // chuyển hướng để không có frame nào bất động.
-      tl.fromTo(
-        q('.card-ignition'),
-        { scale: 0, opacity: 0 },
-        { scale: 1.5, opacity: 1, duration: 0.2, ease: 'power2.out' },
-        0.14,
-      ).to(q('.card-ignition'), { opacity: 0, duration: 0.14, ease: 'power1.in' }, 0.32);
-
-      // ══ PHA 2: LAO NGƯỢC, TĂNG TỐC ═════════════════════════════════════
-      // power4.in: gần như đứng yên lúc khởi, rồi bốc rất nhanh về cuối.
-      // Hệ số để thẻ phủ KÍN khung nhìn rồi vượt qua camera. Tính từ kích
-      // thước thật của thẻ và của màn hình, nên máy nào cũng tràn đủ — đặt
-      // cứng một con số thì màn rộng sẽ thấy mép thẻ lọt trong khung.
-      const cardEl = q('.auth-card') as HTMLElement | null;
-      const cardRect = cardEl?.getBoundingClientRect();
-      const fillScale = cardRect
-        ? Math.max(window.innerWidth / cardRect.width, window.innerHeight / cardRect.height) * 1.9
-        : 6;
-
-      tl.to(q('.auth-card'), {
-        scale: fillScale, z: 320, y: 0, filter: 'blur(6px)',
-        duration: 0.29, ease: 'power4.in',
-      }, 0.21);
-
-      // Vòng TRONG vượt qua camera trước tiên và ra khỏi khung sớm.
-      tl.to(qa('.grid-ring'), {
-        scale: 6.5, opacity: 0, duration: 0.25, stagger: 0.025, ease: 'power4.in',
-      }, 0.21);
-
-      // Chữ bị giải phóng khỏi thẻ trong lúc thẻ đang lao tới.
-      tl.to(q('.auth-card .sub'), {
-        opacity: 0, y: 12, duration: 0.14, ease: 'power2.in',
-      }, 0.24)
-        .to(q('.auth-card h1'), {
-          opacity: 0, scale: 0.92, filter: 'blur(4px)', duration: 0.16, ease: 'power2.in',
-        }, 0.28)
-        .to(q('.auth-kicker'), { opacity: 0, duration: 0.12, ease: 'power2.in' }, 0.3);
-
-      // Vòng NGOÀI vượt qua muộn hơn và nán lại — chênh lệch này là thứ tạo
-      // parallax, nếu cùng lúc thì lại thành zoom phẳng.
-      tl.to(q('.orbit-motif'), {
-        scale: 3.4, opacity: 0.12, rotate: 5, duration: 0.24, ease: 'power3.in',
-      }, 0.3);
-
-      // Hạt lao thẳng ra rìa khung theo hướng xuyên tâm → cảm giác tốc độ.
-      tl.to(qa('.particle'), {
-        x: (_i: number, el: HTMLElement) => (el.offsetLeft - window.innerWidth / 2) * 1.9,
-        y: (_i: number, el: HTMLElement) => (el.offsetTop - window.innerHeight / 2) * 1.9,
-        scale: 2.4, opacity: 0, duration: 0.22, stagger: 0.006, ease: 'power4.in',
-      }, 0.32);
-
-      // ── CAO TRÀO ────────────────────────────────────────────────────────
-      tl.to(q('.auth-halo'), { scale: 5, opacity: 1, duration: 0.16, ease: 'power3.in' }, 0.36)
-        .to(q('.orb'), { scale: 3.4, duration: 0.15, ease: 'power3.in' }, 0.38)
-        .to(q('.auth-card'), { opacity: 0, filter: 'blur(14px)', duration: 0.1, ease: 'power2.in' }, 0.44)
-        .to(q('.btn-oauth'), { opacity: 0, duration: 0.09, ease: 'power2.in' }, 0.45);
-
-      // OAuth nổ đúng đỉnh; phần đuôi để redirect cắt ngang.
-      tl.call(() => resolve(), [], 0.5);
-    });
-  }
-
-  /**
-   * Dựng lại cảnh sau khi người dùng bấm Back từ Google.
-   *
-   * clearProps xoá đúng những inline style GSAP đã ghi, trả các phần tử về
-   * trạng thái CSS gốc; sau đó chạy lại entrance để trang vào có nhịp như lần
-   * đầu, thay vì bật ra đột ngột.
-   */
-  private restoreAfterBack(): void {
-    this.departureTl?.kill();
-    this.departureTl = null;
-
-    const host = this.page().nativeElement;
-    host.classList.remove('is-departing');
-
-    gsap.set(host.querySelectorAll(ANIMATED_SELECTORS), { clearProps: 'all' });
-
-    // Cho bấm đăng nhập lại được — không reset thì nút kẹt vĩnh viễn ở trạng
-    // thái "đang xử lý" của lần trước.
-    this.submitting.set(false);
-    // Giữ nguyên thông báo hết phiên: người dùng bấm đăng nhập rồi bấm quay
-    // lại từ Google thì lý do họ bị đá ra vẫn còn nguyên giá trị. Chỉ dọn các
-    // lỗi nhất thời khác.
-    if (!this.sessionNoticeShown) this.errorMessage.set(null);
-    this.revealed.set(true);
-
-    this.playEntrance();
-  }
-
-  /** OAuth lỗi thì đưa cảnh về nguyên trạng, nhanh gọn. */
-  private reverseDeparture(): void {
-    const host = this.page().nativeElement;
-
-    // Phải dừng timeline trước: phần đuôi vẫn đang chạy, không dừng thì nó
-    // ghi đè lên chính animation phục hồi.
-    this.departureTl?.kill();
-    this.departureTl = null;
-    host.classList.remove('is-departing');
-
-    gsap.to(
-      host.querySelectorAll(
-        '.auth-card, .auth-card .sub, .auth-card h1, .auth-kicker,' +
-          ' .btn-oauth, .login-nav, .auth-halo, .orb, .orb--offset, .orbit-motif,' +
-          ' .grid-ring, .particle',
-      ),
-      {
-        opacity: 1, scale: 1, x: 0, y: 0, z: 0, rotate: 0,
-        filter: 'blur(0px)', clearProps: 'borderColor',
-        duration: 0.28, ease: 'power2.out',
-      },
-    );
-    gsap.set(host.querySelectorAll('.card-ignition'), { opacity: 0, scale: 0 });
-  }
-
-  /** Chuột chỉ làm các lớp dịch vài pixel — đủ để thấy có chiều sâu, không
-   *  tới mức nghiêng ngả như giao diện game. */
-  private initParallax(): void {
-    // Cảnh có thể được dựng lại sau khi bấm Back — không guard thì mỗi lần
-    // dựng lại sẽ chồng thêm một listener mousemove nữa.
-    if (this.parallaxBound) return;
-    this.parallaxBound = true;
-
-    const host = this.page().nativeElement;
-    const card = host.querySelector('.auth-card') as HTMLElement | null;
-    const motif = host.querySelector('.orbit-motif') as HTMLElement | null;
-    const halo = host.querySelector('.auth-halo') as HTMLElement | null;
-    if (!card) return;
-
-    const onMove = (event: MouseEvent): void => {
-      const dx = event.clientX / window.innerWidth - 0.5;
-      const dy = event.clientY / window.innerHeight - 0.5;
-      // Biên độ khác nhau theo lớp: lớp xa dịch nhiều hơn lớp gần, đó là thứ
-      // tạo ra cảm giác chiều sâu.
-      gsap.to(card, { x: dx * 6, y: dy * 6, duration: 0.9, ease: 'power2.out' });
-      if (motif) gsap.to(motif, { xPercent: dx * 1.6, yPercent: dy * 1.6, duration: 1.4, ease: 'power2.out' });
-      if (halo) gsap.to(halo, { x: dx * 18, y: dy * 18, duration: 1.2, ease: 'power2.out' });
-    };
-
-    window.addEventListener('mousemove', onMove, { passive: true });
-    this.destroyRef.onDestroy(() => window.removeEventListener('mousemove', onMove));
+    if (this.mode() === 'reset-password' && !this.auth.session()) {
+      this.error.set(this.i18n.t('auth.expiredLink'));
+      return;
+    }
+    this.busy.set(true);
+    try {
+      if (this.mode() === 'forgot-password') {
+        const error = await this.auth.requestPasswordReset(this.email());
+        if (error) throw error;
+        this.success.set(this.i18n.t('auth.resetSent'));
+        return;
+      }
+      if (this.mode() === 'register') {
+        const { error, needsConfirmation } = await this.auth.signUp(this.email(), this.password());
+        if (error) throw error;
+        if (needsConfirmation) {
+          this.mode.set('login');
+          this.password.set('');
+          this.confirmPassword.set('');
+          this.success.set(this.i18n.t('auth.confirmEmail'));
+          return;
+        }
+      } else if (this.mode() === 'reset-password') {
+        const error = await this.auth.updatePassword(this.password());
+        if (error) throw error;
+      } else {
+        const error = await this.auth.signInWithPassword(this.email(), this.password());
+        if (error) throw error;
+      }
+      this.password.set('');
+      this.confirmPassword.set('');
+      const requested = this.route.snapshot.queryParamMap.get('returnUrl');
+      await this.router.navigateByUrl(
+        requested && /^\/(?!\/)/.test(requested) && !requested.includes('\\')
+          ? requested
+          : '/calendar',
+      );
+    } catch (error) {
+      const code = (error as { code?: string }).code;
+      const message = error instanceof Error ? error.message : '';
+      if (code === 'invalid_credentials') this.error.set(this.i18n.t('auth.invalidCredentials'));
+      else if (code === 'email_not_confirmed') this.error.set(this.i18n.t('auth.confirmEmail'));
+      else if (/rate|too many/i.test(message)) this.error.set(this.i18n.t('auth.rateLimited'));
+      else if (/fetch|network|failed to|timeout/i.test(message))
+        this.error.set(this.i18n.t('auth.networkError'));
+      else this.error.set(message || this.i18n.t('auth.failed'));
+    } finally {
+      this.busy.set(false);
+    }
   }
 }
