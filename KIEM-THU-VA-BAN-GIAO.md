@@ -14,9 +14,9 @@
 
 ## Kiểm tra
 
-- Frontend: 28 file, 179 kiểm thử đạt; build production thành công.
-- Backend: 14 bộ, 91 kiểm thử đạt; build thành công.
-- Desktop: 6 kiểm thử đạt cho queue, snooze/khởi động lại, payload/cấu hình và server.
+- Frontend: 33 file, 203 kiểm thử đạt; build production thành công.
+- Backend: 16 bộ, 104 kiểm thử đạt; build thành công.
+- Desktop: 8 kiểm thử đạt cho queue, snooze/khởi động lại, payload/cấu hình và server.
 - i18n: không thiếu khóa hoặc bản dịch vi/en.
 - Đã mở executable đóng gói, kiểm tra popup thật và các nút xử lý.
 - Vẫn có cảnh báo dung lượng CSS ở landing, group workspace và floating hub.
@@ -36,3 +36,13 @@ Backend local chưa có service-role key; cron được bỏ qua và ghi cảnh 
 - Dữ liệu desktop: thư mục userData riêng trong profile Windows.
 
 Máy được giữ mở nếu còn bước quản trị tài khoản cần người dùng thao tác. Không tự vượt qua đăng nhập hoặc mua dịch vụ/chứng thư ký số.
+
+## Bản 1.0.1
+
+- Khôi phục màu xanh dương theo logo cho đăng nhập, popup và cài đặt desktop.
+- Sửa luồng bấm popup từ trang Công việc/Import; giữ thông báo đến khi đích thực sự mở được.
+- Sửa mất nhắc lịch do GET đánh dấu đã xem trước khi client nhận, thêm xác nhận riêng; snooze xóa dấu đã xem, bỏ nhắc của sự kiện trong thùng rác.
+- Bảo toàn mốc đầu chuỗi lặp khi xóa buổi đầu, đọc đủ các trang Supabase.
+- Lưu thông báo, ngày sinh và tùy chọn sinh nhật theo tài khoản; xử lý lỗi lưu hồ sơ.
+- Giữ link đích khi đăng ký/khôi phục và giới hạn token theo đúng origin API.
+- Đã đăng nhập dashboard và xác định project bị paused, không bị mất dữ liệu. Đã yêu cầu Resume project; theo dõi đến khi dịch vụ hoạt động.

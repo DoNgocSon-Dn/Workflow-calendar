@@ -13,10 +13,9 @@ class AlertQueue {
       const stored = JSON.parse(fs.readFileSync(file, "utf8"));
       const valid = (n) =>
         n && typeof n.id === "string" && typeof n.title === "string";
-      this.pending = (stored.pending || []).filter(valid).slice(0, 100);
+      this.pending = (stored.pending || []).filter(valid);
       this.snoozed = (stored.snoozed || [])
-        .filter((n) => valid(n.item) && Number.isFinite(n.at))
-        .slice(0, 100);
+        .filter((n) => valid(n.item) && Number.isFinite(n.at));
       this.seen = new Map(
         (stored.seen || []).filter(
           ([id, at]) => typeof id === "string" && at > now() - 86400000,
@@ -49,7 +48,9 @@ class AlertQueue {
       this.snoozed.some((n) => n.item.id === item.id)
     )
       return false;
-    if (this.pending.length >= 100) return false;
+    // Reserve capacity for accepted snoozes so resuming them never loses
+    // another accepted alert, including after a restart.
+    if (this.pending.length + this.snoozed.length >= 100) return false;
     this.seen.set(item.id, this.now());
     for (const [id, at] of this.seen)
       if (at < this.now() - 86400000) this.seen.delete(id);

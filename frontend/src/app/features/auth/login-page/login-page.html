@@ -98,7 +98,9 @@
               />{{ i18n.t('auth.showPassword') }}</label
             >
             @if (mode() === 'login') {
-              <a routerLink="/forgot-password">{{ i18n.t('auth.forgotLink') }}</a>
+              <a routerLink="/forgot-password" [queryParams]="authQueryParams">{{
+                i18n.t('auth.forgotLink')
+              }}</a>
             }
           </div>
         }
@@ -120,9 +122,12 @@
       </form>
       <p class="switch-mode">
         @if (mode() === 'login') {
-          {{ i18n.t('auth.noAccount') }} <a routerLink="/register">{{ i18n.t('auth.signUp') }}</a>
+          {{ i18n.t('auth.noAccount') }}
+          <a routerLink="/register" [queryParams]="authQueryParams">{{ i18n.t('auth.signUp') }}</a>
         } @else {
-          <a routerLink="/login">{{ i18n.t('auth.backToLogin') }}</a>
+          <a routerLink="/login" [queryParams]="authQueryParams">{{
+            i18n.t('auth.backToLogin')
+          }}</a>
         }
       </p>
       @if (desktop) {

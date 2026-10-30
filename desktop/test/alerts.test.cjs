@@ -59,3 +59,32 @@ test("snooze survives a restart and becomes visible after sleep", (t) => {
   assert.equal(restored.pending.length, 0);
   assert.equal(new AlertQueue(file, () => {}).snoozed.length, 0);
 });
+
+test("snoozed alerts reserve capacity and none are truncated after restart", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "workflow-capacity-"));
+  t.after(() => fs.rmSync(dir, { recursive: true }));
+  const file = path.join(dir, "alerts.json");
+  let now = 1000000;
+  const queue = new AlertQueue(file, () => {}, () => now);
+  for (let index = 0; index < 100; index++) {
+    assert.equal(queue.push({ id: `r${index}`, title: 'Reminder' }), true);
+  }
+  queue.act('snooze', 'r0');
+  assert.equal(queue.push({ id: 'overflow', title: 'Another reminder' }), false);
+  now += 300001;
+  queue.tick();
+  assert.equal(queue.pending.length, 100);
+  const restored = new AlertQueue(file, () => {}, () => now);
+  assert.equal(restored.pending.length, 100);
+  assert.equal(restored.pending.some((item) => item.id === 'r0'), true);
+});
+
+test("legacy queues exceeding the new arrival cap are restored without loss", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "workflow-restore-"));
+  t.after(() => fs.rmSync(dir, { recursive: true }));
+  const file = path.join(dir, "alerts.json");
+  fs.writeFileSync(file, JSON.stringify({ pending: Array.from({ length: 101 }, (_, index) => ({ id: `r${index}`, title: 'Saved reminder' })) }));
+  const restored = new AlertQueue(file, () => {});
+  assert.equal(restored.pending.length, 101);
+  assert.equal(restored.push({ id: 'overflow', title: 'Another reminder' }), false);
+});

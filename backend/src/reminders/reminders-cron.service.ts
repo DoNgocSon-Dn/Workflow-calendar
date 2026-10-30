@@ -39,10 +39,11 @@ export class RemindersCronService {
     const { data, error } = await supabase
       .from('reminders')
       .select(
-        'id, event_id, user_id, remind_type, events(title, start_at, meet_link, calendar_id)',
+        'id, event_id, user_id, remind_type, events!inner(title, start_at, meet_link, calendar_id)',
       )
       .lte('remind_at', nowIso)
       .eq('is_sent', false)
+      .is('events.deleted_at', null)
       .returns<DueReminderRow[]>();
 
     if (error) {
@@ -52,6 +53,7 @@ export class RemindersCronService {
     if (!data || data.length === 0) return;
 
     for (const reminder of data) {
+      if (!reminder.events) continue;
       try {
         await this.dispatch(supabase, reminder);
         const { error: updateError } = await supabase

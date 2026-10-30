@@ -69,7 +69,7 @@ export class DevDatePanel {
     let dob = this.birthdayPopupService.getUserDob();
     if (!dob) {
       dob = '2000-05-15';
-      this.birthdayPopupService.setUserDob(dob);
+      // A date preview must not overwrite the account birthday.
     }
     const parsed = this.birthdayPopupService.parseDob(dob);
     const m = parsed ? parsed.month : 5;

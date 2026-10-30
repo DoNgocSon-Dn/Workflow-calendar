@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { AuthError, Session } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../supabase-client';
 import { desktopBridge } from '../desktop/desktop-bridge';
+import { authEmailRedirect } from './auth-return-url';
 
 @Injectable({ providedIn: 'root' })
 export class AuthStore {
@@ -68,19 +69,20 @@ export class AuthStore {
   async signUp(
     email: string,
     password: string,
+    returnUrl?: string,
   ): Promise<{ error: AuthError | null; needsConfirmation: boolean }> {
     const { data, error } = await this.supabase.auth.signUp({
       email: email.trim(),
       password,
-      options: { emailRedirectTo: `${window.location.origin}/login` },
+      options: { emailRedirectTo: authEmailRedirect('/login', returnUrl) },
     });
     if (data.session) this.session.set(data.session);
     return { error, needsConfirmation: !data.session };
   }
 
-  async requestPasswordReset(email: string): Promise<AuthError | null> {
+  async requestPasswordReset(email: string, returnUrl?: string): Promise<AuthError | null> {
     const { error } = await this.supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: authEmailRedirect('/reset-password', returnUrl),
     });
     return error;
   }

@@ -196,6 +196,9 @@
           {{ savingName() ? i18n.t('common.saving') : i18n.t('onboarding.submit') }}
         </button>
       </div>
+      @if (onboardingError()) {
+        <p class="name-prompt-error" role="alert">{{ onboardingError() }}</p>
+      }
     </div>
   </div>
 }

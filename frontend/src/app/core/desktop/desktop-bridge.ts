@@ -13,7 +13,9 @@ export interface DesktopBridge {
   openSettings(): Promise<void>;
   notify(alert: DesktopAlert): Promise<boolean>;
   clearNotifications(): Promise<void>;
+  acknowledgeNotificationClick(id: string): Promise<boolean>;
   onNotificationClick(callback: (alert: DesktopAlert) => void): () => void;
+  onNotificationCancelled(callback: (id: string) => void): () => void;
 }
 
 declare global {

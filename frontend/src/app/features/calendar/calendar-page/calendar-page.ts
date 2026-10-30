@@ -1,14 +1,13 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   computed,
   effect,
   inject,
   signal,
   untracked,
 } from '@angular/core';
-import { desktopBridge } from '../../../core/desktop/desktop-bridge';
+import { DesktopNavigationService } from '../../../core/desktop/desktop-navigation.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { Router } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth-store';
@@ -189,24 +188,42 @@ export class CalendarPage {
    *  duyệt — "date of birth" mà sau hôm nay thì luôn là dữ liệu sai. */
   protected readonly maxDob = dateInputValue(new Date());
   protected readonly savingName = signal(false);
+  protected readonly onboardingError = signal<string | null>(null);
   protected readonly onboardingCanSubmit = computed(
-    () => !!this.nameDraft().trim() && !!this.dobDraft(),
+    () => {
+      const dob = this.dobDraft();
+      const date = new Date(`${dob}T00:00:00`);
+      return !!this.nameDraft().trim() && /^\d{4}-\d{2}-\d{2}$/.test(dob)
+        && !Number.isNaN(date.getTime()) && dateInputValue(date) === dob && dob <= this.maxDob;
+    },
   );
 
   constructor() {
     this.notificationQueue.requestPermission();
     const notifications = inject(NotificationService);
-    const unsubscribe = desktopBridge()?.onNotificationClick((alert) => {
-      notifications.markAsRead(alert.id);
-      if (alert.eventId) this.onViewDetail(alert.eventId);
-      else if (alert.groupId)
-        this.onOpenGroupFromNotification({
-          groupId: alert.groupId,
-          messageId: alert.messageId,
+    const desktopNavigation = inject(DesktopNavigationService);
+    effect(() => {
+      const alert = desktopNavigation.pending();
+      if (!alert) return;
+      // An event/group may arrive after the page mounts. Do not consume a
+      // native popup until the requested entity can actually be opened.
+      if (alert.eventId) {
+        const available = this.store.events().some((event) => event.id === alert.eventId)
+          || this.store.visibleEvents().some((event) => event.id === alert.eventId);
+        if (!available) return;
+      } else if (alert.groupId && !this.groupStore.groups().some((group) => group.id === alert.groupId)) {
+        return;
+      }
+      untracked(() => {
+        if (alert.eventId) this.onViewDetail(alert.eventId);
+        else if (alert.groupId) this.onOpenGroupFromNotification({
+          groupId: alert.groupId, messageId: alert.messageId,
           tab: ['task', 'deadline'].includes(alert.kind) ? 'tasks' : 'chat',
         });
+        notifications.markAsRead(alert.id);
+        desktopNavigation.complete(alert.id);
+      });
     });
-    inject(DestroyRef).onDestroy(() => unsubscribe?.());
 
     effect(() => {
       if (this.authStore.session()) {
@@ -233,13 +250,15 @@ export class CalendarPage {
 
   async completeOnboarding(): Promise<void> {
     if (!this.onboardingCanSubmit() || this.savingName()) return;
+    this.onboardingError.set(null);
     this.savingName.set(true);
     try {
-      await Promise.all([
-        this.authStore.updateDisplayName(this.nameDraft().trim()),
-        this.birthdayService.setUserDob(this.dobDraft()),
-      ]);
+      const error = await this.authStore.updateDisplayName(this.nameDraft().trim());
+      if (error) throw error;
+      await this.birthdayService.setUserDob(this.dobDraft());
       this.namePromptOpen.set(false);
+    } catch {
+      this.onboardingError.set(this.i18n.t('onboarding.saveFailed'));
     } finally {
       this.savingName.set(false);
     }

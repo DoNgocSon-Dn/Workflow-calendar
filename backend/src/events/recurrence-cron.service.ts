@@ -29,10 +29,11 @@ type SeriesTemplateRow = Pick<
   | 'meet_link'
   | 'calendar_type'
   | 'start_tz'
+  | 'deleted_at'
 >;
 
 const SERIES_COLUMNS =
-  'series_id, start_at, end_at, recurrence_rule, calendar_id, title, description, location, all_day, created_by, meet_link, calendar_type, start_tz';
+  'series_id, start_at, end_at, recurrence_rule, calendar_id, title, description, location, all_day, created_by, meet_link, calendar_type, start_tz, deleted_at';
 
 /**
  * "Lặp lại không kết thúc" thực chất chỉ được vật chất hoá ~2 năm khi tạo. Cron
@@ -61,19 +62,28 @@ export class RecurrenceCronService {
       now.getTime() + RECURRENCE_TOPUP_HORIZON_DAYS * 86_400_000,
     );
 
-    const { data, error } = await supabase
-      .from('events')
-      .select(SERIES_COLUMNS)
-      .not('series_id', 'is', null)
-      .not('recurrence_rule', 'is', null)
-      .is('deleted_at', null)
-      .returns<SeriesTemplateRow[]>();
-
-    if (error) {
-      this.logger.error(`Không đọc được chuỗi lặp: ${error.message}`);
-      return;
+    // Keep deleted occurrences as date anchors. A Jan 31 occurrence in trash
+    // must not turn the remaining Feb 28 occurrence into a new monthly anchor.
+    // Page explicitly: Supabase's default row limit must not truncate a series.
+    const data: SeriesTemplateRow[] = [];
+    const pageSize = 1000;
+    for (let offset = 0; ; offset += pageSize) {
+      const { data: page, error } = await supabase
+        .from('events')
+        .select(SERIES_COLUMNS)
+        .not('series_id', 'is', null)
+        .not('recurrence_rule', 'is', null)
+        .order('id', { ascending: true })
+        .range(offset, offset + pageSize - 1)
+        .returns<SeriesTemplateRow[]>();
+      if (error) {
+        this.logger.error(`Không đọc được chuỗi lặp: ${error.message}`);
+        return;
+      }
+      data.push(...(page ?? []));
+      if (!page || page.length < pageSize) break;
     }
-    if (!data || data.length === 0) return;
+    if (data.length === 0) return;
 
     const bySeries = new Map<string, SeriesTemplateRow[]>();
     for (const row of data) {
@@ -103,11 +113,15 @@ export class RecurrenceCronService {
     rows: SeriesTemplateRow[],
     horizon: Date,
   ): Promise<number> {
-    const template = rows.reduce((a, b) => (a.start_at <= b.start_at ? a : b));
+    const active = rows.filter((row) => !row.deleted_at);
+    // An entirely deleted series must never be resurrected by the scheduler.
+    if (active.length === 0) return 0;
+    const template = active.reduce((a, b) => (a.start_at <= b.start_at ? a : b));
     const rule = template.recurrence_rule as RecurrenceRuleDto | null;
     if (!rule) return 0;
 
-    // Chuỗi có số lần cố định đã tạo đủ khi tạo — không nối thêm.
+    // Include deleted occurrences in the count: deleting a meeting does not
+    // authorize the scheduler to create a replacement beyond the rule's count.
     if (rule.endType === 'count' && rule.count && rows.length >= rule.count)
       return 0;
     // Chuỗi có ngày kết thúc đã qua mốc lần lặp mới nhất — không còn gì để thêm.
@@ -124,19 +138,24 @@ export class RecurrenceCronService {
     }
     if (latestStartMs >= horizon.getTime()) return 0;
 
-    const { data: exRows } = await supabase
+    const { data: exRows, error: exclusionsError } = await supabase
       .from('event_recurrence_exceptions')
       .select('occurred_at')
       .eq('series_id', seriesId)
       .returns<{ occurred_at: string }[]>();
+    if (exclusionsError) throw new Error(exclusionsError.message);
     const excluded = new Set<number>(
       (exRows ?? []).map((r) => Date.parse(r.occurred_at)),
     );
     const existing = new Set<number>(rows.map((r) => Date.parse(r.start_at)));
+    let anchorMs = Date.parse(template.start_at);
+    for (const timestamp of existing) anchorMs = Math.min(anchorMs, timestamp);
+    for (const timestamp of excluded) anchorMs = Math.min(anchorMs, timestamp);
+    const durationMs = Date.parse(template.end_at) - Date.parse(template.start_at);
 
     const occurrences = expandRecurrence(
-      new Date(template.start_at),
-      new Date(template.end_at),
+      new Date(anchorMs),
+      new Date(anchorMs + durationMs),
       rule,
       {
         after: new Date(latestStartMs),

@@ -35,6 +35,26 @@ describe('email authentication', () => {
     });
     expect(store.session()).toBeNull();
   });
+  it('carries an internal invitation path through the signup confirmation email', async () => {
+    const { store, auth } = setup();
+    await store.signUp('member@example.com', 'password123', '/groups/join/invite-token');
+    expect(auth.signUp).toHaveBeenCalledWith({
+      email: 'member@example.com',
+      password: 'password123',
+      options: {
+        emailRedirectTo: `${window.location.origin}/login?returnUrl=%2Fgroups%2Fjoin%2Finvite-token`,
+      },
+    });
+  });
+  it('does not carry external destinations into confirmation emails', async () => {
+    const { store, auth } = setup();
+    await store.signUp('member@example.com', 'password123', '//evil.example');
+    expect(auth.signUp).toHaveBeenCalledWith({
+      email: 'member@example.com',
+      password: 'password123',
+      options: { emailRedirectTo: `${window.location.origin}/login` },
+    });
+  });
   it('does not hide authentication failures', async () => {
     const failure = { message: 'Invalid credentials' };
     const { store } = setup(null, failure);
@@ -49,5 +69,12 @@ describe('email authentication', () => {
     });
     await store.updatePassword('new-password123');
     expect(auth.updateUser).toHaveBeenCalledWith({ password: 'new-password123' });
+  });
+  it('keeps an internal destination in the password recovery email', async () => {
+    const { store, auth } = setup();
+    await store.requestPasswordReset('member@example.com', '/tasks');
+    expect(auth.resetPasswordForEmail).toHaveBeenCalledWith('member@example.com', {
+      redirectTo: `${window.location.origin}/reset-password?returnUrl=%2Ftasks`,
+    });
   });
 });

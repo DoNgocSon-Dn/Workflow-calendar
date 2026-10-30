@@ -41,6 +41,7 @@ function start() {
     quitting = false;
   let lastPopupId = "",
     popupReady = false;
+  let pendingOpenId = "";
   const icon = path.join(__dirname, "icon.ico");
   const settingsFile = () =>
     path.join(app.getPath("userData"), "desktop-settings.json");
@@ -62,6 +63,11 @@ function start() {
     !settingsWindow.isDestroyed() &&
     event.sender === settingsWindow.webContents &&
     event.senderFrame === settingsWindow.webContents.mainFrame;
+  function cancelPendingOpen(id = pendingOpenId) {
+    if (!id || id !== pendingOpenId) return;
+    main?.webContents.send("desktop:notification-cancelled", id);
+    pendingOpenId = "";
+  }
   function showSettings() {
     if (settingsWindow && !settingsWindow.isDestroyed()) {
       settingsWindow.show();
@@ -325,7 +331,7 @@ function start() {
         alwaysOnTop: true,
         skipTaskbar: true,
         icon,
-        backgroundColor: "#10251e",
+        backgroundColor: "#10203b",
         webPreferences: {
           preload: path.join(__dirname, "popup-preload.cjs"),
           nodeIntegration: false,
@@ -341,7 +347,12 @@ function start() {
       popup.on("close", (event) => {
         if (!quitting) {
           event.preventDefault();
-          popup.hide();
+          // Alt+F4 is a dismissal too; hiding alone strands the alert forever.
+          const item = alerts.pending[0];
+          if (item) {
+            cancelPendingOpen(item.id);
+            alerts.act("dismiss", item.id);
+          } else popup.hide();
         }
       });
       ipcMain.handle("desktop:settings", (event) => {
@@ -355,6 +366,7 @@ function start() {
           throw new Error("Invalid settings request");
         connection = normalizeConnection(input);
         fs.writeFileSync(connectionFile(), JSON.stringify(connection));
+        cancelPendingOpen();
         alerts.clear();
         void main.loadURL(`${ORIGIN}/login`);
         settingsWindow.close();
@@ -391,7 +403,20 @@ function start() {
         return enabled && item ? alerts.push(item) : false;
       });
       ipcMain.handle("desktop:clear", (event) => {
-        if (trustedMain(event)) alerts.clear();
+        if (trustedMain(event)) {
+          cancelPendingOpen();
+          alerts.clear();
+        }
+      });
+      ipcMain.on("desktop:ready", (event) => {
+        if (!trustedMain(event)) return;
+        const item = alerts.pending.find((alert) => alert.id === pendingOpenId);
+        if (item) main.webContents.send("desktop:notification-click", item);
+      });
+      ipcMain.handle("desktop:notification-ack", (event, id) => {
+        if (!trustedMain(event) || id !== pendingOpenId || alerts.pending[0]?.id !== id) return false;
+        pendingOpenId = "";
+        return !!alerts.act("open", id);
       });
       ipcMain.on("popup:ready", (event) => {
         if (event.sender !== popup.webContents) return;
@@ -400,10 +425,18 @@ function start() {
       });
       ipcMain.on("popup:action", (event, payload) => {
         if (event.sender !== popup.webContents || !payload) return;
-        const item = alerts.act(payload.action, payload.id);
-        if (item && payload.action === "open") {
+        const item = alerts.pending[0];
+        if (!item || item.id !== payload.id) return;
+        if (payload.action === "open") {
+          // Keep the popup until the routed renderer has loaded its target.
+          pendingOpenId = item.id;
           showMain();
           main.webContents.send("desktop:notification-click", item);
+        } else {
+          const acted = alerts.act(payload.action, payload.id);
+          if (acted && pendingOpenId === acted.id) {
+            cancelPendingOpen(acted.id);
+          }
         }
       });
       tray = new Tray(

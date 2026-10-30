@@ -1,15 +1,15 @@
 :root {
   color-scheme: dark;
   font-family: "Segoe UI", system-ui, sans-serif;
-  color: #f2fbf5;
-  background: #10251e;
+  color: #eff6ff;
+  background: #10203b;
 }
 * {
   box-sizing: border-box;
 }
 body {
   margin: 0;
-  border: 1px solid #476a58;
+  border: 1px solid #425d88;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -19,7 +19,7 @@ header {
   align-items: center;
   gap: 10px;
   padding: 16px 20px;
-  border-bottom: 1px solid #294435;
+  border-bottom: 1px solid #2b4367;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1.4px;
@@ -32,20 +32,20 @@ header {
   width: 27px;
   height: 27px;
   border-radius: 7px;
-  background: #c8f2a7;
-  color: #16361f;
+  background: #93c5fd;
+  color: #102a55;
   font-size: 18px;
   letter-spacing: -2px;
 }
 .label {
   margin-left: 9px;
-  color: #b2c6b9;
+  color: #b3c4df;
   font-size: 9px;
   font-weight: 500;
 }
 #count {
   margin-left: auto;
-  color: #c8f2a7;
+  color: #93c5fd;
   font-size: 10px;
   letter-spacing: 0;
 }
@@ -57,7 +57,7 @@ main {
 #kind {
   font-size: 10px;
   font-weight: 700;
-  color: #c8f2a7;
+  color: #93c5fd;
   letter-spacing: 2px;
   margin: 0 0 9px;
 }
@@ -74,7 +74,7 @@ h1 {
   overflow: hidden;
 }
 #body {
-  color: #c0d2c7;
+  color: #c0cfea;
   font-size: 13px;
   line-height: 1.6;
   white-space: pre-wrap;
@@ -93,24 +93,24 @@ button {
     600 11px "Segoe UI",
     sans-serif;
   padding: 12px 10px;
-  border: 1px solid #446451;
+  border: 1px solid #44628d;
   border-radius: 7px;
   background: transparent;
-  color: #e0eee5;
+  color: #e0ebff;
   cursor: pointer;
   white-space: nowrap;
 }
 button:hover {
-  background: #284b37;
+  background: #234272;
 }
 button:focus-visible {
-  outline: 2px solid #f2fbf5;
+  outline: 2px solid #eff6ff;
   outline-offset: 2px;
 }
 .primary {
-  background: #c8f2a7;
-  color: #16361f;
-  border-color: #c8f2a7;
+  background: #93c5fd;
+  color: #102a55;
+  border-color: #93c5fd;
   flex: 1;
   text-align: left;
 }
@@ -120,11 +120,11 @@ button:focus-visible {
   line-height: 14px;
 }
 .primary:hover {
-  background: #e2ffd2;
+  background: #bfdbfe;
 }
 .hint {
   padding: 13px 20px 15px;
-  color: #91af9d;
+  color: #91aacf;
   font-size: 10px;
 }
 body.ring {
@@ -132,8 +132,8 @@ body.ring {
 }
 @keyframes glow {
   50% {
-    border-color: #dbff9d;
-    box-shadow: inset 0 0 30px #a5ee7522;
+    border-color: #bfdbfe;
+    box-shadow: inset 0 0 30px #60a5fa22;
   }
 }
 @media (prefers-reduced-motion: reduce) {

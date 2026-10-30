@@ -3,6 +3,7 @@ import { inject } from '@angular/core';
 import { defer, finalize, retry, throwError, timeout, timer } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ServerStatusService } from '../services/server-status.service';
+import { isApiRequest } from './api-url';
 
 /** Mỗi lần thử tối đa 12s rồi coi như treo. */
 const ATTEMPT_TIMEOUT_MS = 12_000;
@@ -26,7 +27,7 @@ function isColdStartFailure(err: unknown, method: string): boolean {
  * access token mới nhất.
  */
 export const retryInterceptor: HttpInterceptorFn = (req, next) => {
-  if (!req.url.startsWith(environment.apiUrl)) return next(req);
+  if (!isApiRequest(req.url, environment.apiUrl)) return next(req);
 
   const status = inject(ServerStatusService);
   let counted = false;

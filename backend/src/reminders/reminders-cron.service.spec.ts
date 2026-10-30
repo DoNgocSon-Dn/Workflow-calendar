@@ -23,6 +23,7 @@ function setup(fail = false) {
     select: jest.fn().mockReturnThis(),
     lte: jest.fn().mockReturnThis(),
     eq: jest.fn().mockReturnThis(),
+    is: jest.fn().mockReturnThis(),
     returns: jest.fn(async () => ({ data: [reminder], error: null })),
     update,
   };
@@ -41,10 +42,18 @@ function setup(fail = false) {
     mail as unknown as MailService,
     {} as PushService,
   );
-  return { service, update, mail, client };
+  return { service, update, mail, client, query, reminder };
 }
 
 describe('scheduled reminder delivery', () => {
+  it('filters out events moved to trash before dispatching due reminders', async () => {
+    const { service, query } = setup();
+    await service.handleDueReminders();
+    expect(query.select).toHaveBeenCalledWith(
+      expect.stringContaining('events!inner'),
+    );
+    expect(query.is).toHaveBeenCalledWith('events.deleted_at', null);
+  });
   it('keeps a failed email pending for the next run', async () => {
     const { service, update } = setup(true);
     await service.handleDueReminders();

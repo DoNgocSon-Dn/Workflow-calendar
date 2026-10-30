@@ -2,8 +2,8 @@
 
 ## Cài và mở
 
-- `Workflow-Calendar-Setup-1.0.0-x64.exe`: cài cho tài khoản Windows hiện tại, tạo shortcut Desktop và Start Menu.
-- `Workflow-Calendar-Portable-1.0.0-x64.exe`: chạy trực tiếp.
+- `Workflow-Calendar-Setup-1.0.1-x64.exe`: cài cho tài khoản Windows hiện tại, tạo shortcut Desktop và Start Menu.
+- `Workflow-Calendar-Portable-1.0.1-x64.exe`: chạy trực tiếp.
 
 Bản đóng gói không cần Node.js hoặc terminal. Máy vẫn cần Internet và Supabase/backend đang hoạt động để đăng nhập, đồng bộ và nhận nhắc lịch từ máy chủ. Bản này chưa có chứng thư ký số thương mại.
 

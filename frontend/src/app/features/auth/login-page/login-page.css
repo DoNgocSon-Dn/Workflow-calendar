@@ -3,12 +3,12 @@
   min-height: 100dvh;
 }
 .auth-page {
-  --paper: #f5f7f2;
+  --paper: #f4f7fc;
   --panel: #fff;
-  --ink: #20352b;
-  --muted: #627266;
-  --edge: #d9e1d7;
-  --green: #2b5d3b;
+  --ink: #1e3150;
+  --muted: #66768e;
+  --edge: #d6dfed;
+  --blue: #2563eb;
   background: var(--paper);
   color: var(--ink);
   min-height: 100dvh;
@@ -17,12 +17,12 @@
   flex-direction: column;
 }
 :host-context(.dark) .auth-page {
-  --paper: #101c17;
-  --panel: #18271e;
-  --ink: #e6efe6;
-  --muted: #a1b2a6;
-  --edge: #354a3a;
-  --green: #b8e59b;
+  --paper: #0e1729;
+  --panel: #16233b;
+  --ink: #e8eefb;
+  --muted: #a1b1cc;
+  --edge: #304462;
+  --blue: #93c5fd;
 }
 nav {
   display: flex;
@@ -62,7 +62,7 @@ main {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 2px;
-  color: var(--green);
+  color: var(--blue);
   margin: 0 0 22px;
 }
 h1 {
@@ -97,7 +97,7 @@ h1 {
 .sample-label {
   font-size: 9px;
   font-weight: 700;
-  color: var(--green);
+  color: var(--blue);
   letter-spacing: 1.5px;
   display: block;
   margin-bottom: 8px;
@@ -115,7 +115,7 @@ h1 {
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: var(--green);
+  background: var(--blue);
   margin: 6px 0 0 auto;
 }
 .intro-note {
@@ -165,7 +165,7 @@ input:not([type='checkbox']) {
 input:focus-visible,
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid var(--green);
+  outline: 2px solid var(--blue);
   outline-offset: 3px;
 }
 .form-options {
@@ -179,7 +179,7 @@ a:focus-visible {
   font-size: 11px;
 }
 a {
-  color: var(--green);
+  color: var(--blue);
   text-underline-offset: 3px;
 }
 .checkbox {
@@ -193,12 +193,12 @@ a {
 }
 .checkbox input {
   margin: 0;
-  accent-color: var(--green);
+  accent-color: var(--blue);
 }
 .submit {
   width: 100%;
   padding: 13px 16px;
-  background: var(--green);
+  background: var(--blue);
   color: var(--panel);
   border: 0;
   border-radius: 6px;
@@ -240,8 +240,8 @@ a {
   color: #8c2626;
 }
 .success {
-  background: #e7f5df;
-  color: #285530;
+  background: #e8f1ff;
+  color: #1e40af;
 }
 .field-hint {
   font-size: 10px;

@@ -792,7 +792,12 @@ export class CalendarStore {
     );
     this.realtime.on<{ reminderId: string; eventId: string; title: string; startAt: string }>(
       'reminder:fire',
-      (payload) => this.handleReminderFire(payload),
+      (payload) => {
+        this.handleReminderFire(payload);
+        void this.acknowledgeReminders([payload.reminderId]).catch((err) =>
+          console.error('Không xác nhận được nhắc lịch đã nhận:', err),
+        );
+      },
     );
     this.realtime.on<{ event: EventApiDto; conflicts: ConflictApiDto[] }>(
       'event:conflict',
@@ -1579,9 +1584,18 @@ export class CalendarStore {
         >(`${this.apiUrl}/reminders/missed`),
       );
       for (const reminder of missed) this.handleReminderFire(reminder);
+      if (missed.length > 0) {
+        await this.acknowledgeReminders(missed.map((reminder) => reminder.reminderId));
+      }
     } catch (err) {
       console.error('Không kiểm tra được nhắc lịch bị lỡ:', err);
     }
+  }
+
+  private async acknowledgeReminders(reminderIds: string[]): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${this.apiUrl}/reminders/acknowledge`, { reminderIds }),
+    );
   }
 
   private async refreshEvents(): Promise<void> {

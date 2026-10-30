@@ -1,6 +1,6 @@
 {
   "name": "workflow-calendar-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Workflow Calendar for Windows with persistent on-screen reminders",
   "author": "DoNgocSon-Dn",
   "private": true,

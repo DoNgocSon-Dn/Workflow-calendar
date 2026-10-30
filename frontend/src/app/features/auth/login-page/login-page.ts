@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth-store';
+import { safeAuthReturnUrl } from '../../../core/auth/auth-return-url';
 import { desktopBridge } from '../../../core/desktop/desktop-bridge';
 import { TranslationService } from '../../../core/i18n/translation.service';
 import { ThemeService } from '../../../core/theme/theme-service';
@@ -23,6 +24,10 @@ export class LoginPage {
   protected readonly i18n = inject(TranslationService);
   protected readonly theme = inject(ThemeService);
   protected readonly desktop = desktopBridge();
+  protected readonly returnUrl = safeAuthReturnUrl(
+    this.route.snapshot.queryParamMap.get('returnUrl'),
+  );
+  protected readonly authQueryParams = this.returnUrl ? { returnUrl: this.returnUrl } : {};
   protected readonly mode = signal<AuthMode>(
     (this.route.snapshot.routeConfig?.path as AuthMode) || 'login',
   );
@@ -36,7 +41,11 @@ export class LoginPage {
       ? this.i18n.t('login.sessionExpired')
       : null,
   );
-  protected readonly success = signal<string | null>(null);
+  protected readonly success = signal<string | null>(
+    this.route.snapshot.queryParamMap.get('checkEmail') === '1'
+      ? this.i18n.t('auth.confirmEmail')
+      : null,
+  );
   protected readonly heading = computed(() =>
     this.i18n.t(
       {
@@ -71,19 +80,24 @@ export class LoginPage {
     this.busy.set(true);
     try {
       if (this.mode() === 'forgot-password') {
-        const error = await this.auth.requestPasswordReset(this.email());
+        const error = await this.auth.requestPasswordReset(this.email(), this.returnUrl);
         if (error) throw error;
         this.success.set(this.i18n.t('auth.resetSent'));
         return;
       }
       if (this.mode() === 'register') {
-        const { error, needsConfirmation } = await this.auth.signUp(this.email(), this.password());
+        const { error, needsConfirmation } = await this.auth.signUp(
+          this.email(),
+          this.password(),
+          this.returnUrl,
+        );
         if (error) throw error;
         if (needsConfirmation) {
-          this.mode.set('login');
           this.password.set('');
           this.confirmPassword.set('');
-          this.success.set(this.i18n.t('auth.confirmEmail'));
+          const query = new URLSearchParams({ checkEmail: '1' });
+          if (this.returnUrl) query.set('returnUrl', this.returnUrl);
+          await this.router.navigateByUrl(`/login?${query}`);
           return;
         }
       } else if (this.mode() === 'reset-password') {
@@ -95,12 +109,7 @@ export class LoginPage {
       }
       this.password.set('');
       this.confirmPassword.set('');
-      const requested = this.route.snapshot.queryParamMap.get('returnUrl');
-      await this.router.navigateByUrl(
-        requested && /^\/(?!\/)/.test(requested) && !requested.includes('\\')
-          ? requested
-          : '/calendar',
-      );
+      await this.router.navigateByUrl(this.returnUrl ?? '/calendar');
     } catch (error) {
       const code = (error as { code?: string }).code;
       const message = error instanceof Error ? error.message : '';

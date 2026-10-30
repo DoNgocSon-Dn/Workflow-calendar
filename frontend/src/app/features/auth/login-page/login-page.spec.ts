@@ -1,10 +1,11 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuthStore } from '../../../core/auth/auth-store';
 import { LoginPage } from './login-page';
 
-function setup(mode = 'login', returnUrl: string | null = null) {
+function setup(mode = 'login', returnUrl: string | null = null, checkEmail = false) {
   const auth = {
     session: () => null,
     signInWithPassword: vi.fn(async () => null),
@@ -13,7 +14,14 @@ function setup(mode = 'login', returnUrl: string | null = null) {
     updatePassword: vi.fn(async () => null),
   };
   const navigate = vi.fn(async () => true);
-  const queryParamMap = { has: () => false, get: () => returnUrl };
+  const params = new Map([
+    ['returnUrl', returnUrl],
+    ['checkEmail', checkEmail ? '1' : null],
+  ]);
+  const queryParamMap = {
+    has: (key: string) => !!params.get(key),
+    get: (key: string) => params.get(key) ?? null,
+  };
   TestBed.configureTestingModule({
     providers: [
       { provide: AuthStore, useValue: auth },
@@ -33,6 +41,7 @@ function setup(mode = 'login', returnUrl: string | null = null) {
     error(): string | null;
     success(): string | null;
     mode(): string;
+    authQueryParams: { returnUrl?: string };
     submit(): Promise<void>;
   };
   page.email.set('member@example.com');
@@ -60,12 +69,23 @@ describe('email account screens', () => {
     expect(auth.signUp).not.toHaveBeenCalled();
     expect(page.error()).toBeTruthy();
   });
-  it('waits for email confirmation instead of entering a protected page', async () => {
-    const { page, navigate } = setup('register');
+  it('navigates to the login route after signup and carries the original destination', async () => {
+    const { page, auth, navigate } = setup('register', '/groups/join/invite-token');
     await page.submit();
-    expect(navigate).not.toHaveBeenCalled();
+    expect(auth.signUp).toHaveBeenCalledWith(
+      'member@example.com',
+      'password123',
+      '/groups/join/invite-token',
+    );
+    expect(navigate).toHaveBeenCalledWith(
+      '/login?checkEmail=1&returnUrl=%2Fgroups%2Fjoin%2Finvite-token',
+    );
+  });
+  it('shows the confirmation notice on the canonical login page', () => {
+    const { page } = setup('login', '/groups/join/invite-token', true);
     expect(page.mode()).toBe('login');
     expect(page.success()).toBeTruthy();
+    expect(page.authQueryParams).toEqual({ returnUrl: '/groups/join/invite-token' });
   });
   it('rejects a password reset without a valid recovery session', async () => {
     const { page, auth } = setup('reset-password');
@@ -76,7 +96,32 @@ describe('email account screens', () => {
   it('shows the same recovery confirmation without exposing account existence', async () => {
     const { page, auth } = setup('forgot-password');
     await page.submit();
-    expect(auth.requestPasswordReset).toHaveBeenCalledWith('member@example.com');
+    expect(auth.requestPasswordReset).toHaveBeenCalledWith('member@example.com', undefined);
     expect(page.success()).toBeTruthy();
+  });
+  it('keeps the invitation destination in register, recovery and back-to-login links', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(
+          ['login', 'register', 'forgot-password'].map((path) => ({ path, component: LoginPage })),
+        ),
+        { provide: AuthStore, useValue: { session: () => null } },
+      ],
+    });
+    const harness = await RouterTestingHarness.create(
+      '/login?returnUrl=%2Fgroups%2Fjoin%2Finvite-token',
+    );
+    expect(
+      harness.routeNativeElement?.querySelector('a[href^="/register"]')?.getAttribute('href'),
+    ).toBe('/register?returnUrl=%2Fgroups%2Fjoin%2Finvite-token');
+    expect(
+      harness.routeNativeElement
+        ?.querySelector('a[href^="/forgot-password"]')
+        ?.getAttribute('href'),
+    ).toBe('/forgot-password?returnUrl=%2Fgroups%2Fjoin%2Finvite-token');
+    await harness.navigateByUrl('/register?returnUrl=%2Fgroups%2Fjoin%2Finvite-token');
+    expect(
+      harness.routeNativeElement?.querySelector('a[href^="/login"]')?.getAttribute('href'),
+    ).toBe('/login?returnUrl=%2Fgroups%2Fjoin%2Finvite-token');
   });
 });

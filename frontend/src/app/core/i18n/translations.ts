@@ -63,6 +63,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'onboarding.desc': 'Vui lòng hoàn tất hồ sơ trước khi vào app: Tên hiển thị xuất hiện trên lịch và khi tham gia nhóm làm việc, còn Ngày sinh để Workflow gửi lời chúc mừng sinh nhật đúng ngày.',
     'onboarding.namePlaceholder': 'Nhập tên của bạn (VD: Hoàng Cường)',
     'onboarding.submit': 'Bắt đầu sử dụng',
+    'onboarding.saveFailed': 'Chưa lưu được hồ sơ. Kiểm tra kết nối rồi thử lại; thông tin bạn nhập vẫn được giữ lại.',
 
     // --- sidebar ------------------------------------------------------------
     'sidebar.createEvent': 'Tạo sự kiện',
@@ -1294,6 +1295,7 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'onboarding.desc': 'Please complete your profile first: your display name appears on the calendar and in workspaces, and your date of birth lets Workflow send birthday wishes on the right day.',
     'onboarding.namePlaceholder': 'Enter your name (e.g. Alex Carter)',
     'onboarding.submit': 'Get started',
+    'onboarding.saveFailed': 'Your profile could not be saved. Check your connection and try again; your entries have been kept.',
 
     // --- sidebar ------------------------------------------------------------
     'sidebar.createEvent': 'Create event',

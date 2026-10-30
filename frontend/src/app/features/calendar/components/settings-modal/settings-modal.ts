@@ -94,6 +94,7 @@ export class SettingsModal {
   protected readonly editingDob = signal(false);
   protected readonly savingDob = signal(false);
   protected readonly dobSaved = signal(false);
+  protected readonly dobError = signal(false);
   protected readonly uploadingAvatar = signal(false);
   protected readonly profileError = signal<string | null>(null);
 
@@ -182,10 +183,14 @@ export class SettingsModal {
     const dob = this.dobDraft().trim();
     if (this.savingDob()) return;
     this.savingDob.set(true);
-    await this.birthdayPopupService.setUserDob(dob);
-    this.savingDob.set(false);
-    this.dobSaved.set(true);
-    setTimeout(() => this.dobSaved.set(false), 2500);
+    this.dobError.set(false);
+    this.dobSaved.set(false);
+    try {
+      await this.birthdayPopupService.setUserDob(dob);
+      this.dobSaved.set(true);
+      setTimeout(() => this.dobSaved.set(false), 2500);
+    } catch { this.dobError.set(true); }
+    finally { this.savingDob.set(false); }
   }
 
   protected readonly isBirthdayDisabled = signal<boolean>(

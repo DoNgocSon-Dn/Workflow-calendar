@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { catchError, from, switchMap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthStore } from './auth-store';
+import { isApiRequest } from './api-url';
 
 /**
  * Refresh token cũng đã chết thì mọi request đang bay song song đều rơi vào
@@ -24,7 +25,7 @@ let sessionExpiredHandled = false;
  * bữa trưa là gặp.
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  if (!req.url.startsWith(environment.apiUrl)) {
+  if (!isApiRequest(req.url, environment.apiUrl)) {
     return next(req);
   }
 
