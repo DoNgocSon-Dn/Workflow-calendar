@@ -1,5 +1,7 @@
 # Bàn giao nâng cấp — 30/10/2026
 
+Trạng thái mới nhất: đã truy cập dashboard, xác định project bị tạm dừng và yêu cầu Resume. DNS đã hoạt động lại, Auth health HTTP 200, Email provider bật và cho phép đăng ký. Dashboard còn báo khôi phục dữ liệu; chưa xác minh đăng nhập bằng tài khoản thật. Bản 1.0.1 xanh dương đã cài thành công.
+
 ## Đã thực hiện
 
 - Bản Windows: installer/portable, shortcut qua installer, single instance, khay hệ thống và tùy chọn mở cùng Windows.

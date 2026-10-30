@@ -47,4 +47,4 @@ Supabase lưu tài khoản/dữ liệu; backend NestJS xử lý API, quyền, nh
 
 Frontend dùng cấu hình công khai; bản Windows cho đổi kết nối trong menu **Workflow → Cấu hình kết nối**. Khóa service-role chỉ đặt ở backend; thiếu khóa thì cron nhắc việc, deadline và nối dài chuỗi lặp không chạy. SMTP, AI và push cần cấu hình tương ứng trong `backend/.env.example`.
 
-**Trạng thái bàn giao:** hostname Supabase hiện có không phân giải DNS trên máy kiểm tra. Cần khôi phục hoặc thay project trước khi dùng tài khoản và dữ liệu thật. Chưa tự chạy migration lên cơ sở dữ liệu thật.
+**Trạng thái bàn giao:** project Supabase từng bị tạm dừng. Đã yêu cầu Resume từ dashboard; DNS và Auth health đã hoạt động lại, Email provider đang bật. Đang xác minh khôi phục dữ liệu và đăng nhập thật. Chưa chạy migration lên cơ sở dữ liệu thật.
