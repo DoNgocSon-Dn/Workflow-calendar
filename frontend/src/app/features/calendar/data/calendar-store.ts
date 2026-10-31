@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { DestroyRef, Injectable, computed, effect, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Subject, debounceTime, distinctUntilChanged, firstValueFrom } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { environment } from '../../../../environments/environment';
@@ -60,7 +60,17 @@ import {
 } from '../utils/date-utils';
 import { stripHtmlTags } from '../../../shared/utils/text.util';
 import { matchScore } from '../utils/search-match';
-import { VN_HOLIDAY_CALENDAR_DEF, VN_HOLIDAY_CALENDAR_ID, buildVietnamHolidayEvents } from './vietnam-holidays';
+import {
+  VN_HOLIDAY_CALENDAR_DEF,
+  VN_HOLIDAY_CALENDAR_ID,
+  buildVietnamHolidayEvents,
+} from './vietnam-holidays';
+import {
+  CalendarSnapshot,
+  isCalendarSnapshot,
+  readStartupCache,
+  writeStartupCache,
+} from '../../../core/services/startup-cache';
 
 const SELF_ORIGIN_TTL_MS = 8000;
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'sidebar-collapsed';
@@ -414,6 +424,12 @@ export class CalendarStore {
     this.i18n.t(key, vars);
 
   private readonly apiUrl = environment.apiUrl;
+  private readonly cacheReady = signal(false);
+  readonly showingCached = signal(false);
+  readonly syncing = signal(false);
+  readonly syncFailed = signal(false);
+  readonly lastSyncedAt = signal<string | null>(null);
+  private loadVersion = 0;
   private readonly selfOriginIds = new Set<string>();
   private realtimeListenersBound = false;
   // Giữ POST /calendars đang bay để hai lần loadAll() chồng nhau (effect chạy lại
@@ -425,9 +441,7 @@ export class CalendarStore {
   // Lần đầu vào trên điện thoại: mở view "Lịch biểu" (agenda) như GG Calendar —
   // lưới tuần dày cột không đọc nổi trên màn hẹp. Chỉ là giá trị KHỞI TẠO
   // (giống sidebarOpen bên dưới), không ép đổi khi xoay/kéo màn hình.
-  readonly viewMode = signal<CalendarViewMode>(
-    isSidebarDrawerViewport() ? 'agenda' : 'week',
-  );
+  readonly viewMode = signal<CalendarViewMode>(isSidebarDrawerViewport() ? 'agenda' : 'week');
 
   /**
    * Màn hình đang ở khổ điện thoại (≤767.98px) hay không — dạng REACTIVE.
@@ -673,10 +687,15 @@ export class CalendarStore {
       // người dùng thực sự đổi (đăng nhập / đăng xuất / đổi tài khoản).
       if (userId === this.loadedUserId) return;
       this.loadedUserId = userId;
-
-      if (userId) {
-        void this.loadAll();
-      } else {
+      this.loadVersion++;
+      untracked(() => {
+        this.defaultCalendarInFlight = null;
+        this.defaultTodoListInFlight = null;
+        this.cacheReady.set(false);
+        this.showingCached.set(false);
+        this.syncing.set(false);
+        this.syncFailed.set(false);
+        this.lastSyncedAt.set(null);
         this.calendars.set([]);
         this.events.set([]);
         this.visibleCalendarIds.set(new Set());
@@ -684,8 +703,13 @@ export class CalendarStore {
         this.todos.set([]);
         this.todoLists.set([]);
         this.todosLoaded.set(false);
-        this.realtime.disconnect();
-      }
+        this.notes.set([]);
+        this.notesLoaded.set(false);
+        if (userId) {
+          this.restoreStartupSnapshot(userId);
+          void this.loadAll();
+        } else this.realtime.disconnect();
+      });
     });
 
     effect(() => {
@@ -694,12 +718,23 @@ export class CalendarStore {
   }
 
   async loadAll(): Promise<void> {
-    this.calendarsLoading.set(true);
+    const owner = this.authStore.user()?.id ?? null,
+      version = ++this.loadVersion;
+    const current = () =>
+      (this.authStore.user()?.id ?? null) === owner && version === this.loadVersion;
+    this.calendarsLoading.set(!this.cacheReady());
+    this.syncing.set(true);
+    this.syncFailed.set(false);
+    // Independent resources start together; tasks and notes do not wait for calendars.
+    void this.groupStore.loadGroups();
+    void this.loadTodosState();
+    void this.loadNotesState();
     try {
       const [calendars, events] = await Promise.all([
         firstValueFrom(this.http.get<CalendarApiDto[]>(`${this.apiUrl}/calendars`)),
         firstValueFrom(this.http.get<EventApiDto[]>(`${this.apiUrl}/events`)),
       ]);
+      if (!current()) return;
 
       let calendarDefs = dedupeCalendars(calendars.map(toCalendarDef));
       if (calendarDefs.length === 0) {
@@ -708,6 +743,7 @@ export class CalendarStore {
         // để form tạo sự kiện không có gì để chọn.
         calendarDefs = [await this.createDefaultCalendarOnce()];
       }
+      if (!current()) return;
 
       this.calendars.set(calendarDefs);
       const savedVisible = this.loadSavedVisibleCalendarIds();
@@ -721,7 +757,17 @@ export class CalendarStore {
         this.saveVisibleCalendarIds(visibleIds);
       }
       this.events.set(events.map(toCalendarEvent));
+      this.cacheReady.set(true);
+      this.showingCached.set(false);
+      this.lastSyncedAt.set(new Date().toISOString());
+      this.persistStartupSnapshot(owner, {
+        calendars: calendarDefs,
+        events: events.map(toCalendarEvent),
+        lastSyncedAt: this.lastSyncedAt(),
+      });
     } catch (err) {
+      if (!current()) return;
+      this.syncFailed.set(true);
       // Cố tình KHÔNG tạo lịch mặc định ở đây. GET /calendars hỏng (mất mạng,
       // backend restart, 429) không có nghĩa là người dùng chưa có lịch — nó chỉ
       // có nghĩa là ta chưa biết. Nhánh này trước đây tạo lịch mới mỗi lần lỗi,
@@ -729,14 +775,15 @@ export class CalendarStore {
       // loạt lịch "Cá nhân" rỗng. Giữ nguyên state cũ và để người dùng thử lại.
       console.error('Lỗi khi tải danh sách lịch / sự kiện:', err);
     } finally {
-      this.calendarsLoading.set(false);
+      if (current()) {
+        this.calendarsLoading.set(false);
+        this.syncing.set(false);
+      }
     }
+    if (!current()) return;
 
     void this.refreshPendingInvites();
     void this.refreshEventInvites();
-    void this.groupStore.loadGroups();
-    void this.loadTodosState();
-    void this.loadNotesState();
 
     this.realtime.connect();
     this.joinAllCalendarRooms();
@@ -745,6 +792,66 @@ export class CalendarStore {
     this.startSidebarAutoCollapse();
     this.startPhoneWatch();
     void this.checkMissedReminders();
+  }
+
+  private restoreStartupSnapshot(owner: string): void {
+    const snapshot = readStartupCache(owner, 'calendar', isCalendarSnapshot);
+    if (!snapshot) return;
+    this.calendars.set(snapshot.calendars);
+    this.events.set(snapshot.events);
+    this.todos.set(snapshot.todos);
+    this.todoLists.set(snapshot.todoLists);
+    this.notes.set(snapshot.notes);
+    this.todosLoaded.set(snapshot.todosReady);
+    this.notesLoaded.set(snapshot.notesReady);
+    this.visibleCalendarIds.set(
+      this.loadSavedVisibleCalendarIds() ??
+        new Set([...snapshot.calendars.map((c) => c.id), VN_HOLIDAY_CALENDAR_ID]),
+    );
+    this.lastSyncedAt.set(snapshot.lastSyncedAt);
+    this.showingCached.set(true);
+    this.cacheReady.set(true);
+  }
+
+  /** Only confirmed server results enter the cache, never optimistic edits. */
+  private persistStartupSnapshot(
+    owner: string | null | undefined,
+    patch: Partial<CalendarSnapshot>,
+  ): void {
+    if (!owner || this.authStore.user()?.id !== owner) return;
+    const previous = readStartupCache(owner, 'calendar', isCalendarSnapshot) ?? {
+      calendars: [],
+      events: [],
+      todos: [],
+      todoLists: [],
+      notes: [],
+      todosReady: false,
+      notesReady: false,
+      lastSyncedAt: null,
+    };
+    writeStartupCache(owner, 'calendar', { ...previous, ...patch });
+  }
+
+  private persistStartupEntity(
+    owner: string | undefined,
+    resource: 'calendars' | 'events' | 'todos' | 'todoLists' | 'notes',
+    entity: CalendarDef | CalendarEvent | Todo | TodoList | Note | null,
+    removedId?: string,
+  ): void {
+    if (!owner || this.authStore.user()?.id !== owner) return;
+    const cached = readStartupCache(owner, 'calendar', isCalendarSnapshot);
+    if (!cached) return;
+    const id = entity?.id ?? removedId;
+    const rows = (cached[resource] as { id: string }[]).filter((row) => row.id !== id);
+    this.persistStartupSnapshot(owner, { [resource]: entity ? [...rows, entity] : rows });
+  }
+  private persistStartupEvents(owner: string | undefined, events: CalendarEvent[]): void {
+    if (!owner || this.authStore.user()?.id !== owner) return;
+    const cached = readStartupCache(owner, 'calendar', isCalendarSnapshot);
+    if (!cached) return;
+    const merged = new Map(cached.events.map((event) => [event.id, event]));
+    for (const event of events) merged.set(event.id, event);
+    this.persistStartupSnapshot(owner, { events: [...merged.values()] });
   }
 
   // loadAll() chạy lại mỗi khi authStore.user() đổi (token refresh, khôi phục
@@ -782,9 +889,8 @@ export class CalendarStore {
     this.realtime.on<{ calendarId: string; ids: string[] }>('events:bulk-deleted', (payload) =>
       this.handleRemoteBulkDeleted(payload),
     );
-    this.realtime.on<{ eventId: string; attendee: AttendeeApiDto }>(
-      'attendee:invited',
-      (payload) => this.handleAttendeeInvited(payload),
+    this.realtime.on<{ eventId: string; attendee: AttendeeApiDto }>('attendee:invited', (payload) =>
+      this.handleAttendeeInvited(payload),
     );
     this.realtime.on<{ eventId: string; attendee: AttendeeApiDto }>(
       'attendee:statusChanged',
@@ -792,7 +898,12 @@ export class CalendarStore {
     );
     this.realtime.on<{ reminderId: string; eventId: string; title: string; startAt: string }>(
       'reminder:fire',
-      (payload) => this.handleReminderFire(payload),
+      (payload) => {
+        this.handleReminderFire(payload);
+        void this.acknowledgeReminders([payload.reminderId]).catch((err) =>
+          console.error('Không xác nhận được nhắc lịch đã nhận:', err),
+        );
+      },
     );
     this.realtime.on<{ event: EventApiDto; conflicts: ConflictApiDto[] }>(
       'event:conflict',
@@ -808,9 +919,8 @@ export class CalendarStore {
     // Xoá nhóm sẽ xoá luôn lịch nhóm ở server. GroupStore đã inject vào store
     // này nên nó không thể gọi ngược lại — lịch nhóm được dọn ngay tại đây thay
     // vì đi qua GroupStore, tránh vòng phụ thuộc DI.
-    this.realtime.on<{ groupId: string; calendarId: string | null }>(
-      'group:deleted',
-      (payload) => this.handleGroupCalendarRemoved(payload.calendarId),
+    this.realtime.on<{ groupId: string; calendarId: string | null }>('group:deleted', (payload) =>
+      this.handleGroupCalendarRemoved(payload.calendarId),
     );
     this.realtime.on<{ id: string; name: string }>('calendar:deleted', (payload) =>
       this.handleRemoteCalendarDeleted(payload.id, payload.name),
@@ -922,10 +1032,13 @@ export class CalendarStore {
   }
 
   async createCalendar(name: string, color: CalendarColor): Promise<CalendarDef> {
+    const cacheOwner = this.authStore.user()?.id;
     const created = await firstValueFrom(
       this.http.post<CalendarApiDto>(`${this.apiUrl}/calendars`, { name, color }),
     );
     const calendar = toCalendarDef(created);
+    if (this.authStore.user()?.id !== cacheOwner) return calendar;
+    this.persistStartupEntity(cacheOwner, 'calendars', calendar);
     this.calendars.update((list) => [...list, calendar]);
     this.visibleCalendarIds.update((set) => new Set([...set, calendar.id]));
     this.realtime.joinCalendar(calendar.id);
@@ -936,8 +1049,16 @@ export class CalendarStore {
    *  nhóm" để không làm nhóm mồ côi calendar_id). Backend cascade xoá luôn
    *  events/thành viên/lời mời gắn với lịch này. */
   async deleteCalendar(calendarId: string): Promise<void> {
+    const cacheOwner = this.authStore.user()?.id;
     this.markSelfOrigin(calendarId);
     await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/calendars/${calendarId}`));
+    if (this.authStore.user()?.id !== cacheOwner) return;
+    this.persistStartupEntity(cacheOwner, 'calendars', null, calendarId);
+    const cached = cacheOwner ? readStartupCache(cacheOwner, 'calendar', isCalendarSnapshot) : null;
+    if (cached)
+      this.persistStartupSnapshot(cacheOwner, {
+        events: cached.events.filter((event) => event.calendarId !== calendarId),
+      });
     this.calendars.update((list) => list.filter((c) => c.id !== calendarId));
     this.events.update((list) => list.filter((e) => e.calendarId !== calendarId));
     this.visibleCalendarIds.update((set) => {
@@ -949,10 +1070,13 @@ export class CalendarStore {
 
   /** Cập nhật màu sắc cho một lịch cá nhân. */
   async updateCalendarColor(calendarId: string, color: CalendarColor): Promise<void> {
+    const cacheOwner = this.authStore.user()?.id;
     const updated = await firstValueFrom(
       this.http.patch<CalendarApiDto>(`${this.apiUrl}/calendars/${calendarId}`, { color }),
     );
     const calendar = toCalendarDef(updated);
+    if (this.authStore.user()?.id !== cacheOwner) return;
+    this.persistStartupEntity(cacheOwner, 'calendars', calendar);
     this.calendars.update((list) =>
       list.map((c) => (c.id === calendarId ? { ...c, color: calendar.color } : c)),
     );
@@ -988,7 +1112,8 @@ export class CalendarStore {
       // Nhịp trước chưa về thì bỏ nhịp này. Mạng chậm hơn 30s mà vẫn bắn đều
       // sẽ dồn thành một hàng request chồng nhau, và cái về sau có thể ghi đè
       // dữ liệu mới hơn bằng dữ liệu cũ hơn.
-      if (this.pollInFlight || document.hidden) return;
+      if (this.pollInFlight || document.hidden || this.syncing() || !this.authStore.user()?.id)
+        return;
       this.pollInFlight = true;
       this.pollSync()
         .catch(() => {
@@ -1045,8 +1170,14 @@ export class CalendarStore {
    * những id mới xuất hiện.
    */
   private async pollSync(): Promise<void> {
+    if (this.syncFailed()) {
+      await this.loadAll();
+      return;
+    }
+    const owner = this.authStore.user()?.id;
     const before = new Set(this.events().map((e) => e.id));
     await this.refreshEvents();
+    if (this.authStore.user()?.id !== owner) return;
 
     // Lần đầu chưa có gì để so — nếu không chặn thì toàn bộ lịch sẽ đổ ra
     // thành một tràng thông báo ngay lúc mở app.
@@ -1190,7 +1321,12 @@ export class CalendarStore {
     // phải "đã lưu chưa" — form nói rồi — mà là "cả nhóm đã được báo chưa".
     // Không có dòng thông báo này thì sự kiện chỉ lặng lẽ hiện lên lưới, người
     // tạo không có cách nào biết nó đã đi tới nhóm hay chỉ nằm ở máy mình.
-    const timeLabel = eventTimeLabel(event, this.timeFormatService.format(), this.i18n.locale(), this.nt('calendar.allDay'));
+    const timeLabel = eventTimeLabel(
+      event,
+      this.timeFormatService.format(),
+      this.i18n.locale(),
+      this.nt('calendar.allDay'),
+    );
     const isMine = this.isCreatedByCurrentUser(dto);
 
     // Đánh dấu ngay để nhịp đồng bộ ngầm không báo lại lần nữa cho cùng sự
@@ -1221,7 +1357,14 @@ export class CalendarStore {
       return;
     }
 
-    if (!this.notifyIfNotSelfOrigin(event.id, 'created', this.nt('nq.remoteCreated', { title: event.title }), timeLabel)) {
+    if (
+      !this.notifyIfNotSelfOrigin(
+        event.id,
+        'created',
+        this.nt('nq.remoteCreated', { title: event.title }),
+        timeLabel,
+      )
+    ) {
       return;
     }
     this.notifications.ingest(
@@ -1268,11 +1411,18 @@ export class CalendarStore {
 
     // Khoá chống trùng là batchId chứ không phải id sự kiện: cả lô chỉ có
     // đúng một gói tin nên xoá-khi-trúng vẫn đúng.
-    if (payload.batchId && !this.notifyIfNotSelfOrigin(payload.batchId, 'created', this.nt('nq.importDone'), message)) {
+    if (
+      payload.batchId &&
+      !this.notifyIfNotSelfOrigin(payload.batchId, 'created', this.nt('nq.importDone'), message)
+    ) {
       return;
     }
     if (!payload.batchId) {
-      this.notificationQueue.push({ title: this.nt('nq.importDone'), body: message, kind: 'created' });
+      this.notificationQueue.push({
+        title: this.nt('nq.importDone'),
+        body: message,
+        kind: 'created',
+      });
     }
 
     const earliest = events.reduce<EventApiDto | null>(
@@ -1295,8 +1445,20 @@ export class CalendarStore {
   private handleRemoteUpdated(dto: EventApiDto): void {
     const event = toCalendarEvent(dto);
     this.upsertEvent(event);
-    const timeLabel = eventTimeLabel(event, this.timeFormatService.format(), this.i18n.locale(), this.nt('calendar.allDay'));
-    if (!this.notifyIfNotSelfOrigin(event.id, 'updated', this.nt('nq.remoteUpdated', { title: event.title }), timeLabel)) {
+    const timeLabel = eventTimeLabel(
+      event,
+      this.timeFormatService.format(),
+      this.i18n.locale(),
+      this.nt('calendar.allDay'),
+    );
+    if (
+      !this.notifyIfNotSelfOrigin(
+        event.id,
+        'updated',
+        this.nt('nq.remoteUpdated', { title: event.title }),
+        timeLabel,
+      )
+    ) {
       return;
     }
     this.notifications.ingest(
@@ -1371,10 +1533,7 @@ export class CalendarStore {
     );
   }
 
-  private handleAttendeeInvited(payload: {
-    eventId: string;
-    attendee: AttendeeApiDto;
-  }): void {
+  private handleAttendeeInvited(payload: { eventId: string; attendee: AttendeeApiDto }): void {
     if (payload.attendee.userId !== this.authStore.user()?.id) return;
     // Popup + chuông đều đợi flushAttendeeInviteNotifications() (sau ~500ms):
     // lúc đó refreshEvents() xong nên đã biết tên sự kiện để hiện trong toast.
@@ -1420,9 +1579,14 @@ export class CalendarStore {
     }
   }
 
-  private handleAttendeeStatusChanged(payload: { eventId: string; attendee: AttendeeApiDto }): void {
+  private handleAttendeeStatusChanged(payload: {
+    eventId: string;
+    attendee: AttendeeApiDto;
+  }): void {
     const verb = this.nt(
-      payload.attendee.status === 'accepted' ? 'nd.attendeeStatus.accepted' : 'nd.attendeeStatus.declined',
+      payload.attendee.status === 'accepted'
+        ? 'nd.attendeeStatus.accepted'
+        : 'nd.attendeeStatus.declined',
     );
     const who = payload.attendee.email || this.nt('nq.attendeeGeneric');
     const eventTitle = this.events().find((e) => e.id === payload.eventId)?.title ?? null;
@@ -1449,7 +1613,10 @@ export class CalendarStore {
     this.notificationQueue.push({
       title: this.nt('nq.calendarInvited'),
       body: invite.inviterEmail
-        ? this.nt('nq.calendarInvitedFrom', { email: invite.inviterEmail, name: invite.calendarName })
+        ? this.nt('nq.calendarInvitedFrom', {
+            email: invite.inviterEmail,
+            name: invite.calendarName,
+          })
         : this.nt('nq.calendarInvitedPlain', { name: invite.calendarName }),
       kind: 'invite',
     });
@@ -1528,7 +1695,11 @@ export class CalendarStore {
         ? this.nt('nq.reminderNow', { title: payload.title })
         : this.nt('nq.reminder', { title: payload.title });
     let toastBody = payload.startAt
-      ? formatTimeLabel(new Date(payload.startAt), this.i18n.locale(), this.timeFormatService.format())
+      ? formatTimeLabel(
+          new Date(payload.startAt),
+          this.i18n.locale(),
+          this.timeFormatService.format(),
+        )
       : '';
 
     if (payload.meetLink) {
@@ -1579,15 +1750,24 @@ export class CalendarStore {
         >(`${this.apiUrl}/reminders/missed`),
       );
       for (const reminder of missed) this.handleReminderFire(reminder);
+      if (missed.length > 0) {
+        await this.acknowledgeReminders(missed.map((reminder) => reminder.reminderId));
+      }
     } catch (err) {
       console.error('Không kiểm tra được nhắc lịch bị lỡ:', err);
     }
   }
 
-  private async refreshEvents(): Promise<void> {
-    const events = await firstValueFrom(
-      this.http.get<EventApiDto[]>(`${this.apiUrl}/events`),
+  private async acknowledgeReminders(reminderIds: string[]): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${this.apiUrl}/reminders/acknowledge`, { reminderIds }),
     );
+  }
+
+  private async refreshEvents(): Promise<void> {
+    const owner = this.authStore.user()?.id;
+    const events = await firstValueFrom(this.http.get<EventApiDto[]>(`${this.apiUrl}/events`));
+    if (this.authStore.user()?.id !== owner) return;
     this.visibleCalendarIds.update((set) => {
       const next = new Set(set);
       for (const e of events) {
@@ -1596,6 +1776,10 @@ export class CalendarStore {
       return next;
     });
     this.events.set(events.map(toCalendarEvent));
+    this.persistStartupSnapshot(owner, {
+      events: events.map(toCalendarEvent),
+      lastSyncedAt: new Date().toISOString(),
+    });
   }
 
   private saveVisibleCalendarIds(set: Set<string>): void {
@@ -1801,6 +1985,7 @@ export class CalendarStore {
     draft: CalendarEventDraft,
     recurrenceRule?: RecurrenceRule | null,
   ): Promise<CalendarEvent> {
+    const cacheOwner = this.authStore.user()?.id;
     if (recurrenceRule) {
       const created = await firstValueFrom(
         this.http.post<EventApiDto[] | EventApiDto>(`${this.apiUrl}/events/series`, {
@@ -1810,6 +1995,8 @@ export class CalendarStore {
       );
       const rawList = Array.isArray(created) ? created : [created];
       const events = rawList.map(toCalendarEvent);
+      if (this.authStore.user()?.id !== cacheOwner) return events[0];
+      this.persistStartupEvents(cacheOwner, events);
       for (const event of events) {
         this.markSelfOrigin(event.id);
         this.upsertEvent(event);
@@ -1821,6 +2008,8 @@ export class CalendarStore {
       this.http.post<EventApiDto>(`${this.apiUrl}/events`, toEventApiPayload(draft)),
     );
     const event = toCalendarEvent(created);
+    if (this.authStore.user()?.id !== cacheOwner) return event;
+    this.persistStartupEntity(cacheOwner, 'events', event);
     this.markSelfOrigin(event.id);
     // upsert chứ KHÔNG append: server phát event:created cho cả phòng lịch
     // ngay khi insert xong, nên gói socket có thể về TRƯỚC phản hồi HTTP này.
@@ -1839,11 +2028,14 @@ export class CalendarStore {
    * event-form-modal hiển thị thật, y hệt cách createEvent() đã sửa.
    */
   async updateEvent(id: string, changes: Partial<CalendarEventDraft>): Promise<void> {
+    const cacheOwner = this.authStore.user()?.id;
     this.markSelfOrigin(id);
     const updated = await firstValueFrom(
       this.http.patch<EventApiDto>(`${this.apiUrl}/events/${id}`, toEventApiPayload(changes)),
     );
     const event = toCalendarEvent(updated);
+    if (this.authStore.user()?.id !== cacheOwner) return;
+    this.persistStartupEntity(cacheOwner, 'events', event);
     this.events.update((list) => list.map((e) => (e.id === id ? event : e)));
   }
 
@@ -1855,12 +2047,11 @@ export class CalendarStore {
    * thì đồng bộ lại, còn lỗi thì hoàn tác về vị trí cũ.
    */
   async moveEvent(id: string, start: Date, end: Date): Promise<void> {
+    const cacheOwner = this.authStore.user()?.id;
     const prev = this.events().find((e) => e.id === id);
     if (!prev) return;
 
-    this.events.update((list) =>
-      list.map((e) => (e.id === id ? { ...e, start, end } : e)),
-    );
+    this.events.update((list) => list.map((e) => (e.id === id ? { ...e, start, end } : e)));
     this.markSelfOrigin(id);
 
     try {
@@ -1871,8 +2062,11 @@ export class CalendarStore {
         ),
       );
       const event = toCalendarEvent(updated);
+      if (this.authStore.user()?.id !== cacheOwner) return;
+      this.persistStartupEntity(cacheOwner, 'events', event);
       this.events.update((list) => list.map((e) => (e.id === id ? event : e)));
     } catch (err) {
+      if (this.authStore.user()?.id !== cacheOwner) throw err;
       this.events.update((list) => list.map((e) => (e.id === id ? prev : e)));
       throw err;
     }
@@ -1885,6 +2079,7 @@ export class CalendarStore {
     changes: Partial<CalendarEventDraft>,
     scope: SeriesEditScope,
   ): Promise<void> {
+    const cacheOwner = this.authStore.user()?.id;
     if (scope === 'this') return this.updateEvent(id, changes);
     this.markSelfOrigin(id);
     // Không nuốt lỗi — cùng lý do với deleteEventSeries(): chuỗi có thể có
@@ -1896,7 +2091,10 @@ export class CalendarStore {
         toEventApiPayload(changes),
       ),
     );
-    for (const dto of updated) this.upsertEvent(toCalendarEvent(dto));
+    if (this.authStore.user()?.id !== cacheOwner) return;
+    const confirmed = updated.map(toCalendarEvent);
+    this.persistStartupEvents(cacheOwner, confirmed);
+    for (const event of confirmed) this.upsertEvent(event);
   }
 
   /** scope 'this' chỉ chuyển thẳng sang deleteEvent() hiện có.
@@ -1907,22 +2105,28 @@ export class CalendarStore {
    * ổn), lỡ báo thành công cho cả chuỗi mà backend thất bại thì người dùng cứ
    * đinh ninh đã xoá trong khi lịch vẫn còn nguyên. */
   async deleteEventSeries(id: string, scope: SeriesEditScope): Promise<void> {
+    const cacheOwner = this.authStore.user()?.id;
     if (scope === 'this') return this.deleteEvent(id);
     this.markSelfOrigin(id);
     const result = await firstValueFrom(
       this.http.delete<{ ids: string[] }>(`${this.apiUrl}/events/${id}/series?scope=${scope}`),
     );
     const ids = new Set(result.ids);
+    if (this.authStore.user()?.id !== cacheOwner) return;
+    const cached = cacheOwner ? readStartupCache(cacheOwner, 'calendar', isCalendarSnapshot) : null;
+    if (cached)
+      this.persistStartupSnapshot(cacheOwner, {
+        events: cached.events.filter((event) => !ids.has(event.id)),
+      });
     this.events.update((list) => list.filter((e) => !ids.has(e.id)));
   }
 
   async deleteEvent(id: string): Promise<void> {
+    const cacheOwner = this.authStore.user()?.id;
     this.markSelfOrigin(id);
-    try {
-      await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/events/${id}`));
-    } catch (err) {
-      console.warn('Xoá sự kiện trên backend thất bại, tự động xoá cục bộ:', err);
-    }
+    await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/events/${id}`));
+    if (this.authStore.user()?.id !== cacheOwner) return;
+    this.persistStartupEntity(cacheOwner, 'events', null, id);
     this.events.update((list) => list.filter((e) => e.id !== id));
   }
 
@@ -1934,10 +2138,13 @@ export class CalendarStore {
   }
 
   async restoreEvent(id: string): Promise<CalendarEvent> {
+    const cacheOwner = this.authStore.user()?.id;
     const restored = await firstValueFrom(
       this.http.post<EventApiDto>(`${this.apiUrl}/events/${id}/restore`, {}),
     );
     const event = toCalendarEvent(restored);
+    if (this.authStore.user()?.id !== cacheOwner) return event;
+    this.persistStartupEntity(cacheOwner, 'events', event);
     this.events.update((list) => [...list, event]);
     return event;
   }
@@ -2018,15 +2225,16 @@ export class CalendarStore {
     // Đồng ý: hiện HỘP THÔNG TIN sự kiện + lịch đã thêm vào + các mốc nhắc.
     void this.reminderPrefs.load();
     const ev = this.events().find((e) => e.id === eventId);
-    const calName =
-      (ev && this.calendars().find((c) => c.id === ev.calendarId)?.name) || null;
+    const calName = (ev && this.calendars().find((c) => c.id === ev.calendarId)?.name) || null;
     const fmt = (d: Date) =>
       formatTimeLabel(d, this.i18n.locale(), this.timeFormatService.format());
     const lines: string[] = [];
     if (ev) {
       lines.push(`«${ev.title}»`);
       lines.push('');
-      lines.push(`🗓 ${ev.start.toLocaleDateString(this.i18n.locale())} · ${fmt(ev.start)}–${fmt(ev.end)}`);
+      lines.push(
+        `🗓 ${ev.start.toLocaleDateString(this.i18n.locale())} · ${fmt(ev.start)}–${fmt(ev.end)}`,
+      );
       if (ev.location) lines.push(`📍 ${ev.location}`);
       if (ev.meetLink) lines.push(`🎥 ${ev.meetLink}`);
     }
@@ -2050,9 +2258,7 @@ export class CalendarStore {
     const result = await firstValueFrom(
       this.http.get<CalendarInviteApiDto[]>(`${this.apiUrl}/calendars/invites/mine`),
     );
-    const pendingList = result
-      .filter((dto) => dto.status === 'pending')
-      .map(toCalendarInvite);
+    const pendingList = result.filter((dto) => dto.status === 'pending').map(toCalendarInvite);
     this.pendingInvites.set(pendingList);
 
     for (const invite of pendingList) {
@@ -2081,11 +2287,20 @@ export class CalendarStore {
     try {
       const result = await firstValueFrom(
         this.http.get<
-          { attendeeId: string; eventId: string; title: string; start: string; end: string; calendarId: string }[]
+          {
+            attendeeId: string;
+            eventId: string;
+            title: string;
+            start: string;
+            end: string;
+            calendarId: string;
+          }[]
         >(`${this.apiUrl}/events/invites/mine`),
       );
       for (const invite of result) {
-        this.notifications.ingest(eventInvitationDraft(this.nt, invite.eventId, invite.title ?? null));
+        this.notifications.ingest(
+          eventInvitationDraft(this.nt, invite.eventId, invite.title ?? null),
+        );
         this.pushInvitePopup(invite.eventId, invite.title ?? null);
       }
     } catch (err) {
@@ -2112,10 +2327,9 @@ export class CalendarStore {
     status: Exclude<CalendarInviteStatus, 'pending'>,
   ): Promise<CalendarInvite> {
     const result = await firstValueFrom(
-      this.http.post<CalendarInviteApiDto>(
-        `${this.apiUrl}/calendars/invites/${inviteId}/respond`,
-        { status },
-      ),
+      this.http.post<CalendarInviteApiDto>(`${this.apiUrl}/calendars/invites/${inviteId}/respond`, {
+        status,
+      }),
     );
     const invite = toCalendarInvite(result);
     this.pendingInvites.update((list) => list.filter((i) => i.id !== inviteId));
@@ -2153,10 +2367,7 @@ export class CalendarStore {
    * còn hàm này ghi đè lời nhắc của người khác — hai việc khác hẳn nhau về
    * quyền, nên backend cũng là hai route riêng.
    */
-  async setRemindersForAllMembers(
-    eventId: string,
-    reminders: ReminderDraft[],
-  ): Promise<void> {
+  async setRemindersForAllMembers(eventId: string, reminders: ReminderDraft[]): Promise<void> {
     await firstValueFrom(
       this.http.put(`${this.apiUrl}/events/${eventId}/reminders/all-members`, { reminders }),
     );
@@ -2187,19 +2398,23 @@ export class CalendarStore {
   }
 
   private async loadNotesState(): Promise<void> {
+    const owner = this.authStore.user()?.id;
     try {
       const result = await firstValueFrom(this.http.get<NoteApiDto[]>(`${this.apiUrl}/notes`));
+      if (this.authStore.user()?.id !== owner) return;
       this.notes.set(result.map(toNote));
+      this.persistStartupSnapshot(owner, { notes: result.map(toNote), notesReady: true });
     } catch (err) {
       console.error('Lỗi khi tải ghi chú:', err);
     } finally {
-      this.notesLoaded.set(true);
+      if (this.authStore.user()?.id === owner) this.notesLoaded.set(true);
     }
   }
 
   /** Chèn ngay với id tạm, giống `createTodo` — sidebar phản hồi tức thì, chỉ
    *  "giật lùi" nếu request thật sự lỗi. */
   async createNote(content: string, color: string): Promise<Note> {
+    const cacheOwner = this.authStore.user()?.id;
     const tempId = `temp-${crypto.randomUUID()}`;
     const now = new Date();
     const optimistic: Note = { id: tempId, content, color, createdAt: now, updatedAt: now };
@@ -2209,15 +2424,19 @@ export class CalendarStore {
         this.http.post<NoteApiDto>(`${this.apiUrl}/notes`, { content, color }),
       );
       const note = toNote(result);
+      if (this.authStore.user()?.id !== cacheOwner) return note;
+      this.persistStartupEntity(cacheOwner, 'notes', note);
       this.notes.update((list) => list.map((n) => (n.id === tempId ? note : n)));
       return note;
     } catch (err) {
+      if (this.authStore.user()?.id !== cacheOwner) throw err;
       this.notes.update((list) => list.filter((n) => n.id !== tempId));
       throw err;
     }
   }
 
   async updateNote(id: string, changes: { content?: string; color?: string }): Promise<Note> {
+    const cacheOwner = this.authStore.user()?.id;
     const previous = this.notes().find((n) => n.id === id);
     if (previous) {
       this.notes.update((list) => list.map((n) => (n.id === id ? { ...n, ...changes } : n)));
@@ -2227,9 +2446,12 @@ export class CalendarStore {
         this.http.patch<NoteApiDto>(`${this.apiUrl}/notes/${id}`, changes),
       );
       const note = toNote(result);
+      if (this.authStore.user()?.id !== cacheOwner) return note;
+      this.persistStartupEntity(cacheOwner, 'notes', note);
       this.notes.update((list) => list.map((n) => (n.id === id ? note : n)));
       return note;
     } catch (err) {
+      if (this.authStore.user()?.id !== cacheOwner) throw err;
       if (previous) this.notes.update((list) => list.map((n) => (n.id === id ? previous : n)));
       throw err;
     }
@@ -2238,6 +2460,7 @@ export class CalendarStore {
   /** Kéo-thả ghi chú từ sidebar vào một ô ngày trên lịch — "dán" nó lên đúng
    *  ngày đó. Ghi chú vẫn còn nguyên trong sidebar, chỉ thêm liên kết ngày. */
   async pinNoteToDay(id: string, day: Date): Promise<Note> {
+    const cacheOwner = this.authStore.user()?.id;
     const previous = this.notes().find((n) => n.id === id);
     const pinnedDate = startOfDay(day);
     if (previous) {
@@ -2250,9 +2473,12 @@ export class CalendarStore {
         }),
       );
       const note = toNote(result);
+      if (this.authStore.user()?.id !== cacheOwner) return note;
+      this.persistStartupEntity(cacheOwner, 'notes', note);
       this.notes.update((list) => list.map((n) => (n.id === id ? note : n)));
       return note;
     } catch (err) {
+      if (this.authStore.user()?.id !== cacheOwner) throw err;
       if (previous) this.notes.update((list) => list.map((n) => (n.id === id ? previous : n)));
       throw err;
     }
@@ -2260,18 +2486,24 @@ export class CalendarStore {
 
   /** Gỡ ghi chú khỏi lịch — nội dung vẫn giữ nguyên, chỉ bỏ liên kết ngày. */
   async unpinNote(id: string): Promise<Note> {
+    const cacheOwner = this.authStore.user()?.id;
     const previous = this.notes().find((n) => n.id === id);
     if (previous) {
-      this.notes.update((list) => list.map((n) => (n.id === id ? { ...n, pinnedDate: undefined } : n)));
+      this.notes.update((list) =>
+        list.map((n) => (n.id === id ? { ...n, pinnedDate: undefined } : n)),
+      );
     }
     try {
       const result = await firstValueFrom(
         this.http.patch<NoteApiDto>(`${this.apiUrl}/notes/${id}`, { clearPinnedDate: true }),
       );
       const note = toNote(result);
+      if (this.authStore.user()?.id !== cacheOwner) return note;
+      this.persistStartupEntity(cacheOwner, 'notes', note);
       this.notes.update((list) => list.map((n) => (n.id === id ? note : n)));
       return note;
     } catch (err) {
+      if (this.authStore.user()?.id !== cacheOwner) throw err;
       if (previous) this.notes.update((list) => list.map((n) => (n.id === id ? previous : n)));
       throw err;
     }
@@ -2281,11 +2513,15 @@ export class CalendarStore {
    *  gỡ khỏi danh sách đang hiển thị và báo một toast cho người dùng biết còn
    *  khôi phục được. */
   async deleteNote(id: string): Promise<void> {
+    const cacheOwner = this.authStore.user()?.id;
     const removed = this.notes().find((n) => n.id === id);
     this.notes.update((list) => list.filter((n) => n.id !== id));
     try {
       await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/notes/${id}`));
+      if (this.authStore.user()?.id !== cacheOwner) return;
+      this.persistStartupEntity(cacheOwner, 'notes', null, id);
     } catch (err) {
+      if (this.authStore.user()?.id !== cacheOwner) throw err;
       if (removed) this.notes.update((list) => [removed, ...list]);
       throw err;
     }
@@ -2298,17 +2534,18 @@ export class CalendarStore {
 
   /** Ghi chú đang trong Thùng rác — dùng bởi màn hình "Thùng rác ghi chú". */
   async listTrashedNotes(): Promise<Note[]> {
-    const result = await firstValueFrom(
-      this.http.get<NoteApiDto[]>(`${this.apiUrl}/notes/trash`),
-    );
+    const result = await firstValueFrom(this.http.get<NoteApiDto[]>(`${this.apiUrl}/notes/trash`));
     return result.map(toNote);
   }
 
   async restoreNote(id: string): Promise<Note> {
+    const cacheOwner = this.authStore.user()?.id;
     const restored = await firstValueFrom(
       this.http.post<NoteApiDto>(`${this.apiUrl}/notes/${id}/restore`, {}),
     );
     const note = toNote(restored);
+    if (this.authStore.user()?.id !== cacheOwner) return note;
+    this.persistStartupEntity(cacheOwner, 'notes', note);
     // Đưa lại vào danh sách, đúng chỗ theo thời điểm tạo (mới nhất lên đầu).
     this.notes.update((list) =>
       [note, ...list.filter((n) => n.id !== note.id)].sort(
@@ -2327,13 +2564,20 @@ export class CalendarStore {
    *  dưới thay vì tự giữ bản sao riêng, để tạo/sửa/xoá ở bất kỳ đâu cũng phản
    *  ánh ngay lập tức ở mọi nơi khác — giống cách Google Tasks đồng bộ. */
   private async loadTodosState(): Promise<void> {
+    const owner = this.authStore.user()?.id;
     try {
       const [lists, todos] = await Promise.all([
         firstValueFrom(this.http.get<TodoListApiDto[]>(`${this.apiUrl}/todo-lists`)),
         firstValueFrom(this.http.get<TodoApiDto[]>(`${this.apiUrl}/todos`)),
       ]);
+      if (this.authStore.user()?.id !== owner) return;
       this.todoLists.set(lists.map(toTodoList));
       this.todos.set(todos.map(toTodo));
+      this.persistStartupSnapshot(owner, {
+        todoLists: lists.map(toTodoList),
+        todos: todos.map(toTodo),
+        todosReady: true,
+      });
       if (this.todoLists().length === 0) {
         // Người dùng chưa từng tạo todo nào nên migration chưa backfill được
         // danh sách nào cho họ — tạo sẵn một cái để không nơi nào trống trơn.
@@ -2342,7 +2586,7 @@ export class CalendarStore {
     } catch (err) {
       console.error('Lỗi khi tải việc cần làm:', err);
     } finally {
-      this.todosLoaded.set(true);
+      if (this.authStore.user()?.id === owner) this.todosLoaded.set(true);
     }
   }
 
@@ -2354,6 +2598,7 @@ export class CalendarStore {
     listId: string,
     extra?: { description?: string; dueAt?: Date },
   ): Promise<Todo> {
+    const cacheOwner = this.authStore.user()?.id;
     const tempId = `temp-${crypto.randomUUID()}`;
     const now = new Date();
     const optimistic: Todo = {
@@ -2378,9 +2623,12 @@ export class CalendarStore {
         }),
       );
       const todo = toTodo(result);
+      if (this.authStore.user()?.id !== cacheOwner) return todo;
+      this.persistStartupEntity(cacheOwner, 'todos', todo);
       this.todos.update((list) => list.map((t) => (t.id === tempId ? todo : t)));
       return todo;
     } catch (err) {
+      if (this.authStore.user()?.id !== cacheOwner) throw err;
       this.todos.update((list) => list.filter((t) => t.id !== tempId));
       throw err;
     }
@@ -2398,6 +2646,7 @@ export class CalendarStore {
       starred?: boolean;
     },
   ): Promise<Todo> {
+    const cacheOwner = this.authStore.user()?.id;
     const previous = this.todos().find((t) => t.id === id);
     if (previous) {
       const optimistic: Todo = {
@@ -2421,44 +2670,62 @@ export class CalendarStore {
         }),
       );
       const todo = toTodo(result);
+      if (this.authStore.user()?.id !== cacheOwner) return todo;
+      this.persistStartupEntity(cacheOwner, 'todos', todo);
       this.todos.update((list) => list.map((t) => (t.id === id ? todo : t)));
       return todo;
     } catch (err) {
+      if (this.authStore.user()?.id !== cacheOwner) throw err;
       if (previous) this.todos.update((list) => list.map((t) => (t.id === id ? previous : t)));
       throw err;
     }
   }
 
   async deleteTodo(id: string): Promise<void> {
+    const cacheOwner = this.authStore.user()?.id;
     const removed = this.todos().find((t) => t.id === id);
     this.todos.update((list) => list.filter((t) => t.id !== id));
     try {
       await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/todos/${id}`));
+      if (this.authStore.user()?.id !== cacheOwner) return;
+      this.persistStartupEntity(cacheOwner, 'todos', null, id);
     } catch (err) {
+      if (this.authStore.user()?.id !== cacheOwner) throw err;
       if (removed) this.todos.update((list) => [removed, ...list]);
       throw err;
     }
   }
 
   async createTodoList(name: string): Promise<TodoList> {
+    const cacheOwner = this.authStore.user()?.id;
     const tempId = `temp-${crypto.randomUUID()}`;
     const now = new Date();
-    const optimistic: TodoList = { id: tempId, name, position: this.todoLists().length, createdAt: now, updatedAt: now };
+    const optimistic: TodoList = {
+      id: tempId,
+      name,
+      position: this.todoLists().length,
+      createdAt: now,
+      updatedAt: now,
+    };
     this.todoLists.update((ls) => [...ls, optimistic]);
     try {
       const result = await firstValueFrom(
         this.http.post<TodoListApiDto>(`${this.apiUrl}/todo-lists`, { name }),
       );
       const list = toTodoList(result);
+      if (this.authStore.user()?.id !== cacheOwner) return list;
+      this.persistStartupEntity(cacheOwner, 'todoLists', list);
       this.todoLists.update((ls) => ls.map((l) => (l.id === tempId ? list : l)));
       return list;
     } catch (err) {
+      if (this.authStore.user()?.id !== cacheOwner) throw err;
       this.todoLists.update((ls) => ls.filter((l) => l.id !== tempId));
       throw err;
     }
   }
 
   async renameTodoList(id: string, name: string): Promise<TodoList> {
+    const cacheOwner = this.authStore.user()?.id;
     const previous = this.todoLists().find((l) => l.id === id);
     if (previous) {
       this.todoLists.update((ls) => ls.map((l) => (l.id === id ? { ...l, name } : l)));
@@ -2468,22 +2735,36 @@ export class CalendarStore {
         this.http.patch<TodoListApiDto>(`${this.apiUrl}/todo-lists/${id}`, { name }),
       );
       const list = toTodoList(result);
+      if (this.authStore.user()?.id !== cacheOwner) return list;
+      this.persistStartupEntity(cacheOwner, 'todoLists', list);
       this.todoLists.update((ls) => ls.map((l) => (l.id === id ? list : l)));
       return list;
     } catch (err) {
+      if (this.authStore.user()?.id !== cacheOwner) throw err;
       if (previous) this.todoLists.update((ls) => ls.map((l) => (l.id === id ? previous : l)));
       throw err;
     }
   }
 
   async deleteTodoList(id: string): Promise<void> {
+    const cacheOwner = this.authStore.user()?.id;
     const removedList = this.todoLists().find((l) => l.id === id);
     const removedTodos = this.todos().filter((t) => t.listId === id);
     this.todoLists.update((ls) => ls.filter((l) => l.id !== id));
     this.todos.update((ts) => ts.filter((t) => t.listId !== id));
     try {
       await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/todo-lists/${id}`));
+      if (this.authStore.user()?.id !== cacheOwner) return;
+      this.persistStartupEntity(cacheOwner, 'todoLists', null, id);
+      const cached = cacheOwner
+        ? readStartupCache(cacheOwner, 'calendar', isCalendarSnapshot)
+        : null;
+      if (cached)
+        this.persistStartupSnapshot(cacheOwner, {
+          todos: cached.todos.filter((todo) => todo.listId !== id),
+        });
     } catch (err) {
+      if (this.authStore.user()?.id !== cacheOwner) throw err;
       if (removedList) this.todoLists.update((ls) => [...ls, removedList]);
       if (removedTodos.length > 0) this.todos.update((ts) => [...removedTodos, ...ts]);
       throw err;
@@ -2497,9 +2778,11 @@ export class CalendarStore {
   ensureDefaultTodoList(): Promise<TodoList> {
     const existing = this.todoLists()[0];
     if (existing) return Promise.resolve(existing);
-    this.defaultTodoListInFlight ??= this.createTodoList(this.nt('tasks.defaultListName')).finally(() => {
-      this.defaultTodoListInFlight = null;
-    });
+    this.defaultTodoListInFlight ??= this.createTodoList(this.nt('tasks.defaultListName')).finally(
+      () => {
+        this.defaultTodoListInFlight = null;
+      },
+    );
     return this.defaultTodoListInFlight;
   }
 
@@ -2513,9 +2796,7 @@ export class CalendarStore {
     const form = new FormData();
     form.append('file', file);
     form.append('message', message);
-    return firstValueFrom(
-      this.http.post<AiFileAnalysis>(`${this.apiUrl}/ai/analyze-file`, form),
-    );
+    return firstValueFrom(this.http.post<AiFileAnalysis>(`${this.apiUrl}/ai/analyze-file`, form));
   }
 
   async sendAiChat(
@@ -2615,7 +2896,12 @@ export type AiChatResult =
     }
   | { intent: 'event_action'; action: 'update'; event: EventApiDto; reply: string }
   | { intent: 'event_action'; action: 'delete'; eventId: string; reply: string }
-  | { intent: 'todo_action'; action: 'create' | 'update' | 'complete'; todo: TodoApiDto; reply: string }
+  | {
+      intent: 'todo_action';
+      action: 'create' | 'update' | 'complete';
+      todo: TodoApiDto;
+      reply: string;
+    }
   | { intent: 'todo_action'; action: 'delete'; todoId: string; reply: string }
   | { intent: 'note_action'; action: 'create' | 'update'; note: NoteApiDto; reply: string }
   | { intent: 'note_action'; action: 'delete'; noteId: string; reply: string };

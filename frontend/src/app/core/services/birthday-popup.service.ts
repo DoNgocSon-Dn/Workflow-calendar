@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { AuthStore } from '../auth/auth-store';
 import { SUPABASE_CLIENT } from '../supabase-client';
 import { NotificationSoundService } from './notification-sound.service';
@@ -69,39 +69,72 @@ export class BirthdayPopupService {
   private readonly sound = inject(NotificationSoundService);
   private readonly clock = inject(Clock);
 
-  readonly visible = signal<boolean>(false);
-  readonly data = signal<BirthdayPopupData | null>(null);
-  readonly pendingReviewWish = signal<BirthdayWishRecord | null>(null);
+  private readonly accountId = signal<string | null>(this.authStore.user()?.id ?? null);
+  private readonly visibleState = signal(false);
+  private readonly dataState = signal<BirthdayPopupData | null>(null);
+  private readonly pendingReviewWishState = signal<BirthdayWishRecord | null>(null);
+  private readonly ownsState = computed(() => this.accountId() === (this.authStore.user()?.id ?? null));
+  readonly visible = computed(() => this.ownsState() && this.visibleState());
+  readonly data = computed(() => this.ownsState() ? this.dataState() : null);
+  readonly pendingReviewWish = computed(() => this.ownsState() ? this.pendingReviewWishState() : null);
+
+  constructor() {
+    effect(() => {
+      const userId = this.authStore.user()?.id ?? null;
+      untracked(() => this.activateAccount(userId));
+    });
+  }
+
+  private activateAccount(userId = this.authStore.user()?.id ?? null): void {
+    if (this.accountId() === userId) return;
+    this.accountId.set(userId);
+    this.visibleState.set(false);
+    this.dataState.set(null);
+    this.pendingReviewWishState.set(null);
+  }
+
+  private readLocal(key: string, userId = this.authStore.user()?.id): string | null {
+    if (!userId) return null;
+    try { return localStorage.getItem(`${key}:${userId}`); } catch { return null; }
+  }
+
+  private writeLocal(key: string, value: string | null, userId = this.authStore.user()?.id): void {
+    if (!userId) return;
+    try {
+      if (value === null) localStorage.removeItem(`${key}:${userId}`);
+      else localStorage.setItem(`${key}:${userId}`, value);
+    } catch { /* Metadata remains authoritative when browser storage is unavailable. */ }
+  }
+
+  private isCurrentUser(userId: string): boolean { return this.authStore.user()?.id === userId; }
 
   /** Kiểm tra xem chúc mừng sinh nhật năm nay có bị chọn "Không hiển thị lại" hay đã hoàn thành */
   isBirthdayDisabledForCurrentYear(): boolean {
     const now = todayInVietnam(this.clock.now());
     const yearKey = `${DO_NOT_SHOW_YEARLY_KEY}${now.getFullYear()}`;
-    return localStorage.getItem(yearKey) === 'true';
+    return this.readLocal(yearKey) === 'true';
   }
 
   /** Đánh dấu không hiển thị lại chúc mừng sinh nhật cho năm hiện tại */
   disableForCurrentYear(): void {
     const now = todayInVietnam(this.clock.now());
     const yearKey = `${DO_NOT_SHOW_YEARLY_KEY}${now.getFullYear()}`;
-    localStorage.setItem(yearKey, 'true');
+    this.writeLocal(yearKey, 'true');
   }
 
   /** Bật lại hiển thị chúc mừng sinh nhật cho năm hiện tại */
   enableForCurrentYear(): void {
     const now = todayInVietnam(this.clock.now());
     const yearKey = `${DO_NOT_SHOW_YEARLY_KEY}${now.getFullYear()}`;
-    localStorage.removeItem(yearKey);
+    this.writeLocal(yearKey, null);
   }
 
   /**
-   * Tự động trích xuất ngày sinh từ tài khoản Google OAuth / Supabase metadata / LocalStorage
+   * Read the current account metadata first, with an account-scoped local fallback.
    */
   getUserDob(): string {
-    const local = localStorage.getItem(DOB_STORAGE_KEY);
-    if (local && local.trim()) return local.trim();
-
     const user = this.authStore.user();
+    if (!user) return '';
     if (user) {
       const metadata = (user.user_metadata || {}) as Record<string, any>;
       const identityData = (user.identities?.[0]?.identity_data || {}) as Record<string, any>;
@@ -130,7 +163,7 @@ export class BirthdayPopupService {
       }
     }
 
-    return '';
+    return this.readLocal(DOB_STORAGE_KEY, user.id)?.trim() ?? '';
   }
 
   /**
@@ -195,32 +228,30 @@ export class BirthdayPopupService {
   }
 
   async setUserDob(dob: string): Promise<void> {
+    const userId = this.authStore.user()?.id;
+    if (!userId) throw new Error('Bạn cần đăng nhập để cập nhật ngày sinh.');
     const cleaned = dob.trim();
-    localStorage.setItem(DOB_STORAGE_KEY, cleaned);
-
-    if (this.authStore.user()) {
-      try {
-        await this.supabase.auth.updateUser({
-          data: { date_of_birth: cleaned },
-        });
-      } catch (err) {
-        console.warn('Không thể cập nhật ngày sinh lên Supabase auth metadata:', err);
-      }
-    }
+    const { error } = await this.supabase.auth.updateUser({ data: { date_of_birth: cleaned } });
+    if (error) throw error;
+    if (!this.isCurrentUser(userId)) throw new Error('Tài khoản đã thay đổi. Hãy thử lại trong tài khoản hiện tại.');
+    this.writeLocal(DOB_STORAGE_KEY, cleaned, userId);
   }
 
   async checkPendingWishForReview(): Promise<BirthdayWishRecord | null> {
     const user = this.authStore.user();
+    this.activateAccount();
+    if (!user) { this.pendingReviewWishState.set(null); return null; }
     const currentYear = todayInVietnam(this.clock.now()).getFullYear();
 
-    const localPastWish = localStorage.getItem(`workflow_wish_${currentYear - 1}`);
-    const localPastStatus = localStorage.getItem(`workflow_wish_status_${currentYear - 1}`);
+    const localPastWish = this.readLocal(`workflow_wish_${currentYear - 1}`, user.id);
+    const localPastStatus = this.readLocal(`workflow_wish_status_${currentYear - 1}`, user.id);
 
     if (user) {
       try {
         const { data, error } = await this.supabase.rpc('get_pending_wish_for_review', {
           p_current_year: currentYear,
         });
+        if (!this.isCurrentUser(user.id)) return null;
         if (!error && data && data.length > 0) {
           const item = data[0];
           const record: BirthdayWishRecord = {
@@ -230,7 +261,7 @@ export class BirthdayPopupService {
             status: item.status,
             createdAt: item.created_at,
           };
-          this.pendingReviewWish.set(record);
+          this.pendingReviewWishState.set(record);
           return record;
         }
       } catch (e) {
@@ -238,6 +269,7 @@ export class BirthdayPopupService {
       }
     }
 
+    if (!this.isCurrentUser(user.id)) return null;
     if (localPastWish && localPastStatus !== 'reviewed') {
       const record: BirthdayWishRecord = {
         id: `local-${currentYear - 1}`,
@@ -246,23 +278,24 @@ export class BirthdayPopupService {
         status: 'pending',
         createdAt: `${currentYear - 1}-01-01`,
       };
-      this.pendingReviewWish.set(record);
+      this.pendingReviewWishState.set(record);
       return record;
     }
 
-    this.pendingReviewWish.set(null);
+    this.pendingReviewWishState.set(null);
     return null;
   }
 
   async saveCurrentYearWish(wishText: string): Promise<boolean> {
+    const user = this.authStore.user();
+    if (!user) return false;
     const cleaned = wishText.trim();
     if (!cleaned) return false;
 
     const currentYear = todayInVietnam(this.clock.now()).getFullYear();
-    localStorage.setItem(`workflow_wish_${currentYear}`, cleaned);
+    this.writeLocal(`workflow_wish_${currentYear}`, cleaned, user.id);
     this.disableForCurrentYear();
 
-    const user = this.authStore.user();
     if (user) {
       try {
         await this.supabase.from('birthday_wishes').upsert(
@@ -283,11 +316,13 @@ export class BirthdayPopupService {
   }
 
   async reviewPastWish(wishId: string, status: 'completed' | 'in_progress' | 'retry'): Promise<void> {
-    const currentYear = todayInVietnam(this.clock.now()).getFullYear();
-    localStorage.setItem(`workflow_wish_status_${currentYear - 1}`, 'reviewed');
-    this.pendingReviewWish.set(null);
-
     const user = this.authStore.user();
+    if (!user) return;
+    this.activateAccount();
+    const currentYear = todayInVietnam(this.clock.now()).getFullYear();
+    this.writeLocal(`workflow_wish_status_${currentYear - 1}`, 'reviewed', user.id);
+    this.pendingReviewWishState.set(null);
+
     if (user && wishId && !wishId.startsWith('local-')) {
       try {
         await this.supabase
@@ -327,7 +362,8 @@ export class BirthdayPopupService {
   }
 
   triggerBirthday(dob?: string, isPreview = false): void {
-    if (this.visible()) return;
+    this.activateAccount();
+    if ((!this.authStore.user() && !isPreview) || this.visible()) return;
 
     const finalDob = dob || this.getUserDob() || '2000-01-01';
     const userName = this.authStore.displayName() || this.authStore.user()?.email?.split('@')[0] || 'bạn';
@@ -335,17 +371,17 @@ export class BirthdayPopupService {
 
     void this.checkPendingWishForReview();
 
-    this.data.set({
+    this.dataState.set({
       userName,
       dateOfBirth: finalDob,
       accountCreatedAt,
       isPreview,
     });
-    this.visible.set(true);
+    this.visibleState.set(true);
     this.sound.notifyKind('birthday');
   }
 
   dismiss(): void {
-    this.visible.set(false);
+    this.visibleState.set(false);
   }
 }

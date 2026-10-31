@@ -14,7 +14,11 @@ export function addDays(date: Date, amount: number): Date {
 
 export function addMonths(date: Date, amount: number): Date {
   const d = new Date(date);
+  const originalDay = d.getDate();
+  d.setDate(1);
   d.setMonth(d.getMonth() + amount);
+  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(originalDay, lastDay));
   return d;
 }
 

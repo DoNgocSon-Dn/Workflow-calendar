@@ -1,7 +1,7 @@
 /**
  * Nguồn sự thật DUY NHẤT cho vai trò trong nhóm.
  *
- * Ba cấp, xếp theo thứ bậc: LEADER > ADMIN > MEMBER.
+ * Bốn cấp, xếp theo thứ bậc: LEADER > ADMIN > MEMBER > GUEST.
  * Tên hiển thị (Trưởng nhóm / Quản trị viên / Thành viên) do frontend dịch từ
  * chính ba khoá này — backend không bao giờ trả chữ tiếng Việt cho role.
  *
@@ -12,6 +12,7 @@ export const GroupRole = {
   LEADER: 'LEADER',
   ADMIN: 'ADMIN',
   MEMBER: 'MEMBER',
+  GUEST: 'GUEST',
 } as const;
 
 export type GroupRole = (typeof GroupRole)[keyof typeof GroupRole];
@@ -22,6 +23,7 @@ export type GroupRole = (typeof GroupRole)[keyof typeof GroupRole];
 export const ASSIGNABLE_GROUP_ROLES: readonly GroupRole[] = [
   GroupRole.ADMIN,
   GroupRole.MEMBER,
+  GroupRole.GUEST,
 ];
 
 /** Vai trò mặc định khi mời người mới. */
@@ -36,21 +38,14 @@ const RANK: Readonly<Record<GroupRole, number>> = {
   [GroupRole.LEADER]: 3,
   [GroupRole.ADMIN]: 2,
   [GroupRole.MEMBER]: 1,
+  [GroupRole.GUEST]: 0,
 };
 
 export function canChat(actor: GroupRole): boolean {
-  return !!actor;
+  return !!actor && actor !== GroupRole.GUEST;
 }
 
-/**
- * Chuẩn hoá giá trị role đọc từ database về đúng ba khoá trên.
- *
- * Dữ liệu cũ dùng 'owner' và 'guest'; migration 15 đã đổi chúng sang
- * 'leader'/'member', nhưng hàm này vẫn nhận cả hai dạng để bản build mới không
- * vỡ nếu chạy trước khi migration được áp. Giá trị lạ rơi về MEMBER — cấp thấp
- * nhất — vì đoán nhầm theo hướng ÍT quyền hơn thì an toàn, còn đoán nhầm theo
- * hướng nhiều quyền hơn là lỗ hổng.
- */
+/** Giữ nguyên GUEST. Giá trị lạ được giới hạn ở quyền chỉ xem. OWNER cũ được hiểu là LEADER. */
 export function normalizeGroupRole(raw: string | null | undefined): GroupRole {
   switch ((raw ?? '').trim().toLowerCase()) {
     case 'leader':
@@ -58,8 +53,10 @@ export function normalizeGroupRole(raw: string | null | undefined): GroupRole {
       return GroupRole.LEADER;
     case 'admin':
       return GroupRole.ADMIN;
-    default:
+    case 'member':
       return GroupRole.MEMBER;
+    default:
+      return GroupRole.GUEST;
   }
 }
 
@@ -76,7 +73,7 @@ export function toDbGroupRole(role: GroupRole): string {
 export function canManage(actor: GroupRole, target: GroupRole): boolean {
   // Phải THỰC SỰ cao hơn, không phải bằng: hai quản trị viên ngang cấp không
   // được đụng vào nhau, và không ai đụng được vào trưởng nhóm.
-  return RANK[actor] > RANK[target];
+  return canInvite(actor) && RANK[actor] > RANK[target];
 }
 
 /** `actor` có được mời người mới vào nhóm không. */
@@ -86,6 +83,7 @@ export function canInvite(actor: GroupRole): boolean {
 
 /** `actor` có được gán vai trò `role` cho người khác không. */
 export function canAssignRole(actor: GroupRole, role: GroupRole): boolean {
+  if (!canInvite(actor)) return false;
   // Không ai gán được LEADER qua đường phân quyền thường.
   if (!ASSIGNABLE_GROUP_ROLES.includes(role)) return false;
   // Không được nâng người khác lên ngang hoặc cao hơn chính mình.

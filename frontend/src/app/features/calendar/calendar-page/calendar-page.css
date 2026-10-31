@@ -356,6 +356,13 @@ app-calendar-sidebar:not(.active) {
   margin-top: 0.5rem;
 }
 
+.name-prompt-error {
+  margin: 12px 0 0;
+  color: var(--danger, #dc2626);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .name-prompt-submit-btn {
   width: 100%;
   border: none;

@@ -777,7 +777,7 @@ export class GroupWorkspaceModal {
    * ở backend `groups.service.ts` `updateTask()`.
    */
   canMoveTask(task: GroupTask): boolean {
-    return this.canManageAnyone() || task.assignedTo === this.currentUserId();
+    return this.canUserChat() && (this.canManageAnyone() || task.assignedTo === this.currentUserId());
   }
 
   async setTaskStatus(task: GroupTask, status: 'todo' | 'in_progress' | 'done'): Promise<void> {

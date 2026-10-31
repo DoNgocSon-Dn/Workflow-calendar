@@ -52,7 +52,8 @@ export class RemindersService {
       .from('reminders')
       .delete()
       .eq('event_id', eventId);
-    if (deleteError) throw new InternalServerErrorException(deleteError.message);
+    if (deleteError)
+      throw new InternalServerErrorException(deleteError.message);
 
     if (items.length === 0) return [];
 
@@ -60,7 +61,9 @@ export class RemindersService {
     const rows = items.map((item) => ({
       event_id: eventId,
       user_id: userId,
-      remind_at: new Date(eventStartMs - item.offsetMinutes * 60_000).toISOString(),
+      remind_at: new Date(
+        eventStartMs - item.offsetMinutes * 60_000,
+      ).toISOString(),
       remind_type: item.type,
     }));
 
@@ -105,9 +108,12 @@ export class RemindersService {
       .from('calendar_members')
       .select('user_id')
       .eq('calendar_id', eventRow.calendar_id);
-    if (memberError) throw new InternalServerErrorException(memberError.message);
+    if (memberError)
+      throw new InternalServerErrorException(memberError.message);
 
-    const memberIds = [...new Set((memberRows ?? []).map((m) => m.user_id as string))];
+    const memberIds = [
+      ...new Set((memberRows ?? []).map((m) => m.user_id as string)),
+    ];
     if (memberIds.length === 0) return { created: 0, members: 0 };
 
     // Xoá trước rồi chèn lại: gọi hai lần cho cùng một sự kiện phải ra đúng
@@ -116,7 +122,8 @@ export class RemindersService {
       .from('reminders')
       .delete()
       .eq('event_id', eventId);
-    if (deleteError) throw new InternalServerErrorException(deleteError.message);
+    if (deleteError)
+      throw new InternalServerErrorException(deleteError.message);
 
     if (items.length === 0) return { created: 0, members: memberIds.length };
 
@@ -125,7 +132,9 @@ export class RemindersService {
       items.map((item) => ({
         event_id: eventId,
         user_id: memberId,
-        remind_at: new Date(eventStartMs - item.offsetMinutes * 60_000).toISOString(),
+        remind_at: new Date(
+          eventStartMs - item.offsetMinutes * 60_000,
+        ).toISOString(),
         remind_type: item.type,
       })),
     );
@@ -165,8 +174,8 @@ export class RemindersService {
   /**
    * Nhắc lịch đã BẮN (cron xử lý xong, is_sent = true) nhưng chưa client nào
    * thực sự nhận được (seen_at còn null) — do offline đúng lúc cron bắn qua
-   * socket. Gọi 1 lần khi mở app / mỗi lần socket reconnect, để bù lại y hệt
-   * như vừa nhận realtime, rồi đánh dấu đã thấy để không lặp lại ở lần sau.
+   * socket. GET chỉ đọc: client xác nhận bằng acknowledge() SAU khi nhận và
+   * đưa thông báo vào giao diện. Mất phản hồi GET không làm mất lời nhắc.
    *
    * remind_type chỉ lọc 'popup': loại 'email' cron đã gửi mail xong việc rồi,
    * không có gì để "bù" ở phía client.
@@ -177,26 +186,39 @@ export class RemindersService {
   ): Promise<MissedReminderDto[]> {
     const { data, error } = await supabase
       .from('reminders')
-      .select('id, event_id, remind_at, events(title, start_at, meet_link)')
+      .select(
+        'id, event_id, remind_at, events!inner(title, start_at, meet_link)',
+      )
       .eq('user_id', userId)
       .eq('remind_type', 'popup')
       .eq('is_sent', true)
       .is('seen_at', null)
+      .is('events.deleted_at', null)
       .order('remind_at', { ascending: true })
+      .limit(100)
       .returns<MissedReminderRow[]>();
 
     if (error) throw new InternalServerErrorException(error.message);
     if (!data || data.length === 0) return [];
 
-    await supabase
+    return data.map(toMissedReminderDto);
+  }
+
+  /** Idempotent acknowledgement, restricted to the authenticated user's popup reminders. */
+  async acknowledge(
+    supabase: SupabaseClient,
+    userId: string,
+    reminderIds: string[],
+  ): Promise<void> {
+    const { error } = await supabase
       .from('reminders')
       .update({ seen_at: new Date().toISOString() })
-      .in(
-        'id',
-        data.map((r) => r.id),
-      );
-
-    return data.map(toMissedReminderDto);
+      .eq('user_id', userId)
+      .eq('remind_type', 'popup')
+      .is('seen_at', null)
+      .lte('remind_at', new Date().toISOString())
+      .in('id', reminderIds);
+    if (error) throw new InternalServerErrorException(error.message);
   }
 
   async snooze(
@@ -207,7 +229,12 @@ export class RemindersService {
     const remindAt = new Date(Date.now() + minutes * 60_000).toISOString();
     const { data, error } = await supabase
       .from('reminders')
-      .update({ remind_at: remindAt, is_sent: false, snoozed_until: null })
+      .update({
+        remind_at: remindAt,
+        is_sent: false,
+        seen_at: null,
+        snoozed_until: null,
+      })
       .eq('id', id)
       .select('*')
       .returns<ReminderRow[]>();

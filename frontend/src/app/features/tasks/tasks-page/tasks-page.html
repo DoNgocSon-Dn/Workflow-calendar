@@ -1,4 +1,5 @@
 <div class="tasks-page">
+  <app-sync-status />
   <header class="topbar">
     <div class="left">
       <button type="button" class="icon-btn" [attr.aria-label]="i18n.t('tasks.toggleSidebar')" (click)="toggleSidebar()">
@@ -15,6 +16,7 @@
     </div>
 
     <div class="right">
+      <app-contacts-link />
       <div class="view-toggle" role="group" [attr.aria-label]="i18n.t('tasks.viewToggle')">
         <a routerLink="/calendar" class="view-toggle-btn" [attr.aria-label]="i18n.t('tasks.calendar')">
           <app-icon name="calendar" />

@@ -870,7 +870,7 @@
                                 type="button"
                                 class="poll-opt"
                                 [class.chosen]="poll.myOptionIds.includes(o.id)"
-                                [disabled]="!!poll.closedAt"
+                                [disabled]="!!poll.closedAt || !canUserChat()"
                                 (click)="togglePollOption(poll, o.id)"
                               >
                                 <span class="poll-opt__bar" [style.width.%]="pollPercent(poll, o.count)"></span>

@@ -1,0 +1,143 @@
+:root {
+  color-scheme: dark;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: #eff6ff;
+  background: #10203b;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  border: 1px solid #425d88;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #2b4367;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+.brand {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  border-radius: 7px;
+  background: #93c5fd;
+  color: #102a55;
+  font-size: 18px;
+  letter-spacing: -2px;
+}
+.label {
+  margin-left: 9px;
+  color: #b3c4df;
+  font-size: 9px;
+  font-weight: 500;
+}
+#count {
+  margin-left: auto;
+  color: #93c5fd;
+  font-size: 10px;
+  letter-spacing: 0;
+}
+main {
+  flex: 1;
+  padding: 18px 22px 12px;
+  min-height: 178px;
+}
+#kind {
+  font-size: 10px;
+  font-weight: 700;
+  color: #93c5fd;
+  letter-spacing: 2px;
+  margin: 0 0 9px;
+}
+h1 {
+  font-size: 23px;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.6px;
+  margin: 0 0 10px;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+#body {
+  color: #c0cfea;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  margin: 0;
+  max-height: 65px;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+footer {
+  display: flex;
+  gap: 7px;
+  padding: 9px 20px 0;
+}
+button {
+  font:
+    600 11px "Segoe UI",
+    sans-serif;
+  padding: 12px 10px;
+  border: 1px solid #44628d;
+  border-radius: 7px;
+  background: transparent;
+  color: #e0ebff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+button:hover {
+  background: #234272;
+}
+button:focus-visible {
+  outline: 2px solid #eff6ff;
+  outline-offset: 2px;
+}
+.primary {
+  background: #93c5fd;
+  color: #102a55;
+  border-color: #93c5fd;
+  flex: 1;
+  text-align: left;
+}
+.primary span {
+  float: right;
+  font-size: 16px;
+  line-height: 14px;
+}
+.primary:hover {
+  background: #bfdbfe;
+}
+.hint {
+  padding: 13px 20px 15px;
+  color: #91aacf;
+  font-size: 10px;
+}
+body.ring {
+  animation: glow 0.9s ease-out 3;
+}
+@keyframes glow {
+  50% {
+    border-color: #bfdbfe;
+    box-shadow: inset 0 0 30px #60a5fa22;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.ring {
+    animation: none;
+  }
+}

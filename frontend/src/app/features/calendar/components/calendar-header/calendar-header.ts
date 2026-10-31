@@ -20,6 +20,7 @@ import { OpenGroupChatRequest } from '../../../../shared/components/notification
 import { BrandLogo } from '../../../../shared/components/brand-logo/brand-logo';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { OverflowTooltip } from '../../../../shared/directives/overflow-tooltip';
+import { ContactsLink } from '../../../social/contacts-link';
 
 /** Matches calendar-page.css / calendar-sidebar.css's mobile-drawer breakpoint. */
 const MOBILE_BREAKPOINT_PX = 720;
@@ -40,7 +41,7 @@ const DATE_FMT: Record<'vi' | 'en', { dayMonth: Intl.DateTimeFormat; fullDate: I
   templateUrl: './calendar-header.html',
   styleUrl: './calendar-header.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NotificationButton, BrandLogo, Icon, RouterLink, OverflowTooltip],
+  imports: [NotificationButton, BrandLogo, Icon, RouterLink, OverflowTooltip, ContactsLink],
 })
 export class CalendarHeader {
   protected readonly store = inject(CalendarStore);

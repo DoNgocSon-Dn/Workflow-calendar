@@ -1,0 +1,301 @@
+<div class="contacts-page">
+  <header class="contacts-topbar">
+    <a routerLink="/calendar" class="brand-link" aria-label="Workflow Calendar"
+      ><app-brand-logo
+    /></a>
+    <nav [attr.aria-label]="i18n.t('social.navigation')">
+      <a routerLink="/calendar">{{ i18n.t('tasks.calendar') }}</a>
+      <a routerLink="/tasks">{{ i18n.t('tasks.title') }}</a>
+      <span aria-current="page">{{ i18n.t('social.title') }}</span>
+    </nav>
+  </header>
+  <div class="contacts-layout" [class.has-thread]="store.peer()">
+    <aside class="contacts-sidebar">
+      <div class="sidebar-heading">
+        <h1>{{ i18n.t('social.title') }}</h1>
+        <button type="button" class="quiet" (click)="store.refresh()">
+          {{ i18n.t('social.refresh') }}
+        </button>
+      </div>
+      <p class="connection" [class.connected]="store.connected()">
+        <span aria-hidden="true"></span
+        >{{ i18n.t(store.connected() ? 'social.connected' : 'social.disconnected') }}
+      </p>
+      <form class="add-contact" (ngSubmit)="add()">
+        <label for="friend-email">{{ i18n.t('social.addByEmail') }}</label>
+        <div>
+          <input
+            id="friend-email"
+            type="email"
+            required
+            maxlength="254"
+            autocomplete="off"
+            [ngModel]="email()"
+            (ngModelChange)="email.set($event)"
+            name="email"
+            [placeholder]="i18n.t('social.emailPlaceholder')"
+          /><button type="submit" class="primary" [disabled]="store.busy() || !email().trim()">
+            {{ i18n.t('social.add') }}
+          </button>
+        </div>
+      </form>
+      @if (notice()) {
+        <p class="notice" role="status">{{ notice() }}</p>
+      }
+      <div class="contact-tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="tab() === 'messages'"
+          (click)="tab.set('messages')"
+        >
+          {{ i18n.t('social.messages') }}
+          @if (store.unreadCount()) {
+            <b>{{ store.unreadCount() }}</b>
+          }
+        </button>
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="tab() === 'friends'"
+          (click)="tab.set('friends')"
+        >
+          {{ i18n.t('social.friends') }} <small>{{ store.overview().friends.length }}</small>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="tab() === 'requests'"
+          (click)="tab.set('requests')"
+        >
+          {{ i18n.t('social.requests') }}
+          @if (store.overview().incoming.length) {
+            <b>{{ store.overview().incoming.length }}</b>
+          }
+        </button>
+      </div>
+      <div class="contact-list">
+        @switch (tab()) {
+          @case ('messages') {
+            <input
+              class="contact-search"
+              type="search"
+              [attr.aria-label]="i18n.t('social.search')"
+              [placeholder]="i18n.t('social.search')"
+              [ngModel]="search()"
+              (ngModelChange)="search.set($event)"
+            />
+            @for (c of conversations(); track c.profile.id) {
+              <button
+                type="button"
+                class="conversation"
+                [class.active]="store.peer() === c.profile.id"
+                (click)="open(c.profile.id)"
+              >
+                <span class="avatar" aria-hidden="true">{{
+                  c.profile.name.charAt(0).toUpperCase()
+                }}</span>
+                <span class="contact-copy"
+                  ><strong>{{ c.profile.name }}</strong
+                  ><small>{{ c.lastMessage?.body || i18n.t('social.sayHello') }}</small></span
+                >
+                @if (c.unreadCount) {
+                  <b class="badge">{{ c.unreadCount > 99 ? '99+' : c.unreadCount }}</b>
+                }
+              </button>
+            } @empty {
+              <p class="empty-list">{{ i18n.t('social.noConversations') }}</p>
+            }
+          }
+          @case ('friends') {
+            @for (friend of store.overview().friends; track friend.id) {
+              <div class="person">
+                <span class="avatar" aria-hidden="true">{{
+                  friend.profile.name.charAt(0).toUpperCase()
+                }}</span>
+                <div class="contact-copy">
+                  <strong>{{ friend.profile.name }}</strong
+                  ><small>{{ friend.profile.email }}</small>
+                  <div class="person-actions">
+                    <button type="button" class="quiet" (click)="open(friend.profile.id)">
+                      {{ i18n.t('social.chat') }}</button
+                    ><button
+                      type="button"
+                      class="quiet danger"
+                      [disabled]="store.busy()"
+                      (click)="remove(friend.id)"
+                    >
+                      {{ i18n.t('social.remove') }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            } @empty {
+              <p class="empty-list">{{ i18n.t('social.noFriends') }}</p>
+            }
+          }
+          @case ('requests') {
+            <h2>{{ i18n.t('social.incoming') }}</h2>
+            @for (request of store.overview().incoming; track request.id) {
+              <div class="person">
+                <span class="avatar" aria-hidden="true">{{
+                  request.profile.name.charAt(0).toUpperCase()
+                }}</span>
+                <div class="contact-copy">
+                  <strong>{{ request.profile.name }}</strong
+                  ><small>{{ request.profile.email }}</small>
+                  <div class="person-actions">
+                    <button
+                      type="button"
+                      class="primary"
+                      [disabled]="store.busy()"
+                      (click)="store.action(request.id, 'accept')"
+                    >
+                      {{ i18n.t('social.accept') }}</button
+                    ><button
+                      type="button"
+                      class="quiet"
+                      [disabled]="store.busy()"
+                      (click)="store.action(request.id, 'decline')"
+                    >
+                      {{ i18n.t('social.decline') }}</button
+                    ><button
+                      type="button"
+                      class="quiet danger"
+                      [disabled]="store.busy()"
+                      (click)="blockRequest(request.profile.id)"
+                    >
+                      {{ i18n.t('social.block') }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            } @empty {
+              <p class="empty-list">{{ i18n.t('social.noRequests') }}</p>
+            }
+            <h2>{{ i18n.t('social.outgoing') }}</h2>
+            @for (request of store.overview().outgoing; track request.id) {
+              <div class="person">
+                <div class="contact-copy">
+                  <strong>{{ request.profile.name }}</strong
+                  ><small>{{ request.profile.email }}</small>
+                </div>
+                <button
+                  type="button"
+                  class="quiet"
+                  [disabled]="store.busy()"
+                  (click)="store.action(request.id, 'cancel')"
+                >
+                  {{ i18n.t('social.cancel') }}
+                </button>
+              </div>
+            } @empty {
+              <p class="empty-list">{{ i18n.t('social.noOutgoing') }}</p>
+            }
+          }
+        }
+      </div>
+      <p class="privacy-note">{{ i18n.t('social.privacyNote') }}</p>
+    </aside>
+    <main class="chat-area">
+      @if (store.error()) {
+        <div class="error" role="alert">{{ store.error() }}</div>
+      }
+      @if (store.selected(); as selected) {
+        <header class="thread-heading">
+          <button
+            type="button"
+            class="quiet back"
+            (click)="store.close()"
+            [attr.aria-label]="i18n.t('social.back')"
+          >
+            ←
+          </button>
+          <span class="avatar" aria-hidden="true">{{
+            selected.profile.name.charAt(0).toUpperCase()
+          }}</span>
+          <div class="contact-copy">
+            <h2>{{ selected.profile.name }}</h2>
+            <small>{{ selected.profile.email }}</small>
+          </div>
+          <button type="button" class="quiet" [disabled]="store.busy()" (click)="block()">
+            {{ i18n.t(selected.blockedByMe ? 'social.unblock' : 'social.block') }}
+          </button>
+        </header>
+        <div
+          class="thread"
+          #thread
+          (scroll)="onScroll()"
+          [attr.aria-label]="i18n.t('social.messages')"
+          [attr.aria-busy]="store.loading()"
+        >
+          @if (store.hasMore()) {
+            <button
+              type="button"
+              class="load-older quiet"
+              [disabled]="store.loading()"
+              (click)="older()"
+            >
+              {{ i18n.t('social.older') }}
+            </button>
+          }
+          @if (store.loading()) {
+            <p class="thread-status" role="status">{{ i18n.t('social.loading') }}</p>
+          }
+          @for (message of store.messages(); track message.id) {
+            <article class="message" [class.mine]="message.senderId === auth.user()?.id">
+              <div class="bubble">{{ message.body }}</div>
+              <small
+                ><time [attr.datetime]="message.createdAt">{{
+                  message.createdAt | date: 'dd/MM HH:mm'
+                }}</time>
+                @if (message.senderId === auth.user()?.id) {
+                  · {{ i18n.t(message.readAt ? 'social.read' : 'social.sent') }}
+                }
+              </small>
+            </article>
+          } @empty {
+            @if (!store.loading()) {
+              <p class="thread-status">{{ i18n.t('social.sayHello') }}</p>
+            }
+          }
+        </div>
+        @if (selected.canMessage) {
+          <form class="composer" (ngSubmit)="store.send()">
+            <label class="sr-only" for="direct-body">{{ i18n.t('social.compose') }}</label>
+            <textarea
+              id="direct-body"
+              name="body"
+              rows="2"
+              maxlength="4000"
+              [ngModel]="store.draft()"
+              (ngModelChange)="store.setDraft($event)"
+              (keydown)="keydown($event)"
+              [placeholder]="i18n.t('social.compose')"
+            ></textarea>
+            <div class="composer-footer">
+              <small>{{ i18n.t('social.enterHint') }} · {{ store.draft().length }}/4000</small
+              ><button
+                type="submit"
+                class="primary"
+                [disabled]="store.sending() || !store.draft().trim()"
+              >
+                {{ i18n.t(store.sending() ? 'social.sending' : 'social.send') }}
+              </button>
+            </div>
+          </form>
+        } @else {
+          <p class="cannot-message">
+            {{ i18n.t(selected.blockedByMe ? 'social.blocked' : 'social.friendRequired') }}
+          </p>
+        }
+      } @else {
+        <div class="welcome">
+          <span class="welcome-icon" aria-hidden="true">↗</span>
+          <h2>{{ i18n.t('social.welcome') }}</h2>
+          <p>{{ i18n.t('social.welcomeBody') }}</p>
+        </div>
+      }
+    </main>
+  </div>
+</div>

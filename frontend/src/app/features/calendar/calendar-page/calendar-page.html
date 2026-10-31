@@ -1,5 +1,6 @@
 <div class="calendar-page">
-  @if (serverStatus.waking()) {
+  <app-sync-status />
+  @if (serverStatus.waking() && !store.syncing() && !store.showingCached() && !store.syncFailed()) {
     <div class="server-waking" role="status">
       <span class="server-waking__spinner" aria-hidden="true"></span>
       {{ i18n.t('common.serverWaking') }}
@@ -196,6 +197,9 @@
           {{ savingName() ? i18n.t('common.saving') : i18n.t('onboarding.submit') }}
         </button>
       </div>
+      @if (onboardingError()) {
+        <p class="name-prompt-error" role="alert">{{ onboardingError() }}</p>
+      }
     </div>
   </div>
 }

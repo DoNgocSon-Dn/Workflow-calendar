@@ -18,16 +18,23 @@ export interface SearchableEvent {
   readonly description?: string;
 }
 
+/** Fold Vietnamese accents and Unicode variants for keyboard-friendly search. */
+function normalizeSearchText(value: string): string {
+  return value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+    .replace(/đ/g, 'd').trim().replace(/\s+/g, ' ');
+}
+
 export function matchScore(event: SearchableEvent, queryLower: string): number | null {
+  queryLower = normalizeSearchText(queryLower);
   if (!queryLower) return null;
 
-  const title = event.title.toLowerCase();
+  const title = normalizeSearchText(event.title);
   const titleTier = fieldTier(title, queryLower);
   if (titleTier !== null) return titleTier;
 
   const secondaryFields = [event.location, event.description]
     .filter((v): v is string => !!v)
-    .map((v) => v.toLowerCase());
+    .map(normalizeSearchText);
   for (const field of secondaryFields) {
     const tier = fieldTier(field, queryLower);
     if (tier !== null) return tier + 4;

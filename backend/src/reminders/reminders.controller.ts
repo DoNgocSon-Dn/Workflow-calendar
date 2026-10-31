@@ -1,9 +1,18 @@
-import { Body, Controller, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { CurrentSupabase } from '../auth/current-supabase.decorator';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { SetRemindersDto } from './dto/set-reminders.dto';
+import { AcknowledgeRemindersDto } from './dto/acknowledge-reminders.dto';
 import { SnoozeReminderDto } from './dto/snooze-reminder.dto';
 import { RemindersService } from './reminders.service';
 
@@ -25,8 +34,24 @@ export class RemindersController {
   // 'events/:eventId/reminders' (khác tiền tố), nhưng vẫn giữ quy ước đặt
   // route tĩnh lên trước cho nhất quán với GroupsController.
   @Get('reminders/missed')
-  listMissed(@CurrentSupabase() supabase: SupabaseClient, @CurrentUser() user: User) {
+  listMissed(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+  ) {
     return this.remindersService.listMissed(supabase, user.id);
+  }
+
+  @Post('reminders/acknowledge')
+  acknowledge(
+    @CurrentSupabase() supabase: SupabaseClient,
+    @CurrentUser() user: User,
+    @Body() dto: AcknowledgeRemindersDto,
+  ) {
+    return this.remindersService.acknowledge(
+      supabase,
+      user.id,
+      dto.reminderIds,
+    );
   }
 
   @Put('events/:eventId/reminders')
@@ -36,7 +61,12 @@ export class RemindersController {
     @Param('eventId') eventId: string,
     @Body() dto: SetRemindersDto,
   ) {
-    return this.remindersService.setForEvent(supabase, eventId, user.id, dto.reminders);
+    return this.remindersService.setForEvent(
+      supabase,
+      eventId,
+      user.id,
+      dto.reminders,
+    );
   }
 
   /** Nhắc cả lịch — dùng cho buổi họp nhóm, xem RemindersService. Route dài

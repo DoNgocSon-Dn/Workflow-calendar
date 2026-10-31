@@ -1,10 +1,21 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
+import { DesktopNavigationService } from '../../../core/desktop/desktop-navigation.service';
+import { NotificationService } from '../../../core/services/notification.service';
 import { Router } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth-store';
 import { DensityService } from '../../../core/density/density-service';
 import { TranslationService } from '../../../core/i18n/translation.service';
 import { NotificationQueue } from '../../../core/realtime/notification-queue';
 import { CalendarHeader } from '../components/calendar-header/calendar-header';
+import { SyncStatus } from '../../../shared/components/sync-status/sync-status';
 import { CalendarHolidayBackdrop } from '../components/calendar-holiday-backdrop/calendar-holiday-backdrop';
 import { CalendarSidebar } from '../components/calendar-sidebar/calendar-sidebar';
 import { CreateCalendarModal } from '../components/create-calendar-modal/create-calendar-modal';
@@ -52,6 +63,7 @@ interface ModalState {
   styleUrl: './calendar-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    SyncStatus,
     CalendarHeader,
     CalendarHolidayBackdrop,
     CalendarSidebar,
@@ -140,11 +152,7 @@ export class CalendarPage {
     const dy = t.clientY - start.y;
     const elapsed = Date.now() - start.t;
 
-    if (
-      elapsed <= 600 &&
-      Math.abs(dx) >= 60 &&
-      Math.abs(dx) > Math.abs(dy) * 1.5
-    ) {
+    if (elapsed <= 600 && Math.abs(dx) >= 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
       this.store.step(dx < 0 ? 1 : -1);
     }
   }
@@ -163,9 +171,10 @@ export class CalendarPage {
   protected readonly trashModalOpen = signal(false);
   protected readonly notesTrashModalOpen = signal(false);
   protected readonly settingsModalOpen = signal(false);
-  protected readonly inviteModalTarget = signal<{ calendarId: string; calendarName: string } | null>(
-    null,
-  );
+  protected readonly inviteModalTarget = signal<{
+    calendarId: string;
+    calendarName: string;
+  } | null>(null);
   protected readonly createCalendarModalOpen = signal(false);
   protected readonly createGroupModalOpen = signal(false);
   protected readonly joinGroupModalOpen = signal(false);
@@ -181,12 +190,42 @@ export class CalendarPage {
    *  duyệt — "date of birth" mà sau hôm nay thì luôn là dữ liệu sai. */
   protected readonly maxDob = dateInputValue(new Date());
   protected readonly savingName = signal(false);
+  protected readonly onboardingError = signal<string | null>(null);
   protected readonly onboardingCanSubmit = computed(
-    () => !!this.nameDraft().trim() && !!this.dobDraft(),
+    () => {
+      const dob = this.dobDraft();
+      const date = new Date(`${dob}T00:00:00`);
+      return !!this.nameDraft().trim() && /^\d{4}-\d{2}-\d{2}$/.test(dob)
+        && !Number.isNaN(date.getTime()) && dateInputValue(date) === dob && dob <= this.maxDob;
+    },
   );
 
   constructor() {
     this.notificationQueue.requestPermission();
+    const notifications = inject(NotificationService);
+    const desktopNavigation = inject(DesktopNavigationService);
+    effect(() => {
+      const alert = desktopNavigation.pending();
+      if (!alert || alert.peerId) return;
+      // An event/group may arrive after the page mounts. Do not consume a
+      // native popup until the requested entity can actually be opened.
+      if (alert.eventId) {
+        const available = this.store.events().some((event) => event.id === alert.eventId)
+          || this.store.visibleEvents().some((event) => event.id === alert.eventId);
+        if (!available) return;
+      } else if (alert.groupId && !this.groupStore.groups().some((group) => group.id === alert.groupId)) {
+        return;
+      }
+      untracked(() => {
+        if (alert.eventId) this.onViewDetail(alert.eventId);
+        else if (alert.groupId) this.onOpenGroupFromNotification({
+          groupId: alert.groupId, messageId: alert.messageId,
+          tab: ['task', 'deadline'].includes(alert.kind) ? 'tasks' : 'chat',
+        });
+        notifications.markAsRead(alert.id);
+        desktopNavigation.complete(alert.id);
+      });
+    });
 
     effect(() => {
       if (this.authStore.session()) {
@@ -213,13 +252,15 @@ export class CalendarPage {
 
   async completeOnboarding(): Promise<void> {
     if (!this.onboardingCanSubmit() || this.savingName()) return;
+    this.onboardingError.set(null);
     this.savingName.set(true);
     try {
-      await Promise.all([
-        this.authStore.updateDisplayName(this.nameDraft().trim()),
-        this.birthdayService.setUserDob(this.dobDraft()),
-      ]);
+      const error = await this.authStore.updateDisplayName(this.nameDraft().trim());
+      if (error) throw error;
+      await this.birthdayService.setUserDob(this.dobDraft());
       this.namePromptOpen.set(false);
+    } catch {
+      this.onboardingError.set(this.i18n.t('onboarding.saveFailed'));
     } finally {
       this.savingName.set(false);
     }

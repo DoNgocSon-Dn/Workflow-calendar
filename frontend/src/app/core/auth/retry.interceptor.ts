@@ -1,8 +1,9 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { finalize, retry, throwError, timeout, timer } from 'rxjs';
+import { defer, finalize, retry, throwError, timeout, timer } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ServerStatusService } from '../services/server-status.service';
+import { isApiRequest } from './api-url';
 
 /** Mỗi lần thử tối đa 12s rồi coi như treo. */
 const ATTEMPT_TIMEOUT_MS = 12_000;
@@ -10,13 +11,11 @@ const ATTEMPT_TIMEOUT_MS = 12_000;
 const MAX_RETRIES = 6;
 
 function isColdStartFailure(err: unknown, method: string): boolean {
-  // status 0 = request KHÔNG tới được server (mất mạng, CORS, timeout, server
-  // đang dậy) → thử lại an toàn với mọi method vì server chưa xử lý gì.
-  if (!(err instanceof HttpErrorResponse)) return true; // TimeoutError, v.v.
-  if (err.status === 0) return true;
-  // 502/503/504 = qua được tới hạ tầng nhưng backend chưa sẵn sàng. Chỉ thử lại
-  // GET để không lỡ gửi trùng một thao tác ghi.
-  if ([502, 503, 504].includes(err.status)) return method === 'GET';
+  // A lost response does not prove the server did not commit a write.
+  // Only retry read requests until the API supports idempotency keys.
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) return false;
+  if (!(err instanceof HttpErrorResponse)) return true;
+  if ([0, 502, 503, 504].includes(err.status)) return true;
   return false;
 }
 
@@ -28,12 +27,12 @@ function isColdStartFailure(err: unknown, method: string): boolean {
  * access token mới nhất.
  */
 export const retryInterceptor: HttpInterceptorFn = (req, next) => {
-  if (!req.url.startsWith(environment.apiUrl)) return next(req);
+  if (!isApiRequest(req.url, environment.apiUrl)) return next(req);
 
   const status = inject(ServerStatusService);
   let counted = false;
 
-  return next(req).pipe(
+  return defer(() => next(req)).pipe(
     timeout(ATTEMPT_TIMEOUT_MS),
     retry({
       count: MAX_RETRIES,

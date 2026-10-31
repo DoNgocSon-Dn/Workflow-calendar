@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'"
+    />
+    <title>Kết nối · Workflow</title>
+    <link rel="stylesheet" href="settings.css" />
+  </head>
+  <body>
+    <p class="eyebrow">WORKFLOW CALENDAR</p>
+    <h1>Kết nối của ứng dụng</h1>
+    <p>
+      Nhập thông tin công khai của dự án. Không nhập secret key hoặc
+      service-role key vào app.
+    </p>
+    <form id="connection">
+      <label for="supabaseUrl">Supabase URL</label
+      ><input
+        id="supabaseUrl"
+        type="url"
+        required
+        placeholder="https://project-id.supabase.co"
+      /><label for="supabaseAnonKey">Publishable / anon key</label
+      ><input
+        id="supabaseAnonKey"
+        type="text"
+        required
+        autocomplete="off"
+        spellcheck="false"
+      /><label for="apiUrl">Backend URL</label
+      ><input
+        id="apiUrl"
+        type="url"
+        required
+        placeholder="https://your-backend.onrender.com"
+      />
+      <div class="actions">
+        <button id="check" type="button">Kiểm tra kết nối</button
+        ><button id="save" type="submit">Lưu và mở lại lịch</button>
+      </div>
+    </form>
+    <p id="status" role="status"></p>
+    <aside>
+      <strong>Đăng nhập bằng email</strong>
+      <p>
+        Bật Email provider trong Supabase → Authentication → Providers. Đăng
+        nhập bằng mật khẩu không cần callback Google.
+      </p>
+      <p>
+        Để email khôi phục mở đúng trang, thêm URL bên dưới vào Redirect URLs:
+      </p>
+      <code>http://127.0.0.1:42817/reset-password</code>
+      <p>
+        Nhắc lịch cần service-role key ở <strong>máy chủ backend</strong>. AI,
+        email và push cần cấu hình riêng phía máy chủ.
+      </p>
+    </aside>
+    <script src="settings.js"></script>
+  </body>
+</html>

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self'; connect-src 'none'"
+    />
+    <title>Nhắc lịch · Workflow</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <span class="brand">W</span
+      ><span>WORKFLOW <span class="label">NHẮC LỊCH</span></span
+      ><span id="count"></span>
+    </header>
+    <main aria-live="polite">
+      <p id="kind">ĐỪNG BỎ LỠ</p>
+      <h1 id="title">Nhắc lịch</h1>
+      <p id="body"></p>
+    </main>
+    <footer>
+      <button id="open" class="primary"><span id="open-label">Xem lịch</span> <span>↗</span></button
+      ><button id="snooze">Nhắc lại 5 phút</button
+      ><button id="dismiss" aria-label="Đóng thông báo này">Đóng</button>
+    </footer>
+    <div class="hint">
+      Giữ lại đến khi bạn xử lý · Bấm giữ phía trên để di chuyển
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>
