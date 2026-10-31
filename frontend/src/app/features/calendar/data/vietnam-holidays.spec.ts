@@ -11,9 +11,8 @@ import { convertSolarToLunar } from '../utils/lunar-calendar';
 describe('buildVietnamHolidayEvents', () => {
   const events2026 = buildVietnamHolidayEvents([2026]);
 
-  it('mỗi entry officialHoliday → đúng 1 event (không nhân theo số ngày)', () => {
-    const officialCount = HOLIDAYS.filter((h) => h.officialHoliday).length;
-    expect(events2026.length).toBe(officialCount);
+  it('mỗi ngày lễ và kỷ niệm có đúng 1 event, không nhân theo số ngày', () => {
+    expect(events2026.length).toBe(HOLIDAYS.length);
   });
 
   it('Tết Nguyên Đán = 1 event Âm lịch, kéo dài 5 ngày', () => {

@@ -4,6 +4,7 @@ import { Subject, debounceTime, distinctUntilChanged, firstValueFrom } from 'rxj
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { environment } from '../../../../environments/environment';
 import { AuthStore } from '../../../core/auth/auth-store';
+import { MobileNotificationsService } from '../../../core/mobile/mobile-notifications.service';
 import { Clock } from '../../../core/clock';
 import { NotificationKind, NotificationQueue } from '../../../core/realtime/notification-queue';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -411,6 +412,7 @@ export class CalendarStore {
   private readonly destroyRef = inject(DestroyRef);
   private readonly http = inject(HttpClient);
   private readonly authStore = inject(AuthStore);
+  private readonly mobileNotifications = inject(MobileNotificationsService);
   private readonly realtime = inject(RealtimeService);
   private readonly notificationQueue = inject(NotificationQueue);
   private readonly notifications = inject(NotificationService);
@@ -517,7 +519,7 @@ export class CalendarStore {
   ]);
   // Sự kiện lịch lễ VN — tiêu đề dịch theo ngôn ngữ, dựng lại khi đổi ngôn ngữ.
   readonly holidayEvents = computed<CalendarEvent[]>(() =>
-    buildVietnamHolidayEvents(holidayYearWindow(this.clock.now()), this.i18n.locale()),
+    buildVietnamHolidayEvents(holidayYearWindow(this.focusedDate()), this.i18n.locale()),
   );
 
   readonly visibleEvents = computed(() => {
@@ -830,6 +832,7 @@ export class CalendarStore {
       lastSyncedAt: null,
     };
     writeStartupCache(owner, 'calendar', { ...previous, ...patch });
+    if (patch.events || patch.calendars) this.mobileNotifications.refresh();
   }
 
   private persistStartupEntity(
@@ -868,6 +871,7 @@ export class CalendarStore {
     // nhắc lịch đã bắn lúc offline (reminder:fire chỉ tới được socket đang mở —
     // rớt mạng đúng lúc cron chạy thì mất, không có gì lưu để bù nếu không hỏi).
     this.realtime.onReconnect(() => {
+      this.mobileNotifications.refresh();
       void this.refreshEvents();
       void this.refreshPendingInvites();
       void this.refreshEventInvites();
@@ -2355,6 +2359,7 @@ export class CalendarStore {
         reminders,
       }),
     );
+    this.mobileNotifications.refresh();
     return result.map(toReminder);
   }
 
@@ -2371,12 +2376,14 @@ export class CalendarStore {
     await firstValueFrom(
       this.http.put(`${this.apiUrl}/events/${eventId}/reminders/all-members`, { reminders }),
     );
+    this.mobileNotifications.refresh();
   }
 
   async snoozeReminder(reminderId: string, minutes: number): Promise<void> {
     await firstValueFrom(
       this.http.post(`${this.apiUrl}/reminders/${reminderId}/snooze`, { minutes }),
     );
+    this.mobileNotifications.refresh();
   }
 
   async listComments(eventId: string): Promise<EventComment[]> {

@@ -1,5 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { desktopBridge } from '../desktop/desktop-bridge';
+import { isAndroidApp } from '../mobile/mobile-platform';
 
 export type NotificationKind =
   | 'created'
@@ -125,7 +126,7 @@ export class NotificationQueue {
   }
 
   requestPermission(): void {
-    if (desktopBridge()) return;
+    if (desktopBridge() || isAndroidApp()) return;
     if (typeof Notification === 'undefined') return;
     if (Notification.permission === 'default') {
       void Notification.requestPermission();
@@ -134,7 +135,7 @@ export class NotificationQueue {
 
   private notifyBrowserIfHidden(item: NotificationItem): void {
     // Desktop uses the dedicated persistent popup from NotificationService.
-    if (desktopBridge()) return;
+    if (desktopBridge() || isAndroidApp()) return;
     if (typeof Notification === 'undefined') return;
     if (Notification.permission !== 'granted') return;
     if (!document.hidden) return;

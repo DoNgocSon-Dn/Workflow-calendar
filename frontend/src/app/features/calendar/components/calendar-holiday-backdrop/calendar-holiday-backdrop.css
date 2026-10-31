@@ -6,6 +6,12 @@
   pointer-events: none;
 }
 
+.holiday-backdrop--general .holiday-backdrop__motif { opacity: .16; }
+@media (prefers-reduced-motion: reduce) {
+  .holiday-backdrop { display: none; }
+}
+@media print { :host { display: none; } }
+
 .holiday-backdrop {
   position: absolute;
   inset: 0;

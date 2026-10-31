@@ -20,10 +20,11 @@ import { DialogService } from '../../core/services/dialog.service';
 import { DesktopNavigationService } from '../../core/desktop/desktop-navigation.service';
 import { SocialStore } from './social.store';
 import { BrandLogo } from '../../shared/components/brand-logo/brand-logo';
+import { HolidayBanner } from '../../shared/components/holiday-banner/holiday-banner';
 
 @Component({
   selector: 'app-contacts-page',
-  imports: [RouterLink, FormsModule, DatePipe, BrandLogo],
+  imports: [RouterLink, FormsModule, DatePipe, BrandLogo, HolidayBanner],
   templateUrl: './contacts-page.html',
   styleUrl: './contacts-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

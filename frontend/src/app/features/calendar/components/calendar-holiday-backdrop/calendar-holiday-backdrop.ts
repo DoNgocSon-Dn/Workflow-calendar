@@ -8,6 +8,7 @@ import { VietnamFlagMotif } from '../../../../shared/components/holiday-popup/vi
 import { DongSonDrumMotif } from '../../../../shared/components/holiday-popup/dong-son-drum-motif';
 import { NewYearMotif } from '../../../../shared/components/holiday-popup/new-year-motif';
 import { HolidayParallax } from '../../../../shared/directives/holiday-parallax';
+import { HolidayVisual } from '../../../../shared/components/holiday-popup/holiday-visual';
 
 /**
  * Danh sách các ngày có Holiday 3D Scene thật sự lên nền cả vùng lịch — mọi
@@ -47,14 +48,20 @@ const SCENE_ARCHETYPES = new Set<HolidayArchetype>([
     DongSonDrumMotif,
     NewYearMotif,
     HolidayParallax,
+    HolidayVisual,
   ],
 })
 export class CalendarHolidayBackdrop {
   private readonly holidayThemeService = inject(HolidayThemeService);
 
   protected readonly activeScene = computed<HolidayArchetype | null>(() => {
-    if (this.holidayThemeService.mode() === 'off') return null;
     const archetype = this.holidayThemeService.activeHoliday()?.theme?.composition.archetype;
     return archetype && SCENE_ARCHETYPES.has(archetype) ? archetype : null;
+  });
+
+  protected readonly generalTheme = computed(() => {
+    const theme = this.holidayThemeService.activeHoliday()?.theme;
+    if (!theme || this.activeScene()) return null;
+    return theme.composition.archetype !== 'geometric-abstract' || theme.composition.variant ? theme : null;
   });
 }

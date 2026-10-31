@@ -2,6 +2,7 @@ import { Injectable, computed, effect, inject, signal, untracked } from '@angula
 import { AuthStore } from '../auth/auth-store';
 import { NotificationSoundService } from './notification-sound.service';
 import { desktopBridge } from '../desktop/desktop-bridge';
+import { MobileNotificationsService } from '../mobile/mobile-notifications.service';
 import {
   AppNotification,
   NotificationDraft,
@@ -51,6 +52,7 @@ function readStored(userId: string | null): readonly AppNotification[] {
  */
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
+  private readonly mobile = inject(MobileNotificationsService);
   private readonly sound = inject(NotificationSoundService);
   private readonly authStore = inject(AuthStore);
   private accountId = this.authStore.user()?.id ?? null;
@@ -127,10 +129,9 @@ export class NotificationService {
     // Âm báo là bước CUỐI và hoàn toàn phụ: state đã cập nhật xong ở trên, nên
     // dù âm thanh lỗi hay bị trình duyệt chặn thì thông báo vẫn hiện bình thường.
     const desktop = desktopBridge();
-    if (desktop) {
+    if (desktop || this.mobile.supported) {
       const eventTypes = ['reminder', 'event_invitation', 'event_update', 'conflict'];
-      void desktop
-        .notify({
+      const alert = {
           id: notification.id,
           title: notification.title,
           body: notification.message,
@@ -140,8 +141,9 @@ export class NotificationService {
           groupId: notification.messageMeta?.groupId ?? notification.metadata?.['groupId'],
           messageId: notification.messageMeta?.messageId,
           peerId: notification.metadata?.['directPeerId'],
-        })
-        .catch(() => undefined);
+        };
+      if (desktop) void desktop.notify(alert).catch(() => undefined);
+      else this.mobile.notify(alert);
     } else {
       this.sound.notify(notification);
     }

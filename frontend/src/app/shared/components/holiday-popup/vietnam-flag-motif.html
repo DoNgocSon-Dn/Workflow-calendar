@@ -74,14 +74,12 @@
     }
   </g>
 
-  <!-- Dinh Độc Lập — giữ MÀU GỐC của ảnh (không làm silhouette đen — người
-       dùng yêu cầu giữ nguyên màu), vẽ SAU lá cờ để nổi trên nền vải thay vì
-       bị các dải cờ (tô đặc) vẽ đè lên che mất. Đứng yên hoàn toàn, không
-       animate tòa nhà. Ảnh gốc (independence-palace.png, 560x367) có khoảng
-       trong suốt lớn phía trên và bên phải tòa nhà thật (tòa nhà chỉ chiếm
-       x:[0,446], y:[201,366] trong ảnh) — nếu canh giữa theo KHUNG ảnh thì
-       tòa nhà bị lệch xuống dưới/qua trái so với tâm lá cờ. x/y dưới đây
-       lệch bù để chính TÒA NHÀ (không phải khung ảnh) nằm đúng tâm lá cờ. -->
+  <!-- Keep the landmark in its original colors, below the flag and its national emblem. -->
+  <!-- Quốc kỳ có sao vàng ở tâm; di tích nằm phía dưới, không thay thế biểu tượng trên cờ. -->
+  <g [attr.transform]="'translate(' + (flagLeft + flagRight) / 2 + ',' + (flagTop + flagBottom) / 2 + ') scale(0.48)'">
+    <polygon class="vfm-emblem" fill="#ffdf00"
+      points="0,-47 11,-13 47,-13 18,8 29,42 0,21 -29,42 -18,8 -47,-13 -11,-13" />
+  </g>
   <g [attr.transform]="'translate(' + palaceX + ', ' + palaceY + ')'">
     <image
       class="vfm-palace-image"

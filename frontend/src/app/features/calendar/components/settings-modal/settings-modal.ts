@@ -14,6 +14,8 @@ import { HolidayThemeMode, HolidayThemeService } from '../../data/holiday-theme.
 import { HOLIDAYS } from '../../../../data/holidays.data';
 import { DevUnlockService } from '../../../../core/services/dev-unlock.service';
 import { ReminderPreferencesService } from '../../../../core/services/reminder-preferences.service';
+import { MobileNotificationControls } from '../../../../core/mobile/mobile-notification-controls';
+import { HolidayCatalog } from '../../../../shared/components/holiday-catalog/holiday-catalog';
 
 interface BrandThemeOption {
   readonly value: BrandTheme;
@@ -29,7 +31,7 @@ const BRAND_THEME_OPTIONS: readonly BrandThemeOption[] = [
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
-type SettingsSection = 'profile' | 'appearance' | 'language' | 'notifications' | 'other';
+type SettingsSection = 'profile' | 'appearance' | 'holidays' | 'language' | 'notifications' | 'other';
 
 interface SettingsNavItem {
   readonly id: SettingsSection;
@@ -39,6 +41,7 @@ interface SettingsNavItem {
 const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
   { id: 'profile', labelKey: 'settings.sectionProfile' },
   { id: 'appearance', labelKey: 'settings.sectionAppearance' },
+  { id: 'holidays', labelKey: 'holidayCatalog.title' },
   { id: 'language', labelKey: 'settings.sectionLanguage' },
   { id: 'notifications', labelKey: 'settings.sectionNotifications' },
   { id: 'other', labelKey: 'settings.sectionOther' },
@@ -46,6 +49,7 @@ const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
 
 @Component({
   selector: 'app-settings-modal',
+  imports: [MobileNotificationControls, HolidayCatalog],
   templateUrl: './settings-modal.html',
   styleUrl: './settings-modal.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

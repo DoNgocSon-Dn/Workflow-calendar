@@ -1,8 +1,7 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
-import { Clock } from '../clock';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Holiday } from '../../models/holiday-theme.model';
-import { resolveHolidaysForDate } from '../../features/calendar/utils/holiday-resolver';
-import { scheduleVietnamMidnightTick, todayInVietnam } from '../utils/vietnam-time';
+import { resolveHolidaysForDate, resolveOccurrenceDatesForYear } from '../../features/calendar/utils/holiday-resolver';
+import { VietnamCalendarDayService } from './vietnam-calendar-day.service';
 import { NotificationSoundService } from './notification-sound.service';
 import { HolidayThemeService } from '../../features/calendar/data/holiday-theme.service';
 
@@ -43,29 +42,37 @@ function resolveActivePopupHoliday(today: Date): Holiday | null {
  * Resolves which holiday (if any) is active today, and whether its popup
  * should currently be visible. Only holidays with `popupEnabled: true` are
  * candidates — most holidays only get a calendar badge/theme, not a popup.
- * The dismissal state is remembered per holiday per calendar day in
- * localStorage, so closing the popup does not bring it back on every
- * navigation within the same day, but it reappears next year (or the next
- * matching day).
+ * Dismissal is remembered per holiday/year, so Tết's five-day window does
+ * not interrupt the user every day. A manual preview can always reopen a
+ * greeting without changing the automatic preference or system clock.
  */
 @Injectable({ providedIn: 'root' })
 export class HolidayPopupService {
-  private readonly clock = inject(Clock);
+  private readonly day = inject(VietnamCalendarDayService);
   private readonly sound = inject(NotificationSoundService);
   private readonly holidayThemeService = inject(HolidayThemeService);
 
   /** Theo giờ VN, cập nhật lại quanh nửa đêm — không phải giá trị tính một
    *  lần lúc service khởi tạo (bug cũ: tab mở xuyên nửa đêm sẽ đứng ở ngày
    *  hôm qua mãi mãi cho tới khi F5). */
-  private readonly today = signal(todayInVietnam(this.clock.now()));
+  readonly today = this.day.today;
+  private readonly manuallyOpened = signal<Holiday | null>(null);
+  private readonly manualYear = signal(this.today().getFullYear());
 
-  readonly activeHoliday = computed<Holiday | null>(() => resolveActivePopupHoliday(this.today()));
+  readonly activeHoliday = computed<Holiday | null>(() =>
+    this.manuallyOpened() ?? resolveActivePopupHoliday(this.today()));
+  readonly displayDate = computed(() => {
+    const manual = this.manuallyOpened();
+    return manual ? resolveOccurrenceDatesForYear(manual, this.manualYear())[0] ?? this.today() : this.today();
+  });
 
   private readonly dismissedManually = signal(false);
 
   readonly notificationsEnabled = signal<boolean>(readStoredNotificationsEnabled());
 
   readonly visible = computed<boolean>(() => {
+    if (this.manuallyOpened()) return true;
+    if (this.holidayThemeService.previewing()) return false;
     if (this.holidayThemeService.mode() === 'off') return false;
     if (!this.notificationsEnabled()) return false;
     const holiday = this.activeHoliday();
@@ -93,9 +100,14 @@ export class HolidayPopupService {
       wasVisible = isVisible;
     });
 
-    scheduleVietnamMidnightTick(this.clock, () => {
-      this.dismissedManually.set(false);
-      this.today.set(todayInVietnam(this.clock.now()));
+    let previousDay = this.today().getTime();
+    effect(() => {
+      const nextDay = this.today().getTime();
+      if (nextDay !== previousDay) untracked(() => {
+        this.dismissedManually.set(false);
+        this.manuallyOpened.set(null);
+      });
+      previousDay = nextDay;
     });
   }
 
@@ -105,11 +117,17 @@ export class HolidayPopupService {
 
   /** Replaces `{year}` / `{nextYear}` placeholders using today's date. */
   resolveText(text: string): string {
-    const year = this.today().getFullYear();
-    return text.replace('{year}', String(year)).replace('{nextYear}', String(year + 1));
+    const year = this.displayDate().getFullYear();
+    return text.replaceAll('{year}', String(year)).replaceAll('{nextYear}', String(year + 1));
+  }
+
+  showHoliday(holiday: Holiday, year = this.today().getFullYear()): void {
+    this.manualYear.set(year);
+    this.manuallyOpened.set(holiday);
   }
 
   dismiss(): void {
+    if (this.manuallyOpened()) { this.manuallyOpened.set(null); return; }
     this.dismissedManually.set(true);
     const holiday = this.activeHoliday();
     if (!holiday || !isBrowserStorageAvailable()) return;
@@ -122,13 +140,15 @@ export class HolidayPopupService {
   }
 
   private storageKeyFor(holiday: Holiday): string {
-    return `${DISMISS_KEY_PREFIX}${holiday.id}:${formatDateKey(this.today())}`;
+    // One greeting per occurrence/year, not five interruptions during Tết.
+    return `${DISMISS_KEY_PREFIX}v2:${holiday.id}:${this.today().getFullYear()}`;
   }
 
   private isDismissedInStorage(holiday: Holiday): boolean {
     if (!isBrowserStorageAvailable()) return false;
     try {
-      return window.localStorage.getItem(this.storageKeyFor(holiday)) === '1';
+      return window.localStorage.getItem(this.storageKeyFor(holiday)) === '1' ||
+        window.localStorage.getItem(`${DISMISS_KEY_PREFIX}${holiday.id}:${formatDateKey(this.today())}`) === '1';
     } catch {
       return false;
     }

@@ -1,0 +1,39 @@
+<section class="catalog">
+  <h3>{{ i18n.t('holidayCatalog.title') }}</h3>
+  <p class="hint">{{ i18n.t('holidayCatalog.hint') }}</p>
+  <div class="filters">
+    <label>{{ i18n.t('holidayCatalog.year') }}
+      <select name="holidayYear" [ngModel]="year()" (ngModelChange)="year.set(+$event)">
+        @for (y of years; track y) { <option [value]="y">{{ y }}</option> }
+      </select>
+    </label>
+    <label>{{ i18n.t('event.calendarType') }}
+      <select name="holidayCalendarType" [ngModel]="filter()" (ngModelChange)="filter.set($event)">
+        <option value="all">{{ i18n.t('holidayCatalog.all') }}</option>
+        <option value="solar">{{ i18n.t('event.calendarTypeSolar') }}</option>
+        <option value="lunar">{{ i18n.t('event.calendarTypeLunar') }}</option>
+      </select>
+    </label>
+  </div>
+  <label>{{ i18n.t('holidayCatalog.choose') }}
+    <select name="holidaySelection" [ngModel]="selected()?.id ?? ''" (ngModelChange)="selectedId.set($event)">
+      @for (item of holidays(); track item.holiday.id) {
+        <option [value]="item.holiday.id">{{ name(item.holiday.id) }}</option>
+      }
+    </select>
+  </label>
+  @if (selected(); as holiday) {
+    <div class="sample" [style.background]="theme().background" [style.color]="theme().textColor">
+      <app-holiday-visual [composition]="theme().composition" [theme]="theme()" aria-hidden="true" />
+      <strong>{{ name(holiday.id) }}</strong>
+      <span>{{ description() }}</span>
+      <p>{{ i18n.locale() === 'en' ? holiday.content.subtitleEn ?? holiday.content.subtitle : holiday.content.subtitle }}</p>
+    </div>
+    <button type="button" class="preview" (click)="preview()">{{ i18n.t('holidayCatalog.preview') }}</button>
+  }
+  @if (themes.previewing()) {
+    <button type="button" class="reset" (click)="themes.clearPreview()">{{ i18n.t('holidayCatalog.today') }}</button>
+  }
+  <p class="hint">{{ i18n.t('holidayCatalog.previewHint') }}</p>
+  <p class="hint">{{ i18n.t('holidayCatalog.referenceHint') }}</p>
+</section>

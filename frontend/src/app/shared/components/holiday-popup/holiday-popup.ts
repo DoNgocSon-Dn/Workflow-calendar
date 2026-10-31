@@ -1,5 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Clock } from '../../../core/clock';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { TranslationService } from '../../../core/i18n/translation.service';
 import { HolidayPopupService } from '../../../core/services/holiday-popup.service';
 import {
@@ -50,12 +49,24 @@ function buildParticles(decoration: HolidayDecoration): readonly HolidayParticle
 })
 export class HolidayPopup {
   private readonly popupService = inject(HolidayPopupService);
-  private readonly clock = inject(Clock);
   protected readonly i18n = inject(TranslationService);
 
   protected readonly holiday = this.popupService.activeHoliday;
   protected readonly visible = this.popupService.visible;
   protected readonly closing = signal(false);
+  private closeTimer?: ReturnType<typeof setTimeout>;
+
+  constructor() {
+    effect(() => {
+      this.holiday();
+      this.popupService.displayDate();
+      if (this.visible()) {
+        clearTimeout(this.closeTimer);
+        this.closing.set(false);
+      }
+    });
+    inject(DestroyRef).onDestroy(() => clearTimeout(this.closeTimer));
+  }
 
   protected readonly theme = computed(() => this.holiday()?.theme ?? DEFAULT_HOLIDAY_THEME);
 
@@ -91,7 +102,7 @@ export class HolidayPopup {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
-    }).format(this.clock.now()),
+    }).format(this.popupService.displayDate()),
   );
 
   protected readonly particles = computed<readonly HolidayParticleView[]>(() =>
@@ -103,7 +114,7 @@ export class HolidayPopup {
     this.closing.set(true);
     // Matches the CSS exit animation duration so the popup fades out before
     // it's removed from the DOM instead of disappearing abruptly.
-    setTimeout(() => this.popupService.dismiss(), 220);
+    this.closeTimer = setTimeout(() => this.popupService.dismiss(), 220);
   }
 
   onEscape(): void {

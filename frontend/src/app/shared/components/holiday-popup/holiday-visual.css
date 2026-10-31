@@ -220,6 +220,11 @@
   filter: drop-shadow(0 0 18px color-mix(in srgb, currentColor 70%, transparent));
 }
 
+.moon-crater { fill: #cfa966; opacity: .24; }
+.lantern-string { fill: none; stroke: #fcd34d; stroke-width: .8; opacity: .6; }
+.festival-lantern ellipse { fill: #b91c1c; stroke: #fcd34d; stroke-width: 1; }
+.festival-lantern path { fill: none; stroke: #fcd34d; stroke-width: .8; }
+
 /* ---- heart-bloom ---- */
 .heart {
   fill: currentColor;
