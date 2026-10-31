@@ -114,11 +114,9 @@ export class VietnamFlagMotif {
   protected readonly flagLeft = FLAG_LEFT;
   protected readonly flagRight = FLAG_RIGHT;
 
-  /** Tâm lá cờ — Dinh Độc Lập neo vào đúng điểm này (không phải tâm khung
-   *  ảnh PNG, vì ảnh có khoảng trong suốt lớn phía trên tòa nhà, xem offset
-   *  ảnh bù trong template). */
+  /** Landmark sits below the flag so the national emblem stays unobstructed. */
   protected readonly palaceX = (FLAG_LEFT + FLAG_RIGHT) / 2;
-  protected readonly palaceY = (FLAG_TOP + FLAG_BOTTOM) / 2;
+  protected readonly palaceY = 140;
 
   /** id duy nhất cho <linearGradient>/<clipPath> — popup và nền lịch có thể
    *  render CÙNG LÚC hai instance của component này. */

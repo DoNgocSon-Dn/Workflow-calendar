@@ -30,4 +30,8 @@
       }
     }
   </div>
+} @else if (generalTheme(); as theme) {
+  <div class="holiday-backdrop holiday-backdrop--general" aria-hidden="true">
+    <app-holiday-visual class="holiday-backdrop__motif" [composition]="theme.composition" [theme]="theme" />
+  </div>
 }

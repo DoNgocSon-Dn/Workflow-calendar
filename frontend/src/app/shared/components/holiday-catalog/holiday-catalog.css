@@ -1,0 +1,19 @@
+:host { display: block; }
+.catalog { display: grid; gap: 14px; }
+h3, p { margin: 0; }
+h3 { font-size: 1.05rem; }
+.hint { color: var(--color-text-secondary); font-size: .8rem; line-height: 1.6; }
+.filters { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; }
+label { display: grid; gap: 7px; font-size: .85rem; color: var(--color-text-secondary); }
+select { min-height: 44px; width: 100%; max-width: 100%; border: 1px solid var(--color-border-strong); border-radius: 9px;
+  background: var(--color-surface); color: var(--color-text); padding: 9px; font: inherit; }
+.sample { border-radius: 16px; padding: 20px; display: grid; gap: 9px; text-align: center; border: 1px solid var(--color-border); }
+.sample app-holiday-visual { height: 150px; position: relative; display: block; }
+.sample strong { font-size: 1.1rem; }
+.sample span, .sample p { font-size: .8rem; line-height: 1.6; }
+button { min-height: 44px; border-radius: 9px; padding: 10px 15px; font: inherit; cursor: pointer; }
+.preview { border: 0; background: var(--holiday-accent); color: var(--holiday-accent-contrast); font-weight: 600; }
+.reset { background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border-strong); }
+select:focus-visible, button:focus-visible { outline: 2px solid var(--holiday-accent); outline-offset: 3px; }
+@media (max-width: 480px) { .filters { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .sample { scroll-behavior: auto; } }

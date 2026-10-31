@@ -14,6 +14,7 @@
     (openEventFromNotification)="onViewDetail($event)"
     (openGroupFromNotification)="onOpenGroupFromNotification($event)"
   />
+  <app-holiday-banner />
 
   <div class="body" [class.sidebar-active]="store.sidebarOpen()">
     <div
@@ -210,7 +211,6 @@
   (openGroup)="onOpenGroupFromNotification($event)"
   (respondInvite)="onRespondInvite($event)"
   (respondJoinRequest)="onRespondJoinRequest($event)" />
-<app-holiday-popup />
 <app-birthday-popup />
 <app-floating-hub (openManualForm)="openManualFormFromAi($event)" />
 

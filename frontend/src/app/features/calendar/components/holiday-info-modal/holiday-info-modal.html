@@ -9,8 +9,10 @@
     <button type="button" class="close-btn" (click)="close()" [attr.aria-label]="i18n.t('common.close')">✕</button>
 
     <span class="badge">{{ badgeLabel() }}</span>
+    <app-holiday-visual class="holiday-art" [composition]="theme().composition" [theme]="theme()" aria-hidden="true" />
     <h2 class="title">{{ displayTitle() }}</h2>
-    <p class="date">{{ displayDate() }}</p>
+    <p class="date">{{ dateDescription() || displayDate() }}</p>
+    @if (subtitle()) { <p class="date">{{ subtitle() }}</p> }
     <p class="meta-line">
       {{ i18n.t('event.calendarType') }}: {{ calendarTypeLabel() }}
       &nbsp;•&nbsp;

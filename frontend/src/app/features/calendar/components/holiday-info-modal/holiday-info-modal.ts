@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { CalendarEvent } from '../../models/calendar.models';
 import { resolveHolidayIdFromEvent } from '../../data/vietnam-holidays';
-import { holidayCalendarType } from '../../utils/holiday-resolver';
+import { holidayCalendarType, holidayDateDescription, holidayName } from '../../utils/holiday-resolver';
+import { HolidayVisual } from '../../../../shared/components/holiday-popup/holiday-visual';
 import { HOLIDAYS } from '../../../../data/holidays.data';
 import { DEFAULT_HOLIDAY_THEME } from '../../../../models/holiday-theme.model';
 
@@ -22,6 +23,7 @@ const HOLIDAY_TYPE_KEY: Record<string, string> = {
  */
 @Component({
   selector: 'app-holiday-info-modal',
+  imports: [HolidayVisual],
   templateUrl: './holiday-info-modal.html',
   styleUrl: './holiday-info-modal.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -47,13 +49,21 @@ export class HolidayInfoModal {
   });
 
   protected readonly theme = computed(() => this.matchedHoliday()?.theme ?? DEFAULT_HOLIDAY_THEME);
+  protected readonly dateDescription = computed(() => {
+    const holiday = this.matchedHoliday();
+    return holiday ? holidayDateDescription(holiday, this.event().start.getFullYear(), this.i18n.locale()) : '';
+  });
+  protected readonly subtitle = computed(() => {
+    const c = this.matchedHoliday()?.content;
+    return this.i18n.locale() === 'en' ? c?.subtitleEn ?? c?.subtitle : c?.subtitle;
+  });
 
   /** Prefers the curated holiday's English title when the display language is
    *  English; falls back to the raw calendar-event title otherwise (covers
    *  fixed holidays that don't have a themed entry). */
   protected readonly displayTitle = computed(() => {
-    const content = this.matchedHoliday()?.content;
-    const raw = (this.i18n.locale() === 'en' && content?.titleEn) ? content.titleEn : (content?.title ?? this.event().title);
+    const holiday = this.matchedHoliday();
+    const raw = holiday ? holidayName(holiday, this.i18n.locale()) : this.event().title;
     const year = this.event().start.getFullYear();
     return raw.replace(/\{year\}/g, String(year)).replace(/\{nextYear\}/g, String(year + 1));
   });

@@ -1,7 +1,7 @@
 import { HOLIDAYS } from '../../../data/holidays.data';
 import { Holiday } from '../../../models/holiday-theme.model';
 import { CalendarType } from '../models/calendar.models';
-import { findLastDayOfLunarMonth, findLunarDateInSolarYear } from './lunar-calendar';
+import { convertSolarToLunar, findLastDayOfLunarMonth, findLunarDateInSolarYear } from './lunar-calendar';
 
 /**
  * Loại lịch của một ngày lễ — suy TRỰC TIẾP từ `dateRule.kind`, không đoán
@@ -49,6 +49,27 @@ function addDays(d: Date, days: number): Date {
   return copy;
 }
 
+function parseCivilDate(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+  const [, y, m, d] = match.map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d ? date : null;
+}
+
+/** Both date systems are visible, while the underlying date rule stays lunar. */
+export function holidayDateDescription(holiday: Holiday, year: number, locale = 'vi'): string {
+  const dates = resolveOccurrenceDatesForYear(holiday, year);
+  if (!dates.length) return locale === 'en' ? 'No occurrence this year' : 'Không có trong năm này';
+  const first = dates[0], last = dates[dates.length - 1];
+  const format = (d: Date) => d.toLocaleDateString(locale === 'en' ? 'en-GB' : 'vi-VN');
+  const solar = dates.length === 1 ? format(first) : `${format(first)} – ${format(last)}`;
+  if (holidayCalendarType(holiday) === 'solar') return `${solar} · ${locale === 'en' ? 'solar' : 'dương lịch'}`;
+  const lunar = convertSolarToLunar(first), end = convertSolarToLunar(last);
+  const lunarLabel = `${lunar.day}/${lunar.month}` + (dates.length > 1 ? ` – ${end.day}/${end.month}` : '');
+  return `${lunarLabel} ${locale === 'en' ? 'lunar' : 'âm lịch'} · ${solar}`;
+}
+
 /** Every Gregorian date a holiday occupies within one solar year — the one
  *  place that actually interprets a `HolidayDateRule`. Both the per-day
  *  lookup cache below and `vietnam-holidays.ts` (building real calendar
@@ -69,8 +90,9 @@ export function resolveOccurrenceDatesForYear(holiday: Holiday, year: number): D
       const dates: Date[] = [];
       for (const range of rule.ranges) {
         if (range.year !== year) continue;
-        const cursor = new Date(range.start);
-        const end = new Date(range.end);
+        const cursor = parseCivilDate(range.start);
+        const end = parseCivilDate(range.end);
+        if (!cursor || !end || cursor > end) continue;
         while (cursor <= end) {
           dates.push(new Date(cursor));
           cursor.setDate(cursor.getDate() + 1);
@@ -121,6 +143,7 @@ export function resolveHolidaysForDate(date: Date): readonly Holiday[] {
   let cache = yearCache.get(year);
   if (!cache) {
     cache = buildYearCache(year);
+    if (yearCache.size >= 12) yearCache.delete(yearCache.keys().next().value!);
     yearCache.set(year, cache);
   }
   return cache.get(dateKey(date)) ?? [];

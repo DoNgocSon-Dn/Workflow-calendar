@@ -260,6 +260,18 @@
    in the calendar grid), never a full background swap.
    ========================================================================== */
 
+:root[data-holiday] {
+  --holiday-accent: var(--holiday-fallback-light, var(--color-accent));
+  --holiday-accent-soft: color-mix(in srgb, var(--holiday-accent) 12%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, var(--holiday-accent) 6%, transparent);
+  --holiday-border: color-mix(in srgb, var(--holiday-accent) 35%, var(--color-border-strong));
+}
+:root.dark[data-holiday] {
+  --holiday-accent: var(--holiday-fallback-dark, var(--color-accent));
+  --holiday-accent-soft: color-mix(in srgb, var(--holiday-accent) 20%, var(--color-surface));
+  --holiday-surface-tint: color-mix(in srgb, var(--holiday-accent) 10%, transparent);
+}
+
 :root[data-holiday='tet-nguyen-dan'] {
   --holiday-accent: #b91c1c;
   --holiday-accent-soft: color-mix(in srgb, #b91c1c 12%, var(--color-surface));

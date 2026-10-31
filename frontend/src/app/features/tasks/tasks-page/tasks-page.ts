@@ -12,6 +12,7 @@ import { SettingsModal } from '../../calendar/components/settings-modal/settings
 import { CharCounter } from '../../../shared/components/char-counter/char-counter';
 import { ContactsLink } from '../../social/contacts-link';
 import { SyncStatus } from '../../../shared/components/sync-status/sync-status';
+import { HolidayBanner } from '../../../shared/components/holiday-banner/holiday-banner';
 import { isSidebarDrawerViewport } from '../../calendar/data/calendar-store';
 
 const HIDDEN_LISTS_STORAGE_KEY = 'tasks-hidden-lists';
@@ -37,7 +38,7 @@ function readStoredHiddenLists(): Set<string> {
   templateUrl: './tasks-page.html',
   styleUrl: './tasks-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BrandLogo, Icon, RouterLink, DatePipe, SettingsModal, CharCounter, ContactsLink, SyncStatus],
+  imports: [BrandLogo, Icon, RouterLink, DatePipe, SettingsModal, CharCounter, ContactsLink, SyncStatus, HolidayBanner],
 })
 export class TasksPage {
   protected readonly store = inject(CalendarStore);

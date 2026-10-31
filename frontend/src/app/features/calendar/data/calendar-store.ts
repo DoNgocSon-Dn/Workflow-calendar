@@ -519,7 +519,7 @@ export class CalendarStore {
   ]);
   // Sự kiện lịch lễ VN — tiêu đề dịch theo ngôn ngữ, dựng lại khi đổi ngôn ngữ.
   readonly holidayEvents = computed<CalendarEvent[]>(() =>
-    buildVietnamHolidayEvents(holidayYearWindow(this.clock.now()), this.i18n.locale()),
+    buildVietnamHolidayEvents(holidayYearWindow(this.focusedDate()), this.i18n.locale()),
   );
 
   readonly visibleEvents = computed(() => {

@@ -40,7 +40,7 @@ import { JoinGroupModal } from '../../groups/components/join-group-modal/join-gr
 import { GroupWorkspaceModal } from '../../groups/components/group-workspace-modal/group-workspace-modal';
 import { GroupStore } from '../../groups/data/group-store';
 import { OpenGroupChatRequest } from '../../../shared/components/notification/notification-panel';
-import { HolidayPopup } from '../../../shared/components/holiday-popup/holiday-popup';
+import { HolidayBanner } from '../../../shared/components/holiday-banner/holiday-banner';
 import { FloatingHub } from '../../../shared/components/floating-hub/floating-hub';
 import { ScreenNotes } from '../components/screen-notes/screen-notes';
 import { LoginSuccessTransition } from '../../auth/login-success-transition/login-success-transition';
@@ -84,7 +84,7 @@ interface ModalState {
     NotificationPopup,
     FloatingHub,
     ScreenNotes,
-    HolidayPopup,
+    HolidayBanner,
     BirthdayPopup,
     HolidayInfoModal,
     LoginSuccessTransition,

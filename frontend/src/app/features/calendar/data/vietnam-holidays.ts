@@ -2,7 +2,7 @@ import { HOLIDAYS } from '../../../data/holidays.data';
 import { CalendarDef, CalendarEvent } from '../models/calendar.models';
 import {
   holidayCalendarType,
-  holidayTitle,
+  holidayName,
   resolveOccurrenceDatesForYear,
 } from '../utils/holiday-resolver';
 
@@ -23,8 +23,8 @@ const EVENT_ID_SEPARATOR = '::';
 
 /**
  * Read-only reference calendar — **MỘT** all-day event cho mỗi lần xuất hiện
- * của mỗi entry `officialHoliday: true` trong `HOLIDAYS` (nguồn sự thật duy
- * nhất; xem `holiday-resolver.ts`).
+ * của mỗi lễ và ngày kỷ niệm trong `HOLIDAYS` (nguồn dữ liệu chung;
+ * xem `holiday-resolver.ts`). Đây không phải lịch nghỉ bù theo từng năm.
  *
  * Lễ kéo dài nhiều ngày (Tết Nguyên Đán — `lunar-range` 5 ngày, Giáng sinh —
  * `fixed-range` 2 ngày) là MỘT event `start → end`, KHÔNG phải N event rời.
@@ -41,7 +41,6 @@ export function buildVietnamHolidayEvents(
   const events: CalendarEvent[] = [];
 
   for (const holiday of HOLIDAYS) {
-    if (!holiday.officialHoliday) continue;
     const calendarType = holidayCalendarType(holiday);
 
     for (const year of years) {
@@ -54,7 +53,7 @@ export function buildVietnamHolidayEvents(
       const end = new Date(dates[dates.length - 1]);
       end.setDate(end.getDate() + 1);
 
-      const resolvedTitle = holidayTitle(holiday, locale)
+      const resolvedTitle = holidayName(holiday, locale)
         .replace(/\{year\}/g, String(year))
         .replace(/\{nextYear\}/g, String(year + 1));
 

@@ -1,5 +1,8 @@
 # Workflow Calendar
 
+Windows 1.2.0 hoàn thiện giao diện ngày lễ Việt Nam theo cả âm/dương lịch,
+49 dịp dựng sẵn và mục xem thử. Xem [cách dùng và phạm vi kiểm thử](NGAY-LE-VIET-NAM.md).
+
 Lịch, công việc và không gian nhóm, hỗ trợ tiếng Việt/English, lịch âm và ngày lễ Việt Nam.
 
 Bản 1.1.0 thêm kết bạn, chat riêng và mở nhanh bằng bản lưu trên máy, đồng bộ ở nền. Xem [báo cáo nâng cấp và kết quả kiểm thử](BAO-CAO-NANG-CAP-1.1.0.md).

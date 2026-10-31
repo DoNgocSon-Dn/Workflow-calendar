@@ -1,4 +1,4 @@
-import { Holiday, resolveGenericHolidayTheme } from '../models/holiday-theme.model';
+import { Holiday, HolidayArchetype, HolidayTheme, resolveGenericHolidayTheme } from '../models/holiday-theme.model';
 
 /**
  * All holidays — solar and lunar. To add a new one, append one object here —
@@ -10,7 +10,7 @@ import { Holiday, resolveGenericHolidayTheme } from '../models/holiday-theme.mod
  * back to `resolveGenericHolidayTheme(type)` (a plain solid accent + icon,
  * for the ~30 "minor" observances that don't need bespoke art).
  */
-export const HOLIDAYS: readonly Holiday[] = [
+const HOLIDAY_DEFINITIONS: readonly Holiday[] = [
   // ============================================================
   // 9 "hero" holidays — bespoke solid-color theme + popup for the
   // officially-major ones. Lunar-based ones use computed dateRule kinds
@@ -66,7 +66,6 @@ export const HOLIDAYS: readonly Holiday[] = [
       subtitleColor: 'rgba(255, 251, 235, 0.8)',
       composition: { archetype: 'national-day-scene' },
       decoration: { particleEmoji: ['⭐', '🎆'], particleAnimation: 'burst', particleCount: 12 },
-      backgroundImage: '/assets/holidays/national-day.jpg',
     },
     content: {
       title: 'Quốc khánh Việt Nam',
@@ -87,7 +86,7 @@ export const HOLIDAYS: readonly Holiday[] = [
     popupEnabled: true,
     dateRule: { kind: 'fixed', month: 4, day: 30 },
     theme: {
-      background: '#831843',
+      background: '#7f1d1d',
       accent: '#e8b34a',
       textColor: '#fff7ed',
       subtitleColor: 'rgba(255, 247, 237, 0.78)',
@@ -95,7 +94,6 @@ export const HOLIDAYS: readonly Holiday[] = [
       // trọng/hiện đại, không hình ảnh chiến tranh/vũ khí.
       composition: { archetype: 'vietnam-flag-scene' },
       decoration: { particleAnimation: 'float' },
-      backgroundImage: '/assets/holidays/reunification-day.jpg',
     },
     content: {
       title: 'Ngày Giải phóng miền Nam',
@@ -122,7 +120,6 @@ export const HOLIDAYS: readonly Holiday[] = [
       subtitleColor: 'rgba(255, 247, 237, 0.8)',
       composition: { archetype: 'labor-day-scene' },
       decoration: { particleEmoji: ['✨'], particleAnimation: 'twinkle', particleCount: 6 },
-      backgroundImage: '/assets/holidays/labor-day.jpg',
     },
     content: {
       title: 'Quốc tế Lao động',
@@ -334,7 +331,6 @@ export const HOLIDAYS: readonly Holiday[] = [
       subtitleColor: 'rgba(255, 255, 255, 0.75)',
       composition: { archetype: 'new-year-scene' },
       decoration: { particleEmoji: ['🎆', '✨', '🎉'], particleAnimation: 'burst', particleCount: 16 },
-      backgroundImage: '/assets/holidays/new-year.jpg',
     },
     content: {
       title: 'Chúc mừng năm mới {year}!',
@@ -650,7 +646,6 @@ export const HOLIDAYS: readonly Holiday[] = [
       subtitleColor: 'rgba(253, 243, 224, 0.82)',
       composition: { archetype: 'dong-son-drum-scene' },
       decoration: { particleAnimation: 'float' },
-      backgroundImage: '/assets/holidays/hung-kings.jpg',
     },
     content: {
       title: 'Giỗ Tổ Hùng Vương',
@@ -680,7 +675,7 @@ export const HOLIDAYS: readonly Holiday[] = [
   {
     id: 'vu-lan',
     name: 'Lễ Vu Lan',
-    nameEn: 'Vu Lan (Ghost Festival)',
+    nameEn: 'Vu Lan (Filial Piety Festival)',
     priority: 66,
     type: 'le-hoi',
     dateRule: { kind: 'lunar', month: 7, day: 15 },
@@ -735,3 +730,59 @@ export const HOLIDAYS: readonly Holiday[] = [
     },
   },
 ];
+
+function festivalTheme(background: string, accent: string, archetype: HolidayArchetype): HolidayTheme {
+  return { background, accent, textColor: '#fff7ed', subtitleColor: '#f4dfc8',
+    composition: { archetype }, decoration: { particleAnimation: 'float', particleCount: 0 } };
+}
+
+/** Lunar observances use the same artwork engine as the existing major holidays. */
+const FESTIVAL_DETAILS: Readonly<Record<string, { theme: HolidayTheme; vi: string; en: string; popup?: boolean }>> = {
+  'tat-nien': {
+    theme: festivalTheme('#7f1d1d', '#fbd063', 'tet-branch-scene'), popup: true,
+    vi: 'Khép lại năm cũ, sum vầy bên gia đình và đón một năm mới bình an.',
+    en: 'Gather with family, say farewell to the old year, and welcome a peaceful new year.',
+  },
+  'tao-quan': {
+    theme: festivalTheme('#78350f', '#fde68a', 'tet-branch-scene'),
+    vi: 'Ngày 23 tháng Chạp - tiễn Táo quân, dọn nhà và chuẩn bị đón Tết.',
+    en: 'The 23rd day of the last lunar month - a time to prepare the home for Tết.',
+  },
+  'than-tai': {
+    theme: festivalTheme('#7f1d1d', '#facc15', 'star-emblem'),
+    vi: 'Mùng 10 tháng Giêng - chúc một năm làm việc thuận lợi, sung túc và bình an.',
+    en: 'The 10th day of the first lunar month - wishing you prosperity and peace.',
+  },
+  'nguyen-tieu': {
+    theme: festivalTheme('#701a1a', '#fcd34d', 'moon-scene'),
+    vi: 'Rằm tháng Giêng - đêm trăng tròn đầu tiên của năm mới, cầu chúc an lành.',
+    en: 'The first full moon of the lunar year - a time for peace and good wishes.',
+  },
+  'han-thuc': {
+    theme: festivalTheme('#164e3b', '#d9f99d', 'floral-arrangement'),
+    vi: 'Mùng 3 tháng Ba - bánh trôi, bánh chay và những phút nhớ về cội nguồn.',
+    en: 'The third day of the third lunar month - rice dumplings and remembrance of our roots.',
+  },
+  'vesak': {
+    theme: festivalTheme('#4c1d55', '#f5d0fe', 'floral-arrangement'),
+    vi: 'Rằm tháng Tư - nuôi dưỡng lòng từ bi, sự sẻ chia và bình an.',
+    en: 'The full moon of the fourth lunar month - compassion, kindness, and peace.',
+  },
+  'doan-ngo': {
+    theme: festivalTheme('#14532d', '#fde68a', 'floral-arrangement'),
+    vi: 'Mùng 5 tháng Năm - hương vị trái cây đầu mùa, cơm rượu và lời chúc sức khỏe.',
+    en: 'The fifth day of the fifth lunar month - seasonal fruit, fermented rice, and good health.',
+  },
+  'vu-lan': {
+    theme: festivalTheme('#643a43', '#fecdd3', 'heart-bloom'),
+    vi: 'Rằm tháng Bảy - dành một lời cảm ơn và sự quan tâm cho cha mẹ, người thân.',
+    en: 'The full moon of the seventh lunar month - gratitude and care for parents and family.',
+  },
+};
+
+export const HOLIDAYS: readonly Holiday[] = HOLIDAY_DEFINITIONS.map((holiday) => {
+  const detail = FESTIVAL_DETAILS[holiday.id];
+  if (!detail) return { ...holiday, theme: holiday.theme ?? resolveGenericHolidayTheme(holiday.type) };
+  return { ...holiday, theme: detail.theme, popupEnabled: detail.popup ?? holiday.popupEnabled,
+    content: { ...holiday.content, subtitle: detail.vi, subtitleEn: detail.en } };
+});
