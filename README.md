@@ -2,6 +2,8 @@
 
 Lịch, công việc và không gian nhóm, hỗ trợ tiếng Việt/English, lịch âm và ngày lễ Việt Nam.
 
+Bản 1.1.0 thêm kết bạn, chat riêng và mở nhanh bằng bản lưu trên máy, đồng bộ ở nền. Xem [báo cáo nâng cấp và kết quả kiểm thử](BAO-CAO-NANG-CAP-1.1.0.md).
+
 ## Windows
 
 Bản desktop có cửa sổ riêng, khay hệ thống và popup nhắc lịch luôn nổi trên màn hình. Đăng nhập bằng email/mật khẩu; có đăng ký và khôi phục mật khẩu.
@@ -47,4 +49,4 @@ Supabase lưu tài khoản/dữ liệu; backend NestJS xử lý API, quyền, nh
 
 Frontend dùng cấu hình công khai; bản Windows cho đổi kết nối trong menu **Workflow → Cấu hình kết nối**. Khóa service-role chỉ đặt ở backend; thiếu khóa thì cron nhắc việc, deadline và nối dài chuỗi lặp không chạy. SMTP, AI và push cần cấu hình tương ứng trong `backend/.env.example`.
 
-**Trạng thái bàn giao:** project Supabase từng bị tạm dừng. Đã yêu cầu Resume từ dashboard; DNS và Auth health đã hoạt động lại, Email provider đang bật. Đang xác minh khôi phục dữ liệu và đăng nhập thật. Chưa chạy migration lên cơ sở dữ liệu thật.
+**Trạng thái database 31/10/2026:** Supabase đã hoạt động trở lại. Migration 48/49 cho liên hệ/chat riêng và siết quyền nhóm đã áp dụng sau kiểm thử rollback; không còn dữ liệu thử. Các kết quả và giới hạn nghiệm thu được ghi rõ trong báo cáo 1.1.0.

@@ -56,10 +56,12 @@ test("malformed popup input is rejected and text length is bounded", () => {
     title: "T".repeat(500),
     body: "b".repeat(2000),
     eventId: "e",
+    peerId: "peer-a",
     unknown: "discard",
   });
   assert.equal(item.title.length, 180);
   assert.equal(item.body.length, 1000);
   assert.equal(item.unknown, undefined);
   assert.equal(item.eventId, "e");
+  assert.equal(item.peerId, "peer-a");
 });

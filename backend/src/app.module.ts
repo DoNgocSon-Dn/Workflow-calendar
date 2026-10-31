@@ -24,6 +24,7 @@ import { RemindersModule } from './reminders/reminders.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { SystemNotificationsModule } from './system-notifications/system-notifications.module';
 import { TodosModule } from './todos/todos.module';
+import { SocialModule } from './social/social.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { TodosModule } from './todos/todos.module';
     AiModule,
     ImportModule,
     GroupsModule,
+    SocialModule,
     SystemNotificationsModule,
   ],
   controllers: [AppController],

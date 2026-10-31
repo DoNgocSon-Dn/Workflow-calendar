@@ -10,6 +10,8 @@ import { BrandLogo } from '../../../shared/components/brand-logo/brand-logo';
 import { Icon } from '../../../shared/components/icon/icon';
 import { SettingsModal } from '../../calendar/components/settings-modal/settings-modal';
 import { CharCounter } from '../../../shared/components/char-counter/char-counter';
+import { ContactsLink } from '../../social/contacts-link';
+import { SyncStatus } from '../../../shared/components/sync-status/sync-status';
 import { isSidebarDrawerViewport } from '../../calendar/data/calendar-store';
 
 const HIDDEN_LISTS_STORAGE_KEY = 'tasks-hidden-lists';
@@ -35,7 +37,7 @@ function readStoredHiddenLists(): Set<string> {
   templateUrl: './tasks-page.html',
   styleUrl: './tasks-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BrandLogo, Icon, RouterLink, DatePipe, SettingsModal, CharCounter],
+  imports: [BrandLogo, Icon, RouterLink, DatePipe, SettingsModal, CharCounter, ContactsLink, SyncStatus],
 })
 export class TasksPage {
   protected readonly store = inject(CalendarStore);

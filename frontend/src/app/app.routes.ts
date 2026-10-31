@@ -28,6 +28,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/tasks/tasks-page/tasks-page').then((m) => m.TasksPage),
   },
   {
+    path: 'contacts',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/social/contacts-page').then(m => m.ContactsPage),
+  },
+  {
     // "calendar/import", KHÔNG phải "/import" trần trụi — proxy.conf.json đã
     // chiếm tiền tố "/import" cho API import file thật (POST /import). Trùng
     // tiền tố thì F5/dán link vào trang này sẽ bị proxy bắt gửi thẳng lên

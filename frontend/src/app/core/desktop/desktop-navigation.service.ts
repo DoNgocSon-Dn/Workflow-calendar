@@ -25,8 +25,9 @@ export class DesktopNavigationService {
     const detachClick = this.bridge.onNotificationClick((alert) => {
       this.pendingState.set(alert);
       // The guard retains the destination if the user must sign in first.
-      if (router.url.split(/[?#]/)[0] !== '/calendar') {
-        void router.navigateByUrl('/calendar').catch(() => undefined);
+      const destination = alert.peerId ? '/contacts' : '/calendar';
+      if (router.url.split(/[?#]/)[0] !== destination) {
+        void router.navigateByUrl(destination).catch(() => undefined);
       }
     });
     const detachCancelled = this.bridge.onNotificationCancelled((id) => {

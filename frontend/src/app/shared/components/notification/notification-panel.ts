@@ -11,6 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { NotificationService } from '../../../core/services/notification.service';
 import { DialogService } from '../../../core/services/dialog.service';
 import {
@@ -62,6 +63,7 @@ export interface OpenGroupChatRequest {
   imports: [NotificationItem],
 })
 export class NotificationPanel {
+  private readonly router = inject(Router);
   private readonly service = inject(NotificationService);
   private readonly dialog = inject(DialogService);
   protected readonly i18n = inject(TranslationService);
@@ -261,6 +263,13 @@ export class NotificationPanel {
 
   onActivate(notification: AppNotification): void {
     this.service.markAsRead(notification.id);
+
+    const directPeerId = notification.metadata?.['directPeerId'];
+    if (directPeerId) {
+      void this.router.navigate(['/contacts'], { queryParams: { peer: directPeerId } });
+      this.close.emit();
+      return;
+    }
 
     if (EVENT_RELATED_TYPES.has(notification.type) && notification.relatedId) {
       this.openEvent.emit(notification.relatedId);

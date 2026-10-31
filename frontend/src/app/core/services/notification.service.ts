@@ -139,6 +139,7 @@ export class NotificationService {
           eventId: eventTypes.includes(notification.type) ? notification.relatedId : undefined,
           groupId: notification.messageMeta?.groupId ?? notification.metadata?.['groupId'],
           messageId: notification.messageMeta?.messageId,
+          peerId: notification.metadata?.['directPeerId'],
         })
         .catch(() => undefined);
     } else {

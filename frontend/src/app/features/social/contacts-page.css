@@ -1,0 +1,575 @@
+:host {
+  display: block;
+  height: 100dvh;
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-family: var(--font-sans);
+}
+* {
+  box-sizing: border-box;
+}
+button,
+input,
+textarea {
+  font: inherit;
+}
+button,
+a,
+input,
+textarea {
+  outline-offset: 3px;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+button,
+a {
+  touch-action: manipulation;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+h1,
+h2,
+p {
+  margin: 0;
+}
+button {
+  border: 0;
+}
+input,
+textarea {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface-input);
+  color: var(--color-text);
+  padding: 10px 12px;
+}
+input:focus,
+textarea:focus {
+  border-color: #2563eb;
+  outline: 2px solid #2563eb33;
+}
+.contacts-page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.contacts-topbar {
+  height: 70px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  gap: 20px;
+}
+.brand-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 750;
+  font-size: 15px;
+}
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  background: #2563eb;
+  color: white;
+  border-radius: 9px;
+  font-weight: 800;
+}
+nav {
+  display: flex;
+  gap: 22px;
+  font-size: 13px;
+  align-items: center;
+}
+nav span {
+  color: #2563eb;
+  font-weight: 700;
+}
+nav a:hover {
+  text-decoration: underline;
+}
+.contacts-layout {
+  display: grid;
+  grid-template-columns: 350px minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  margin: 20px auto;
+  max-width: 1400px;
+  width: calc(100% - 40px);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+.contacts-sidebar {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--color-border);
+  min-height: 0;
+}
+.sidebar-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 20px 8px;
+}
+.sidebar-heading h1 {
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -0.6px;
+}
+.quiet {
+  background: transparent;
+  color: var(--color-text-secondary);
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+.quiet:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+.connection {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--color-text-tertiary);
+  padding: 0 20px 16px;
+}
+.connection span {
+  height: 6px;
+  width: 6px;
+  background: var(--color-warning);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.connection.connected span {
+  background: #2563eb;
+}
+.add-contact {
+  padding: 0 20px 18px;
+}
+.add-contact label {
+  font-size: 12px;
+  font-weight: 650;
+  display: block;
+  margin-bottom: 8px;
+}
+.add-contact > div {
+  display: flex;
+  gap: 6px;
+}
+.add-contact input {
+  width: 100%;
+  font-size: 12px;
+}
+.primary {
+  background: #2563eb;
+  color: white;
+  padding: 9px 14px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.primary:hover:enabled {
+  background: #1d4ed8;
+}
+.notice {
+  font-size: 12px;
+  color: #2563eb;
+  padding: 0 20px 12px;
+}
+.contact-tabs {
+  display: flex;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--color-border);
+}
+.contact-tabs button {
+  flex: 1;
+  background: transparent;
+  padding: 13px 3px;
+  border-bottom: 2px solid transparent;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+.contact-tabs [aria-selected='true'] {
+  border-color: #2563eb;
+  color: #2563eb;
+  font-weight: 750;
+}
+.badge,
+.contact-tabs b {
+  border-radius: 20px;
+  background: #2563eb;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  margin-left: 3px;
+}
+.contact-tabs small {
+  font-size: 10px;
+}
+.contact-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+}
+.contact-search {
+  width: 100%;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+.conversation {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+  padding: 12px 10px;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+}
+.conversation:hover,
+.conversation.active {
+  background: var(--color-accent-soft);
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: var(--color-accent-soft);
+  color: #2563eb;
+  flex-shrink: 0;
+  font-size: 16px;
+  font-weight: 750;
+}
+.contact-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.contact-copy strong {
+  font-size: 13px;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.contact-copy small {
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.person {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 13px 6px;
+  border-bottom: 1px solid var(--color-border);
+}
+.person-actions {
+  display: flex;
+  gap: 5px;
+  margin-top: 6px;
+}
+.danger {
+  color: var(--color-danger);
+}
+.empty-list {
+  padding: 20px 10px;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 1.8;
+}
+.contact-list h2 {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  padding: 15px 6px 4px;
+}
+.privacy-note {
+  padding: 14px 20px;
+  font-size: 10px;
+  line-height: 1.7;
+  color: var(--color-text-tertiary);
+  border-top: 1px solid var(--color-border);
+}
+.chat-area {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  background: var(--color-bg);
+}
+.error {
+  padding: 12px 20px;
+  background: color-mix(in srgb, var(--color-danger) 8%, var(--color-surface));
+  color: var(--color-danger);
+  font-size: 12px;
+  line-height: 1.7;
+  flex-shrink: 0;
+}
+.thread-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 24px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+.thread-heading h2 {
+  font-size: 15px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.back {
+  display: none;
+}
+.thread {
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overscroll-behavior: contain;
+}
+.thread-status {
+  margin: auto;
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  padding: 30px;
+}
+.load-older {
+  align-self: center;
+}
+.message {
+  align-self: flex-start;
+  max-width: 78%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.message.mine {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+.bubble {
+  padding: 12px 16px;
+  border-radius: 16px 16px 16px 4px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  font-size: 13px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.mine .bubble {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+  border-radius: 16px 16px 4px 16px;
+}
+.message small {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+}
+.composer {
+  margin: 0 22px 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 8px;
+  background: var(--color-surface);
+}
+.composer textarea {
+  width: 100%;
+  resize: none;
+  background: transparent;
+  border: 0;
+  min-height: 64px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.composer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 3px;
+  gap: 10px;
+}
+.composer-footer small {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+}
+.cannot-message {
+  padding: 22px;
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+.welcome {
+  margin: auto;
+  padding: 35px;
+  text-align: center;
+  max-width: 430px;
+}
+.welcome-icon {
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  margin: 0 auto 22px;
+  border-radius: 22px;
+  background: var(--color-accent-soft);
+  color: #2563eb;
+  font-size: 32px;
+}
+.welcome h2 {
+  font-size: 24px;
+  font-weight: 750;
+  letter-spacing: -0.5px;
+  margin-bottom: 12px;
+}
+.welcome p {
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--color-text-secondary);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+@media (max-width: 800px) {
+  .contacts-layout {
+    grid-template-columns: 300px minmax(0, 1fr);
+    width: 100%;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+  }
+  .contacts-topbar {
+    padding: 0 16px;
+    height: 60px;
+  }
+  .brand-link {
+    font-size: 12px;
+  }
+  nav {
+    gap: 12px;
+    font-size: 11px;
+  }
+  .thread {
+    padding: 18px;
+  }
+  .thread-heading {
+    padding: 15px;
+  }
+  .composer {
+    margin: 0 12px 12px;
+  }
+  .message {
+    max-width: 90%;
+  }
+}
+@media (max-width: 620px) {
+  .contacts-layout {
+    display: flex;
+  }
+  .contacts-sidebar {
+    width: 100%;
+    border: 0;
+  }
+  .chat-area {
+    display: none;
+    flex: 1;
+  }
+  .has-thread .contacts-sidebar {
+    display: none;
+  }
+  .has-thread .chat-area {
+    display: flex;
+  }
+  .back {
+    display: block;
+  }
+  .brand-link {
+    font-size: 12px;
+    gap: 0;
+  }
+  .brand-mark {
+    font-size: 16px;
+  }
+  .contact-tabs button {
+    font-size: 13px;
+  }
+  .contact-copy strong {
+    font-size: 14px;
+  }
+  .contact-copy small {
+    font-size: 12px;
+  }
+  .thread-heading h2 {
+    font-size: 14px;
+  }
+  .thread-heading .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+  }
+  .composer-footer small {
+    font-size: 9px;
+  }
+  .welcome {
+    padding: 22px;
+  }
+  .contacts-topbar nav {
+    font-size: 12px;
+  }
+  .contacts-layout:not(.has-thread) .chat-area:has(.error) {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    flex: 0;
+  }
+  .contacts-layout:not(.has-thread) .chat-area:has(.error) .welcome {
+    display: none;
+  }
+}

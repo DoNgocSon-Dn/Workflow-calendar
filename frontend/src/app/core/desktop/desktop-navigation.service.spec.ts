@@ -8,7 +8,7 @@ import { DesktopNavigationService } from './desktop-navigation.service';
 
 const alert: DesktopAlert = { id: 'r1', title: 'Họp nhóm', body: '9:00', kind: 'reminder', eventId: 'e1' };
 
-function setup(url = '/tasks') {
+function setup(url = '/tasks', clickedAlert = alert) {
   let clicked: ((alert: DesktopAlert) => void) | undefined;
   let cancelled: ((id: string) => void) | undefined;
   const detachedClick = vi.fn();
@@ -28,12 +28,19 @@ function setup(url = '/tasks') {
   const service = TestBed.inject(DesktopNavigationService);
   TestBed.tick();
   return { service, user, navigateByUrl, acknowledge, detachedClick, detachedCancelled,
-    click: () => clicked?.(alert), cancel: () => cancelled?.(alert.id) };
+    click: () => clicked?.(clickedAlert), cancel: () => cancelled?.(clickedAlert.id) };
 }
 
 afterEach(() => { TestBed.resetTestingModule(); delete window.workflowDesktop; });
 
 describe('desktop notification navigation', () => {
+  it('routes a direct message to Contacts and waits for its consumer acknowledgment', () => {
+    const direct = { ...alert, eventId: undefined, kind: 'message', peerId: 'peer-a' };
+    const { service, click, navigateByUrl, acknowledge } = setup('/calendar', direct);
+    click(); expect(navigateByUrl).toHaveBeenCalledWith('/contacts');
+    expect(service.pending()).toEqual(direct); expect(acknowledge).not.toHaveBeenCalled();
+    service.complete(direct.id); expect(acknowledge).toHaveBeenCalledWith(direct.id);
+  });
   for (const url of ['/tasks', '/calendar/import', '/login']) {
     it(`retains the clicked target while navigating from ${url}`, () => {
       const { service, click, navigateByUrl, acknowledge } = setup(url);

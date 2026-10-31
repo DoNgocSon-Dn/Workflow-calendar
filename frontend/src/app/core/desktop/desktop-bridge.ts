@@ -6,6 +6,7 @@ export interface DesktopAlert {
   eventId?: string;
   groupId?: string;
   messageId?: string;
+  peerId?: string;
   sound?: boolean;
 }
 

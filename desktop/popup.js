@@ -25,10 +25,11 @@ window.reminderPopup.onUpdate(({ item, count, ring: shouldRing }) => {
   current = item;
   document.getElementById("title").textContent = item.title;
   document.getElementById("body").textContent = item.body;
+  document.getElementById("open-label").textContent = item.peerId || (item.groupId && ["message", "mention"].includes(item.kind)) ? "Mở trò chuyện" : ["task", "deadline"].includes(item.kind) ? "Xem công việc" : "Xem lịch";
   document.getElementById("count").textContent =
     count > 1 ? `+${count - 1} đang chờ` : "";
   document.getElementById("kind").textContent =
-    item.kind === "reminder" ? "ĐẾN GIỜ CỦA BẠN" : "CÓ VIỆC CẦN CHÚ Ý";
+    item.peerId ? "TIN NHẮN RIÊNG" : item.kind === "reminder" ? "ĐẾN GIỜ CỦA BẠN" : "CÓ VIỆC CẦN CHÚ Ý";
   if (shouldRing) {
     document.body.classList.remove("ring");
     requestAnimationFrame(() => document.body.classList.add("ring"));

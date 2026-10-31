@@ -1,4 +1,13 @@
-import { Injectable, Injector, computed, inject, signal } from '@angular/core';
+import {
+  DestroyRef,
+  Injectable,
+  Injector,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import {
   Group,
   GroupInvite,
@@ -41,6 +50,20 @@ import {
 } from '../../../core/services/notification-drafts';
 
 import { CalendarStore } from '../../calendar/data/calendar-store';
+import { readStartupCache, writeStartupCache } from '../../../core/services/startup-cache';
+
+function isGroupList(value: unknown): value is Group[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (group) =>
+        group &&
+        typeof group.id === 'string' &&
+        typeof group.name === 'string' &&
+        typeof group.ownerId === 'string',
+    )
+  );
+}
 
 /** Các tab của Group Workspace — khai báo ở store để luồng bên ngoài có thể
  *  yêu cầu mở đúng tab mà không phải import ngược vào component modal. */
@@ -78,7 +101,10 @@ export class GroupStore {
   private readonly nt = (key: string, vars?: Readonly<Record<string, string | number>>) =>
     this.i18n.t(key, vars);
 
-  readonly groups = signal<Group[]>([]);
+  private groupOwner = this.authStore.user()?.id ?? null;
+  readonly groups = signal<Group[]>(
+    this.groupOwner ? (readStartupCache(this.groupOwner, 'groups', isGroupList, false) ?? []) : [],
+  );
   readonly activeGroup = signal<Group | null>(null);
   readonly members = signal<GroupMember[]>([]);
   readonly tasks = signal<GroupTask[]>([]);
@@ -142,9 +168,36 @@ export class GroupStore {
   private readonly selfOriginMemberRemovals = new Set<string>();
 
   constructor() {
+    effect(() => {
+      const owner = this.authStore.user()?.id ?? null;
+      if (owner === this.groupOwner) return;
+      this.groupOwner = owner;
+      untracked(() => {
+        this.groups.set(owner ? (readStartupCache(owner, 'groups', isGroupList, false) ?? []) : []);
+        this.activeGroup.set(null);
+        this.activeWorkspaceModalOpen.set(false);
+        this.messages.set([]);
+        this.members.set([]);
+        this.tasks.set([]);
+        this.inviteLink.set(null);
+        this.pendingJoinRequests.set([]);
+        this.pendingInvites.set([]);
+        this.groupPendingInvites.set([]);
+        this.unreadMessageGroupIds.set(new Set());
+        this.meeting.set(null);
+        this.messageReads.set({});
+        this.reactions.set({});
+        this.polls.set({});
+        this.notifiedMessageIds.clear();
+      });
+    });
     // Quét lại định kỳ để các mốc deadline đã qua vẫn được bắt khi tab mở lâu
     // — bổ trợ cho cron backend, không thay thế nó.
-    setInterval(() => void this.scanMyTaskDeadlines(), DEADLINE_SCAN_INTERVAL_MS);
+    const deadlineTimer = setInterval(
+      () => void this.scanMyTaskDeadlines(),
+      DEADLINE_SCAN_INTERVAL_MS,
+    );
+    inject(DestroyRef).onDestroy(() => clearInterval(deadlineTimer));
   }
 
   /**
@@ -441,16 +494,12 @@ export class GroupStore {
           }
         },
       )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'group_tasks' },
-        (payload) => {
-          const groupId = (payload.new as any)?.group_id ?? (payload.old as any)?.group_id;
-          if (groupId && this.isActiveGroup(groupId)) {
-            void this.loadTasks(groupId);
-          }
-        },
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'group_tasks' }, (payload) => {
+        const groupId = (payload.new as any)?.group_id ?? (payload.old as any)?.group_id;
+        if (groupId && this.isActiveGroup(groupId)) {
+          void this.loadTasks(groupId);
+        }
+      })
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'group_members' },
@@ -461,59 +510,65 @@ export class GroupStore {
           }
         },
       )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'groups' },
-        (payload) => {
-          if (payload.eventType === 'UPDATE') {
-            const row = payload.new as any;
-            if (row?.id) {
-              this.groups.update((list) =>
-                list.map((g) =>
-                  g.id === row.id
-                    ? {
-                        ...g,
-                        name: row.name ?? g.name,
-                        description: row.description ?? g.description,
-                        ownerId: row.owner_id ?? g.ownerId,
-                      }
-                    : g,
-                ),
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, (payload) => {
+        if (payload.eventType === 'UPDATE') {
+          const row = payload.new as any;
+          if (row?.id) {
+            this.groups.update((list) =>
+              list.map((g) =>
+                g.id === row.id
+                  ? {
+                      ...g,
+                      name: row.name ?? g.name,
+                      description: row.description ?? g.description,
+                      ownerId: row.owner_id ?? g.ownerId,
+                    }
+                  : g,
+              ),
+            );
+            if (this.activeGroupId() === row.id) {
+              this.activeGroup.update((g) =>
+                g
+                  ? {
+                      ...g,
+                      name: row.name ?? g.name,
+                      description: row.description ?? g.description,
+                      ownerId: row.owner_id ?? g.ownerId,
+                    }
+                  : g,
               );
-              if (this.activeGroupId() === row.id) {
-                this.activeGroup.update((g) =>
-                  g
-                    ? {
-                        ...g,
-                        name: row.name ?? g.name,
-                        description: row.description ?? g.description,
-                        ownerId: row.owner_id ?? g.ownerId,
-                      }
-                    : g,
-                );
-              }
-            }
-          } else if (payload.eventType === 'DELETE') {
-            const oldRow = payload.old as any;
-            if (oldRow?.id) {
-              this.removeGroupLocally(oldRow.id);
             }
           }
-        },
-      )
+        } else if (payload.eventType === 'DELETE') {
+          const oldRow = payload.old as any;
+          if (oldRow?.id) {
+            this.removeGroupLocally(oldRow.id);
+          }
+        }
+      })
       .subscribe();
 
-    this.realtime.on<{ groupId: string; message: GroupMessage }>('group:messageUpdated', (payload) => {
-      if (!payload?.message) return;
-      if (!this.isActiveGroup(payload.groupId, payload.message.groupId)) return;
-      this.messages.update((list) => list.map((m) => (m.id === payload.message.id ? payload.message : m)));
-    });
+    this.realtime.on<{ groupId: string; message: GroupMessage }>(
+      'group:messageUpdated',
+      (payload) => {
+        if (!payload?.message) return;
+        if (!this.isActiveGroup(payload.groupId, payload.message.groupId)) return;
+        this.messages.update((list) =>
+          list.map((m) => (m.id === payload.message.id ? payload.message : m)),
+        );
+      },
+    );
 
-    this.realtime.on<{ groupId: string; message: GroupMessage }>('group:messageDeleted', (payload) => {
-      if (!payload?.message) return;
-      if (!this.isActiveGroup(payload.groupId, payload.message.groupId)) return;
-      this.messages.update((list) => list.map((m) => (m.id === payload.message.id ? payload.message : m)));
-    });
+    this.realtime.on<{ groupId: string; message: GroupMessage }>(
+      'group:messageDeleted',
+      (payload) => {
+        if (!payload?.message) return;
+        if (!this.isActiveGroup(payload.groupId, payload.message.groupId)) return;
+        this.messages.update((list) =>
+          list.map((m) => (m.id === payload.message.id ? payload.message : m)),
+        );
+      },
+    );
 
     this.realtime.on<{ groupId: string; task: GroupTask }>('group:taskCreated', (payload) => {
       if (!payload?.task) return;
@@ -531,7 +586,8 @@ export class GroupStore {
       if (!payload?.task) return;
       if (this.isActiveGroup(payload.groupId, payload.task.groupId)) {
         this.tasks.update((list) => {
-          if (list.some((t) => t.id === payload.task.id)) return list.map((t) => (t.id === payload.task.id ? payload.task : t));
+          if (list.some((t) => t.id === payload.task.id))
+            return list.map((t) => (t.id === payload.task.id ? payload.task : t));
           return [payload.task, ...list];
         });
       }
@@ -616,8 +672,7 @@ export class GroupStore {
             ...list.filter((r) => r.id !== payload.request.id),
           ]);
         }
-        const groupName =
-          this.groups().find((g) => g.id === payload.groupId)?.name ?? null;
+        const groupName = this.groups().find((g) => g.id === payload.groupId)?.name ?? null;
         this.notifications.ingest(
           groupJoinRequestDraft(this.nt, {
             requestId: payload.request.id,
@@ -693,60 +748,53 @@ export class GroupStore {
     );
 
     // Bình chọn thay đổi (có phiếu mới / bị đóng) → tải lại chi tiết.
-    this.realtime.on<{ groupId: string; pollId: string }>(
-      'group:pollChanged',
-      (payload) => {
-        if (!payload || !this.isActiveGroup(payload.groupId)) return;
-        if (this.polls()[payload.pollId]) void this.loadPoll(payload.groupId, payload.pollId);
-      },
-    );
+    this.realtime.on<{ groupId: string; pollId: string }>('group:pollChanged', (payload) => {
+      if (!payload || !this.isActiveGroup(payload.groupId)) return;
+      if (this.polls()[payload.pollId]) void this.loadPoll(payload.groupId, payload.pollId);
+    });
 
     // Ghim / bỏ ghim một tin nhắn.
-    this.realtime.on<{ groupId: string; messageId: string; pinned: boolean; pinnedBy: string | null }>(
-      'group:messagePinned',
-      (payload) => {
-        if (!payload || !this.isActiveGroup(payload.groupId)) return;
-        this.messages.update((list) =>
-          list.map((m) =>
-            m.id === payload.messageId
-              ? {
-                  ...m,
-                  pinnedAt: payload.pinned ? new Date().toISOString() : undefined,
-                  pinnedBy: payload.pinned ? payload.pinnedBy ?? undefined : undefined,
-                }
-              : m,
-          ),
-        );
-      },
-    );
+    this.realtime.on<{
+      groupId: string;
+      messageId: string;
+      pinned: boolean;
+      pinnedBy: string | null;
+    }>('group:messagePinned', (payload) => {
+      if (!payload || !this.isActiveGroup(payload.groupId)) return;
+      this.messages.update((list) =>
+        list.map((m) =>
+          m.id === payload.messageId
+            ? {
+                ...m,
+                pinnedAt: payload.pinned ? new Date().toISOString() : undefined,
+                pinnedBy: payload.pinned ? (payload.pinnedBy ?? undefined) : undefined,
+              }
+            : m,
+        ),
+      );
+    });
 
     // "Đã nhận" — người khác báo đã nhận một tin mình gửi.
-    this.realtime.on<{ messageId: string; userId: string }>(
-      'group:messageDelivered',
-      (payload) => {
-        if (!payload?.messageId) return;
-        this.deliveredMessageIds.update((s) => {
-          if (s.has(payload.messageId)) return s;
-          const next = new Set(s);
-          next.add(payload.messageId);
-          return next;
-        });
-      },
-    );
+    this.realtime.on<{ messageId: string; userId: string }>('group:messageDelivered', (payload) => {
+      if (!payload?.messageId) return;
+      this.deliveredMessageIds.update((s) => {
+        if (s.has(payload.messageId)) return s;
+        const next = new Set(s);
+        next.add(payload.messageId);
+        return next;
+      });
+    });
 
     // Yêu cầu vừa được duyệt: thành viên hiện có refresh danh sách ngay.
-    this.realtime.on<{ groupId: string; member: GroupMember }>(
-      'group:memberJoined',
-      (payload) => {
-        if (!payload?.member) return;
-        if (this.isActiveGroup(payload.groupId)) {
-          this.members.update((list) => [
-            ...list.filter((m) => m.userId !== payload.member.userId),
-            payload.member,
-          ]);
-        }
-      },
-    );
+    this.realtime.on<{ groupId: string; member: GroupMember }>('group:memberJoined', (payload) => {
+      if (!payload?.member) return;
+      if (this.isActiveGroup(payload.groupId)) {
+        this.members.update((list) => [
+          ...list.filter((m) => m.userId !== payload.member.userId),
+          payload.member,
+        ]);
+      }
+    });
 
     // Danh sách "Lời mời đang chờ" của người mời: một lời mời mới được tạo (kể
     // cả do quản trị viên khác trong nhóm mời).
@@ -806,26 +854,29 @@ export class GroupStore {
     // Bị xoá khỏi nhóm (hoặc tự rời — markSelfOrigin ở removeMember() chặn
     // thông báo dội lại cho chính người rời). Người khác bị xoá thì chỉ cập
     // nhật danh sách thành viên nếu đang mở đúng nhóm đó.
-    this.realtime.on<{ groupId: string; userId: string; calendarId?: string }>('group:memberRemoved', (payload) => {
-      if (!payload?.userId) return;
-      const currentUserId = this.authStore.user()?.id;
-      if (payload.userId === currentUserId) {
-        const key = `${payload.groupId}:${payload.userId}`;
-        const isSelfOrigin = this.selfOriginMemberRemovals.has(key);
-        if (isSelfOrigin) this.selfOriginMemberRemovals.delete(key);
-        const group = this.groups().find((g) => g.id === payload.groupId);
-        const groupName = group?.name ?? null;
-        const calendarId = payload.calendarId || group?.calendarId;
-        this.removeGroupLocally(payload.groupId, calendarId);
-        if (!isSelfOrigin) {
-          this.notifications.ingest(groupMemberRemovedDraft(this.nt, payload.groupId, groupName));
+    this.realtime.on<{ groupId: string; userId: string; calendarId?: string }>(
+      'group:memberRemoved',
+      (payload) => {
+        if (!payload?.userId) return;
+        const currentUserId = this.authStore.user()?.id;
+        if (payload.userId === currentUserId) {
+          const key = `${payload.groupId}:${payload.userId}`;
+          const isSelfOrigin = this.selfOriginMemberRemovals.has(key);
+          if (isSelfOrigin) this.selfOriginMemberRemovals.delete(key);
+          const group = this.groups().find((g) => g.id === payload.groupId);
+          const groupName = group?.name ?? null;
+          const calendarId = payload.calendarId || group?.calendarId;
+          this.removeGroupLocally(payload.groupId, calendarId);
+          if (!isSelfOrigin) {
+            this.notifications.ingest(groupMemberRemovedDraft(this.nt, payload.groupId, groupName));
+          }
+          return;
         }
-        return;
-      }
-      if (this.isActiveGroup(payload.groupId)) {
-        this.members.update((list) => list.filter((m) => m.userId !== payload.userId));
-      }
-    });
+        if (this.isActiveGroup(payload.groupId)) {
+          this.members.update((list) => list.filter((m) => m.userId !== payload.userId));
+        }
+      },
+    );
 
     // Chuyển quyền trưởng nhóm: đồng bộ danh sách thành viên + ownerId của
     // nhóm cho MỌI người đang mở app, kể cả người không mở nhóm này.
@@ -852,8 +903,7 @@ export class GroupStore {
       status: 'approved' | 'declined';
     }>('group:joinRequestDecided', (payload) => {
       if (!payload) return;
-      const groupName =
-        this.groups().find((g) => g.id === payload.groupId)?.name ?? null;
+      const groupName = this.groups().find((g) => g.id === payload.groupId)?.name ?? null;
       this.notifications.ingest(
         groupJoinRequestResolvedDraft(this.nt, {
           requestId: payload.requestId,
@@ -970,7 +1020,8 @@ export class GroupStore {
     if (group?.hidden) {
       void this.setGroupHidden(group.id, false);
     }
-    const text = message.message ?? (message.attachmentName ? `Đã gửi tệp: ${message.attachmentName}` : '');
+    const text =
+      message.message ?? (message.attachmentName ? `Đã gửi tệp: ${message.attachmentName}` : '');
     const input: GroupMessageDraftInput = {
       senderId: message.senderId,
       senderName: message.senderEmail ?? 'Một thành viên',
@@ -1000,10 +1051,16 @@ export class GroupStore {
    *  của đúng nhóm đó — mới nhắn xong đọc ngay thì đâu cần "sáng lên" báo lại. */
   private markGroupUnread(groupId: string): void {
     if (!groupId) return;
-    if (this.activeGroupId() === groupId && this.activeWorkspaceModalOpen() && this.activeWorkspaceTab() === 'chat') {
+    if (
+      this.activeGroupId() === groupId &&
+      this.activeWorkspaceModalOpen() &&
+      this.activeWorkspaceTab() === 'chat'
+    ) {
       return;
     }
-    this.unreadMessageGroupIds.update((ids) => (ids.has(groupId) ? ids : new Set(ids).add(groupId)));
+    this.unreadMessageGroupIds.update((ids) =>
+      ids.has(groupId) ? ids : new Set(ids).add(groupId),
+    );
   }
 
   /**
@@ -1062,7 +1119,9 @@ export class GroupStore {
     // kind === 'updated' (kéo-thả đổi trạng thái, sửa nội dung...) — báo cho
     // người được giao, người tạo, và bất kỳ ai đang mở sẵn nhóm này.
     const shouldNotify =
-      task.assignedTo === currentUserId || task.createdBy === currentUserId || this.isActiveGroup(groupId);
+      task.assignedTo === currentUserId ||
+      task.createdBy === currentUserId ||
+      this.isActiveGroup(groupId);
     if (!shouldNotify) return;
 
     // Đổi trạng thái / nội dung việc = hoạt động → chỉ vào chuông, không popup.
@@ -1070,7 +1129,12 @@ export class GroupStore {
   }
 
   /** Cùng bộ lọc với notifyTaskEvent() (chỉ báo nếu đang được giao việc đó) */
-  private notifyTaskDeleted(groupId: string, taskId: string, title: string, assignedTo?: string): void {
+  private notifyTaskDeleted(
+    groupId: string,
+    taskId: string,
+    title: string,
+    assignedTo?: string,
+  ): void {
     const currentUserId = this.authStore.user()?.id;
     if (!currentUserId) return;
     if (this.selfOriginTaskIds.has(taskId)) return;
@@ -1079,7 +1143,9 @@ export class GroupStore {
     const group = this.groups().find((g) => g.id === groupId);
     const groupName = group?.name ?? 'nhóm của bạn';
     // Việc bị xoá = hoạt động → chỉ vào chuông, không popup.
-    this.notifications.ingest(groupTaskDeletedDraft(this.nt, taskId, title ?? 'Công việc', groupName));
+    this.notifications.ingest(
+      groupTaskDeletedDraft(this.nt, taskId, title ?? 'Công việc', groupName),
+    );
   }
 
   /** Đánh dấu task vừa được chính người dùng này sửa, để bỏ qua tiếng vọng
@@ -1091,11 +1157,14 @@ export class GroupStore {
 
   async loadGroups(): Promise<void> {
     if (!this.authStore.session()) return;
+    const owner = this.authStore.user()?.id;
     try {
       this.loading.set(true);
       this.initRealtime();
       const list = await this.api.getGroups();
+      if (this.authStore.user()?.id !== owner) return;
       this.groups.set(list);
+      if (owner) writeStartupCache(owner, 'groups', list);
       this.joinAllGroupRooms();
     } catch (err) {
       console.error('Lỗi khi tải danh sách nhóm:', err);
@@ -1201,7 +1270,11 @@ export class GroupStore {
 
   /** Mở workspace của nhóm và nhảy thẳng vào tab Trò chuyện hoặc Công việc — dùng cho luồng
    *  click thông báo tin nhắn hoặc nhiệm vụ. `messageId` (nếu có) sẽ được cuộn tới. */
-  async openGroupChat(groupId: string, messageId?: string, tab: 'chat' | 'tasks' = 'chat'): Promise<void> {
+  async openGroupChat(
+    groupId: string,
+    messageId?: string,
+    tab: 'chat' | 'tasks' = 'chat',
+  ): Promise<void> {
     const group = this.groups().find((g) => g.id === groupId);
     if (!group) return;
     this.requestedWorkspaceTab.set(tab);
@@ -1243,7 +1316,11 @@ export class GroupStore {
       this.realtime.joinCalendar(group.calendarId);
     }
 
-    await Promise.all([this.loadMembers(group.id), this.loadTasks(group.id), this.loadMessages(group.id)]);
+    await Promise.all([
+      this.loadMembers(group.id),
+      this.loadTasks(group.id),
+      this.loadMessages(group.id),
+    ]);
     void this.loadMeeting(group.id);
     void this.loadMessageReads(group.id);
     void this.loadReactions(group.id);
@@ -1269,9 +1346,7 @@ export class GroupStore {
         }
       }
       if (changed) {
-        this.typingUsers.update((list) =>
-          list.filter((t) => this.typingExpiry.has(t.userId)),
-        );
+        this.typingUsers.update((list) => list.filter((t) => this.typingExpiry.has(t.userId)));
       }
       if (this.typingExpiry.size === 0) {
         clearInterval(this.typingSweep);
@@ -1288,12 +1363,7 @@ export class GroupStore {
     this.realtime.emit('group:typing', { groupId });
   }
 
-  private applyReaction(
-    messageId: string,
-    emoji: string,
-    userId: string,
-    added: boolean,
-  ): void {
+  private applyReaction(messageId: string, emoji: string, userId: string, added: boolean): void {
     this.reactions.update((prev) => {
       const forMsg = { ...(prev[messageId] ?? {}) };
       const users = new Set(forMsg[emoji] ?? []);
@@ -1387,9 +1457,7 @@ export class GroupStore {
     // Lạc quan.
     this.messages.update((list) =>
       list.map((m) =>
-        m.id === messageId
-          ? { ...m, pinnedAt: pinned ? new Date().toISOString() : undefined }
-          : m,
+        m.id === messageId ? { ...m, pinnedAt: pinned ? new Date().toISOString() : undefined } : m,
       ),
     );
     try {
@@ -1515,7 +1583,10 @@ export class GroupStore {
   async removeMember(groupId: string, userId: string): Promise<void> {
     const group = this.groups().find((g) => g.id === groupId);
     this.selfOriginMemberRemovals.add(`${groupId}:${userId}`);
-    setTimeout(() => this.selfOriginMemberRemovals.delete(`${groupId}:${userId}`), SELF_ORIGIN_TTL_MS);
+    setTimeout(
+      () => this.selfOriginMemberRemovals.delete(`${groupId}:${userId}`),
+      SELF_ORIGIN_TTL_MS,
+    );
     await this.api.removeMember(groupId, userId);
     this.members.update((prev) => prev.filter((m) => m.userId !== userId));
     if (userId === this.authStore.user()?.id) this.removeGroupLocally(groupId, group?.calendarId);
@@ -1538,7 +1609,14 @@ export class GroupStore {
     assignedTo?: string,
     dueDate?: string,
   ): Promise<GroupTask> {
-    const task = await this.api.createTask(groupId, title, description, status, assignedTo, dueDate);
+    const task = await this.api.createTask(
+      groupId,
+      title,
+      description,
+      status,
+      assignedTo,
+      dueDate,
+    );
     this.markTaskSelfOrigin(task.id);
     this.tasks.update((prev) => {
       if (prev.some((t) => t.id === task.id)) return prev;
@@ -1547,11 +1625,19 @@ export class GroupStore {
     return task;
   }
 
-  async updateTaskStatus(groupId: string, taskId: string, status: 'todo' | 'in_progress' | 'done'): Promise<void> {
+  async updateTaskStatus(
+    groupId: string,
+    taskId: string,
+    status: 'todo' | 'in_progress' | 'done',
+  ): Promise<void> {
     await this.updateTask(groupId, taskId, { status });
   }
 
-  async updateTask(groupId: string, taskId: string, updates: Partial<GroupTask>): Promise<GroupTask> {
+  async updateTask(
+    groupId: string,
+    taskId: string,
+    updates: Partial<GroupTask>,
+  ): Promise<GroupTask> {
     this.markTaskSelfOrigin(taskId);
     // Cập nhật lạc quan trước — kéo-thả đổi cột phải thấy ngay, không chờ
     // round-trip server mới nhảy vào khung. Lỗi thì trả lại giá trị cũ.
@@ -1706,9 +1792,8 @@ export class GroupStore {
       attachmentType: attachment?.type,
       attachmentSize: attachment?.size,
       senderEmail: user?.email,
-      senderName: (user?.user_metadata as Record<string, unknown> | undefined)?.[
-        'full_name'
-      ] as string | undefined,
+      senderName: (user?.user_metadata as Record<string, unknown> | undefined)?.['full_name'] as
+        string | undefined,
       replyToId: replyTo?.id,
       replyPreview: replyTo ? this.previewOf(replyTo) : undefined,
       replySenderName: replyTo?.senderName || replyTo?.senderEmail?.split('@')[0],

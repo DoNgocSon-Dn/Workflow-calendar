@@ -1,5 +1,6 @@
 <div class="calendar-page">
-  @if (serverStatus.waking()) {
+  <app-sync-status />
+  @if (serverStatus.waking() && !store.syncing() && !store.showingCached() && !store.syncFailed()) {
     <div class="server-waking" role="status">
       <span class="server-waking__spinner" aria-hidden="true"></span>
       {{ i18n.t('common.serverWaking') }}

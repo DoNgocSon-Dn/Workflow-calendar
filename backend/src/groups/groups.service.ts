@@ -2316,6 +2316,8 @@ export class GroupsService {
     groupId: string,
     dto: CreateGroupTaskDto,
   ): Promise<GroupTaskDto> {
+    const role = await this.requireRole(supabase, user, groupId);
+    if (!canChat(role)) throw new ForbiddenException('Khách chỉ có quyền xem công việc nhóm');
     const { data, error } = await supabase
       .from('group_tasks')
       .insert({
@@ -2386,6 +2388,7 @@ export class GroupsService {
     // của người khác (hoặc đổi tiêu đề/người phụ trách) bị chặn tại đây, không
     // chỉ ẩn nút trên giao diện.
     const role = await this.requireRole(supabase, user, groupId);
+    if (role === GroupRole.GUEST) throw new ForbiddenException('Khách chỉ có quyền xem công việc nhóm');
     if (!canManage(role, GroupRole.MEMBER)) {
       const onlyStatus =
         Object.keys(updateData).length > 0 &&
@@ -2870,7 +2873,8 @@ export class GroupsService {
     pollId: string,
     optionIds: string[],
   ): Promise<void> {
-    await this.requireRole(supabase, user, groupId);
+    const role = await this.requireRole(supabase, user, groupId);
+    if (!canChat(role)) throw new ForbiddenException('Khách chỉ có quyền xem bình chọn');
     const { error } = await supabase.rpc('vote_group_poll', {
       p_poll_id: pollId,
       p_option_ids: optionIds,

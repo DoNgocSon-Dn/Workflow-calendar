@@ -15,6 +15,7 @@ import { DensityService } from '../../../core/density/density-service';
 import { TranslationService } from '../../../core/i18n/translation.service';
 import { NotificationQueue } from '../../../core/realtime/notification-queue';
 import { CalendarHeader } from '../components/calendar-header/calendar-header';
+import { SyncStatus } from '../../../shared/components/sync-status/sync-status';
 import { CalendarHolidayBackdrop } from '../components/calendar-holiday-backdrop/calendar-holiday-backdrop';
 import { CalendarSidebar } from '../components/calendar-sidebar/calendar-sidebar';
 import { CreateCalendarModal } from '../components/create-calendar-modal/create-calendar-modal';
@@ -62,6 +63,7 @@ interface ModalState {
   styleUrl: './calendar-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    SyncStatus,
     CalendarHeader,
     CalendarHolidayBackdrop,
     CalendarSidebar,
@@ -204,7 +206,7 @@ export class CalendarPage {
     const desktopNavigation = inject(DesktopNavigationService);
     effect(() => {
       const alert = desktopNavigation.pending();
-      if (!alert) return;
+      if (!alert || alert.peerId) return;
       // An event/group may arrive after the page mounts. Do not consume a
       // native popup until the requested entity can actually be opened.
       if (alert.eventId) {

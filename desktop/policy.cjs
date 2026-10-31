@@ -27,6 +27,7 @@ function normalizeNotification(input) {
     eventId: short(input.eventId, 200),
     groupId: short(input.groupId, 200),
     messageId: short(input.messageId, 200),
+    peerId: short(input.peerId, 200),
     kind: short(input.kind, 40) || "system",
     sound: input.sound !== false,
   };
