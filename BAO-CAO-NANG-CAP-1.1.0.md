@@ -4,7 +4,7 @@
 
 Ứng dụng Windows dùng màu xanh dương theo logo, có popup riêng nổi trên màn hình, đăng nhập email/mật khẩu, kết bạn và chat riêng bằng văn bản. Lịch, công việc, ghi chú và danh sách nhóm có bản lưu theo tài khoản để mở nhanh, đồng bộ ở nền.
 
-Đã cài bản 1.1.0 lên máy và xác nhận app dùng phiên đăng nhập đã lưu để mở thẳng vào lịch. Giữ nguyên chức năng đổi màu theo ngày lễ theo yêu cầu của người dùng; màu thương hiệu thông thường vẫn là xanh dương.
+Đã cài bản 1.1.0 lên máy và xác nhận app dùng phiên đăng nhập đã lưu để mở thẳng vào lịch. Đã quan sát dòng “Đang xem bản lưu trên máy · đồng bộ ở nền…” trong app thật trước khi đồng bộ hoàn tất. Giữ nguyên chức năng đổi màu theo ngày lễ theo yêu cầu của người dùng; màu thương hiệu thông thường vẫn là xanh dương.
 
 Hai migration `48` và `49` đã được kiểm thử trong giao dịch rollback rồi áp dụng lên project Supabase hiện tại. Kiểm tra lại xác nhận: bảng tin nhắn riêng tồn tại; người chưa đăng nhập không được gọi RPC chuyển trưởng nhóm; không còn policy `ALL` quá rộng trên ba bảng nhóm chính; không còn tài khoản thử.
 
@@ -87,7 +87,11 @@ Tổng kiểm thử ứng dụng: **373**; kiểm thử SQL được thống kê
 
 ## Phát hành
 
-- Source: nhánh `codex/calendar-reliability-search`, PR #1.
+- Source: [PR #1](https://github.com/DoNgocSon-Dn/Workflow-calendar/pull/1) đã merge vào `master`, commit merge `332ed8f`.
 - Database: migration 48/49 đã áp dụng và kiểm tra lại.
 - Bộ cài: `desktop/release/Workflow-Calendar-Setup-1.1.0-x64.exe`; bản portable cùng thư mục.
-- Mã nguồn đã được kiểm thử cục bộ. Trạng thái merge/deploy và kiểm tra endpoint production sẽ được ghi sau khi phát hành.
+- Đã cài lên Windows, xác nhận ProductVersion `1.1.0.0`; có bản sao bộ cài/portable trong thư mục `Workflow-Windows` cạnh repo.
+- GitHub CI cho mã ứng dụng: frontend/backend/desktop đều success, gồm hai lượt push/PR. Các commit sau mã đã kiểm tra chỉ chỉnh báo cáo và khoảng trắng trong test SQL.
+- Vercel production đã success. Backend Render đã cập nhật: `GET /social` khi chưa đăng nhập trả 401 (trước triển khai là 404).
+- Đã mở **Liên hệ** trong app Windows bằng phiên thật: kết nối trực tiếp hoạt động, danh sách rỗng tải được, không báo lỗi thiết lập/migration. Chưa tạo quan hệ/tin nhắn thử trong dữ liệu của người dùng.
+- SHA-256 bộ cài cuối: `52FC446373E3A1C6AD173AD52BD23347811D25B239664FA1C54E7B24EF77FC00`.
