@@ -14,6 +14,7 @@ import { HolidayThemeMode, HolidayThemeService } from '../../data/holiday-theme.
 import { HOLIDAYS } from '../../../../data/holidays.data';
 import { DevUnlockService } from '../../../../core/services/dev-unlock.service';
 import { ReminderPreferencesService } from '../../../../core/services/reminder-preferences.service';
+import { MobileNotificationControls } from '../../../../core/mobile/mobile-notification-controls';
 
 interface BrandThemeOption {
   readonly value: BrandTheme;
@@ -46,6 +47,7 @@ const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
 
 @Component({
   selector: 'app-settings-modal',
+  imports: [MobileNotificationControls],
   templateUrl: './settings-modal.html',
   styleUrl: './settings-modal.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

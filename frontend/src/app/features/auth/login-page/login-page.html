@@ -135,6 +135,9 @@
           {{ i18n.t('auth.connectionSettings') }}
         </button>
       }
+      @if (android && success()) {
+        <p class="switch-mode">Xác nhận email hoặc đặt lại mật khẩu trong trình duyệt, sau đó quay lại app để đăng nhập.</p>
+      }
     </section>
   </main>
   <footer>{{ i18n.t('auth.footer') }}</footer>

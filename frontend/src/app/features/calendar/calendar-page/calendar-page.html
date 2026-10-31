@@ -1,4 +1,5 @@
 <div class="calendar-page">
+  <app-mobile-notification-controls [compact]="true" />
   <app-sync-status />
   @if (serverStatus.waking() && !store.syncing() && !store.showingCached() && !store.syncFailed()) {
     <div class="server-waking" role="status">

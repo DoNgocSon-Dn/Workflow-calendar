@@ -8,6 +8,7 @@ import {
   untracked,
 } from '@angular/core';
 import { DesktopNavigationService } from '../../../core/desktop/desktop-navigation.service';
+import { MobileNotificationControls } from '../../../core/mobile/mobile-notification-controls';
 import { NotificationService } from '../../../core/services/notification.service';
 import { Router } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth-store';
@@ -64,6 +65,7 @@ interface ModalState {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     SyncStatus,
+    MobileNotificationControls,
     CalendarHeader,
     CalendarHolidayBackdrop,
     CalendarSidebar,

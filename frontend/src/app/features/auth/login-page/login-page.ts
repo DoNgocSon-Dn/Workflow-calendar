@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth-store';
 import { safeAuthReturnUrl } from '../../../core/auth/auth-return-url';
 import { desktopBridge } from '../../../core/desktop/desktop-bridge';
+import { isAndroidApp } from '../../../core/mobile/mobile-platform';
 import { TranslationService } from '../../../core/i18n/translation.service';
 import { ThemeService } from '../../../core/theme/theme-service';
 import { BrandLogo } from '../../../shared/components/brand-logo/brand-logo';
@@ -24,6 +25,7 @@ export class LoginPage {
   protected readonly i18n = inject(TranslationService);
   protected readonly theme = inject(ThemeService);
   protected readonly desktop = desktopBridge();
+  protected readonly android = isAndroidApp();
   protected readonly returnUrl = safeAuthReturnUrl(
     this.route.snapshot.queryParamMap.get('returnUrl'),
   );

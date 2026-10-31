@@ -1,3 +1,5 @@
+import { isAndroidApp } from '../mobile/mobile-platform';
+
 /** Keep destinations internal when carrying them through auth pages and emails. */
 export function safeAuthReturnUrl(value: string | null | undefined): string | undefined {
   return value && /^\/(?!\/)/.test(value) && !/[\\\u0000-\u001f\u007f]/.test(value)
@@ -6,7 +8,8 @@ export function safeAuthReturnUrl(value: string | null | undefined): string | un
 }
 
 export function authEmailRedirect(path: '/login' | '/reset-password', returnUrl?: string): string {
-  const redirect = new URL(path, window.location.origin);
+  const origin = isAndroidApp() ? 'https://workflow-calendar.vercel.app' : window.location.origin;
+  const redirect = new URL(path, origin);
   const destination = safeAuthReturnUrl(returnUrl);
   if (destination) redirect.searchParams.set('returnUrl', destination);
   return redirect.href;

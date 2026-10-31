@@ -5,6 +5,7 @@ import { ThemeService } from './core/theme/theme-service';
 import { DialogHost } from './shared/components/dialog-host/dialog-host';
 import { DesktopNavigationService } from './core/desktop/desktop-navigation.service';
 import { SocialStore } from './features/social/social.store';
+import { MobileRuntimeService } from './core/mobile/mobile-runtime.service';
 
 @Component({
   selector: 'app-root',
@@ -14,6 +15,7 @@ import { SocialStore } from './features/social/social.store';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App {
+  private readonly mobileRuntime = inject(MobileRuntimeService);
   private readonly social = inject(SocialStore);
   private readonly desktopNavigation = inject(DesktopNavigationService);
   private readonly themeService = inject(ThemeService);
