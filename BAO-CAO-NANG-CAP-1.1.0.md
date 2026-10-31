@@ -4,6 +4,8 @@
 
 Ứng dụng Windows dùng màu xanh dương theo logo, có popup riêng nổi trên màn hình, đăng nhập email/mật khẩu, kết bạn và chat riêng bằng văn bản. Lịch, công việc, ghi chú và danh sách nhóm có bản lưu theo tài khoản để mở nhanh, đồng bộ ở nền.
 
+Đã cài bản 1.1.0 lên máy và xác nhận app dùng phiên đăng nhập đã lưu để mở thẳng vào lịch. Kiểm tra cửa sổ thật còn phát hiện màu điều khiển bị theme Halloween đổi sang cam; đã giữ màu nút theo màu thương hiệu, chỉ giữ sắc trang trí ngày lễ.
+
 Hai migration `48` và `49` đã được kiểm thử trong giao dịch rollback rồi áp dụng lên project Supabase hiện tại. Kiểm tra lại xác nhận: bảng tin nhắn riêng tồn tại; người chưa đăng nhập không được gọi RPC chuyển trưởng nhóm; không còn policy `ALL` quá rộng trên ba bảng nhóm chính; không còn tài khoản thử.
 
 Trạng thái phát hành được cập nhật ở cuối báo cáo. Bộ cài là bản Windows; chưa có bộ cài Android/iOS.

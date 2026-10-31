@@ -387,6 +387,16 @@
   --holiday-surface-tint: color-mix(in srgb, #fb923c 10%, transparent);
 }
 
+/* Seasonal decoration keeps its tint; application controls keep the chosen
+   brand accent instead of changing the whole app to orange/green/red. */
+:root[data-holiday],
+:root.dark[data-holiday] {
+  --holiday-accent: var(--color-accent);
+  --holiday-accent-soft: var(--color-accent-soft);
+  --holiday-accent-hover: var(--color-accent-hover);
+  --holiday-accent-contrast: var(--color-accent-contrast);
+}
+
 html,
 body {
   height: 100%;

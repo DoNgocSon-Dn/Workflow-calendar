@@ -123,4 +123,3 @@ end $$;
 reset role;
 select 'PASS: group roles, membership, tasks, messages, pins, anonymous votes, leadership and outsider isolation; fixtures rolled back' as result;
 rollback;
-
