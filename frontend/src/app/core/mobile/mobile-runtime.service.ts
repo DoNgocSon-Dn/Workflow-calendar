@@ -6,6 +6,7 @@ import { SystemBars, SystemBarsStyle } from '@capacitor/core';
 import { DesktopNavigationService } from '../desktop/desktop-navigation.service';
 import { MobileNotificationsService } from './mobile-notifications.service';
 import { isAndroidApp } from './mobile-platform';
+import { closeMobileDialog } from './mobile-back';
 
 @Injectable({ providedIn: 'root' })
 export class MobileRuntimeService {
@@ -26,9 +27,8 @@ export class MobileRuntimeService {
     const handles = [
       App.addListener('appStateChange', ({ isActive }) => { if (isActive) resume(); }),
       App.addListener('backButton', ({ canGoBack }) => {
-        if (document.querySelector('[role="dialog"], .modal-backdrop, .dialog-backdrop')) {
-          document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-        } else if (/^\/calendar(?:[?#]|$)/.test(router.url) || !canGoBack) {
+        if (closeMobileDialog()) return;
+        if (/^\/calendar(?:[?#]|$)/.test(router.url) || !canGoBack) {
           void App.minimizeApp();
         } else if (['/tasks', '/contacts', '/import'].some((path) => router.url.startsWith(path))) {
           void router.navigateByUrl('/calendar');
