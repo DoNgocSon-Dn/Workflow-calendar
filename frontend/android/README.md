@@ -1,4 +1,4 @@
-# Workflow Calendar Android 1.2.0
+# Workflow Calendar Android 1.2.1
 
 Ứng dụng Capacitor 8 chứa sẵn bản Angular production trong APK. Không cần chạy
 máy chủ phát triển trên máy tính. API cloud vẫn cần mạng cho đồng bộ và thao tác ghi.
@@ -36,3 +36,7 @@ Chat realtime dùng khi app hoạt động; chưa tích hợp FCM cho chat khi a
 
 Trạng thái kiểm thử thiết bị được ghi trong báo cáo bàn giao; build thành công
 không đồng nghĩa mọi chức năng đã được nghiệm thu trên điện thoại thật.
+
+A52 đã cài và thử 1.2.0: đăng nhập, bản lưu và thông báo nổi khi ở nền hoạt động.
+1.2.1 sửa Back đóng Cài đặt, nút nổi che hộp thoại và splash theo logo; test/build đạt,
+chưa cài lại trên A52. Xem báo cáo cập nhật 01/11 trong thư mục gốc.
