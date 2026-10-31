@@ -56,8 +56,15 @@ thống để hạn chế hoạt ảnh. Nền trang trí không bắt thao tác 
 - Frontend: **269 test / 45 file đạt**; desktop: **8 test đạt**. Gồm ngày âm
   2024-2027, tháng nhuận, Giao thừa 29/30, nửa đêm Việt Nam, máy ngủ/thức, trạng
   thái tắt/xem thử, không đổi đồng hồ và bộ chọn năm/ngày lễ.
-- Đã xem thử Tết, 30/4, 2/9 và Trung thu trên giao diện thật. Kết quả cài Windows
-  và CI được ghi trong phần bàn giao cuối.
+- Đã xem thử Tết, 30/4, 2/9 và Trung thu trên giao diện thật, gồm chế độ sáng/tối.
+- Windows **1.2.0** đã đóng gói, cài đè thành công, đăng nhập vào lịch và mở lời
+  chúc Tết bằng mục Ngày lễ Việt Nam. Bản cài và bản portable được bàn giao trong
+  thư mục `Workflow-Windows` cạnh repository; ảnh kiểm chứng ở
+  `output/holidays/Windows-1.2.0-Tet-preview.png` cạnh repository.
+- [CI cho mã nguồn 9669bd7](https://github.com/DoNgocSon-Dn/Workflow-calendar/actions/runs/41247079753)
+  đạt cả bốn job; gồm 269 test frontend, 131 test backend và 8 test desktop.
+- SHA-256 bản cài `Workflow-Calendar-Setup-1.2.0-x64.exe`:
+  `C68466C37E6C5AA22A248C80CB74A2AE9FC97514271315ED7CFCD3E1E4686AB0`.
 
 Danh sách mang tính văn hóa và tham khảo, không đại diện cho toàn bộ lễ hội
 địa phương hoặc lịch nghỉ bù/lịch đi làm của từng cơ quan. Mốc 10/3 âm lịch,
