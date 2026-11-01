@@ -494,7 +494,7 @@
                 (ngModelChange)="draft.set($event)"
                 [placeholder]="pendingFile() ? i18n.t('hub.filePromptPlaceholder') : i18n.t('hub.aiPlaceholder')"
                 [disabled]="sending()"
-                (keydown.enter)="$event.preventDefault(); send()"
+                (keydown)="onComposerKeydown($event)"
               />
               <app-char-counter class="field-counter" [current]="draft().length" [max]="2000" />
             </div>

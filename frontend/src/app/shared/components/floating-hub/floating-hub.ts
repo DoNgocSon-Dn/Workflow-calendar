@@ -16,6 +16,7 @@ import { TranslationService } from '../../../core/i18n/translation.service';
 import { NotificationQueue } from '../../../core/realtime/notification-queue';
 import { NotificationSoundService } from '../../../core/services/notification-sound.service';
 import { isAndroidApp } from '../../../core/mobile/mobile-platform';
+import { shouldSendOnEnter } from '../../../core/mobile/mobile-input';
 import {
   AiChatHistoryEntry,
   AiLastRelevantEntity,
@@ -584,6 +585,13 @@ export class FloatingHub {
       text: this.i18n.t(`hub.suggest${i + 1}`),
     })),
   );
+
+  onComposerKeydown(event: KeyboardEvent): void {
+    if (shouldSendOnEnter(event)) {
+      event.preventDefault();
+      void this.send();
+    }
+  }
 
   async send(): Promise<void> {
     const text = this.draft().trim();

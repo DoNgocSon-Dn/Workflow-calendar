@@ -22,6 +22,7 @@ import { SocialStore } from './social.store';
 import { BrandLogo } from '../../shared/components/brand-logo/brand-logo';
 import { HolidayBanner } from '../../shared/components/holiday-banner/holiday-banner';
 import { isAndroidApp } from '../../core/mobile/mobile-platform';
+import { shouldSendOnEnter } from '../../core/mobile/mobile-input';
 
 @Component({
   selector: 'app-contacts-page',
@@ -150,8 +151,7 @@ export class ContactsPage {
       await this.store.block(peer, true);
   }
   keydown(event: KeyboardEvent): void {
-    if (this.android) return; // Mobile Enter inserts a line; sending is explicit.
-    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+    if (shouldSendOnEnter(event)) {
       event.preventDefault();
       void this.store.send();
     }
