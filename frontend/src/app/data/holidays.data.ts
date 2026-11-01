@@ -281,7 +281,7 @@ const HOLIDAY_DEFINITIONS: readonly Holiday[] = [
       accent: '#fb923c',
       textColor: '#fde68a',
       subtitleColor: 'rgba(253, 230, 138, 0.75)',
-      composition: { archetype: 'moon-scene' },
+      composition: { archetype: 'moon-scene', variant: 'halloween' },
       decoration: { particleEmoji: ['🎃', '👻', '🕸️'], particleAnimation: 'float', particleCount: 10 },
     },
     content: { title: 'Lễ Halloween vui vẻ', titleEn: 'Happy Halloween' },
@@ -731,58 +731,232 @@ const HOLIDAY_DEFINITIONS: readonly Holiday[] = [
   },
 ];
 
-function festivalTheme(background: string, accent: string, archetype: HolidayArchetype): HolidayTheme {
-  return { background, accent, textColor: '#fff7ed', subtitleColor: '#f4dfc8',
-    composition: { archetype }, decoration: { particleAnimation: 'float', particleCount: 0 } };
+function festivalTheme(
+  background: string,
+  accent: string,
+  archetype: HolidayArchetype,
+  variant?: string,
+): HolidayTheme {
+  return {
+    background,
+    accent,
+    textColor: '#fff7ed',
+    subtitleColor: '#f4dfc8',
+    composition: variant ? { archetype, variant } : { archetype },
+    decoration: { particleAnimation: 'float', particleCount: 0 },
+  };
 }
 
-/** Lunar observances use the same artwork engine as the existing major holidays. */
-const FESTIVAL_DETAILS: Readonly<Record<string, { theme: HolidayTheme; vi: string; en: string; popup?: boolean }>> = {
+const FESTIVAL_DETAILS: Readonly<
+  Record<string, { theme: HolidayTheme; vi: string; en: string; popup?: boolean }>
+> = {
   'tat-nien': {
-    theme: festivalTheme('#7f1d1d', '#fbd063', 'tet-branch-scene'), popup: true,
+    theme: festivalTheme('#7f1d1d', '#fbd063', 'tet-branch-scene'),
+    popup: true,
     vi: 'Khép lại năm cũ, sum vầy bên gia đình và đón một năm mới bình an.',
     en: 'Gather with family, say farewell to the old year, and welcome a peaceful new year.',
   },
   'tao-quan': {
     theme: festivalTheme('#78350f', '#fde68a', 'tet-branch-scene'),
-    vi: 'Ngày 23 tháng Chạp - tiễn Táo quân, dọn nhà và chuẩn bị đón Tết.',
-    en: 'The 23rd day of the last lunar month - a time to prepare the home for Tết.',
+    popup: true,
+    vi: 'Ngày 23 tháng Chạp - tiễn Táo quân về trời, dọn nhà và chuẩn bị đón Tết cổ truyền.',
+    en: 'The 23rd day of the last lunar month - Kitchen Gods Festival and preparing the home for Tết.',
   },
   'than-tai': {
     theme: festivalTheme('#7f1d1d', '#facc15', 'star-emblem'),
-    vi: 'Mùng 10 tháng Giêng - chúc một năm làm việc thuận lợi, sung túc và bình an.',
-    en: 'The 10th day of the first lunar month - wishing you prosperity and peace.',
+    popup: true,
+    vi: 'Mùng 10 tháng Giêng - chúc một năm mới công việc thuận lợi, buôn may bán đắt, sung túc và bình an.',
+    en: 'The 10th day of the first lunar month - wishing you prosperity, good fortune, and peace.',
   },
   'nguyen-tieu': {
     theme: festivalTheme('#701a1a', '#fcd34d', 'moon-scene'),
-    vi: 'Rằm tháng Giêng - đêm trăng tròn đầu tiên của năm mới, cầu chúc an lành.',
-    en: 'The first full moon of the lunar year - a time for peace and good wishes.',
+    popup: true,
+    vi: 'Rằm tháng Giêng (Tết Thượng Nguyên) - đêm trăng tròn đầu tiên của năm mới, cầu chúc gia đạo an lành.',
+    en: 'The first full moon of the lunar year - a time for poetry, lanterns, and good wishes.',
   },
   'han-thuc': {
-    theme: festivalTheme('#164e3b', '#d9f99d', 'floral-arrangement'),
-    vi: 'Mùng 3 tháng Ba - bánh trôi, bánh chay và những phút nhớ về cội nguồn.',
-    en: 'The third day of the third lunar month - rice dumplings and remembrance of our roots.',
+    theme: festivalTheme('#164e63', '#d9f99d', 'floral-arrangement'),
+    popup: true,
+    vi: 'Mùng 3 tháng Ba âm lịch - hương vị bánh trôi, bánh chay thanh tao và lòng thành kính hướng về cội nguồn.',
+    en: 'The third day of the third lunar month - traditional rice dumplings and remembrance of our roots.',
   },
   'vesak': {
     theme: festivalTheme('#4c1d55', '#f5d0fe', 'floral-arrangement'),
-    vi: 'Rằm tháng Tư - nuôi dưỡng lòng từ bi, sự sẻ chia và bình an.',
-    en: 'The full moon of the fourth lunar month - compassion, kindness, and peace.',
+    popup: true,
+    vi: 'Đại lễ Phật Đản (Rằm tháng Tư) - nuôi dưỡng lòng từ bi, trí tuệ, sự sẻ chia và bình an.',
+    en: 'Vesak Day on the full moon of the fourth lunar month - celebrating compassion, wisdom, and peace.',
   },
   'doan-ngo': {
     theme: festivalTheme('#14532d', '#fde68a', 'floral-arrangement'),
-    vi: 'Mùng 5 tháng Năm - hương vị trái cây đầu mùa, cơm rượu và lời chúc sức khỏe.',
-    en: 'The fifth day of the fifth lunar month - seasonal fruit, fermented rice, and good health.',
+    popup: true,
+    vi: 'Tết Đoan Ngọ (Mùng 5 tháng Năm) - hương vị trái cây đầu mùa, cơm rượu nếp và lời chúc sức khỏe dồi dào.',
+    en: 'The fifth day of the fifth lunar month - seasonal fruits, fermented rice, and wishes for good health.',
   },
   'vu-lan': {
     theme: festivalTheme('#643a43', '#fecdd3', 'heart-bloom'),
-    vi: 'Rằm tháng Bảy - dành một lời cảm ơn và sự quan tâm cho cha mẹ, người thân.',
-    en: 'The full moon of the seventh lunar month - gratitude and care for parents and family.',
+    popup: true,
+    vi: 'Lễ Vu Lan Báo Hiếu (Rằm tháng Bảy) - trọn lòng hiếu thảo, biết ơn công ơn sinh thành dưỡng dục của cha mẹ.',
+    en: 'Vu Lan Festival on the seventh full moon - gratitude, filial piety, and care for parents and family.',
+  },
+  'double-ninth': {
+    theme: festivalTheme('#78350f', '#fcd34d', 'floral-arrangement'),
+    popup: true,
+    vi: 'Tết Trùng Cửu (09/09 Âm lịch) - kính chúc ông bà, cha mẹ bách niên giai lão, trường thọ và an vui.',
+    en: 'Double Ninth Festival - wishing longevity, health, and peace for elders and grandparents.',
+  },
+  'double-tenth': {
+    theme: festivalTheme('#14532d', '#fde68a', 'floral-arrangement'),
+    popup: true,
+    vi: 'Tết Cơm Mới (10/10 Âm lịch) - tri ân mùa màng lúa mới no ấm, đủ đầy và sum họp gia đình.',
+    en: 'Double Tenth New Rice Festival - celebrating the autumn harvest and family abundance.',
+  },
+  'ha-nguyen': {
+    theme: festivalTheme('#0f1f3d', '#fcd34d', 'moon-scene'),
+    popup: true,
+    vi: 'Lễ Hạ Nguyên (Rằm tháng Mười) - đêm trăng thanh tịnh tri ân mùa màng và cầu chúc bình an.',
+    en: 'Ha Nguyen Festival on the tenth full moon - an evening of gratitude and serene reflection.',
+  },
+  'student-day': {
+    theme: festivalTheme('#0369a1', '#bae6fd', 'geometric-abstract', 'books'),
+    popup: true,
+    vi: 'Ngày Truyền thống Học sinh - Sinh viên Việt Nam (09/01) - tôn vinh tinh thần hiếu học, sáng tạo và nhiệt huyết tuổi trẻ.',
+    en: 'Vietnamese Students Day (Jan 9) - honoring the learning spirit and dedication of students.',
+  },
+  'party-founding-day': {
+    theme: festivalTheme('#7f1d1d', '#facc15', 'star-emblem'),
+    popup: true,
+    vi: 'Kỷ niệm Ngày thành lập Đảng Cộng sản Việt Nam (03/02/1930) - mốc son lịch sử của cách mạng dân tộc.',
+    en: 'February 3 - commemorating the founding of the Communist Party of Vietnam.',
+  },
+  'vietnamese-doctors-day': {
+    theme: festivalTheme('#164e63', '#a7f3d0', 'heart-bloom'),
+    popup: true,
+    vi: 'Ngày Thầy thuốc Việt Nam (27/02) - tri ân đội ngũ y bác sĩ tận tâm chăm sóc và bảo vệ sức khỏe nhân dân.',
+    en: 'Vietnamese Doctors Day (Feb 27) - honoring healthcare professionals for their compassion and dedication.',
+  },
+  'youth-union-day': {
+    theme: festivalTheme('#0369a1', '#fde68a', 'midnight-sparkle'),
+    popup: true,
+    vi: 'Ngày thành lập Đoàn TNCS Hồ Chí Minh (26/03) - khơi dậy sức trẻ, tinh thần xung kích và khát vọng cống hiến.',
+    en: 'Youth Union Founding Day (Mar 26) - celebrating the energy and pioneering spirit of Vietnamese youth.',
+  },
+  'april-fools': {
+    theme: festivalTheme('#4c1d55', '#f5d0fe', 'midnight-sparkle'),
+    popup: true,
+    vi: 'Ngày Cá tháng Tư (01/04) - mang đến tiếng cười sảng khoái, niềm vui và năng lượng tích cực.',
+    en: 'April Fools Day (Apr 1) - sharing lighthearted joy, laughter, and positive energy.',
+  },
+  'book-day': {
+    theme: festivalTheme('#78350f', '#fde9c4', 'geometric-abstract', 'books'),
+    popup: true,
+    vi: 'Ngày Sách và Văn hóa đọc Việt Nam (21/04) - lan tỏa niềm đam mê đọc sách và bồi đắp tri thức mỗi ngày.',
+    en: 'Vietnam Book and Reading Culture Day (Apr 21) - fostering the love of reading and lifelong learning.',
+  },
+  'dien-bien-phu': {
+    theme: festivalTheme('#7f1d1d', '#fbd063', 'star-emblem', 'medal'),
+    popup: true,
+    vi: 'Kỷ niệm Chiến thắng Điện Biên Phủ (07/05/1954) - bản hùng ca lừng lẫy năm châu, chấn động địa cầu.',
+    en: 'May 7 - commemorating the historic Dien Bien Phu Victory.',
+  },
+  'children-team-day': {
+    theme: festivalTheme('#701a1a', '#fde68a', 'star-emblem'),
+    popup: true,
+    vi: 'Kỷ niệm Ngày thành lập Đội Thiếu niên Tiền phong Hồ Chí Minh (15/05/1941).',
+    en: 'May 15 - commemorating the founding of the Ho Chi Minh Young Pioneer Organization.',
+  },
+  'ho-chi-minh-birthday': {
+    theme: festivalTheme('#7f1d1d', '#fbd063', 'floral-arrangement'),
+    popup: true,
+    vi: 'Kỷ niệm Ngày sinh Chủ tịch Hồ Chí Minh (19/05/1890) - thành kính tưởng nhớ và tri ân vị lãnh tụ kính yêu của dân tộc.',
+    en: 'May 19 - remembering and honoring President Ho Chi Minh on his birthday.',
+  },
+  'press-day': {
+    theme: festivalTheme('#0f1f3d', '#fde68a', 'geometric-abstract', 'books'),
+    popup: true,
+    vi: 'Ngày Báo chí Cách mạng Việt Nam (21/06) - tôn vinh những người làm báo trung thực, bản lĩnh và tận tụy.',
+    en: 'Vietnam Revolutionary Press Day (Jun 21) - honoring journalists and press professionals.',
+  },
+  'vietnam-family-day': {
+    theme: festivalTheme('#643a43', '#fecdd3', 'heart-bloom'),
+    popup: true,
+    vi: 'Ngày Gia đình Việt Nam (28/06) - trân trọng bữa cơm ấm áp, tình thân và sự gắn kết yêu thương trong mỗi tổ ấm.',
+    en: 'Vietnamese Family Day (Jun 28) - cherishing warmth, love, and togetherness in every home.',
+  },
+  'world-population-day': {
+    theme: festivalTheme('#164e63', '#bae6fd', 'midnight-sparkle'),
+    popup: true,
+    vi: 'Ngày Dân số Thế giới (11/07) - nâng cao nhận thức về phát triển bền vững và chất lượng cuộc sống.',
+    en: 'World Population Day (Jul 11) - promoting sustainable development and quality of life for all.',
+  },
+  'war-invalids-martyrs-day': {
+    theme: festivalTheme('#701a1a', '#fcd34d', 'star-emblem', 'medal'),
+    popup: true,
+    vi: 'Ngày Thương binh - Liệt sĩ (27/07) - đời đời nhớ ơn các Anh hùng Liệt sĩ, thương binh và người có công với đất nước.',
+    en: 'War Invalids and Martyrs Day (Jul 27) - paying deep tribute to national heroes and contributors.',
+  },
+  'trade-union-day': {
+    theme: festivalTheme('#14532d', '#fde68a', 'geometric-abstract', 'tool'),
+    popup: true,
+    vi: 'Ngày thành lập Công đoàn Việt Nam (28/07) - đồng hành, chăm lo và tôn vinh người lao động Việt Nam.',
+    en: 'Vietnam Trade Union Day (Jul 28) - celebrating the dedication and rights of workers.',
+  },
+  'august-revolution': {
+    theme: festivalTheme('#7f1d1d', '#facc15', 'star-emblem'),
+    popup: true,
+    vi: 'Kỷ niệm Cách mạng tháng Tám thành công (19/08/1945) - bước ngoặt vĩ đại mở ra kỷ nguyên độc lập dân tộc.',
+    en: 'August 19 - commemorating the triumph of the August Revolution and national independence.',
+  },
+  'vietnam-fatherland-front': {
+    theme: festivalTheme('#701a1a', '#fbd063', 'star-emblem', 'medal'),
+    popup: true,
+    vi: 'Ngày truyền thống Mặt trận Tổ quốc Việt Nam (10/09) - phát huy sức mạnh khối đại đoàn kết toàn dân tộc.',
+    en: 'September 10 - honoring the strength of national unity and solidarity.',
+  },
+  'elderly-day': {
+    theme: festivalTheme('#78350f', '#fde68a', 'heart-bloom'),
+    popup: true,
+    vi: 'Ngày Quốc tế Người cao tuổi (01/10) - kính trọng, tri ân và gửi lời chúc sức khỏe tới ông bà, người cao tuổi.',
+    en: 'International Day of Older Persons (Oct 1) - expressing respect, care, and warm wishes for elders.',
+  },
+  'hanoi-liberation-day': {
+    theme: festivalTheme('#7f1d1d', '#fbd063', 'star-emblem', 'medal'),
+    popup: true,
+    vi: 'Kỷ niệm Ngày Giải phóng Thủ đô Hà Nội (10/10/1954) - Thủ đô ngàn năm văn hiến, Thành phố vì Hòa bình.',
+    en: 'October 10 - celebrating the Liberation Day of Hanoi Capital.',
+  },
+  'vietnam-entrepreneurs-day': {
+    theme: festivalTheme('#0f1f3d', '#f0b429', 'geometric-abstract', 'tool'),
+    popup: true,
+    vi: 'Ngày Doanh nhân Việt Nam (13/10) - chúc cộng đồng doanh nhân vững vàng bản lĩnh, sáng tạo và phát triển bền vững.',
+    en: 'Vietnamese Entrepreneurs Day (Oct 13) - honoring business leaders driving innovation and growth.',
+  },
+  'vietnam-law-day': {
+    theme: festivalTheme('#0f1f3d', '#bae6fd', 'geometric-abstract', 'books'),
+    popup: true,
+    vi: 'Ngày Pháp luật Việt Nam (09/11) - thượng tôn Hiến pháp và pháp luật vì một xã hội công bằng, dân chủ, văn minh.',
+    en: 'Vietnam Law Day (Nov 9) - upholding the Constitution and the rule of law.',
+  },
+  'red-cross-day': {
+    theme: festivalTheme('#7f1d1d', '#fecdd3', 'heart-bloom'),
+    popup: true,
+    vi: 'Ngày thành lập Hội Chữ thập đỏ Việt Nam (23/11) - lan tỏa tinh thần nhân đạo, sẻ chia vì cộng đồng.',
+    en: 'Vietnam Red Cross Day (Nov 23) - spreading humanitarian spirit, compassion, and mutual aid.',
+  },
+  'world-aids-day': {
+    theme: festivalTheme('#643a43', '#fecdd3', 'heart-bloom'),
+    popup: true,
+    vi: 'Ngày Thế giới phòng chống AIDS (01/12) - chung tay nâng cao nhận thức, cảm thông và bảo vệ sức khỏe cộng đồng.',
+    en: 'World AIDS Day (Dec 1) - uniting in awareness, empathy, and community health protection.',
   },
 };
 
 export const HOLIDAYS: readonly Holiday[] = HOLIDAY_DEFINITIONS.map((holiday) => {
   const detail = FESTIVAL_DETAILS[holiday.id];
-  if (!detail) return { ...holiday, theme: holiday.theme ?? resolveGenericHolidayTheme(holiday.type) };
-  return { ...holiday, theme: detail.theme, popupEnabled: detail.popup ?? holiday.popupEnabled,
-    content: { ...holiday.content, subtitle: detail.vi, subtitleEn: detail.en } };
+  if (!detail) return { ...holiday, popupEnabled: true, theme: holiday.theme ?? resolveGenericHolidayTheme(holiday.type) };
+  return {
+    ...holiday,
+    theme: detail.theme,
+    popupEnabled: detail.popup ?? true,
+    content: { ...holiday.content, subtitle: detail.vi, subtitleEn: detail.en },
+  };
 });

@@ -11,13 +11,11 @@
   width: 100%;
 }
 
-/* Layer 1 — background glow. A soft radial wash behind everything else,
-   giving the flat gradient underneath some depth without brightening it. */
 .visual__glow {
   position: absolute;
   inset: -20%;
   background: radial-gradient(
-    ellipse 60% 55% at 62% 42%,
+    ellipse 60% 55% at 50% 50%,
     color-mix(in srgb, currentColor 38%, transparent) 0%,
     transparent 70%
   );
@@ -26,7 +24,6 @@
   animation: visualGlowIn 0.6s ease-out 0.05s both;
 }
 
-/* Layer 2 — decorative elements behind the focal shape. */
 .visual__decor {
   position: absolute;
   inset: 0;
@@ -36,7 +33,6 @@
   animation: visualDecorIn 0.55s ease-out 0.15s both;
 }
 
-/* Layer 3 — the focal composition itself. */
 .visual__focal {
   position: absolute;
   inset: 0;
@@ -50,66 +46,29 @@
   transform: rotate(var(--focal-rotate, 0deg));
 }
 
-@keyframes visualGlowIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes visualDecorIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes visualFocalIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9) rotate(calc(var(--focal-rotate, 0deg) - 4deg));
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) rotate(var(--focal-rotate, 0deg));
-  }
-}
-
-/* ---- star-emblem ---- */
 .ribbon {
   fill: none;
-  stroke: color-mix(in srgb, currentColor 45%, #7a1414);
-  stroke-width: 10;
+  stroke: currentColor;
+  stroke-width: 6;
   stroke-linecap: round;
-  opacity: 0.35;
-  transform: rotate(var(--ribbon-angle, 0deg));
-  transform-origin: 100px 70px;
+  opacity: 0.28;
 }
 
 .ribbon--soft {
-  stroke-width: 6;
-  opacity: 0.22;
+  stroke-width: 4;
+  opacity: 0.16;
 }
 
-.rays {
+.rays line {
   stroke: currentColor;
-  stroke-width: 2;
+  stroke-width: 2.5;
   stroke-linecap: round;
-  opacity: 0.5;
+  opacity: 0.55;
 }
 
 .star-main,
 .star-inset {
   fill: currentColor;
-}
-
-.star-main {
   filter: drop-shadow(0 2px 10px color-mix(in srgb, currentColor 55%, transparent));
 }
 
@@ -121,98 +80,62 @@
 }
 
 .ribbon-tail {
-  fill: color-mix(in srgb, currentColor 40%, #7a1414);
+  fill: currentColor;
+  opacity: 0.7;
 }
 
-.visual__ring-dots {
-  position: absolute;
-  inset: 0;
-}
-
-.visual__ring-dots .dot {
-  position: absolute;
-  top: 44%;
-  left: 50%;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0;
-  transform: rotate(calc(var(--i) * 72deg)) translate(64px) rotate(calc(var(--i) * -72deg));
-  animation: dotTwinkle 3.4s ease-in-out calc(0.5s + var(--i) * 0.15s) infinite;
-}
-
-@keyframes dotTwinkle {
-  0%,
-  100% {
-    opacity: 0;
-    transform: rotate(calc(var(--i) * 72deg)) translate(64px) rotate(calc(var(--i) * -72deg)) scale(0.7);
-  }
-  50% {
-    opacity: 0.85;
-    transform: rotate(calc(var(--i) * 72deg)) translate(64px) rotate(calc(var(--i) * -72deg)) scale(1.1);
-  }
-}
-
-/* ---- floral-arrangement ---- */
 .silhouette {
   fill: currentColor;
-  opacity: 0.14;
-  filter: blur(10px);
+  opacity: 0.12;
+  filter: blur(2px);
 }
 
 .petal-cluster {
   fill: currentColor;
+  filter: drop-shadow(0 3px 10px color-mix(in srgb, currentColor 42%, transparent));
 }
 
 .petal-cluster--secondary {
-  opacity: 0.7;
+  opacity: 0.78;
 }
 
 .petal-center {
-  fill: color-mix(in srgb, currentColor 30%, #fde047);
+  fill: var(--holiday-bg, #1e293b);
+  opacity: 0.85;
 }
 
-.envelope {
-  fill: #b91c1c;
-}
-
-.envelope-seal {
-  fill: color-mix(in srgb, currentColor 60%, #fde047);
-}
-
-/* ---- tet-branch-scene: nghệ thuật thật nằm trong <app-tet-branch-motif>
-   (dùng chung với lớp nền sau lịch) — không có CSS riêng ở đây. ---- */
-
-/* ---- tree-scene ---- */
 .pine {
   fill: #14532d;
 }
 
 .pine--back {
   opacity: 0.3;
-  filter: blur(4px);
+  filter: blur(3px);
   fill: #1a6b3a;
 }
 
-.pine--front:nth-of-type(1) {
-  opacity: 0.95;
+.pine--front {
+  fill: #15803d;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.25));
 }
 
 .pine-trunk {
-  fill: #4a2d1a;
+  fill: #78350f;
 }
 
-.ornament,
+.ornament {
+  fill: currentColor;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, currentColor 70%, transparent));
+}
+
 .pine-star {
   fill: currentColor;
-  filter: drop-shadow(0 0 4px color-mix(in srgb, currentColor 60%, transparent));
+  filter: drop-shadow(0 0 10px color-mix(in srgb, currentColor 80%, transparent));
 }
 
-/* ---- moon-scene ---- */
 .horizon {
-  fill: color-mix(in srgb, currentColor 18%, #0a0713);
-  opacity: 0.9;
+  fill: currentColor;
+  opacity: 0.16;
 }
 
 .moon {
@@ -220,12 +143,30 @@
   filter: drop-shadow(0 0 18px color-mix(in srgb, currentColor 70%, transparent));
 }
 
-.moon-crater { fill: #cfa966; opacity: .24; }
-.lantern-string { fill: none; stroke: #fcd34d; stroke-width: .8; opacity: .6; }
-.festival-lantern ellipse { fill: #b91c1c; stroke: #fcd34d; stroke-width: 1; }
-.festival-lantern path { fill: none; stroke: #fcd34d; stroke-width: .8; }
+.moon-crater {
+  fill: color-mix(in srgb, currentColor 35%, #cbd5e1);
+  opacity: 0.45;
+}
 
-/* ---- heart-bloom ---- */
+.lantern-string {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  opacity: 0.5;
+}
+
+.festival-lantern ellipse {
+  fill: currentColor;
+  filter: drop-shadow(0 2px 8px color-mix(in srgb, currentColor 50%, transparent));
+}
+
+.festival-lantern path {
+  fill: none;
+  stroke: var(--holiday-bg, #0f1f3d);
+  stroke-width: 1.5;
+  opacity: 0.65;
+}
+
 .heart {
   fill: currentColor;
 }
@@ -235,96 +176,171 @@
 }
 
 .heart--front {
-  filter: drop-shadow(0 2px 8px color-mix(in srgb, currentColor 45%, transparent));
+  filter: drop-shadow(0 3px 12px color-mix(in srgb, currentColor 50%, transparent));
 }
 
 .petal-accent {
   fill: currentColor;
-  opacity: 0.4;
+  opacity: 0.55;
 }
 
-/* ---- midnight-sparkle ---- */
 .light-trail {
   fill: none;
   stroke: currentColor;
-  stroke-width: 2;
+  stroke-width: 4;
   stroke-linecap: round;
-  opacity: 0.4;
+  opacity: 0.25;
 }
 
 .sparkle {
   fill: currentColor;
+  filter: drop-shadow(0 0 10px color-mix(in srgb, currentColor 60%, transparent));
 }
 
 .sparkle--back {
-  opacity: 0.35;
-}
-
-.sparkle--main {
-  filter: drop-shadow(0 0 10px color-mix(in srgb, currentColor 65%, transparent));
-}
-
-/* ---- geometric-abstract ---- */
-.gear {
-  fill: currentColor;
-  opacity: 0.9;
-}
-
-.bar {
-  fill: color-mix(in srgb, currentColor 55%, transparent);
-}
-
-.block {
-  fill: currentColor;
-}
-
-.block--soft {
-  opacity: 0.7;
-}
-
-.block--faint {
   opacity: 0.45;
 }
 
-.book {
+.gear {
   fill: currentColor;
+  opacity: 0.92;
+  filter: drop-shadow(0 3px 10px color-mix(in srgb, currentColor 40%, transparent));
 }
 
-.book--soft {
+.bar {
+  fill: currentColor;
+  opacity: 0.78;
+}
+
+.block,
+.book,
+.dot-cluster {
+  fill: currentColor;
+  filter: drop-shadow(0 3px 10px color-mix(in srgb, currentColor 38%, transparent));
+}
+
+.block--soft,
+.book--soft,
+.dot-cluster--soft {
   opacity: 0.75;
 }
 
-.book--faint {
-  opacity: 0.5;
-}
-
-.dot-cluster {
-  fill: currentColor;
-}
-
-.dot-cluster--soft {
-  opacity: 0.6;
-}
-
+.block--faint,
+.book--faint,
 .dot-cluster--faint {
-  opacity: 0.35;
+  opacity: 0.48;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .visual__glow,
-  .visual__decor,
-  .visual__focal {
-    animation: none !important;
-    opacity: 1;
-    transform: none;
-  }
+.hv-dust {
+  fill: currentColor;
+  opacity: 0.45;
+  animation: hvDustTwinkle 3.2s ease-in-out infinite alternate;
+}
+.hv-dust--d1 { animation-delay: 0.8s; }
+.hv-dust--d2 { animation-delay: 1.6s; }
+.hv-dust--d3 { animation-delay: 2.4s; }
 
-  .visual__focal--rotate {
-    transform: rotate(var(--focal-rotate, 0deg));
-  }
+.hv-pulse {
+  animation: hvHaloPulse 4s ease-in-out infinite alternate;
+}
 
-  .visual__ring-dots .dot {
-    animation: none;
-    opacity: 0.5;
-  }
+.hv-float-3d {
+  animation: hvFloat3D 4.2s ease-in-out infinite alternate;
+}
+
+.hv-sway-3d {
+  animation: hvSway3D 5.5s ease-in-out infinite alternate;
+}
+
+.hv-spin-slow {
+  animation: hvSpin360 48s linear infinite;
+}
+
+.hv-spin-rev {
+  animation: hvSpin360 32s linear infinite reverse;
+}
+
+.hv-lantern-rot {
+  transform-origin: 0px -16px;
+  animation: hvLanternRot 3.4s ease-in-out infinite alternate;
+}
+
+.hv-lantern-rot-rev {
+  transform-origin: 0px -16px;
+  animation: hvLanternRot 3.8s ease-in-out 0.6s infinite alternate-reverse;
+}
+
+.hv-cloud-drift {
+  animation: hvCloudDrift 6s ease-in-out infinite alternate;
+}
+
+.hv-ribbon-wave {
+  animation: hvRibbonWave 7s ease-in-out infinite alternate;
+}
+
+.hv-ribbon-wave-rev {
+  animation: hvRibbonWave 9s ease-in-out infinite alternate-reverse;
+}
+
+.hv-twinkle {
+  animation: hvDustTwinkle 2.2s ease-in-out infinite alternate;
+}
+
+.hv-twinkle-d {
+  animation: hvDustTwinkle 2.8s ease-in-out 0.9s infinite alternate;
+}
+
+@keyframes visualGlowIn {
+  from { opacity: 0; transform: scale(0.88); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes visualDecorIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes visualFocalIn {
+  from { opacity: 0; transform: translateY(6px) scale(0.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes hvDustTwinkle {
+  0% { opacity: 0.18; }
+  100% { opacity: 0.82; }
+}
+
+@keyframes hvHaloPulse {
+  0% { opacity: 0.12; }
+  100% { opacity: 0.26; }
+}
+
+@keyframes hvFloat3D {
+  0% { transform: translateY(2.5px); }
+  100% { transform: translateY(-3.5px); }
+}
+
+@keyframes hvSway3D {
+  0% { transform: rotate(-2deg) scaleX(0.99); }
+  100% { transform: rotate(2deg) scaleX(1.01); }
+}
+
+@keyframes hvSpin360 {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes hvLanternRot {
+  0% { transform: rotate(-6deg); }
+  100% { transform: rotate(6deg); }
+}
+
+@keyframes hvCloudDrift {
+  0% { transform: translateX(-5px); }
+  100% { transform: translateX(5px); }
+}
+
+@keyframes hvRibbonWave {
+  0% { transform: translateX(0px) translateY(0px); }
+  100% { transform: translateX(-4px) translateY(2px); }
 }
