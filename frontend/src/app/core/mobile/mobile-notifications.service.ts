@@ -1,5 +1,6 @@
 import { DestroyRef, Injectable, InjectionToken, effect, inject, signal, untracked } from '@angular/core';
 import { LocalNotifications, LocalNotificationSchema } from '@capacitor/local-notifications';
+import { registerPlugin } from '@capacitor/core';
 import { AuthStore } from '../auth/auth-store';
 import { SUPABASE_CLIENT } from '../supabase-client';
 import { DesktopAlert } from '../desktop/desktop-bridge';
@@ -10,6 +11,7 @@ import { MobileReminderRow, mobileNotificationId, planReminders } from './remind
 const CHANNEL = 'workflow-reminders-v1';
 const QUIET_CHANNEL = 'workflow-quiet-v1';
 const OWNER_KEY = 'workflow-android-alarm-owner';
+const nativeSettings = registerPlugin<{ openNotifications(): Promise<void> }>('WorkflowSettings');
 export const MOBILE_NOTIFICATION_PLUGIN = new InjectionToken<{ plugin: typeof LocalNotifications }>(
   'MOBILE_NOTIFICATION_PLUGIN', { providedIn: 'root', factory: () => ({ plugin: LocalNotifications }) },
 );
@@ -123,6 +125,12 @@ export class MobileNotificationsService {
       await this.checkPermission();
       this.refresh();
     } catch { this.error.set('Hãy kiểm tra mục Báo thức và lời nhắc trong cài đặt Android.'); }
+  }
+
+  async openSettings(): Promise<void> {
+    if (!this.supported) return;
+    try { await nativeSettings.openNotifications(); }
+    catch { this.error.set('Hãy mở Cài đặt Android → Ứng dụng → Workflow Calendar → Thông báo.'); }
   }
 
   refresh(): void {

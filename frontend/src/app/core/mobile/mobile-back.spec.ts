@@ -21,4 +21,20 @@ describe('Android Back on dialogs', () => {
   it('allows route navigation when there is no dialog', () => {
     expect(closeMobileDialog()).toBe(false);
   });
+  it('dismisses a menu before leaving a selected chat or drawer', () => {
+    document.body.innerHTML = '<button data-native-back>Chat back</button><div data-native-back>Menu backdrop</div>';
+    const lower = vi.fn(), upper = vi.fn();
+    const layers = document.querySelectorAll<HTMLElement>('[data-native-back]');
+    layers[0].addEventListener('click', lower); layers[1].addEventListener('click', upper);
+    expect(closeMobileDialog()).toBe(true);
+    expect(upper).toHaveBeenCalledOnce(); expect(lower).not.toHaveBeenCalled();
+  });
+  it('closes a confirmation first and leaves the drawer underneath intact', () => {
+    document.body.innerHTML = '<div data-native-back>Drawer</div><section role="dialog"><button data-native-close>Cancel</button></section>';
+    const drawer = vi.fn(), cancel = vi.fn();
+    document.querySelector('[data-native-back]')!.addEventListener('click', drawer);
+    document.querySelector('button')!.addEventListener('click', cancel);
+    expect(closeMobileDialog()).toBe(true);
+    expect(cancel).toHaveBeenCalledOnce(); expect(drawer).not.toHaveBeenCalled();
+  });
 });

@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { isAndroidApp } from '../../../../core/mobile/mobile-platform';
 import { CalendarStore, localizedCalendarName } from '../../data/calendar-store';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { AuthStore } from '../../../../core/auth/auth-store';
@@ -47,6 +48,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
   imports: [DatePipe, Icon],
 })
 export class AgendaView {
+  protected readonly android = isAndroidApp();
+  readonly createRequested = output<void>();
   protected readonly store = inject(CalendarStore);
   protected readonly i18n = inject(TranslationService);
   private readonly authStore = inject(AuthStore);

@@ -9,10 +9,11 @@ import { MobileRuntimeService } from './core/mobile/mobile-runtime.service';
 import { HolidayThemeService } from './features/calendar/data/holiday-theme.service';
 import { HolidayPopup } from './shared/components/holiday-popup/holiday-popup';
 import { AuthStore } from './core/auth/auth-store';
+import { MobileNavigation } from './core/mobile/mobile-navigation';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, DialogHost, HolidayPopup],
+  imports: [RouterOutlet, DialogHost, HolidayPopup, MobileNavigation],
   templateUrl: './app.html',
   styleUrl: './app.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

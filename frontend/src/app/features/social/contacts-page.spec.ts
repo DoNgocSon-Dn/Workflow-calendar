@@ -9,6 +9,7 @@ import { RealtimeService } from '../../core/realtime/realtime.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { DesktopNavigationService } from '../../core/desktop/desktop-navigation.service';
 import { emptyOverview } from './social.models';
+import { Capacitor } from '@capacitor/core';
 
 describe('contacts screen', () => {
   const profile = {
@@ -60,7 +61,24 @@ describe('contacts screen', () => {
       ],
     });
   });
-  afterEach(() => TestBed.resetTestingModule());
+  afterEach(() => { TestBed.resetTestingModule(); vi.restoreAllMocks(); });
+  it('keeps Android keyboard Enter as a newline and sends only with the Send button', async () => {
+    vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true);
+    vi.spyOn(Capacitor, 'getPlatform').mockReturnValue('android');
+    const fixture = TestBed.createComponent(ContactsPage);
+    await fixture.whenStable();
+    await TestBed.inject(SocialStore).select('peer-a');
+    await fixture.whenStable();
+    const store = TestBed.inject(SocialStore);
+    store.setDraft('A message being composed');
+    fixture.detectChanges();
+    const input = (fixture.nativeElement as HTMLElement).querySelector('textarea')!;
+    const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    input.dispatchEvent(enter);
+    expect(enter.defaultPrevented).toBe(false);
+    expect(api.send).not.toHaveBeenCalled();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Enter xuống dòng');
+  });
   it('renders requests and submits acceptance through the real store', async () => {
     const fixture = TestBed.createComponent(ContactsPage);
     await fixture.whenStable();

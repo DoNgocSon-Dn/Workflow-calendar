@@ -21,6 +21,7 @@ import { DesktopNavigationService } from '../../core/desktop/desktop-navigation.
 import { SocialStore } from './social.store';
 import { BrandLogo } from '../../shared/components/brand-logo/brand-logo';
 import { HolidayBanner } from '../../shared/components/holiday-banner/holiday-banner';
+import { isAndroidApp } from '../../core/mobile/mobile-platform';
 
 @Component({
   selector: 'app-contacts-page',
@@ -30,6 +31,7 @@ import { HolidayBanner } from '../../shared/components/holiday-banner/holiday-ba
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ContactsPage {
+  readonly android = isAndroidApp();
   readonly store = inject(SocialStore);
   readonly i18n = inject(TranslationService);
   readonly auth = inject(AuthStore);
@@ -148,6 +150,7 @@ export class ContactsPage {
       await this.store.block(peer, true);
   }
   keydown(event: KeyboardEvent): void {
+    if (this.android) return; // Mobile Enter inserts a line; sending is explicit.
     if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
       event.preventDefault();
       void this.store.send();

@@ -207,6 +207,7 @@
           <button
             type="button"
             class="quiet back"
+            data-native-back
             (click)="store.close()"
             [attr.aria-label]="i18n.t('social.back')"
           >
@@ -275,7 +276,7 @@
               [placeholder]="i18n.t('social.compose')"
             ></textarea>
             <div class="composer-footer">
-              <small>{{ i18n.t('social.enterHint') }} · {{ store.draft().length }}/4000</small
+              <small>{{ i18n.t(android ? 'mobile.enterHint' : 'social.enterHint') }} · {{ store.draft().length }}/4000</small
               ><button
                 type="submit"
                 class="primary"

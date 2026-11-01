@@ -7,6 +7,10 @@ import { Locale } from './translation.service';
  */
 export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, string>>>> = {
   vi: {
+    'mobile.tasks': 'Công việc',
+    'mobile.changeDate': 'Chuyển ngày hoặc kỳ lịch',
+    'mobile.enterHint': 'Enter xuống dòng · Chạm Gửi để gửi',
+    'social.unread': '{count} tin nhắn chưa đọc',
     'holidayCatalog.title': 'Ngày lễ Việt Nam',
     'holidayCatalog.hint': 'Ngày dương lịch giữ nguyên hằng năm; ngày âm lịch tự quy đổi theo âm lịch Việt Nam (UTC+7), bỏ tháng nhuận.',
     'holidayCatalog.year': 'Năm',
@@ -1306,6 +1310,10 @@ export const TRANSLATIONS: Readonly<Record<Locale, Readonly<Record<string, strin
     'group.sendMessageError': 'Không thể gửi tin nhắn.',
   },
   en: {
+    'mobile.tasks': 'Tasks',
+    'mobile.changeDate': 'Change calendar date or period',
+    'mobile.enterHint': 'Enter for a new line · Tap Send to send',
+    'social.unread': '{count} unread messages',
     'holidayCatalog.title': 'Vietnamese holidays',
     'holidayCatalog.hint': 'Solar dates repeat annually. Lunar dates are calculated using the Vietnamese calendar (UTC+7), excluding leap months.',
     'holidayCatalog.year': 'Year',

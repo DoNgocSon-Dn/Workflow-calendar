@@ -74,6 +74,9 @@
   @if (visibleGroupedDays().length === 0) {
     <div class="empty-state">
       {{ i18n.t('agenda.empty') }}
+      @if (android) {
+        <button type="button" class="android-empty-create" (click)="createRequested.emit()"><app-icon name="plus" /> {{ i18n.t('sidebar.createEvent') }}</button>
+      }
     </div>
   } @else {
     <div class="agenda-list">

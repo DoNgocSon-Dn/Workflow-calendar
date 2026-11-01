@@ -20,7 +20,7 @@
   </button>
 
   @if (open()) {
-    <div class="notif-menu__backdrop" (click)="closePanel()"></div>
+    <div class="notif-menu__backdrop" data-native-back (click)="closePanel()"></div>
     <app-notification-panel
       (close)="closePanel()"
       (openEvent)="onOpenEvent($event)"

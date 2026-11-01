@@ -1,0 +1,65 @@
+/* Native Android shell. The bundled web and desktop layouts keep their own navigation. */
+html.workflow-android.mobile-tab-layout { --mobile-nav-height: 68px; }
+html.workflow-android.workflow-keyboard-open { --mobile-nav-height: 0px; }
+.workflow-android.mobile-tab-layout :is(.calendar-page, .tasks-page, .contacts-page) {
+  height: calc(100dvh - var(--mobile-nav-height));
+  min-height: 0;
+}
+.workflow-android .create-fab { bottom: calc(var(--mobile-nav-height, 0px) + 16px); border-radius: 18px; }
+.workflow-android .topbar app-contacts-link,
+.workflow-android .tasks-page .view-toggle,
+.workflow-android .contacts-topbar nav { display: none; }
+.workflow-android .contacts-topbar { height: 56px; flex-shrink: 0; }
+.workflow-android .contacts-page .composer { flex-shrink: 0; margin-bottom: 8px; }
+.workflow-android .contacts-page .composer textarea { font-size: 16px; min-height: 52px; max-height: 140px; }
+.workflow-android .contacts-page .composer-footer small { font-size: 11px; }
+.workflow-android :is(input:not([type='checkbox']):not([type='radio']):not([type='file']), textarea, select) {
+  font-size: max(16px, 1em);
+}
+.workflow-android :is(button, a, input, textarea, select) { -webkit-tap-highlight-color: transparent; }
+.workflow-android :is(.primary-btn, .text-btn, .quiet, .primary, .type-btn, .filter-pill, .contact-tabs button) { min-height: 44px; }
+.workflow-android .android-date-pager { display: flex; align-items: center; gap: 8px; padding: 4px 16px 8px;
+  border-bottom: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-tertiary); }
+.workflow-android .android-date-pager span { flex: 1; font-size: 12px; padding-left: 4px; }
+.workflow-android .android-date-pager button { display: inline-flex; align-items: center; justify-content: center;
+  min-width: 44px; height: 40px; border-radius: 12px; border: 1px solid var(--color-border); background: transparent;
+  color: var(--color-text); font-size: 18px; }
+.workflow-android .android-date-pager .android-today { padding: 0 14px; font-size: 13px; font-weight: 600; }
+.workflow-android .android-date-pager button:active { background: var(--holiday-accent-soft); }
+.workflow-android .android-empty-create { display: inline-flex; gap: 8px; align-items: center; justify-content: center;
+  min-height: 44px; margin: 16px auto 0; padding: 0 18px; border: 0; border-radius: 12px;
+  background: var(--holiday-accent-soft); color: var(--holiday-accent); font-size: 14px; font-weight: 600; }
+.workflow-android .empty-state:has(.android-empty-create) { display: flex; flex-direction: column; align-items: center; }
+.workflow-android body:has([role='dialog']) app-mobile-navigation { visibility: hidden; }
+.workflow-android.workflow-keyboard-open :is(.create-fab, app-floating-hub > .fab) { visibility: hidden; pointer-events: none; }
+.workflow-android .holiday-popup { max-height: calc(100dvh - 24px); overflow-y: auto; }
+
+@media (max-width: 767.98px) {
+  .workflow-android .calendar-page .topbar { padding: 6px 12px; min-height: 56px; border-bottom: 0; }
+  .workflow-android .calendar-page .topbar .right { gap: 2px; }
+  .workflow-android .calendar-page .mobile-period-btn { padding-left: 4px; }
+  .workflow-android .calendar-page .mobile-period-label { font-size: 17px; font-weight: 700; }
+  .workflow-android .agenda-container { padding: 16px; padding-bottom: 88px; }
+  .workflow-android .agenda-header-bar { gap: 12px; padding-bottom: 14px; }
+  .workflow-android .filter-title h3 { font-size: 15px; line-height: 1.5; }
+  .workflow-android .header-controls { width: 100%; gap: 8px; }
+  .workflow-android .calendar-type-toggle { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; gap: 2px; border-radius: 12px; }
+  .workflow-android .calendar-type-toggle .type-btn { padding: 6px 4px; font-size: 11px; white-space: nowrap; border-radius: 9px; }
+  .workflow-android .calendar-type-toggle .type-btn.active { background: var(--holiday-accent); color: var(--holiday-accent-contrast); }
+  .workflow-android .filter-pills .filter-pill { padding: 4px 12px; font-size: 12px; }
+  .workflow-android .empty-state { padding: 28px 20px; border-radius: 16px; font-size: 14px; line-height: 1.6; }
+  .workflow-android .settings-nav { flex-wrap: nowrap; overflow-x: auto; flex-shrink: 0; scrollbar-width: none; padding: 6px 10px; }
+  .workflow-android .settings-nav button { flex-shrink: 0; min-height: 44px; white-space: nowrap; }
+  .workflow-android .settings-content { min-height: 0; }
+  .workflow-android .modal-header .title-input { font-size: 18px; }
+  .workflow-android .modal-footer { padding: 12px 16px; }
+  .workflow-android .modal-footer .primary-btn { margin-left: auto; min-width: 96px; border-radius: 12px; }
+  .workflow-android app-floating-hub .fab { top: auto !important; left: auto !important; right: 16px;
+    bottom: calc(var(--mobile-nav-height, 0px) + 84px); width: 44px; height: 44px; box-shadow: none; }
+  .workflow-android app-floating-hub .panel { inset: 12px 12px auto !important; width: auto; max-height: calc(100dvh - 24px);
+    border-radius: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workflow-android .mobile-navigation * { transition: none; }
+}
