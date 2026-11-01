@@ -14,6 +14,9 @@
     <aside class="contacts-sidebar">
       <div class="sidebar-heading">
         <h1>{{ i18n.t('social.title') }}</h1>
+        @if (android) {
+          <button type="button" class="primary" [attr.aria-expanded]="addingContact()" aria-controls="add-contact-form" (click)="toggleAddContact()">{{ i18n.t('social.add') }}</button>
+        }
         <button type="button" class="quiet" (click)="store.refresh()">
           {{ i18n.t('social.refresh') }}
         </button>
@@ -22,7 +25,8 @@
         <span aria-hidden="true"></span
         >{{ i18n.t(store.connected() ? 'social.connected' : 'social.disconnected') }}
       </p>
-      <form class="add-contact" (ngSubmit)="add()">
+      @if (!android || addingContact()) {
+      <form class="add-contact" id="add-contact-form" (ngSubmit)="add()">
         <label for="friend-email">{{ i18n.t('social.addByEmail') }}</label>
         <div>
           <input
@@ -40,6 +44,7 @@
           </button>
         </div>
       </form>
+      }
       @if (notice()) {
         <p class="notice" role="status">{{ notice() }}</p>
       }

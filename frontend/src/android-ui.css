@@ -42,6 +42,10 @@ html.workflow-android .holiday-popup { max-height: calc(100dvh - 24px); overflow
   html.workflow-android .calendar-page .mobile-period-btn { padding-left: 4px; }
   html.workflow-android .calendar-page .mobile-period-label { font-size: 17px; font-weight: 700; }
   html.workflow-android .agenda-container { padding: 16px; padding-bottom: 88px; }
+  html.workflow-android .tasks-page .board { flex-direction: column; align-items: stretch; padding: 16px; gap: 16px; }
+  html.workflow-android .tasks-page .column { flex: 0 0 auto; width: 100%; max-width: none; border-radius: 16px; box-shadow: none; }
+  html.workflow-android .contacts-page .sidebar-heading { gap: 8px; }
+  html.workflow-android .contacts-page .sidebar-heading h1 { flex: 1; }
   html.workflow-android .agenda-header-bar { gap: 12px; padding-bottom: 14px; }
   html.workflow-android .filter-title h3 { font-size: 15px; line-height: 1.5; text-transform: none; }
   html.workflow-android .agenda-list .agenda-month { display: none; }

@@ -40,6 +40,7 @@ export class ContactsPage {
   private readonly navigation = inject(DesktopNavigationService);
   private readonly route = inject(ActivatedRoute);
   readonly tab = signal<'messages' | 'friends' | 'requests'>('messages');
+  readonly addingContact = signal(false);
   readonly email = signal('');
   readonly search = signal('');
   readonly notice = signal('');
@@ -129,8 +130,12 @@ export class ContactsPage {
     this.notice.set('');
     if (await this.store.request(this.email())) {
       this.email.set('');
+      this.addingContact.set(false);
       this.notice.set(this.i18n.t('social.requestSent'));
     }
+  }
+  toggleAddContact(): void {
+    this.addingContact.update(open => !open);
   }
   async remove(id: string): Promise<void> {
     if (await this.dialog.confirm(this.i18n.t('social.removeConfirm'), { danger: true }))
