@@ -12,7 +12,7 @@
 </button>
 
 @if (open()) {
-  <div class="panel" role="dialog" [attr.aria-label]="ariaLabel()">
+  <div class="panel" role="dialog" [attr.aria-label]="ariaLabel()" (keydown.escape)="close(); $event.stopPropagation()">
     <div class="tabs" role="tablist">
       <button
         type="button"

@@ -51,6 +51,7 @@ html.workflow-android.workflow-keyboard-open { --mobile-nav-height: 0px; }
   .workflow-android .settings-nav { flex-wrap: nowrap; overflow-x: auto; flex-shrink: 0; scrollbar-width: none; padding: 6px 10px; }
   .workflow-android .settings-nav button { flex-shrink: 0; min-height: 44px; white-space: nowrap; }
   .workflow-android .settings-content { min-height: 0; }
+  .workflow-android app-settings-modal .modal-body { min-height: 0; flex: 1; }
   .workflow-android .modal-header .title-input { font-size: 18px; }
   .workflow-android .modal-footer { padding: 12px 16px; }
   .workflow-android .modal-footer .primary-btn { margin-left: auto; min-width: 96px; border-radius: 12px; }

@@ -6,7 +6,7 @@
     [style.--holiday-text]="theme().textColor"
     [style.--holiday-subtitle]="theme().subtitleColor"
   >
-    <button type="button" class="close-btn" (click)="close()" [attr.aria-label]="i18n.t('common.close')">✕</button>
+    <button type="button" class="close-btn" data-native-close (click)="close()" [attr.aria-label]="i18n.t('common.close')">✕</button>
 
     <span class="badge">{{ badgeLabel() }}</span>
     <app-holiday-visual class="holiday-art" [composition]="theme().composition" [theme]="theme()" aria-hidden="true" />

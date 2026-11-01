@@ -46,7 +46,7 @@
               {{ deletingGroup() ? i18n.t('group.deleting') : i18n.t('group.deleteGroup') }}
             </button>
           }
-          <button type="button" class="btn-close" (click)="close()" [attr.aria-label]="i18n.t('common.close')">
+          <button type="button" class="btn-close" data-native-close (click)="close()" [attr.aria-label]="i18n.t('common.close')">
             <app-icon name="close" />
           </button>
         </div>
