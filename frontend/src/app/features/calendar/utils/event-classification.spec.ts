@@ -35,6 +35,10 @@ describe('matchesAgendaScope — tách 3 phạm vi hoàn toàn theo dữ liệu'
   const userNoType = evt({ calendarId: 'cal-user' }); // hàng cũ ⇒ solar
   const holidaySolar = evt({ calendarId: VN_HOLIDAY_CALENDAR_ID, calendarType: 'solar' });
   const holidayLunar = evt({ calendarId: VN_HOLIDAY_CALENDAR_ID, calendarType: 'lunar' });
+  it('all: keeps both date systems and shared calendars together', () => {
+    for (const event of [userSolar, userLunar, userNoType, holidaySolar, holidayLunar])
+      expect(matchesAgendaScope(event, 'all')).toBe(true);
+  });
 
   it('solar: chỉ nhận calendarType solar (lễ dương + event người dùng dương)', () => {
     expect(matchesAgendaScope(userSolar, 'solar')).toBe(true);

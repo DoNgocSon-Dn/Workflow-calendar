@@ -22,7 +22,7 @@ export function isSystemEvent(event: Pick<CalendarEvent, 'calendarId'>): boolean
   return eventSource(event) === 'system';
 }
 
-export type AgendaScope = 'solar' | 'lunar' | 'mine';
+export type AgendaScope = 'all' | 'solar' | 'lunar' | 'mine';
 
 /**
  * Một sự kiện có thuộc phạm vi đang xem không.
@@ -37,6 +37,7 @@ export function matchesAgendaScope(
   event: Pick<CalendarEvent, 'calendarId' | 'calendarType'>,
   scope: AgendaScope,
 ): boolean {
+  if (scope === 'all') return true;
   if (scope === 'mine') return eventSource(event) === 'user';
   const type: CalendarType = event.calendarType ?? 'solar';
   return type === scope;

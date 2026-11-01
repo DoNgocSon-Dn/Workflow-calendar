@@ -58,7 +58,13 @@ export class AgendaView {
   readonly selectEvent = output<string>();
 
   /** ☀️ Lịch Dương · 🌙 Lịch Âm · ⭐ Sự kiện của tôi. */
-  protected readonly scope = signal<AgendaScope>('solar');
+  protected readonly scope = signal<AgendaScope>(this.android ? 'all' : 'solar');
+  protected readonly filtersOpen = signal(false);
+  protected readonly filterSummary = computed(() => {
+    const scopes = { all: 'mobile.allCalendars', solar: 'agenda.calendarTypeSolar', lunar: 'agenda.calendarTypeLunar', mine: 'agenda.myEvents' };
+    const ranges = { month: 'agenda.filterMonth', next30: 'agenda.filterNext30', all: 'agenda.filterAll' };
+    return `${this.i18n.t(scopes[this.scope()])} · ${this.i18n.t(ranges[this.filterMode()])}`;
+  });
 
   /** Bộ lọc khoảng thời gian cho scope 'solar' / 'lunar'. */
   protected readonly filterMode = signal<AgendaRangeFilter>('month');
@@ -85,6 +91,9 @@ export class AgendaView {
   setScope(scope: AgendaScope): void {
     this.scope.set(scope);
     this.maxDisplayedDays.set(10);
+  }
+  toggleFilters(): void {
+    this.filtersOpen.update(open => !open);
   }
 
   setFilterMode(mode: AgendaRangeFilter): void {

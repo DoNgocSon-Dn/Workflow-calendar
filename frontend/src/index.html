@@ -1,6 +1,25 @@
 <!doctype html>
 <html lang="vi">
 <head>
+  <script>
+    // Android already bundles its UI in the APK. An old web service worker
+    // must not serve an earlier index/chunk set after an app update.
+    if (location.origin === 'https://localhost' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        return Promise.all(registrations.map(function (registration) { return registration.unregister(); }));
+      }).then(function () {
+        if (!('caches' in window)) return;
+        return caches.keys().then(function (keys) {
+          return Promise.all(keys.filter(function (key) { return key.startsWith('workflow-cache-'); }).map(function (key) { return caches.delete(key); }));
+        });
+      }).then(function () {
+        if (navigator.serviceWorker.controller && !sessionStorage.getItem('workflow-native-cache-reset')) {
+          sessionStorage.setItem('workflow-native-cache-reset', '1');
+          location.reload();
+        }
+      }).catch(function () {});
+    }
+  </script>
   <script src="/runtime-config.js"></script>
   <meta charset="utf-8">
   <title>Workflow</title>
@@ -242,7 +261,7 @@
   </script>
 
   <script>
-    if ('serviceWorker' in navigator) {
+    if (location.origin !== 'https://localhost' && 'serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').catch(() => {});
       });

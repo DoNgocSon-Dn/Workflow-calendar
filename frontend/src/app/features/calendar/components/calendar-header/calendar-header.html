@@ -232,8 +232,8 @@
   <div class="android-date-pager" [attr.aria-label]="i18n.t('mobile.changeDate')">
     <button type="button" class="android-today" (click)="store.goToday()">{{ i18n.t('common.today') }}</button>
     <span>{{ currentViewLabel() }}</span>
-    <button type="button" [attr.aria-label]="i18n.t('common.previous')" (click)="store.step(-1)"><app-icon name="chevron-left" /></button>
-    <button type="button" [attr.aria-label]="i18n.t('common.next')" (click)="store.step(1)"><app-icon name="chevron-right" /></button>
+    <button type="button" [attr.aria-label]="i18n.t('common.previous')" (click)="stepMobilePeriod(-1)"><app-icon name="chevron-left" /></button>
+    <button type="button" [attr.aria-label]="i18n.t('common.next')" (click)="stepMobilePeriod(1)"><app-icon name="chevron-right" /></button>
   </div>
 }
 
