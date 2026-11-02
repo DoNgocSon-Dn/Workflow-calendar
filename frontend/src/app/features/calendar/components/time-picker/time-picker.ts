@@ -2,16 +2,19 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  afterRenderEffect,
   computed,
   forwardRef,
   inject,
   input,
   signal,
+  viewChild,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { TimeFormatService } from '../../../../core/time-format/time-format-service';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { formatTimeLabel, parseTime24 } from '../../utils/date-utils';
+import { isAndroidApp } from '../../../../core/mobile/mobile-platform';
 
 interface ClockMark {
   value: number;
@@ -62,9 +65,21 @@ const LIST_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   ],
 })
 export class TimePicker implements ControlValueAccessor {
+  protected readonly android = isAndroidApp();
+  private readonly timeList = viewChild<ElementRef<HTMLUListElement>>('timeOptionsList');
+
+  constructor() {
+    afterRenderEffect(() => {
+      const list = this.timeList()?.nativeElement;
+      if (!this.open() || this.tab() !== 'list' || !list) return;
+      const index = Math.max(0, Math.min(47, Math.round((this.hour24() * 60 + this.minute()) / 30)));
+      const selected = list.querySelectorAll<HTMLElement>('.list-option')[index];
+      if (selected) list.scrollTop = Math.max(0, selected.offsetTop - list.offsetTop - list.clientHeight / 2 + selected.offsetHeight / 2);
+    });
+  }
   private readonly host = inject(ElementRef<HTMLElement>);
   private readonly timeFormatService = inject(TimeFormatService);
-  private readonly i18n = inject(TranslationService);
+  protected readonly i18n = inject(TranslationService);
 
   readonly ariaLabelIn = input<string>('', { alias: 'ariaLabel' });
   protected readonly ariaLabel = computed(() => this.ariaLabelIn() || this.i18n.t('picker.selectTime'));

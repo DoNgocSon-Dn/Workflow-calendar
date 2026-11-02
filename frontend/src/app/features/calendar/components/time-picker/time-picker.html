@@ -13,6 +13,9 @@
 
 @if (open()) {
   <div class="panel" role="dialog" [attr.aria-label]="ariaLabel()" (keydown.escape)="close(); $event.stopPropagation()">
+    @if (android) {
+      <div class="native-picker-heading"><strong>{{ ariaLabel() }}</strong><button type="button" data-native-close (click)="close()" [attr.aria-label]="i18n.t('common.close')">✕</button></div>
+    }
     <div class="tabs" role="tablist">
       <button
         type="button"
@@ -35,7 +38,7 @@
     </div>
 
     @if (tab() === 'list') {
-      <ul class="list" role="listbox">
+      <ul #timeOptionsList class="list" role="listbox">
         @for (option of listOptions; track option) {
           <li>
             <button
