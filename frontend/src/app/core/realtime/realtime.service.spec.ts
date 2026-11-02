@@ -1,10 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
-import { io } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import { AuthStore } from '../auth/auth-store';
-import { RealtimeService } from './realtime.service';
+import { REALTIME_SOCKET_FACTORY, RealtimeService } from './realtime.service';
 
-vi.mock('socket.io-client', () => ({ io: vi.fn() }));
 describe('realtime resume', () => {
   let token: ReturnType<typeof signal<string | null>>;
   let socket: { connected: boolean; on: ReturnType<typeof vi.fn>; connect: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn>; removeAllListeners: ReturnType<typeof vi.fn>; emit: ReturnType<typeof vi.fn> };
@@ -14,8 +13,10 @@ describe('realtime resume', () => {
     handlers = {};
     token = signal<string | null>('access-token');
     socket = { connected: false, on: vi.fn((name, cb) => { handlers[name] = cb; }), connect: vi.fn(), disconnect: vi.fn(), removeAllListeners: vi.fn(), emit: vi.fn() };
-    vi.mocked(io).mockReturnValue(socket as unknown as ReturnType<typeof io>);
-    TestBed.configureTestingModule({ providers: [{ provide: AuthStore, useValue: { accessToken: token } }] });
+    TestBed.configureTestingModule({ providers: [
+      { provide: AuthStore, useValue: { accessToken: token } },
+      { provide: REALTIME_SOCKET_FACTORY, useValue: () => socket as unknown as Socket },
+    ] });
     realtime = TestBed.inject(RealtimeService); TestBed.tick();
   });
   afterEach(() => { TestBed.resetTestingModule(); vi.clearAllMocks(); });
