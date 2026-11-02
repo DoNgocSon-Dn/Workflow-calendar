@@ -61,6 +61,20 @@ textarea:focus {
   display: flex;
   flex-direction: column;
 }
+.my-contact { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--color-text-tertiary); }
+.my-contact span { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+.my-contact button { flex-shrink: 0; }
+.my-contact strong { display: block; font-weight: 500; color: var(--color-text-secondary); }
+.friend-form-hint { margin-top: 8px; font-size: 12px; line-height: 1.5; }
+.error-text { color: var(--color-danger); }
+.add-contact .my-friend-code { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; padding: 12px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--holiday-accent-soft); }
+.my-friend-code span { flex: 1; min-width: 0; font-size: 12px; color: var(--color-text-secondary); }
+.my-friend-code code { display: block; margin-top: 6px; font-size: 15px; font-weight: 700; color: var(--color-text); letter-spacing: .5px; overflow-wrap: anywhere; user-select: all; }
+.my-friend-code button { flex-shrink: 0; }
+.add-contact .add-methods { display: grid; grid-template-columns: 1fr 1fr; padding: 3px; gap: 3px; margin-bottom: 14px; border-radius: 12px; background: var(--color-surface-input); }
+.add-methods button { min-height: 40px; border-radius: 9px; background: transparent; color: var(--color-text-secondary); font-size: 13px; }
+.add-methods button.active { color: var(--holiday-accent); background: var(--color-surface); box-shadow: 0 1px 3px #0001; }
+.get-code { margin-bottom: 12px; }
 .contacts-topbar {
   height: 70px;
   flex-shrink: 0;
@@ -164,6 +178,9 @@ nav a:hover {
 }
 .add-contact {
   padding: 0 20px 18px;
+  min-height: 0;
+  overflow-y: auto;
+  flex-shrink: 1;
 }
 .add-contact label {
   font-size: 12px;
@@ -560,16 +577,5 @@ nav a:hover {
   }
   .contacts-topbar nav {
     font-size: 12px;
-  }
-  .contacts-layout:not(.has-thread) .chat-area:has(.error) {
-    display: block;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    flex: 0;
-  }
-  .contacts-layout:not(.has-thread) .chat-area:has(.error) .welcome {
-    display: none;
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Socket, io } from 'socket.io-client';
 import { environment } from '../../../environments/environment';
 import { AuthStore } from '../auth/auth-store';
@@ -44,6 +44,16 @@ export class RealtimeService {
   readonly disconnected = computed(() => this.hasConnectedOnce() && !this.connectedState());
 
   constructor() {
+    const resume = () => {
+      if (document.visibilityState === 'visible') this.resume();
+    };
+    window.addEventListener('online', resume);
+    document.addEventListener('visibilitychange', resume);
+    inject(DestroyRef).onDestroy(() => {
+      window.removeEventListener('online', resume);
+      document.removeEventListener('visibilitychange', resume);
+      this.disconnect();
+    });
     effect(() => {
       const token = this.authStore.accessToken();
       if (token && token !== this.currentToken) {
@@ -64,7 +74,17 @@ export class RealtimeService {
     this.reconnectWithToken(token);
   }
 
+  /** Recover snapshots after sleep, even before Socket.IO notices a stale connection. */
+  resume(): void {
+    if (!this.authStore.accessToken()) return;
+    this.connect();
+    if (this.socket?.connected) {
+      for (const handler of this.reconnectHandlers) handler();
+    }
+  }
+
   private reconnectWithToken(token: string): void {
+    this.connectedState.set(false);
     if (this.socket) {
       this.socket.removeAllListeners();
       this.socket.disconnect();

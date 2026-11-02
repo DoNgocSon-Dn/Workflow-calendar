@@ -43,7 +43,7 @@ describe('private conversations state', () => {
   let store: SocialStore;
   let user: ReturnType<typeof signal<{ id: string } | null>>;
   let api: Record<
-    'overview' | 'messages' | 'send' | 'read' | 'request' | 'action' | 'block',
+    'overview' | 'messages' | 'send' | 'read' | 'request' | 'action' | 'block' | 'code' | 'requestCode',
     ReturnType<typeof vi.fn>
   >;
   let listeners: Record<string, (payload: any) => void>;
@@ -59,6 +59,8 @@ describe('private conversations state', () => {
       request: vi.fn().mockResolvedValue({}),
       action: vi.fn().mockResolvedValue({}),
       block: vi.fn().mockResolvedValue({}),
+      code: vi.fn().mockResolvedValue({ code: 'WF-A1B2-C3D4-E5F6' }),
+      requestCode: vi.fn().mockResolvedValue({}),
     };
     notifications = { ingest: vi.fn(), markAsRead: vi.fn() };
     TestBed.configureTestingModule({
@@ -81,6 +83,58 @@ describe('private conversations state', () => {
     await Promise.resolve();
   });
   afterEach(() => TestBed.resetTestingModule());
+  it('hides and discards another account’s share code after logout', async () => {
+    const pending = deferred<{ code: string }>();
+    api.code.mockReturnValue(pending.promise);
+    const load = store.loadFriendCode();
+    user.set({ id: 'other' }); TestBed.tick();
+    pending.resolve({ code: 'WF-A1B2-C3D4-E5F6' }); await load;
+    expect(store.friendCode()).toBeNull();
+  });
+  it('updates incoming friend requests immediately after a socket change', async () => {
+    api.overview.mockResolvedValue({ ...overview(), incoming: [{ id: 'r-new', profile: overview().friends[0].profile }] });
+    listeners['social:changed']({});
+    await Promise.resolve();
+    expect(store.overview().incoming.map(r => r.id)).toEqual(['r-new']);
+    expect(store.badge()).toBe(1);
+  });
+  it('recovers missed messages and requests on resume without losing a draft', async () => {
+    await store.select('a');
+    store.setDraft('unfinished text');
+    api.messages.mockResolvedValue({ messages: [message('missed')], hasMore: false });
+    api.overview.mockResolvedValue({ ...overview(), incoming: [{ id: 'r-new', profile: overview().friends[0].profile }] });
+    window.dispatchEvent(new Event('focus'));
+    await store.resync();
+    expect(store.messages().map(m => m.id)).toEqual(['missed']);
+    expect(store.badge()).toBe(1);
+    expect(store.draft()).toBe('unfinished text');
+  });
+  it('fetches again after private room readiness if a pre-auth snapshot is in flight', async () => {
+    const pending = deferred<SocialOverview>();
+    api.overview.mockReturnValueOnce(pending.promise).mockResolvedValue({ ...overview(), incoming: [{ id: 'after-join', profile: overview().friends[0].profile }] });
+    const beforeReady = store.resync();
+    listeners['session:ready']({});
+    pending.resolve(overview());
+    await beforeReady;
+    // The readiness handler schedules a second, post-join snapshot.
+    await Promise.resolve();
+    await store.resync();
+    expect(store.overview().incoming.map(r => r.id)).toEqual(['after-join']);
+  });
+  it('coalesces resume requests but allows another account to resync independently', async () => {
+    const pending = deferred<SocialOverview>();
+    api.overview.mockReturnValueOnce(pending.promise);
+    const first = store.resync();
+    expect(store.resync()).toBe(first);
+    user.set({ id: 'other' });
+    TestBed.tick();
+    const second = store.resync();
+    expect(second).not.toBe(first);
+    await second;
+    pending.resolve({ ...overview(), incoming: [{ id: 'old', profile: overview().friends[0].profile }] });
+    await first;
+    expect(store.overview().incoming).toEqual([]);
+  });
   it('recovers an unread alert when refreshing after a disconnected socket', async () => {
     const data = overview();
     data.conversations[0].lastMessage = message('missed');

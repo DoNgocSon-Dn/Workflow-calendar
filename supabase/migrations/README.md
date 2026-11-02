@@ -13,3 +13,11 @@ Không chạy lại toàn bộ migration cũ lên database đang dùng. Một s�
 `../tests/social-rls.integration.sql` và `../tests/group-access.integration.sql` tạo tài khoản không có mật khẩu/token và dữ liệu giả trong giao dịch, chạy assertion rồi `ROLLBACK`. Không đổi phần cuối thành `COMMIT`. Đây là kiểm thử SQL/RLS, không thay thế nghiệm thu bằng hai phiên đăng nhập thật.
 
 Các tính năng trước 48 còn cần schema tới 47. Xem nội dung từng file và báo cáo nghiệm thu ở gốc repo; không suy ra một migration đã áp dụng chỉ từ việc file có trong Git.
+
+## Bản 1.3.1
+
+`50_friend_share_codes.sql` chạy sau 48/49, thêm mã kết bạn ngẫu nhiên riêng từng
+tài khoản. RPC chỉ lấy mã của chính mình và gửi lời mời, giữ nguyên điều kiện
+đồng ý/chặn của migration 48. Đã áp dụng project hiện tại ngày 02/11/2026.
+`../tests/friend-codes.integration.sql` có 14 assertion và rollback toàn bộ fixture.
+Không cho client quyền ghi trực tiếp bảng mã hoặc liệt kê mã của người khác.

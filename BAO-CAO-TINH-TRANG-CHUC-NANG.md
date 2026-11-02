@@ -1,80 +1,47 @@
-# Tình trạng chức năng - cập nhật 01/11/2026
+# Tình trạng chức năng — 02/11/2026
 
-Đánh giá theo bằng chứng đã có; không coi build hoặc unit test đạt là đã nghiệm
-thu toàn bộ trên thiết bị thật. Báo cáo 1.1.0 vẫn giữ thông tin chi tiết đợt Windows.
+Đánh giá theo bằng chứng đã có. [Báo cáo Android 1.3.1 và realtime](ANDROID-1.3.1.md)
+ghi chi tiết các thay đổi, tài khoản thử, kiểm tra và giới hạn của bản mới.
 
-| Chức năng | Tình trạng | Đã xác minh / còn thiếu |
+| Chức năng | Hiện trạng | Đã xác minh / còn thiếu |
 |---|---|---|
-| Đăng nhập, giữ phiên | Đã chạy thực tế | Windows mở bằng phiên đã lưu; A52 đăng nhập được tài khoản có sẵn và vào lịch |
-| Đăng ký, quên mật khẩu | Cần thử thêm | UI/API và test luồng có; chưa nghiệm thu lại email thật xuyên suốt trên Android |
-| Lịch, sự kiện | Đạt kiểm thử | Lưu dữ liệu, trả lỗi khi API từ chối, tách tài khoản; chưa bao phủ mọi thao tác bằng tay |
-| Lịch lặp, tìm kiếm | Đạt kiểm thử | Anchor, cuối tháng, EXDATE, xóa chuỗi, tìm không dấu và hàm ngày giờ |
-| Công việc, ghi chú | Đạt kiểm thử | Cache kết quả server, tách tài khoản; chưa có hàng đợi chỉnh sửa offline |
-| Thùng rác | Đạt một phần | Xóa chuỗi, không hồi sinh dữ liệu; cần thử thêm mọi luồng khôi phục/xóa hẳn trên điện thoại |
-| Mở app nhanh | Đã chạy trên Windows và A52 | Dựng bản lưu trước, đồng bộ nền; lần đầu và ghi lên cloud vẫn cần mạng |
-| Nhóm, phân quyền | Quyền đạt; luồng cần thử thêm | 34 assertion SQL; chưa đủ hai tài khoản thật cho mọi luồng |
-| Kết bạn, chặn, chat chữ | Đạt test; cần thử thiết bị thật | 36 assertion SQL, API/store/UI; chưa nghiệm thu đầy đủ hai thiết bị |
-| Popup Windows | Đã có và kiểm tra | Nổi trên màn hình, âm, snooze, mở đích; cần chạy app/khay |
-| Màu thương hiệu/ngày lễ | Giữ đúng chức năng | Xanh dương mặc định; tự đổi màu ngày lễ vẫn giữ |
-| Import, AI | Chưa chốt | Parser và xử lý lỗi có test; chưa đủ tài liệu/dịch vụ AI thật |
-| Email, Web Push | Chưa chốt | Cần xác nhận gửi/nhận thực tế và cấu hình dịch vụ |
-| Android | Có bản thử đã cài | A52 cài 1.2.0, đăng nhập và báo thử ở nền được. APK 1.2.1 đã ký, chưa cài lại do điện thoại ngắt USB |
+| Đăng nhập, giữ phiên | Đã chạy thực tế | Windows và A52 giữ phiên; tài khoản QA mới đăng nhập được vào giao diện web |
+| Đăng ký, quên mật khẩu | Cần thử thêm | Có UI/API/test; chưa nghiệm thu lại email thật xuyên suốt trên Android |
+| Lịch, sự kiện | Đạt kiểm thử, đã xem trên A52 | Dữ liệu, trả lỗi, tách tài khoản, giờ tạo mới; chưa thao tác tay hết mọi CRUD |
+| Âm/dương, ngày lễ | Có và giữ nguyên chức năng | Android xem cả âm/dương; xanh dương mặc định và giao diện ngày lễ vẫn hoạt động |
+| Lịch lặp, tìm kiếm | Đạt kiểm thử | Anchor, cuối tháng, EXDATE, xóa chuỗi, tìm không dấu, hàm ngày giờ |
+| Công việc, ghi chú | Đạt kiểm thử | Thẻ Android chuyển thành danh sách dọc; chưa có hàng đợi ghi offline |
+| Thùng rác | Đạt một phần | Test xóa chuỗi/không hồi sinh dữ liệu; chưa thử hết khôi phục/xóa hẳn trên A52 |
+| Mở app nhanh | Đã chạy Windows/A52 | Dựng bản lưu rồi đồng bộ nền; sửa cache web làm kẹt splash khi nâng APK |
+| Nhóm, phân quyền | Có test quyền; cần nghiệm thu thêm | 34 assertion SQL ở đợt trước; chưa thử lại toàn bộ vai trò và thiết bị trong đợt này |
+| Kết bạn email/mã | Đã kiểm tra hai tài khoản thật | Mã riêng, lời mời, đồng ý, chặn/mở chặn; migration 50 và 14 assertion RLS mới đạt |
+| Chat riêng realtime | Đã kiểm tra hai chiều | Tin và read receipt qua Socket.IO, gửi lại không trùng, tải bù tin lỡ; giao diện tự hiện tin không Làm mới |
+| Chat khi tắt hẳn app | Chưa hoàn thiện | Chưa có FCM; không bảo đảm nhận thông báo chat khi app bị tắt |
+| Popup Windows | Đã kiểm tra đợt trước | Nổi, âm, snooze, mở đích; cần app/khay hoạt động |
+| Nhắc lịch Android | Đã thử ở nền | A52 1.3.0 nhận báo thử và chạm về lịch; chưa nghiệm thu khóa màn hình/qua đêm và mọi sự kiện thật |
+| Giao diện Android | Đã nâng cấp, cần cài bản cuối | Điều hướng ba mục, bàn phím/Back, form gọn, picker mới; A52 đang 1.3.0, bản cuối 1.3.1 chưa cài do USB unauthorized |
+| Import, AI | Chưa chốt toàn bộ | Parser/xử lý lỗi có test; cần tài liệu và dịch vụ AI thật |
+| Email, Web Push | Chưa chốt toàn bộ | Cần kiểm tra gửi/nhận và cấu hình dịch vụ; native không dùng service worker web |
 
-## Bằng chứng đợt Android
+## Kiểm tra đợt này
 
-- Frontend: **247 kiểm thử / 41 file đạt**, không có unhandled rejection trong lượt cuối.
-- Thêm 13 ca: lập lịch native, snooze, phạm vi ngày, giới hạn/dedupe, lỗi query giữ
-  alarm cũ, logout không nhận phản hồi cũ, hủy alarm đã xóa, không tự xin quyền,
-  cách ly thông báo của tài khoản khác, URL email không trỏ về localhost WebView,
-  Back đóng hộp thoại trên cùng và giữ cách xử lý hủy của từng form.
-- `i18n:check` không thiếu khóa vi/en; hướng dẫn Android mới hiện bằng tiếng Việt.
-- Angular cập nhật đồng bộ **21.2.25**. `npm audit --omit=dev`: **0 cảnh báo** cho
-  dependency frontend chạy thực tế tại lần kiểm tra này. Tool phát triển: 23 cảnh
-  báo (18 moderate, 5 high), chưa nâng major cưỡng bức.
-- Backend 1.1.0: 131 test / 19 bộ; desktop: 8 test; SQL: 70 assertion (34 nhóm +36 chat).
-- CI cuối, commit `0844f78`: **frontend, backend, desktop, Android đều success**.
-  Job Android đầu từng lỗi package SDK `tools`; đã sửa sang `platform-tools`.
+- Frontend: **297 kiểm thử / 50 file** đạt.
+- Backend: **141 kiểm thử / 20 bộ** đạt, gồm 4 ca transport Socket.IO thật trên localhost.
+- Service worker: **5/5** đạt; production build, Capacitor sync, NestJS build đạt.
+- Mã kết bạn: **14 assertion SQL/RLS** mới đạt trên Supabase, fixture rollback.
+- **12 kiểm tra live** qua backend hiện tại trên máy và Supabase thật, dùng hai JWT
+  người dùng riêng; thêm kiểm tra giao diện nhận/gửi tin thực tế.
+- Desktop 8 test và 70 assertion nhóm/chat của các đợt trước là bằng chứng lịch sử,
+  không coi là đã chạy lại trên thiết bị trong đợt này.
 
-## Kiểm tra A52 ngày 31/10
+Tài khoản QA mới là tài khoản thường, không có quyền quản trị. Giữ lại các tin có
+nhãn QA giữa hai tài khoản thử để kiểm tra tiếp. Không gửi tin tới người dùng khác
+hoặc thay đổi nhóm/lịch của họ. Chưa thể kết luận toàn bộ app đã ổn 100% chỉ từ test/build.
 
-- Cài APK release ký v2/v3, version 1.2.0 (10200), Android 14 / API 34.
-- Đăng nhập tài khoản có sẵn thành công; không đổi mật khẩu hay sao chép phiên Windows.
-- Bật quyền thông báo và báo đúng giờ qua giao diện Android.
-- Thông báo thử sau 10 giây **đã hiện nổi khi app ở nền**; có ảnh bằng chứng.
-  Chưa xác nhận âm thanh nghe được vì điện thoại đang có trạng thái im lặng.
-- Khởi động lại app vẫn giữ phiên, hiển thị bản lưu và đồng bộ nền.
-- Sự kiện thử tạo qua API đã xuất hiện trên A52; Android AlarmManager ghi nhận
-  alarm cho đúng mốc nhắc. Chưa nghiệm thu trọn lần nhắc sự kiện/chạm mở đích.
-- Lịch thử riêng chỉ có một thành viên và một sự kiện đã được dọn, kiểm tra lại
-  xác nhận không còn lịch thử trên server (01/11).
-- Test phát hiện nút nổi che Cài đặt và Back chưa đóng Cài đặt. Mã 1.2.1 đã sửa
-  hai lỗi này, thêm test và build CI đạt; **chưa thử lại trên điện thoại**.
+## Việc còn lại cần nghiệm thu
 
-## Bản bàn giao Android
-
-- Đã cài trên A52: **1.2.0**.
-- APK mới **1.2.1** đã ký cùng key, xác minh v2/v3; có thể cập nhật giữ dữ liệu.
-- SHA-256: `CBEA0312A466331CF7D18EEC153DAB7221D5A04D0BB8364FC966BF27E7EF6202`.
-- Source: nhánh `codex/android-app`, chưa merge vào `master`.
-- Chưa cài 1.2.1 vì kiểm tra ngày 01/11 không còn thiết bị ADB kết nối.
-
-## Android đã thêm trong mã nguồn
-
-Giao diện Angular nằm trong APK, API cloud và cache theo tài khoản giữ nguyên.
-Native notification hẹn tối đa 128 lời nhắc trong 30 ngày, refresh sau khi lưu,
-mở lại app, reconnect và định kỳ khi đang hoạt động. Query lỗi không xóa alarm cũ.
-Logout đổi tài khoản dọn alarm/thông báo native. Có nút bật quyền, báo thử sau 10
-giây và mở quyền báo đúng giờ. Link ngoài mở trình duyệt; Back xử lý trong app.
-
-Chưa có FCM cho chat khi app bị tắt hẳn. Chỉnh sửa từ máy khác cần mở điện thoại
-để cập nhật alarm; chưa có đồng bộ lịch liên tục khi app tắt. Heads-up phụ thuộc
-Android, kênh thông báo, Không làm phiền và giới hạn pin. Không xin quyền vẽ đè
-hoặc toàn màn hình. Email xác nhận/reset mở trên website, sau đó quay lại app.
-Chat riêng hiện có văn bản; chưa có gọi thoại/video, tin thoại, gửi file hoặc mã hóa đầu cuối.
-
-## Còn phải nghiệm thu
-
-1. Cài 1.2.1 và thử lại Back, nút nổi, các hộp thoại; thử nhắc khi khóa màn hình/ở nền lâu.
-2. Nghiệm thu trọn event-reminder, đồng bộ PC/điện thoại và mở đúng event khi chạm thông báo.
-3. Hai tài khoản thật: nhóm, lời mời/link/mã, vai trò, kết bạn/chặn/chat/read receipts.
-4. Email thật, Gemini, Web Push, import tài liệu thật, tải lớn và mất mạng/mở lại.
+1. Cài APK cuối 1.3.1 sau khi điện thoại cấp quyền USB, kiểm tra picker, bàn phím và mọi thao tác Android.
+2. Nhắc lịch thật khi khóa màn hình/ở nền lâu, đồng bộ PC/điện thoại và mở đúng sự kiện.
+3. Mọi vai trò nhóm, lời mời/link/mã nhóm, chat nhóm trên hai thiết bị thật.
+4. Email xác nhận/reset, AI, Web Push, import tài liệu thật, tải lớn và mất mạng.
+5. Tích hợp FCM nếu cần nhận chat khi app đóng; chat file/thoại/video và mã hóa đầu cuối hiện chưa có.

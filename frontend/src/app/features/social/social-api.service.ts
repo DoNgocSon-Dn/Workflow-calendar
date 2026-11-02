@@ -14,6 +14,8 @@ export class SocialApi {
   request(email: string) {
     return firstValueFrom(this.http.post(`${this.url}/requests`, { email }));
   }
+  code() { return firstValueFrom(this.http.get<{ code: string }>(`${this.url}/code`)); }
+  requestCode(code: string) { return firstValueFrom(this.http.post(`${this.url}/requests/code`, { code })); }
   action(id: string, action: 'accept' | 'decline' | 'cancel' | 'remove') {
     return firstValueFrom(this.http.patch(`${this.url}/requests/${id}`, { action }));
   }

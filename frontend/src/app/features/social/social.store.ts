@@ -1,4 +1,4 @@
-import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
+import { DestroyRef, Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthStore } from '../../core/auth/auth-store';
 import { RealtimeService } from '../../core/realtime/realtime.service';
@@ -44,12 +44,15 @@ export class SocialStore {
   private readonly peerState = signal<string | null>(null);
   private readonly draftState = signal<Record<string, { body: string; clientId: string }>>({});
   private readonly errorState = signal<string | null>(null);
+  private readonly friendCodeState = signal<string | null>(null);
+  readonly friendCode = computed(() => this.isOwner() ? this.friendCodeState() : null);
   private readonly busyState = signal(false);
   private readonly sendingState = signal(false);
   private readonly loadingState = signal(false);
   private readonly hasMoreState = signal(false);
   private visiblePeer: string | null = null;
   private reading = false;
+  private resyncing: { generation: number; promise: Promise<void> } | null = null;
   private readonly isOwner = computed(
     () => !!this.auth.user()?.id && this.auth.user()?.id === this.owner,
   );
@@ -87,6 +90,7 @@ export class SocialStore {
         this.peerState.set(null);
         this.draftState.set({});
         this.errorState.set(null);
+        this.friendCodeState.set(null);
         this.busyState.set(false);
         this.loadingState.set(false);
         this.sendingState.set(false);
@@ -112,11 +116,37 @@ export class SocialStore {
         ),
       );
     });
-    this.realtime.onConnect(() => {
-      void this.refresh();
-      const peer = this.peer();
-      if (peer) void this.select(peer);
+    this.realtime.onConnect(() => void this.resync());
+    this.realtime.on('session:ready', () => {
+      // Never let a pre-auth snapshot replace the snapshot fetched after room join.
+      const generation = this.generation;
+      const pending = this.resyncing?.promise ?? Promise.resolve();
+      void pending.then(() => { if (this.active(generation)) void this.resync(); });
     });
+    const resume = () => {
+      if (document.visibilityState === 'visible') void this.resync();
+    };
+    window.addEventListener('online', resume);
+    window.addEventListener('focus', resume);
+    document.addEventListener('visibilitychange', resume);
+    inject(DestroyRef).onDestroy(() => {
+      window.removeEventListener('online', resume);
+      window.removeEventListener('focus', resume);
+      document.removeEventListener('visibilitychange', resume);
+    });
+  }
+
+  /** Catch up missed requests/history without clearing the current draft. */
+  resync(): Promise<void> {
+    if (!this.active()) return Promise.resolve();
+    if (this.resyncing?.generation === this.generation) return this.resyncing.promise;
+    const generation = this.generation;
+    const peer = this.peer();
+    const promise = Promise.all([this.refresh(), peer ? this.select(peer) : Promise.resolve()])
+      .then(() => undefined)
+      .finally(() => { if (this.resyncing?.promise === promise) this.resyncing = null; });
+    this.resyncing = { generation, promise };
+    return promise;
   }
 
   private active(generation = this.generation): boolean {
@@ -259,6 +289,17 @@ export class SocialStore {
   }
   async request(email: string): Promise<boolean> {
     return this.mutate(() => this.api.request(email.trim()));
+  }
+  async loadFriendCode(): Promise<void> {
+    if (!this.active() || this.friendCode()) return;
+    const generation = this.generation;
+    try {
+      const result = await this.api.code();
+      if (this.active(generation)) this.friendCodeState.set(result.code);
+    } catch (error) { if (this.active(generation)) this.fail(error); }
+  }
+  async requestCode(code: string): Promise<boolean> {
+    return this.mutate(() => this.api.requestCode(code.trim()));
   }
   async action(id: string, action: 'accept' | 'decline' | 'cancel' | 'remove'): Promise<boolean> {
     return this.mutate(() => this.api.action(id, action));

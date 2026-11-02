@@ -48,6 +48,17 @@ export class SocialService {
   overview(client: SupabaseClient) {
     return this.rpc(client, 'social_overview');
   }
+  async code(client: SupabaseClient) {
+    return { code: await this.rpc<string>(client, 'social_my_friend_code') };
+  }
+
+  async requestCode(client: SupabaseClient, userId: string, code: string) {
+    const result = await this.rpc<{ id: string; requesterId: string; recipientId: string; status: string }>(
+      client, 'social_request_friend_code', { p_code: code.trim() },
+    );
+    this.changed(userId, result.requesterId === userId ? result.recipientId : result.requesterId);
+    return result;
+  }
 
   async request(client: SupabaseClient, userId: string, email: string) {
     const result = await this.rpc<{

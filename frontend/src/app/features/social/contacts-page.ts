@@ -23,6 +23,8 @@ import { BrandLogo } from '../../shared/components/brand-logo/brand-logo';
 import { HolidayBanner } from '../../shared/components/holiday-banner/holiday-banner';
 import { isAndroidApp } from '../../core/mobile/mobile-platform';
 import { shouldSendOnEnter } from '../../core/mobile/mobile-input';
+import { normalizeSearchText } from '../calendar/utils/search-match';
+import { ContactProfile } from './social.models';
 
 @Component({
   selector: 'app-contacts-page',
@@ -41,6 +43,7 @@ export class ContactsPage {
   private readonly route = inject(ActivatedRoute);
   readonly tab = signal<'messages' | 'friends' | 'requests'>('messages');
   readonly addingContact = signal(false);
+  readonly addMethod = signal<'code' | 'email'>('code');
   readonly email = signal('');
   readonly search = signal('');
   readonly notice = signal('');
@@ -49,14 +52,14 @@ export class ContactsPage {
   private lastTail: string | null = null;
   private requestedPeer: string | null = this.route.snapshot.queryParamMap.get('peer');
   private selectedRequest: string | null = null;
-  readonly conversations = computed(() => {
-    const query = this.search().trim().toLocaleLowerCase();
-    return this.store
-      .overview()
-      .conversations.filter(
-        (c) => !query || `${c.profile.name} ${c.profile.email}`.toLocaleLowerCase().includes(query),
-      );
-  });
+  readonly conversations = computed(() => this.store.overview().conversations.filter(c => this.matches(c.profile)));
+  readonly friends = computed(() => this.store.overview().friends.filter(c => this.matches(c.profile)));
+  readonly incoming = computed(() => this.store.overview().incoming.filter(c => this.matches(c.profile)));
+  readonly outgoing = computed(() => this.store.overview().outgoing.filter(c => this.matches(c.profile)));
+  private matches(profile: ContactProfile): boolean {
+    const query = normalizeSearchText(this.search());
+    return !query || normalizeSearchText(`${profile.name} ${profile.email}`).includes(query);
+  }
 
   constructor() {
     effect(() => {
@@ -128,14 +131,34 @@ export class ContactsPage {
   }
   async add(): Promise<void> {
     this.notice.set('');
-    if (await this.store.request(this.email())) {
+    if (await (this.addMethod() === 'code' ? this.store.requestCode(this.email()) : this.store.request(this.email()))) {
       this.email.set('');
       this.addingContact.set(false);
+      this.search.set('');
+      this.tab.set('requests');
       this.notice.set(this.i18n.t('social.requestSent'));
     }
   }
   toggleAddContact(): void {
     this.addingContact.update(open => !open);
+    if (this.addingContact()) void this.store.loadFriendCode();
+  }
+  setAddMethod(method: 'code' | 'email'): void { this.addMethod.set(method); this.email.set(''); }
+  async copyMyCode(): Promise<void> {
+    const code = this.store.friendCode();
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      this.notice.set(this.i18n.t('social.codeCopied'));
+    } catch { this.notice.set(this.i18n.t('social.copyCodeFailed')); }
+  }
+  async copyMyEmail(): Promise<void> {
+    const email = this.auth.user()?.email;
+    if (!email) return;
+    try {
+      await navigator.clipboard.writeText(email);
+      this.notice.set(this.i18n.t('social.emailCopied'));
+    } catch { this.notice.set(this.i18n.t('social.copyEmailFailed')); }
   }
   async remove(id: string): Promise<void> {
     if (await this.dialog.confirm(this.i18n.t('social.removeConfirm'), { danger: true }))

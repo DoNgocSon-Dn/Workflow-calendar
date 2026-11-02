@@ -60,9 +60,8 @@ export class RealtimeGateway implements OnGatewayConnection {
    */
   handleConnection(client: AppSocket): void {
     client.data.ready = this.authenticate(client);
-    // Lỗi đã được nuốt bên trong authenticate; bắt ở đây chỉ để promise không
-    // thành unhandled rejection khi joinCalendar không bao giờ được gọi.
-    void client.data.ready.catch(() => undefined);
+    // A failed authentication request must not leave a connected, unauthenticated socket.
+    void client.data.ready.catch(() => client.disconnect());
   }
 
   private async authenticate(client: AppSocket): Promise<void> {
@@ -83,6 +82,9 @@ export class RealtimeGateway implements OnGatewayConnection {
     client.data.user = data.user;
     client.data.supabase = this.supabaseService.getClientForToken(token);
     await client.join(userRoomName(data.user.id));
+    // Transport connect happens before async authentication. Let clients recover
+    // changes made in that gap only after their private room is ready.
+    this.server.to(client.id).emit('session:ready');
   }
 
   @SubscribeMessage('joinCalendar')

@@ -25,6 +25,12 @@ describe('private contacts service', () => {
     readAt: null,
   };
   beforeEach(() => jest.clearAllMocks());
+  it('sends code invitations through the scoped RPC and updates both participants', async () => {
+    rpc.mockResolvedValue({ data: { id: 'r', requesterId: 'a', recipientId: 'b', status: 'pending' }, error: null });
+    await service.requestCode(client, 'a', 'WF-A1B2-C3D4-E5F6');
+    expect(rpc).toHaveBeenCalledWith('social_request_friend_code', { p_code: 'WF-A1B2-C3D4-E5F6' });
+    expect(emitToUser.mock.calls.map(call => call[0])).toEqual(['a', 'b']);
+  });
 
   it('emits a saved message only to its two participants', async () => {
     rpc.mockResolvedValue({ data: { message, created: true }, error: null });

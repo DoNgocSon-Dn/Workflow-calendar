@@ -10,14 +10,15 @@
     </nav>
   </header>
   <app-holiday-banner />
+  @if (store.error()) {
+    <div class="error" role="alert">{{ store.error() }}</div>
+  }
   <div class="contacts-layout" [class.has-thread]="store.peer()">
     <aside class="contacts-sidebar">
       <div class="sidebar-heading">
         <h1>{{ i18n.t('social.title') }}</h1>
-        @if (android) {
-          <button type="button" class="primary" [attr.aria-expanded]="addingContact()" aria-controls="add-contact-form" (click)="toggleAddContact()">{{ i18n.t('social.add') }}</button>
-        }
-        <button type="button" class="quiet" (click)="store.refresh()">
+        <button type="button" class="primary" [attr.aria-expanded]="addingContact()" aria-controls="add-contact-form" (click)="toggleAddContact()">{{ i18n.t(addingContact() ? 'common.close' : 'social.addFriend') }}</button>
+        <button type="button" class="quiet" (click)="store.resync()">
           {{ i18n.t('social.refresh') }}
         </button>
       </div>
@@ -25,24 +26,44 @@
         <span aria-hidden="true"></span
         >{{ i18n.t(store.connected() ? 'social.connected' : 'social.disconnected') }}
       </p>
-      @if (!android || addingContact()) {
-      <form class="add-contact" id="add-contact-form" (ngSubmit)="add()">
-        <label for="friend-email">{{ i18n.t('social.addByEmail') }}</label>
+      @if (addingContact()) {
+      <form #friendForm="ngForm" class="add-contact" id="add-contact-form" (ngSubmit)="friendForm.valid && add()">
+        @if (store.friendCode(); as myCode) {
+          <div class="my-friend-code"><span>{{ i18n.t('social.myCode') }}<code>{{ myCode }}</code></span><button type="button" class="quiet" (click)="copyMyCode()">{{ i18n.t('social.copyCode') }}</button></div>
+        } @else {
+          <button type="button" class="quiet get-code" (click)="store.loadFriendCode()">{{ i18n.t('social.getCode') }}</button>
+        }
+        <div class="add-methods" [attr.aria-label]="i18n.t('social.addFriend')">
+          <button type="button" [class.active]="addMethod() === 'code'" [attr.aria-pressed]="addMethod() === 'code'" (click)="setAddMethod('code')">{{ i18n.t('social.byCode') }}</button>
+          <button type="button" [class.active]="addMethod() === 'email'" [attr.aria-pressed]="addMethod() === 'email'" (click)="setAddMethod('email')">Email</button>
+        </div>
+        <label for="friend-email">{{ i18n.t(addMethod() === 'code' ? 'social.enterCode' : 'social.addByEmail') }}</label>
         <div>
           <input
             id="friend-email"
-            type="email"
+            [type]="addMethod() === 'email' ? 'email' : 'text'"
+            [email]="addMethod() === 'email'"
+            [pattern]="addMethod() === 'code' ? '([Ww][Ff]-?)?[A-Fa-f0-9]{4}-?[A-Fa-f0-9]{4}-?[A-Fa-f0-9]{4}' : '.*'"
             required
-            maxlength="254"
-            autocomplete="off"
+            [maxlength]="addMethod() === 'email' ? 254 : 32"
+            [autocomplete]="addMethod() === 'email' ? 'email' : 'off'"
+            [attr.inputmode]="addMethod() === 'email' ? 'email' : 'text'"
+            autocapitalize="none"
+            spellcheck="false"
             [ngModel]="email()"
             (ngModelChange)="email.set($event)"
             name="email"
-            [placeholder]="i18n.t('social.emailPlaceholder')"
-          /><button type="submit" class="primary" [disabled]="store.busy() || !email().trim()">
+            [placeholder]="addMethod() === 'code' ? 'WF-XXXX-XXXX-XXXX' : i18n.t('social.emailPlaceholder')"
+          /><button type="submit" class="primary" [disabled]="store.busy() || friendForm.invalid || !email().trim()">
             {{ i18n.t('social.add') }}
           </button>
         </div>
+        @if (friendForm.invalid && email().trim()) {
+          <p class="friend-form-hint error-text">{{ i18n.t(addMethod() === 'code' ? 'social.codeInvalid' : 'social.emailInvalid') }}</p>
+        }
+        @if (addMethod() === 'email' && auth.user()?.email; as myEmail) {
+          <div class="my-contact"><span>{{ i18n.t('social.myEmail') }} <strong>{{ myEmail }}</strong></span><button type="button" class="quiet" (click)="copyMyEmail()">{{ i18n.t('social.copyEmail') }}</button></div>
+        }
       </form>
       }
       @if (notice()) {
@@ -81,16 +102,9 @@
         </button>
       </div>
       <div class="contact-list">
+        <input class="contact-search" type="search" [attr.aria-label]="i18n.t('social.searchAll')" [placeholder]="i18n.t('social.searchAll')" [ngModel]="search()" (ngModelChange)="search.set($event)" />
         @switch (tab()) {
           @case ('messages') {
-            <input
-              class="contact-search"
-              type="search"
-              [attr.aria-label]="i18n.t('social.search')"
-              [placeholder]="i18n.t('social.search')"
-              [ngModel]="search()"
-              (ngModelChange)="search.set($event)"
-            />
             @for (c of conversations(); track c.profile.id) {
               <button
                 type="button"
@@ -110,11 +124,11 @@
                 }
               </button>
             } @empty {
-              <p class="empty-list">{{ i18n.t('social.noConversations') }}</p>
+              <p class="empty-list">{{ i18n.t(search().trim() ? 'social.noMatches' : 'social.noConversations') }}</p>
             }
           }
           @case ('friends') {
-            @for (friend of store.overview().friends; track friend.id) {
+            @for (friend of friends(); track friend.id) {
               <div class="person">
                 <span class="avatar" aria-hidden="true">{{
                   friend.profile.name.charAt(0).toUpperCase()
@@ -123,7 +137,7 @@
                   <strong>{{ friend.profile.name }}</strong
                   ><small>{{ friend.profile.email }}</small>
                   <div class="person-actions">
-                    <button type="button" class="quiet" (click)="open(friend.profile.id)">
+                    <button type="button" class="primary" (click)="open(friend.profile.id)">
                       {{ i18n.t('social.chat') }}</button
                     ><button
                       type="button"
@@ -137,12 +151,12 @@
                 </div>
               </div>
             } @empty {
-              <p class="empty-list">{{ i18n.t('social.noFriends') }}</p>
+              <p class="empty-list">{{ i18n.t(search().trim() ? 'social.noMatches' : 'social.noFriends') }}</p>
             }
           }
           @case ('requests') {
             <h2>{{ i18n.t('social.incoming') }}</h2>
-            @for (request of store.overview().incoming; track request.id) {
+            @for (request of incoming(); track request.id) {
               <div class="person">
                 <span class="avatar" aria-hidden="true">{{
                   request.profile.name.charAt(0).toUpperCase()
@@ -177,10 +191,10 @@
                 </div>
               </div>
             } @empty {
-              <p class="empty-list">{{ i18n.t('social.noRequests') }}</p>
+              <p class="empty-list">{{ i18n.t(search().trim() ? 'social.noMatches' : 'social.noRequests') }}</p>
             }
             <h2>{{ i18n.t('social.outgoing') }}</h2>
-            @for (request of store.overview().outgoing; track request.id) {
+            @for (request of outgoing(); track request.id) {
               <div class="person">
                 <div class="contact-copy">
                   <strong>{{ request.profile.name }}</strong
@@ -196,7 +210,7 @@
                 </button>
               </div>
             } @empty {
-              <p class="empty-list">{{ i18n.t('social.noOutgoing') }}</p>
+              <p class="empty-list">{{ i18n.t(search().trim() ? 'social.noMatches' : 'social.noOutgoing') }}</p>
             }
           }
         }
@@ -204,9 +218,6 @@
       <p class="privacy-note">{{ i18n.t('social.privacyNote') }}</p>
     </aside>
     <main class="chat-area">
-      @if (store.error()) {
-        <div class="error" role="alert">{{ store.error() }}</div>
-      }
       @if (store.selected(); as selected) {
         <header class="thread-heading">
           <button

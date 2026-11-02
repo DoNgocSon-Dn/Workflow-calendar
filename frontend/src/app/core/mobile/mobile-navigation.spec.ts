@@ -15,7 +15,7 @@ async function setup(native = true) {
   TestBed.configureTestingModule({ imports: [MobileNavigation], providers: [
     provideRouter([{ path: 'calendar', children: [] }, { path: 'contacts', children: [] }, { path: 'login', children: [] }]),
     { provide: AuthStore, useValue: { user } },
-    { provide: SocialStore, useValue: { unreadCount: signal(7) } },
+    { provide: SocialStore, useValue: { unreadCount: signal(7), badge: signal(9), overview: signal({ incoming: [{}, {}] }) } },
   ] });
   const router = TestBed.inject(Router);
   await router.navigateByUrl('/calendar');
@@ -38,7 +38,8 @@ describe('native mobile navigation', () => {
     const { host, router, fixture } = await setup();
     expect(host.querySelectorAll('a')).toHaveLength(3);
     expect(host.querySelector('a[aria-current=page]')?.getAttribute('href')).toBe('/calendar');
-    expect(host.querySelector('.tab-badge')?.textContent).toBe('7');
+    expect(host.querySelector('.tab-badge')?.textContent).toBe('9');
+    expect(host.querySelector('.tab-badge')?.getAttribute('aria-label')).toContain('2');
     await router.navigateByUrl('/contacts?peer=a');
     await fixture.whenStable();
     expect(host.querySelector('a[aria-current=page]')?.getAttribute('href')).toBe('/contacts');

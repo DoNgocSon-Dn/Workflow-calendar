@@ -26,8 +26,8 @@ export function hasMobileTabs(url: string): boolean {
       </a>
       <a routerLink="/contacts" routerLinkActive="active" ariaCurrentWhenActive="page">
         <span class="tab-icon"><app-icon name="message" />
-          @if (social.unreadCount()) {
-            <b class="tab-badge" [attr.aria-label]="i18n.t('social.unread', { count: social.unreadCount() })">{{ social.unreadCount() > 99 ? '99+' : social.unreadCount() }}</b>
+          @if (social.badge()) {
+            <b class="tab-badge" [attr.aria-label]="i18n.t('mobile.contactUpdates', { messages: social.unreadCount(), requests: social.overview().incoming.length })">{{ social.badge() > 99 ? '99+' : social.badge() }}</b>
           }
         </span>
         <span>{{ i18n.t('social.title') }}</span>
