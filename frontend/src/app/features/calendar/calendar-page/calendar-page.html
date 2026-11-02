@@ -20,6 +20,7 @@
     <div
       class="sidebar-backdrop"
       [class.active]="store.sidebarOpen()"
+      [attr.data-native-back]="store.sidebarOpen() ? '' : null"
       (click)="store.toggleSidebar()"
     ></div>
     <app-calendar-sidebar
@@ -82,7 +83,7 @@
             />
           }
           @case ('agenda') {
-            <app-agenda-view (selectEvent)="onViewDetail($event)" />
+            <app-agenda-view (selectEvent)="onViewDetail($event)" (createRequested)="openCreateBlank()" />
           }
         }
       }
@@ -227,6 +228,7 @@
     <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
       <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z" />
     </svg>
+    <span class="android-fab-label">{{ i18n.t('sidebar.createEvent') }}</span>
   </button>
 }
 <app-screen-notes />

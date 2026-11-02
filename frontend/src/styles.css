@@ -1,6 +1,7 @@
 /* Global Theme System & Typography Overhaul */
 
 @import 'tailwindcss';
+@import './android-ui.css';
 
 /* Keep launchers below modal controls on the native phone layout. */
 .workflow-android body:has([role='dialog'][aria-modal='true']) .create-fab,

@@ -49,6 +49,8 @@ import { BirthdayPopupService } from '../../../core/services/birthday-popup.serv
 import { consumeOauthRedirect } from '../../../core/auth/oauth-redirect-flag';
 import { DevDatePanel } from '../../../shared/components/dev-date-panel/dev-date-panel';
 import { ServerStatusService } from '../../../core/services/server-status.service';
+import { Clock } from '../../../core/clock';
+import { suggestedEventStart } from '../utils/event-create-defaults';
 
 interface ModalState {
   event: CalendarEvent | null;
@@ -97,6 +99,7 @@ interface ModalState {
   },
 })
 export class CalendarPage {
+  private readonly clock = inject(Clock);
   private readonly birthdayService = inject(BirthdayPopupService);
   protected readonly store = inject(CalendarStore);
   protected readonly groupStore = inject(GroupStore);
@@ -306,8 +309,7 @@ export class CalendarPage {
   }
 
   openCreateBlank(): void {
-    const start = this.store.today();
-    start.setHours(start.getHours() + 1, 0, 0, 0);
+    const start = suggestedEventStart(this.store.focusedDate(), this.clock.now());
     this.modalState.set({
       event: null,
       defaultStart: start,
@@ -342,8 +344,7 @@ export class CalendarPage {
   }
 
   openManualFormFromAi(title: string): void {
-    const start = this.store.today();
-    start.setHours(start.getHours() + 1, 0, 0, 0);
+    const start = suggestedEventStart(this.store.focusedDate(), this.clock.now());
     this.modalState.set({
       event: null,
       defaultStart: start,

@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { TranslationService } from '../../../../core/i18n/translation.service';
+import { isAndroidApp } from '../../../../core/mobile/mobile-platform';
 import {
   addMonths,
   buildMonthGrid,
@@ -58,6 +59,7 @@ import {
   ],
 })
 export class DatePicker implements ControlValueAccessor {
+  protected readonly android = isAndroidApp();
   private readonly host = inject(ElementRef<HTMLElement>);
   protected readonly i18n = inject(TranslationService);
 

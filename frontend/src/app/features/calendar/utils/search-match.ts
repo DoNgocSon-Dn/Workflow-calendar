@@ -19,7 +19,7 @@ export interface SearchableEvent {
 }
 
 /** Fold Vietnamese accents and Unicode variants for keyboard-friendly search. */
-function normalizeSearchText(value: string): string {
+export function normalizeSearchText(value: string): string {
   return value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
     .replace(/đ/g, 'd').trim().replace(/\s+/g, ' ');
 }

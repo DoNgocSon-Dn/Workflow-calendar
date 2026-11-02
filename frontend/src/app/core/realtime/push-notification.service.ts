@@ -3,6 +3,7 @@ import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthStore } from '../auth/auth-store';
+import { isAndroidApp } from '../mobile/mobile-platform';
 
 const STORAGE_KEY = 'push-notifications';
 const SW_URL = '/sw.js';
@@ -46,6 +47,7 @@ export class PushNotificationService {
   /** Trình duyệt có đủ API + đã cấu hình VAPID key không. */
   readonly supported = computed(
     () =>
+      !isAndroidApp() &&
       typeof navigator !== 'undefined' &&
       'serviceWorker' in navigator &&
       typeof window !== 'undefined' &&

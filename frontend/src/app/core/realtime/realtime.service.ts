@@ -1,4 +1,4 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, InjectionToken, computed, effect, inject, signal } from '@angular/core';
 import { Socket, io } from 'socket.io-client';
 import { environment } from '../../../environments/environment';
 import { AuthStore } from '../auth/auth-store';
@@ -8,6 +8,9 @@ import { AuthStore } from '../auth/auth-store';
  *  tiếp — hỏng nặng mà không có dấu hiệu nào. */
 const JOIN_MAX_ATTEMPTS = 4;
 const JOIN_RETRY_MS = 400;
+export const REALTIME_SOCKET_FACTORY = new InjectionToken<typeof io>('Realtime socket factory', {
+  providedIn: 'root', factory: () => io,
+});
 
 interface EventListenerReg {
   event: string;
@@ -17,6 +20,7 @@ interface EventListenerReg {
 @Injectable({ providedIn: 'root' })
 export class RealtimeService {
   private readonly authStore = inject(AuthStore);
+  private readonly createSocket = inject(REALTIME_SOCKET_FACTORY);
   private socket: Socket | null = null;
   private currentToken: string | null = null;
 
@@ -44,6 +48,16 @@ export class RealtimeService {
   readonly disconnected = computed(() => this.hasConnectedOnce() && !this.connectedState());
 
   constructor() {
+    const resume = () => {
+      if (document.visibilityState === 'visible') this.resume();
+    };
+    window.addEventListener('online', resume);
+    document.addEventListener('visibilitychange', resume);
+    inject(DestroyRef).onDestroy(() => {
+      window.removeEventListener('online', resume);
+      document.removeEventListener('visibilitychange', resume);
+      this.disconnect();
+    });
     effect(() => {
       const token = this.authStore.accessToken();
       if (token && token !== this.currentToken) {
@@ -64,7 +78,17 @@ export class RealtimeService {
     this.reconnectWithToken(token);
   }
 
+  /** Recover snapshots after sleep, even before Socket.IO notices a stale connection. */
+  resume(): void {
+    if (!this.authStore.accessToken()) return;
+    this.connect();
+    if (this.socket?.connected) {
+      for (const handler of this.reconnectHandlers) handler();
+    }
+  }
+
   private reconnectWithToken(token: string): void {
+    this.connectedState.set(false);
     if (this.socket) {
       this.socket.removeAllListeners();
       this.socket.disconnect();
@@ -72,7 +96,7 @@ export class RealtimeService {
     }
 
     this.currentToken = token;
-    this.socket = io(environment.apiUrl, {
+    this.socket = this.createSocket(environment.apiUrl, {
       auth: { token },
       reconnection: true,
       reconnectionAttempts: Infinity,

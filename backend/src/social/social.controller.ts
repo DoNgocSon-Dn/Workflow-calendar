@@ -19,6 +19,7 @@ import {
   BlockUserDto,
   FriendActionDto,
   FriendRequestDto,
+  FriendCodeRequestDto,
   MessageCursorDto,
   ReadMessagesDto,
   SendDirectMessageDto,
@@ -40,6 +41,15 @@ export class SocialController {
     @Body() dto: FriendRequestDto,
   ) {
     return this.social.request(client, user.id, dto.email);
+  }
+  @Get('code')
+  code(@CurrentSupabase() client: SupabaseClient) {
+    return this.social.code(client);
+  }
+  @Post('requests/code')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  requestCode(@CurrentSupabase() client: SupabaseClient, @CurrentUser() user: User, @Body() dto: FriendCodeRequestDto) {
+    return this.social.requestCode(client, user.id, dto.code);
   }
   @Patch('requests/:id')
   action(

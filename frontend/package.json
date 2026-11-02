@@ -7,6 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "test:service-worker": "node --test scripts/service-worker.test.mjs",
     "i18n:check": "node scripts/check-i18n.mjs",
     "android:sync": "npm run build && cap sync android",
     "android:open": "cap open android"
@@ -24,6 +25,7 @@
     "@capacitor/app": "8.1.2",
     "@capacitor/browser": "8.0.5",
     "@capacitor/core": "8.6.0",
+    "@capacitor/keyboard": "8.0.6",
     "@capacitor/local-notifications": "8.3.1",
     "@supabase/supabase-js": "^2.112.2",
     "gsap": "^3.15.0",

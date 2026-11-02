@@ -50,7 +50,7 @@
           {{ i18n.t('hub.aiTitle') }}
         </span>
       </div>
-      <button type="button" class="icon-btn" [attr.aria-label]="i18n.t('common.close')" (click)="toggle()">
+      <button type="button" class="icon-btn" data-native-close [attr.aria-label]="i18n.t('common.close')" (click)="toggle()">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
           <path d="M18 6 6 18M6 6l12 12" />
         </svg>
@@ -494,7 +494,7 @@
                 (ngModelChange)="draft.set($event)"
                 [placeholder]="pendingFile() ? i18n.t('hub.filePromptPlaceholder') : i18n.t('hub.aiPlaceholder')"
                 [disabled]="sending()"
-                (keydown.enter)="$event.preventDefault(); send()"
+                (keydown)="onComposerKeydown($event)"
               />
               <app-char-counter class="field-counter" [current]="draft().length" [max]="2000" />
             </div>
@@ -532,6 +532,7 @@
 <button
   type="button"
   class="fab"
+  (click)="onFabClick($event)"
   [class.dragging]="dragging()"
   [attr.aria-label]="i18n.t('hub.fabAria')"
   [style.left.px]="pos().x"

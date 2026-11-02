@@ -53,7 +53,7 @@ npm --prefix backend run build
 npm --prefix desktop test
 ```
 
-GitHub Actions kiểm tra ba phần và tạo artifact Windows.
+GitHub Actions kiểm tra frontend, backend, desktop và Android; tạo artifact Windows và APK Android chưa ký.
 
 ## Dịch vụ
 
@@ -62,3 +62,8 @@ Supabase lưu tài khoản/dữ liệu; backend NestJS xử lý API, quyền, nh
 Frontend dùng cấu hình công khai; bản Windows cho đổi kết nối trong menu **Workflow → Cấu hình kết nối**. Khóa service-role chỉ đặt ở backend; thiếu khóa thì cron nhắc việc, deadline và nối dài chuỗi lặp không chạy. SMTP, AI và push cần cấu hình tương ứng trong `backend/.env.example`.
 
 **Trạng thái database 31/10/2026:** Supabase đã hoạt động trở lại. Migration 48/49 cho liên hệ/chat riêng và siết quyền nhóm đã áp dụng sau kiểm thử rollback; không còn dữ liệu thử. Các kết quả và giới hạn nghiệm thu được ghi rõ trong báo cáo 1.1.0.
+
+**Cập nhật 02/11/2026:** [Android 1.3.1 và liên hệ realtime](ANDROID-1.3.1.md) thêm
+mã kết bạn (migration 50 đã áp dụng), phục hồi tin bị lỡ và giao diện điện thoại.
+Đã tạo tài khoản QA riêng, kiểm tra hai chiều bằng Supabase thật và Socket.IO.
+Báo cáo nêu rõ bản đã cài A52, kiểm tra trình duyệt và những phần chưa nghiệm thu.

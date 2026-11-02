@@ -72,7 +72,7 @@
           </svg>
         </button>
         @if (moreMenuOpen()) {
-          <div class="menu-backdrop" (click)="closeMoreMenu()"></div>
+          <div class="menu-backdrop" data-native-back (click)="closeMoreMenu()"></div>
           <div class="more-dropdown" role="menu">
             <button type="button" class="dropdown-item" role="menuitem" (click)="closeMoreMenu(); openSearchOverlay()">
               {{ i18n.t('header.searchPlaceholder') }}
@@ -166,7 +166,7 @@
         </svg>
       </button>
       @if (viewMenuOpen()) {
-        <div class="menu-backdrop" (click)="closeViewMenu()"></div>
+        <div class="menu-backdrop" data-native-back (click)="closeViewMenu()"></div>
         <div class="view-dropdown" role="menu">
           @for (v of viewModes; track v.mode) {
             <button
@@ -212,7 +212,7 @@
           }
         </button>
         @if (userMenuOpen()) {
-          <div class="menu-backdrop" (click)="closeUserMenu()"></div>
+          <div class="menu-backdrop" data-native-back (click)="closeUserMenu()"></div>
           <div class="user-dropdown" role="menu">
             <p class="user-dropdown-name">{{ displayName() }}</p>
             @if (authStore.displayName()) {
@@ -228,12 +228,22 @@
   </div>
 </header>
 
+@if (android && store.isPhone()) {
+  <div class="android-date-pager" [attr.aria-label]="i18n.t('mobile.changeDate')">
+    <button type="button" class="android-today" (click)="store.goToday()">{{ i18n.t('common.today') }}</button>
+    <span>{{ currentViewLabel() }}</span>
+    <button type="button" [attr.aria-label]="i18n.t('common.previous')" (click)="stepMobilePeriod(-1)"><app-icon name="chevron-left" /></button>
+    <button type="button" [attr.aria-label]="i18n.t('common.next')" (click)="stepMobilePeriod(1)"><app-icon name="chevron-right" /></button>
+  </div>
+}
+
 @if (searchOverlayOpen()) {
   <div class="search-overlay" role="dialog" aria-modal="true">
     <div class="search-overlay__bar">
       <button
         type="button"
         class="icon-btn"
+        data-native-close
         [attr.aria-label]="i18n.t('common.close')"
         (click)="closeSearchOverlay()"
       >

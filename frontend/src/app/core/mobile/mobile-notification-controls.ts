@@ -9,11 +9,16 @@ import { MobileNotificationsService } from './mobile-notifications.service';
       <strong>Nhắc lịch trên điện thoại</strong>
       @if (mobile.permission() !== 'granted') {
         <p>Bật thông báo để nhận nhắc lịch nổi kèm âm thanh khi app ở nền.</p>
-        <button type="button" [disabled]="mobile.busy()" (click)="mobile.enable()">Bật thông báo</button>
+        @if (mobile.permission() === 'denied') {
+          <button type="button" (click)="mobile.openSettings()">Mở cài đặt thông báo</button>
+        } @else {
+          <button type="button" [disabled]="mobile.busy()" (click)="mobile.enable()">Bật thông báo</button>
+        }
       } @else {
         <p>Đã bật · {{ mobile.scheduled() }} lời nhắc đã hẹn trên máy.</p>
         <button type="button" [disabled]="mobile.busy()" (click)="mobile.test()">Thử báo sau 10 giây</button>
         <button type="button" (click)="mobile.refresh()">Đồng bộ lời nhắc</button>
+        @if (!compact()) { <button type="button" (click)="mobile.openSettings()">Cài đặt âm & thông báo</button> }
       }
       @if (!compact()) {
         @if (!mobile.exact()) {

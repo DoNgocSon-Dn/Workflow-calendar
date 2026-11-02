@@ -7,6 +7,9 @@ import { DesktopNavigationService } from '../desktop/desktop-navigation.service'
 import { MobileNotificationsService } from './mobile-notifications.service';
 import { isAndroidApp } from './mobile-platform';
 import { closeMobileDialog } from './mobile-back';
+import { Keyboard } from '@capacitor/keyboard';
+import { RealtimeService } from '../realtime/realtime.service';
+import { SocialStore } from '../../features/social/social.store';
 
 @Injectable({ providedIn: 'root' })
 export class MobileRuntimeService {
@@ -15,6 +18,8 @@ export class MobileRuntimeService {
     const router = inject(Router);
     const notifications = inject(MobileNotificationsService);
     const navigation = inject(DesktopNavigationService);
+    const realtime = inject(RealtimeService);
+    const social = inject(SocialStore);
     const destroy = inject(DestroyRef);
     // Let native insets protect every page and full-screen dialog from system bars.
     document.querySelector('meta[name="viewport"]')?.setAttribute('content',
@@ -22,11 +27,20 @@ export class MobileRuntimeService {
     document.documentElement.classList.add('workflow-android');
     notifications.onOpen = (alert) => navigation.open(alert);
     notifications.refresh();
-    const resume = () => notifications.refresh();
-    window.addEventListener('online', resume);
+    const resume = () => {
+      notifications.refresh();
+      realtime.resume();
+      void social.resync();
+    };
     const handles = [
+      Keyboard.addListener('keyboardDidShow', () => document.documentElement.classList.add('workflow-keyboard-open')),
+      Keyboard.addListener('keyboardDidHide', () => document.documentElement.classList.remove('workflow-keyboard-open')),
       App.addListener('appStateChange', ({ isActive }) => { if (isActive) resume(); }),
       App.addListener('backButton', ({ canGoBack }) => {
+        if (document.documentElement.classList.contains('workflow-keyboard-open')) {
+          void Keyboard.hide().catch(() => undefined);
+          return;
+        }
         if (closeMobileDialog()) return;
         if (/^\/calendar(?:[?#]|$)/.test(router.url) || !canGoBack) {
           void App.minimizeApp();
@@ -35,6 +49,10 @@ export class MobileRuntimeService {
         } else window.history.back();
       }),
     ];
+    for (const handle of handles) void handle.then((listener) => {
+      if (destroy.destroyed) void listener.remove();
+      else destroy.onDestroy(() => void listener.remove());
+    }).catch(() => undefined);
     const updateBars = () => void SystemBars.setStyle({ style:
       document.documentElement.classList.contains('dark') ? SystemBarsStyle.Dark : SystemBarsStyle.Light,
     }).catch(() => undefined);
@@ -61,12 +79,11 @@ export class MobileRuntimeService {
     };
     document.addEventListener('click', click, true);
     destroy.onDestroy(() => {
-      for (const handle of handles) void handle.then((listener) => listener.remove());
       observer.disconnect();
-      window.removeEventListener('online', resume);
       document.removeEventListener('click', click, true);
       window.open = originalOpen;
       notifications.onOpen = null;
+      document.documentElement.classList.remove('workflow-android', 'workflow-keyboard-open');
     });
   }
 }

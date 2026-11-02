@@ -55,7 +55,7 @@
             }
           </button>
           @if (userMenuOpen()) {
-            <div class="menu-backdrop" (click)="closeUserMenu()"></div>
+            <div class="menu-backdrop" data-native-back (click)="closeUserMenu()"></div>
             <div class="user-dropdown" role="menu">
               <p class="user-dropdown-name">{{ displayName() }}</p>
               @if (authStore.displayName()) {
@@ -79,7 +79,7 @@
   <div class="body">
     @if (sidebarOpen()) {
       <!-- Nền mờ chỉ tồn tại ở khổ drawer; CSS ẩn nó từ 768px trở lên. -->
-      <div class="sidebar-backdrop" (click)="toggleSidebar()"></div>
+      <div class="sidebar-backdrop" data-native-back (click)="toggleSidebar()"></div>
       <aside class="sidebar">
         <ul class="filter-nav">
           <li>

@@ -15,6 +15,8 @@ import { AuthStore } from '../../../core/auth/auth-store';
 import { TranslationService } from '../../../core/i18n/translation.service';
 import { NotificationQueue } from '../../../core/realtime/notification-queue';
 import { NotificationSoundService } from '../../../core/services/notification-sound.service';
+import { isAndroidApp } from '../../../core/mobile/mobile-platform';
+import { shouldSendOnEnter } from '../../../core/mobile/mobile-input';
 import {
   AiChatHistoryEntry,
   AiLastRelevantEntity,
@@ -466,6 +468,7 @@ export class FloatingHub {
   }
 
   onFabPointerDown(event: PointerEvent): void {
+    if (isAndroidApp()) return; // Native phone uses a stable action above the tab bar.
     this.movedDuringDrag = false;
     const current = this.pos();
     this.dragStart = { pointerX: event.clientX, pointerY: event.clientY, fabX: current.x, fabY: current.y };
@@ -499,6 +502,10 @@ export class FloatingHub {
     } else {
       this.toggle();
     }
+  }
+
+  onFabClick(event: MouseEvent): void {
+    if (isAndroidApp() || event.detail === 0) this.toggle();
   }
 
   toggle(): void {
@@ -578,6 +585,13 @@ export class FloatingHub {
       text: this.i18n.t(`hub.suggest${i + 1}`),
     })),
   );
+
+  onComposerKeydown(event: KeyboardEvent): void {
+    if (shouldSendOnEnter(event)) {
+      event.preventDefault();
+      void this.send();
+    }
+  }
 
   async send(): Promise<void> {
     const text = this.draft().trim();

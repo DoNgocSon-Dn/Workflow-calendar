@@ -2,7 +2,7 @@
   <div class="modal-card">
     <header class="modal-header">
       <h2 id="join-group-modal-title">{{ i18n.t('joinGroup.title') }}</h2>
-      <button type="button" class="btn-close" (click)="cancel()" [attr.aria-label]="i18n.t('common.close')">
+      <button type="button" class="btn-close" data-native-close (click)="cancel()" [attr.aria-label]="i18n.t('common.close')">
         <app-icon name="close" />
       </button>
     </header>

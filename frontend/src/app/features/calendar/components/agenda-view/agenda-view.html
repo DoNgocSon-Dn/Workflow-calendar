@@ -2,10 +2,18 @@
   <!-- Filter Controls Bar -->
   <div class="agenda-header-bar">
     <div class="filter-title">
-      <h3><app-icon name="calendar" class="title-icon" /> {{ i18n.t('agenda.title', { month: currentMonthLabel() }) }}</h3>
+      @if (android) {
+        <h3>{{ i18n.t('mobile.yourSchedule') }}</h3>
+        <p class="android-filter-summary">{{ filterSummary() }}</p>
+      } @else {
+        <h3><app-icon name="calendar" class="title-icon" /> {{ i18n.t('agenda.title', { month: currentMonthLabel() }) }}</h3>
+      }
     </div>
-
-    <div class="header-controls">
+    @if (android) {
+      <button type="button" class="android-filter-toggle" [attr.aria-expanded]="filtersOpen()" aria-controls="agenda-filters" (click)="toggleFilters()">{{ i18n.t('mobile.filters') }} <app-icon name="chevron-down" /></button>
+    }
+    @if (!android || filtersOpen()) {
+    <div class="header-controls" id="agenda-filters">
       <!-- Khoảng thời gian chung (Lịch Dương / Lịch Âm / Sự kiện của tôi) -->
       <div class="filter-pills" role="radiogroup">
         <button type="button" class="filter-pill" [class.active]="filterMode() === 'month'" (click)="setFilterMode('month')">
@@ -21,6 +29,9 @@
 
       <!-- Phạm vi: Lịch Dương / Lịch Âm / Sự kiện của tôi -->
       <div class="calendar-type-toggle" role="radiogroup" [attr.aria-label]="i18n.t('agenda.scopeLabel')">
+        @if (android) {
+          <button type="button" class="type-btn" [class.active]="scope() === 'all'" (click)="setScope('all')">{{ i18n.t('mobile.allCalendars') }}</button>
+        }
         <button
           type="button"
           class="type-btn"
@@ -47,9 +58,10 @@
         </button>
       </div>
     </div>
+    }
   </div>
 
-  @if (scope() === 'mine') {
+  @if (scope() === 'mine' && (!android || filtersOpen())) {
     <!-- Bộ lọc bổ sung cho "Sự kiện của tôi": Loại lịch & Trạng thái -->
     <div class="mine-filters">
       <div class="mine-filter-row">
@@ -73,7 +85,14 @@
 
   @if (visibleGroupedDays().length === 0) {
     <div class="empty-state">
-      {{ i18n.t('agenda.empty') }}
+      @if (android) {
+        <span class="android-empty-icon" aria-hidden="true"><app-icon name="calendar" /></span>
+        <strong>{{ i18n.t('mobile.emptyTitle') }}</strong>
+        <p>{{ i18n.t('mobile.emptyHint') }}</p>
+        <button type="button" class="android-empty-create" (click)="createRequested.emit()"><app-icon name="plus" /> {{ i18n.t('sidebar.createEvent') }}</button>
+      } @else {
+        {{ i18n.t('agenda.empty') }}
+      }
     </div>
   } @else {
     <div class="agenda-list">

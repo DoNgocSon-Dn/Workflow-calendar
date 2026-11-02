@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { isAndroidApp } from '../../../../core/mobile/mobile-platform';
 import { CalendarStore, localizedCalendarName } from '../../data/calendar-store';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { AuthStore } from '../../../../core/auth/auth-store';
@@ -47,6 +48,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
   imports: [DatePipe, Icon],
 })
 export class AgendaView {
+  protected readonly android = isAndroidApp();
+  readonly createRequested = output<void>();
   protected readonly store = inject(CalendarStore);
   protected readonly i18n = inject(TranslationService);
   private readonly authStore = inject(AuthStore);
@@ -55,7 +58,13 @@ export class AgendaView {
   readonly selectEvent = output<string>();
 
   /** ☀️ Lịch Dương · 🌙 Lịch Âm · ⭐ Sự kiện của tôi. */
-  protected readonly scope = signal<AgendaScope>('solar');
+  protected readonly scope = signal<AgendaScope>(this.android ? 'all' : 'solar');
+  protected readonly filtersOpen = signal(false);
+  protected readonly filterSummary = computed(() => {
+    const scopes = { all: 'mobile.allCalendars', solar: 'agenda.calendarTypeSolar', lunar: 'agenda.calendarTypeLunar', mine: 'agenda.myEvents' };
+    const ranges = { month: 'agenda.filterMonth', next30: 'agenda.filterNext30', all: 'agenda.filterAll' };
+    return `${this.i18n.t(scopes[this.scope()])} · ${this.i18n.t(ranges[this.filterMode()])}`;
+  });
 
   /** Bộ lọc khoảng thời gian cho scope 'solar' / 'lunar'. */
   protected readonly filterMode = signal<AgendaRangeFilter>('month');
@@ -82,6 +91,9 @@ export class AgendaView {
   setScope(scope: AgendaScope): void {
     this.scope.set(scope);
     this.maxDisplayedDays.set(10);
+  }
+  toggleFilters(): void {
+    this.filtersOpen.update(open => !open);
   }
 
   setFilterMode(mode: AgendaRangeFilter): void {

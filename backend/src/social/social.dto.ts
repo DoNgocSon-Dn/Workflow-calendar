@@ -10,10 +10,16 @@ import {
   IsUUID,
   MaxLength,
   MinLength,
+  Matches,
 } from 'class-validator';
 
 export class FriendRequestDto {
   @IsEmail() @MaxLength(254) email!: string;
+}
+export class FriendCodeRequestDto {
+  @IsString() @MaxLength(32)
+  @Matches(/^(?:WF-?)?[A-F0-9]{4}-?[A-F0-9]{4}-?[A-F0-9]{4}$/i)
+  code!: string;
 }
 export class FriendActionDto {
   @IsIn(['accept', 'decline', 'cancel', 'remove']) action!:

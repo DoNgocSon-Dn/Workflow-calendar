@@ -16,7 +16,10 @@
 </button>
 
 @if (open()) {
-  <div class="panel" role="dialog" [attr.aria-label]="ariaLabel()">
+  <div class="panel" role="dialog" [attr.aria-label]="ariaLabel()" (keydown.escape)="close(); $event.stopPropagation()">
+    @if (android) {
+      <div class="native-picker-heading"><strong>{{ ariaLabel() }}</strong><button type="button" data-native-close (click)="close()" [attr.aria-label]="i18n.t('common.close')">✕</button></div>
+    }
     <div class="panel-header">
       <button type="button" class="nav-btn" [attr.aria-label]="i18n.t('calendar.prevMonth')" (click)="prevMonth()">
         <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>

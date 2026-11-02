@@ -14,13 +14,14 @@ import { AuthStore } from '../../../../core/auth/auth-store';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { CalendarStore } from '../../data/calendar-store';
 import { CALENDAR_COLOR_HEX, CalendarEvent, CalendarViewMode } from '../../models/calendar.models';
-import { addDays, monthYearLabel, startOfWeek } from '../../utils/date-utils';
+import { addDays, addMonths, monthYearLabel, startOfWeek } from '../../utils/date-utils';
 import { NotificationButton } from '../../../../shared/components/notification/notification-button';
 import { OpenGroupChatRequest } from '../../../../shared/components/notification/notification-panel';
 import { BrandLogo } from '../../../../shared/components/brand-logo/brand-logo';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { OverflowTooltip } from '../../../../shared/directives/overflow-tooltip';
 import { ContactsLink } from '../../../social/contacts-link';
+import { isAndroidApp } from '../../../../core/mobile/mobile-platform';
 
 /** Matches calendar-page.css / calendar-sidebar.css's mobile-drawer breakpoint. */
 const MOBILE_BREAKPOINT_PX = 720;
@@ -44,6 +45,7 @@ const DATE_FMT: Record<'vi' | 'en', { dayMonth: Intl.DateTimeFormat; fullDate: I
   imports: [NotificationButton, BrandLogo, Icon, RouterLink, OverflowTooltip, ContactsLink],
 })
 export class CalendarHeader {
+  protected readonly android = isAndroidApp();
   protected readonly store = inject(CalendarStore);
   protected readonly authStore = inject(AuthStore);
   protected readonly i18n = inject(TranslationService);
@@ -117,7 +119,7 @@ export class CalendarHeader {
     const focused = this.store.focusedDate();
     const locale = this.i18n.locale();
     const fmt = DATE_FMT[locale];
-    if (mode === 'month') return monthYearLabel(focused, locale);
+    if (mode === 'month' || (this.android && mode === 'agenda')) return monthYearLabel(focused, locale);
     if (mode === 'day') return fmt.fullDate.format(focused);
 
     if (mode === '3day') {
@@ -137,7 +139,7 @@ export class CalendarHeader {
     const focused = this.store.focusedDate();
     const locale = this.i18n.locale();
     const fmt = DATE_FMT[locale];
-    if (mode === 'month') return monthYearLabel(focused, locale);
+    if (mode === 'month' || (this.android && mode === 'agenda')) return monthYearLabel(focused, locale);
     if (mode === 'day' || mode === 'agenda') return fmt.dayMonth.format(focused);
     if (mode === '3day') {
       return `${fmt.dayMonth.format(focused)} – ${fmt.dayMonth.format(addDays(focused, 2))}`;
@@ -153,6 +155,10 @@ export class CalendarHeader {
   }
   closeMoreMenu(): void {
     this.moreMenuOpen.set(false);
+  }
+  stepMobilePeriod(amount: number): void {
+    if (this.store.viewMode() === 'agenda') this.store.goTo(addMonths(this.store.focusedDate(), amount));
+    else this.store.step(amount);
   }
   goToTasks(): void {
     this.closeMoreMenu();

@@ -15,6 +15,7 @@ import { AuthStore } from '../../../../core/auth/auth-store';
 import { Clock } from '../../../../core/clock';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { DialogService } from '../../../../core/services/dialog.service';
+import { shouldSendOnEnter } from '../../../../core/mobile/mobile-input';
 import { NotificationQueue } from '../../../../core/realtime/notification-queue';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { CharCounter } from '../../../../shared/components/char-counter/char-counter';
@@ -1357,7 +1358,7 @@ export class GroupWorkspaceModal {
       this.cancelEditMessage();
       return;
     }
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (shouldSendOnEnter(event)) {
       event.preventDefault();
       void this.saveEditMessage(msg);
     }
@@ -1684,7 +1685,7 @@ export class GroupWorkspaceModal {
       }
     }
 
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (shouldSendOnEnter(event)) {
       event.preventDefault();
       this.closeMentionPopup();
       this.sendChat();
