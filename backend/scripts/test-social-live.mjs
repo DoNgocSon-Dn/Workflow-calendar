@@ -47,6 +47,19 @@ try {
   }
   const [a, b] = users;
   assert.notEqual(a.id, b.id); pass('two real user sessions and authenticated private socket rooms');
+  // Make repeats deterministic. Reset only this designated QA pair, never history
+  // or relationships with other users. Normal product actions remain reversible.
+  for (const [self, peer] of [[a, b], [b, a]]) {
+    let overview = await self.call('');
+    if (overview.conversations.some(c => c.profile.id === peer.id && c.blockedByMe)) {
+      await self.call(`/blocks/${peer.id}`, 'PUT', { blocked: false });
+      overview = await self.call('');
+    }
+    for (const [list, action] of [['friends', 'remove'], ['incoming', 'decline'], ['outgoing', 'cancel']]) {
+      const relation = overview[list].find(r => r.profile.id === peer.id);
+      if (relation) await self.call(`/requests/${relation.id}`, 'PATCH', { action });
+    }
+  }
   const codeA = (await a.call('/code')).code, codeB = (await b.call('/code')).code;
   assert.notEqual(codeA, codeB); assert.equal((await b.call('/code')).code, codeB);
   pass('distinct, stable share codes');
